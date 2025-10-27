@@ -20,7 +20,6 @@ export default function WelcomePage() {
   const router = useRouter();
 
   const handleSuggestionSelect = (suggestion) => {
-    console.log("Suggestion selected:", suggestion);
     setInputText(suggestion);
   };
 
@@ -28,13 +27,10 @@ export default function WelcomePage() {
     e.preventDefault();
 
     if (!inputText.trim() || isDisabled) return;
-
-    console.log("input submitted:", inputText);
-    setInputText("");
+    router.push(`/dashboard?initialInput=${encodeURIComponent(inputText)}`);
   };
 
   const handleCreateNewComet = () => {
-    console.log("Create New Comet");
     router.push("/dashboard");
   };
 

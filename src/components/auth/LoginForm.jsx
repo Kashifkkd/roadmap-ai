@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Card } from "@/components/ui/Card";
+import { loginUser } from "@/api/login";
 
 export function LoginForm() {
   const [formData, setFormData] = useState({
@@ -22,14 +23,11 @@ export function LoginForm() {
       ...prev,
       [name]: value,
     }));
-    // Clear error when user starts typing
     if (error) setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // validation
     if (!formData.email || !formData.password) {
       setError("Please fill in all fields");
       return;
@@ -42,6 +40,26 @@ export function LoginForm() {
 
     setIsLoading(true);
     setError("");
+
+    try {
+      const result = await loginUser(formData);
+
+      if (result.error) {
+        throw new Error(result.response?.message || "Login failed. Please check your credentials.");
+      }
+
+      const data = result.response;
+      
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("token_type", data.token_type);
+      
+      router.push("/");
+      
+    } catch (error) {
+      setError(error.message || "Login failed. Please check your credentials.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
