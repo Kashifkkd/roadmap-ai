@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ArrowUp, Paperclip, Search, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
+import { graphqlClient } from "@/lib/graphql-client";
 // import Stars from "@/components/icons/stars";
 
 const SUGGESTIONS = [
@@ -27,7 +28,26 @@ export default function WelcomePage() {
     e.preventDefault();
 
     if (!inputText.trim() || isDisabled) return;
-    router.push(`/dashboard?initialInput=${encodeURIComponent(inputText)}`);
+    
+    try {
+      setIsDisabled(true);
+      
+      // Check if sessionId already exists in localStorage
+      let sessionId = localStorage.getItem('sessionId');
+      
+      // If no sessionId exists, create a new session
+      if (!sessionId) {
+        const sessionResponse = await graphqlClient.createSession();
+        sessionId = sessionResponse.createSession.sessionId;
+        localStorage.setItem('sessionId', sessionId);
+      }
+      
+      router.push(`/dashboard?initialInput=${encodeURIComponent(inputText)}`);
+    } catch (error) {
+      console.error("Error creating session:", error);
+    } finally {
+      setIsDisabled(false);
+    }
   };
 
   const handleCreateNewComet = () => {

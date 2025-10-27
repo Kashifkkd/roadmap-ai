@@ -31,7 +31,7 @@ const Chat = ({
   const hasMessages = messages && messages.length > 0;
 
   return (
-    <div className="h-full bg-background flex flex-col border border-primary rounded-xl">
+    <div className="h-full bg-background flex flex-col border border-primary rounded-lg overflow-hidden">
       <div className="flex-1 overflow-y-auto no-scrollbar p-2 sm:p-4 pb-4">
         {hasMessages ? (
           <div className="max-w-4xl mx-auto w-full">
@@ -55,7 +55,7 @@ const Chat = ({
             </div>
 
             <div className="text-center space-y-1 sm:space-y-2 w-full">
-              <h1 className="text-2xl sm:text-3xl font-bold text-primary">Welcome!</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-primary mt-10">Welcome!</h1>
               <h2 className="text-xl sm:text-2xl font-semibold text-primary">
                 Let&apos;s build your next
                 <br />
@@ -146,6 +146,7 @@ const Chat = ({
             value={inputValue}
             onChange={onInputChange}
             onSubmit={onSubmit}
+            isLoading={isLoading}
           />
         </div>
       </div>

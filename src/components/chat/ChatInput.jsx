@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 
@@ -11,6 +11,7 @@ export default function ChatInput({
   onSubmit,
   value = "",
   onChange,
+  isLoading
 }) {
   const [text, setText] = useState("");
 
@@ -56,7 +57,7 @@ export default function ChatInput({
                 : ""
             }`}
           >
-            <ArrowUp size={16} />
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp size={16} />}
           </Button>
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import SectionHeader from "@/components/section-header";
 import FormCard from "./FormCard";
@@ -20,6 +20,7 @@ export default function CreateComet({
   cometData,
   sessionData = null,
   sessionId = null,
+  prefillData = null,
   onSubmit,
   isLoading = false,
   error = null,
@@ -32,6 +33,7 @@ export default function CreateComet({
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isValid, isSubmitting },
   } = useForm({
     mode: "onSubmit",
@@ -50,6 +52,54 @@ export default function CreateComet({
     },
   });
 
+  console.log("prefillData", prefillData);
+
+  // Handle prefillData changes
+  useEffect(() => {
+    if (prefillData) {
+      console.log("Prefilling form with data:", prefillData);
+
+      // Map prefillData to form fields
+      if (prefillData.cometTitle) {
+        setValue("cometTitle", prefillData.cometTitle);
+      }
+      if (prefillData.description) {
+        setValue("specialInstructions", prefillData.description);
+      }
+      if (prefillData.specialInstructions) {
+        setValue("specialInstructions", prefillData.specialInstructions);
+      }
+      if (prefillData.targetAudience) {
+        setValue("targetAudience", prefillData.targetAudience);
+      }
+      if (prefillData.learningObjectives) {
+        // Handle both string and array formats
+        const objectives = Array.isArray(prefillData.learningObjectives)
+          ? prefillData.learningObjectives.join('\n')
+          : prefillData.learningObjectives;
+        setValue("learningObjectives", objectives);
+      }
+      if (prefillData.cometFocus) {
+        setValue("cometFocus", prefillData.cometFocus);
+      }
+      if (prefillData.sourceMaterialFidelity) {
+        setValue("sourceMaterialFidelity", prefillData.sourceMaterialFidelity);
+      }
+      if (prefillData.engagementFrequency) {
+        setValue("engagementFrequency", prefillData.engagementFrequency);
+      }
+      if (prefillData.lengthFrequency) {
+        setValue("lengthFrequency", prefillData.lengthFrequency);
+      }
+      if (prefillData.clientOrg) {
+        setValue("clientOrg", prefillData.clientOrg);
+      }
+      if (prefillData.clientWebsite) {
+        setValue("clientWebsite", prefillData.clientWebsite);
+      }
+    }
+  }, [prefillData, setValue]);
+
   const handleFormSubmit = async (data) => {
     console.log("Form submitted:", data);
     console.log("Form validation state:", { isValid, errors });
@@ -66,24 +116,22 @@ export default function CreateComet({
   return (
     <form
       onSubmit={handleSubmit(handleFormSubmit)}
-      className="flex flex-col flex-1 w-full bg-background rounded-xl"
+      className="flex flex-col flex-1 w-full h-full bg-background rounded-xl"
     >
       <div className="w-full px-2 pt-2">
         <SectionHeader title="Create New Comet" />
       </div>
       <div
         className="p-1 sm:p-2 w-full h-full overflow-y-auto create-comet-scrollbar"
-        style={{ maxHeight: "calc(100vh - 200px)" }}
       >
         <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 bg-primary-50 rounded-xl h-full p-1 sm:p-2">
           {/* Left Column */}
           <div className="flex p-1 sm:p-2 w-full lg:w-1/2 bg-background rounded-xl">
             <div
-              className="flex flex-1 flex-col border rounded-xl space-y-3 sm:space-y-4 p-2 sm:p-4 overflow-y-auto create-comet-scrollbar"
-              style={{ maxHeight: "calc(100vh - 300px)" }}
+              className="flex flex-1 flex-col border rounded-xl h-full space-y-3 sm:space-y-4 p-2 sm:p-4 overflow-y-auto create-comet-scrollbar"
             >
               {/* Basic Information */}
-              <FormCard title="Basic Information" className="text-semibold">
+              <FormCard title="Basic Information" className="text-semibold !p-0 !m-0" headerClassName="p-0 m-0">
                 <CardContent className="space-y-3">
                   <div className="space-y-1">
                     <Label htmlFor="comet-title">Comet Title *</Label>
@@ -265,8 +313,7 @@ export default function CreateComet({
 
           <div className="flex p-1 sm:p-2 w-full lg:w-1/2 bg-background rounded-xl">
             <div
-              className="flex-1 w-full border rounded-xl overflow-auto create-comet-scrollbar p-2 sm:p-4"
-              style={{ maxHeight: "calc(100vh - 300px)" }}
+              className="flex-1 w-full border rounded-xl overflow-auto h-full create-comet-scrollbar p-2 sm:p-4"
             >
               <SourceMaterialCard files={files} setFiles={setFiles} />
             </div>

@@ -19,6 +19,7 @@ export default function DashboardLayout() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingOutline, setIsGeneratingOutline] = useState(false);
   const [error, setError] = useState(null);
+  const [prefillData, setPrefillData] = useState(null);
 
   // Cleanup WebSocket connections on unmount
   useEffect(() => {
@@ -30,15 +31,28 @@ export default function DashboardLayout() {
   // Handle form submission and navigation
   const handleFormSubmit = async (formData) => {
     console.log("Form submitted with data:", formData);
-    
+
     try {
       setIsLoading(true);
       setError(null);
-      const sessionResponse = await graphqlClient.createSession();
-      const { sessionId: newSessionId, cometJson } = sessionResponse.createSession;
-      
+
+      // Check if sessionId already exists in localStorage
+      let newSessionId = localStorage.getItem('sessionId');
+      let cometJson;
+
+      // If no sessionId exists, create a new session
+      if (!newSessionId) {
+        const sessionResponse = await graphqlClient.createSession();
+        newSessionId = sessionResponse.createSession.sessionId;
+        cometJson = sessionResponse.createSession.cometJson;
+        localStorage.setItem('sessionId', newSessionId);
+        setSessionData(JSON.parse(cometJson));
+      }
+
       setSessionId(newSessionId);
-      setSessionData(JSON.parse(cometJson));
+      if (cometJson) {
+        setSessionData(JSON.parse(cometJson));
+      }
       const formattedCometData = {
         "Basic Information": {
           "Comet Title": formData.cometTitle || "",
@@ -46,7 +60,7 @@ export default function DashboardLayout() {
         },
         "Audience & Objectives": {
           "Target Audience": formData.targetAudience || "",
-          "Learning Objectives": formData.learningObjectives ? 
+          "Learning Objectives": formData.learningObjectives ?
             formData.learningObjectives.split('\n').filter(obj => obj.trim()) : []
         },
         "Experience Design": {
@@ -58,7 +72,7 @@ export default function DashboardLayout() {
         }
       };
       const messageText = initialInput || formData.cometTitle || "Create a new comet";
-      
+
       const cometJsonForMessage = JSON.stringify({
         session_id: newSessionId,
         input_type: "comet_creation",
@@ -70,23 +84,23 @@ export default function DashboardLayout() {
         ],
         to_modify: {}
       });
-      
+
       const messageResponse = await graphqlClient.sendMessage(cometJsonForMessage);
       console.log("Message sent:", messageResponse.sendMessage);
-      
+
       // Step 3: Show loading and start subscription
       setIsGeneratingOutline(true);
-      
+
       // Subscribe to session updates
       const cleanup = await graphqlClient.subscribeToSessionUpdates(
         newSessionId,
         (sessionData) => {
           console.log("Session update received:", sessionData);
           setIsGeneratingOutline(false);
-          
+
           // Store session data in localStorage for outline-manager
           localStorage.setItem('outlineData', JSON.stringify(sessionData));
-          
+
           // Redirect to outline-manager
           router.push('/outline-manager');
         },
@@ -96,7 +110,7 @@ export default function DashboardLayout() {
           setIsGeneratingOutline(false);
         }
       );
-      
+
     } catch (error) {
       console.error("Error creating session or sending message:", error);
       setError(error.message);
@@ -114,29 +128,33 @@ export default function DashboardLayout() {
 
   return (
     <>
-      <Loading isOpen={isGeneratingOutline} />
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-5rem)]">
-      <div className="flex flex-1 gap-2 p-2 flex-col lg:flex-row overflow-y-auto">
-        {/* Chat Window - Hidden on small screens, Desktop: 25% width */}
-        <div className="hidden lg:block w-full lg:w-1/4 h-full lg:h-full">
-          <ChatWindow />
-        </div>
+      {/* <Loading isOpen={isGeneratingOutline} /> */}
+      <div className="flex flex-col bg-primary-50 px-4 py-2 lg:flex-row h-full">
+        <div className="flex flex-1 gap-2 flex-col lg:flex-row overflow-y-auto">
+          {/* Chat Window - Hidden on small screens, Desktop: 25% width */}
+          <div className="lg:block w-full lg:w-1/4 h-full lg:h-full">
+            <ChatWindow 
+              initialInput={initialInput}
+              onResponseReceived={setPrefillData}
+            />
+          </div>
 
-        {/* Create Comet Form - Mobile: Full width, Desktop: 75% width */}
-        <div className="w-full lg:w-3/4 h-full lg:h-full">
-          <CreateComet
-            suggestion={suggestion}
-            initialInput={initialInput}
-            cometData={null}
-            sessionData={sessionData}
-            sessionId={sessionId}
-            onSubmit={handleFormSubmit}
-            isLoading={isLoading}
-            error={error}
-          />
+          {/* Create Comet Form - Mobile: Full width, Desktop: 75% width */}
+          <div className="w-full lg:w-3/4 h-full lg:h-full">
+            <CreateComet
+              suggestion={suggestion}
+              initialInput={initialInput}
+              cometData={null}
+              sessionData={sessionData}
+              sessionId={sessionId}
+              prefillData={prefillData}
+              onSubmit={handleFormSubmit}
+              isLoading={isLoading}
+              error={error}
+            />
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 }

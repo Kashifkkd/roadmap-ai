@@ -17,7 +17,7 @@ export default function CometManagerLayout() {
     <div className="flex h-full w-full">
       <div className="flex flex-1 gap-2 p-2 overflow-y-auto">
         {/* Chat Window - Hidden on small screens, Desktop: 25% width */}
-        <div className="hidden lg:block w-full lg:w-1/4 h-full">
+        <div className="lg:block w-full lg:w-1/4 h-full">
           <ChatWindow />
         </div>
 
