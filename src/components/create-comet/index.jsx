@@ -20,6 +20,9 @@ export default function CreateComet({
   cometData,
   sessionData = null,
   sessionId = null,
+  onSubmit,
+  isLoading = false,
+  error = null,
 }) {
   const [files, setFiles] = useState([]);
   const [focusedField, setFocusedField] = useState(null);
@@ -47,13 +50,14 @@ export default function CreateComet({
     },
   });
 
-  const onSubmit = async (data) => {
+  const handleFormSubmit = async (data) => {
     console.log("Form submitted:", data);
     console.log("Form validation state:", { isValid, errors });
 
     try {
-      // Handle form submission logic here
-      console.log("Comet creation data saved successfully");
+      if (onSubmit) {
+        await onSubmit(data);
+      }
     } catch (error) {
       console.error("Error saving comet data:", error);
     }
@@ -61,7 +65,7 @@ export default function CreateComet({
 
   return (
     <form
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={handleSubmit(handleFormSubmit)}
       className="flex flex-col flex-1 w-full bg-background rounded-xl"
     >
       <div className="w-full px-2 pt-2">
@@ -272,11 +276,12 @@ export default function CreateComet({
 
       <CreateCometFooter
         reset={reset}
-        handleSubmit={handleSubmit(onSubmit)}
+        handleSubmit={handleSubmit(handleFormSubmit)}
         isFormValid={isValid && !isSubmitting}
         hasChanges={false}
         dirtyCount={0}
-        isUpdating={isSubmitting}
+        isUpdating={isLoading || isSubmitting}
+        error={error}
       />
     </form>
   );

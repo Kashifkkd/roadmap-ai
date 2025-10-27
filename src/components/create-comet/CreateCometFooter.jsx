@@ -9,6 +9,7 @@ export default function CreateCometFooter({
   hasChanges = false,
   dirtyCount = 0,
   isUpdating = false,
+  error = null,
 }) {
   const handleBackClick = () => {
     // Navigate back or reset form
@@ -22,6 +23,11 @@ export default function CreateCometFooter({
 
   return (
     <div className="border-t p-2 sm:p-4 bg-background w-full rounded-b-2xl">
+      {error && (
+        <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600 text-sm">{error}</p>
+        </div>
+      )}
       <div className="flex flex-row items-center justify-between gap-3 sm:gap-4">
         {/* Left side - Back button */}
         <Button

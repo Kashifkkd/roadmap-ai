@@ -15,18 +15,11 @@ const Chat = ({
   inputValue = "",
   onInputChange,
   onSubmit,
+  error = null,
 }) => {
   const bottomRef = useRef(null);
-
-  // Auto scroll to bottom when new message comes
-  // useEffect(() => {
-  //   bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  // }, [messages]);
-
-  // Handle suggestion clicks
   const handleSuggestionClick = async (suggestionText) => {
     try {
-      console.log("Suggestion clicked:", suggestionText);
       if (onSuggestionClick) {
         onSuggestionClick(suggestionText);
       }
@@ -64,7 +57,7 @@ const Chat = ({
             <div className="text-center space-y-1 sm:space-y-2 w-full">
               <h1 className="text-2xl sm:text-3xl font-bold text-primary">Welcome!</h1>
               <h2 className="text-xl sm:text-2xl font-semibold text-primary">
-                Let's build your next
+                Let&apos;s build your next
                 <br />
                 Comet together.
               </h2>
@@ -142,6 +135,11 @@ const Chat = ({
       </div>
 
       <div className="bg-background border-gray-200 p-2 sm:p-4">
+        {error && (
+          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
         <div className="max-w-4xl mx-auto w-full">
           <ChatInput
             disabled={isLoading}
