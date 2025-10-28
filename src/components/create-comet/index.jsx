@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import SectionHeader from "@/components/section-header";
 import FormCard from "./FormCard";
@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/Textarea";
 import { CardContent } from "@/components/ui/Card";
 import MultipleChoiceField from "./MultipleChoiceField";
 import SliderField from "./SliderField";
+import AskKyperPopup from "./AskKyperPopup";
+import { graphqlClient } from "@/lib/graphql-client";
 
 export default function CreateComet({
   initialData = null,
@@ -20,12 +22,17 @@ export default function CreateComet({
   cometData,
   sessionData = null,
   prefillData = null,
+  sessionId: propsSessionId,
   onSubmit,
   isLoading = false,
   error = null,
 }) {
   const [files, setFiles] = useState([]);
   const [focusedField, setFocusedField] = useState(null);
+  const [blurTimeout, setBlurTimeout] = useState(null);
+  const [fieldPosition, setFieldPosition] = useState(null);
+  const [isAskingKyper, setIsAskingKyper] = useState(false);
+  const subscriptionCleanupRef = useRef(null);
 
   const {
     register,
@@ -51,59 +58,212 @@ export default function CreateComet({
     },
   });
 
-  console.log("prefillData", prefillData);
+  // console.log("prefillData", prefillData);
 
-  // Handle prefillData changes
+  useEffect(() => {
+    return () => {
+      if (blurTimeout) {
+        clearTimeout(blurTimeout);
+      }
+    };
+  }, [blurTimeout]);
+
+  useEffect(() => {
+    return () => {
+      graphqlClient.cleanup();
+    };
+  }, []);
+
+  const subscribeToUpdates = useCallback(
+    async (sessionId) => {
+      return await graphqlClient.subscribeToSessionUpdates(
+        sessionId,
+        (sessionData) => {
+          console.log("AI response received:", sessionData);
+
+          if (sessionData.chatbot_conversation) {
+            const agentMessage = sessionData.chatbot_conversation.find(
+              (conv) => conv.agent
+            )?.agent;
+
+            if (agentMessage && focusedField) {
+              try {
+                const parsedResponse = JSON.parse(agentMessage);
+                if (parsedResponse.value || parsedResponse.updatedValue) {
+                  setValue(
+                    focusedField,
+                    parsedResponse.value || parsedResponse.updatedValue
+                  );
+                }
+              } catch {
+                setValue(focusedField, agentMessage.trim());
+              }
+              setIsAskingKyper(false);
+            }
+          }
+
+          if (sessionData.comet_creation_data && focusedField) {
+            const fieldLabelMap = {
+              cometTitle: "Comet Title",
+              clientOrg: "Client Organization",
+              clientWebsite: "Client Website",
+              targetAudience: "Target Audience",
+              learningObjectives: "Learning Objectives",
+              lengthFrequency: "Length & Frequency",
+              specialInstructions: "Special Instructions",
+            };
+
+            const fieldLabel = fieldLabelMap[focusedField];
+            const basicInfo =
+              sessionData.comet_creation_data["Basic Information"];
+            const audienceObjectives =
+              sessionData.comet_creation_data["Audience & Objectives"];
+            const experienceDesign =
+              sessionData.comet_creation_data["Experience Design"];
+
+            if (basicInfo && fieldLabel === "Comet Title") {
+              setValue("cometTitle", basicInfo["Comet Title"] || "");
+            } else if (basicInfo && fieldLabel === "Client Organization") {
+              setValue("clientOrg", basicInfo["Client Organization"] || "");
+            } else if (basicInfo && fieldLabel === "Client Website") {
+              setValue("clientWebsite", basicInfo["Client Website"] || "");
+            } else if (audienceObjectives && fieldLabel === "Target Audience") {
+              setValue(
+                "targetAudience",
+                audienceObjectives["Target Audience"] || ""
+              );
+            } else if (
+              audienceObjectives &&
+              fieldLabel === "Learning Objectives"
+            ) {
+              setValue(
+                "learningObjectives",
+                audienceObjectives["Learning Objectives"] || ""
+              );
+            } else if (
+              experienceDesign &&
+              fieldLabel === "Length & Frequency"
+            ) {
+              setValue(
+                "lengthFrequency",
+                experienceDesign["Length & Frequency"] || ""
+              );
+            } else if (
+              experienceDesign &&
+              fieldLabel === "Special Instructions"
+            ) {
+              setValue(
+                "specialInstructions",
+                experienceDesign["Special Instructions"] || ""
+              );
+            }
+
+            setIsAskingKyper(false);
+          }
+        },
+        (error) => {
+          console.error("Subscription error:", error);
+          setIsAskingKyper(false);
+        }
+      );
+    },
+    [focusedField, setValue]
+  );
+
+  // Cleanup subscription when done asking Kyper
+  useEffect(() => {
+    if (!isAskingKyper && subscriptionCleanupRef.current) {
+      subscriptionCleanupRef.current();
+      subscriptionCleanupRef.current = null;
+    }
+  }, [isAskingKyper]);
+
+  // Cleanup subscription on unmount
+  useEffect(() => {
+    return () => {
+      if (subscriptionCleanupRef.current) {
+        subscriptionCleanupRef.current();
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (prefillData) {
       console.log("Prefilling form with data:", prefillData);
 
-      // Check if data has nested structure from sessionData
       if (prefillData.comet_creation_data) {
         const basicInfo = prefillData.comet_creation_data["Basic Information"];
-        const audienceObjectives = prefillData.comet_creation_data["Audience & Objectives"];
-        const experienceDesign = prefillData.comet_creation_data["Experience Design"];
-        
+        const audienceObjectives =
+          prefillData.comet_creation_data["Audience & Objectives"];
+        const experienceDesign =
+          prefillData.comet_creation_data["Experience Design"];
+
         if (basicInfo) {
-          if (basicInfo["Comet Title"]) setValue("cometTitle", basicInfo["Comet Title"]);
-          if (basicInfo["Client Organization"]) setValue("clientOrg", basicInfo["Client Organization"]);
-          if (basicInfo["Client Website"]) setValue("clientWebsite", basicInfo["Client Website"]);
+          if (basicInfo["Comet Title"])
+            setValue("cometTitle", basicInfo["Comet Title"]);
+          if (basicInfo["Client Organization"])
+            setValue("clientOrg", basicInfo["Client Organization"]);
+          if (basicInfo["Client Website"])
+            setValue("clientWebsite", basicInfo["Client Website"]);
         }
-        
+
         if (audienceObjectives) {
-          if (audienceObjectives["Target Audience"]) setValue("targetAudience", audienceObjectives["Target Audience"]);
-          if (audienceObjectives["Learning Objectives"]) setValue("learningObjectives", audienceObjectives["Learning Objectives"]);
+          if (audienceObjectives["Target Audience"])
+            setValue("targetAudience", audienceObjectives["Target Audience"]);
+          if (audienceObjectives["Learning Objectives"])
+            setValue(
+              "learningObjectives",
+              audienceObjectives["Learning Objectives"]
+            );
         }
-        
+
         if (experienceDesign) {
-          if (experienceDesign["Length & Frequency"]) setValue("lengthFrequency", experienceDesign["Length & Frequency"]);
-          if (experienceDesign["Experience Type"]) setValue("experienceType", experienceDesign["Experience Type"]);
-          if (experienceDesign["Special Instructions"]) setValue("specialInstructions", experienceDesign["Special Instructions"]);
+          if (experienceDesign["Length & Frequency"])
+            setValue("lengthFrequency", experienceDesign["Length & Frequency"]);
+          if (experienceDesign["Experience Type"])
+            setValue("experienceType", experienceDesign["Experience Type"]);
+          if (experienceDesign["Special Instructions"])
+            setValue(
+              "specialInstructions",
+              experienceDesign["Special Instructions"]
+            );
         }
-        
-        // Handle source materials if present
+
         if (prefillData.comet_creation_data["Source Materials"]) {
-          // You might want to handle this differently based on your needs
-          console.log("Source Materials:", prefillData.comet_creation_data["Source Materials"]);
+          console.log(
+            "Source Materials:",
+            prefillData.comet_creation_data["Source Materials"]
+          );
         }
       } else {
-        // Handle flat structure (legacy support)
-        if (prefillData.cometTitle) setValue("cometTitle", prefillData.cometTitle);
-        if (prefillData.description) setValue("specialInstructions", prefillData.description);
-        if (prefillData.specialInstructions) setValue("specialInstructions", prefillData.specialInstructions);
-        if (prefillData.targetAudience) setValue("targetAudience", prefillData.targetAudience);
+        if (prefillData.cometTitle)
+          setValue("cometTitle", prefillData.cometTitle);
+        if (prefillData.description)
+          setValue("specialInstructions", prefillData.description);
+        if (prefillData.specialInstructions)
+          setValue("specialInstructions", prefillData.specialInstructions);
+        if (prefillData.targetAudience)
+          setValue("targetAudience", prefillData.targetAudience);
         if (prefillData.learningObjectives) {
           const objectives = Array.isArray(prefillData.learningObjectives)
-            ? prefillData.learningObjectives.join('\n')
+            ? prefillData.learningObjectives.join("\n")
             : prefillData.learningObjectives;
           setValue("learningObjectives", objectives);
         }
-        if (prefillData.cometFocus) setValue("cometFocus", prefillData.cometFocus);
-        if (prefillData.sourceMaterialFidelity) setValue("sourceMaterialFidelity", prefillData.sourceMaterialFidelity);
-        if (prefillData.engagementFrequency) setValue("engagementFrequency", prefillData.engagementFrequency);
-        if (prefillData.lengthFrequency) setValue("lengthFrequency", prefillData.lengthFrequency);
+        if (prefillData.cometFocus)
+          setValue("cometFocus", prefillData.cometFocus);
+        if (prefillData.sourceMaterialFidelity)
+          setValue(
+            "sourceMaterialFidelity",
+            prefillData.sourceMaterialFidelity
+          );
+        if (prefillData.engagementFrequency)
+          setValue("engagementFrequency", prefillData.engagementFrequency);
+        if (prefillData.lengthFrequency)
+          setValue("lengthFrequency", prefillData.lengthFrequency);
         if (prefillData.clientOrg) setValue("clientOrg", prefillData.clientOrg);
-        if (prefillData.clientWebsite) setValue("clientWebsite", prefillData.clientWebsite);
+        if (prefillData.clientWebsite)
+          setValue("clientWebsite", prefillData.clientWebsite);
       }
     }
   }, [prefillData, setValue]);
@@ -113,11 +273,10 @@ export default function CreateComet({
     console.log("Form validation state:", { isValid, errors });
 
     try {
-      // Upload files before submitting the form
-      if (typeof window !== 'undefined' && window.uploadAllFiles) {
-        console.log('Uploading files before creating outline...');
+      if (typeof window !== "undefined" && window.uploadAllFiles) {
+        console.log("Uploading files before creating outline...");
         await window.uploadAllFiles();
-        console.log('File upload complete');
+        console.log("File upload complete");
       }
 
       if (onSubmit) {
@@ -128,223 +287,327 @@ export default function CreateComet({
     }
   };
 
+  const handleAskKyper = async (query) => {
+    console.log("Ask Kyper clicked for field:", focusedField);
+    console.log("Query:", query);
+
+    try {
+      setIsAskingKyper(true);
+
+      const formValues = watch();
+      let currentSessionId =
+        propsSessionId || localStorage.getItem("sessionId");
+
+      if (!currentSessionId) {
+        const sessionResponse = await graphqlClient.createSession();
+        currentSessionId = sessionResponse.createSession.sessionId;
+        localStorage.setItem("sessionId", currentSessionId);
+      }
+      const formattedCometData = {
+        "Basic Information": {
+          "Comet Title": formValues.cometTitle || "",
+          "Client Organization": formValues.clientOrg || "",
+          "Client Website": formValues.clientWebsite || "",
+        },
+        "Audience & Objectives": {
+          "Target Audience": formValues.targetAudience || "",
+          "Learning Objectives": formValues.learningObjectives || "",
+        },
+        "Experience Design": {
+          "Length & Frequency": formValues.lengthFrequency || "",
+          "Experience Type": "",
+          "Special Instructions": formValues.specialInstructions || "",
+        },
+      };
+
+      const fieldLabelMap = {
+        cometTitle: "Comet Title",
+        clientOrg: "Client Organization",
+        clientWebsite: "Client Website",
+      };
+
+      const fieldLabel = fieldLabelMap[focusedField] || focusedField;
+      const currentFieldValue = formValues[focusedField] || "";
+
+      const conversationMessage = JSON.stringify({
+        field: fieldLabel,
+        value: currentFieldValue,
+        instruction: query,
+      });
+      const cometJsonForMessage = JSON.stringify({
+        session_id: currentSessionId,
+        input_type: "comet_data_update",
+        comet_creation_data: formattedCometData,
+        response_outline: {},
+        response_path: {},
+        chatbot_conversation: [{ user: conversationMessage }],
+        to_modify: {},
+      });
+
+      const messageResponse = await graphqlClient.sendMessage(
+        cometJsonForMessage
+      );
+      console.log(
+        "Message sent, waiting for AI response via WebSocket:",
+        messageResponse
+      );
+
+      // Subscribe to WebSocket updates after sending the message
+      const cleanup = await subscribeToUpdates(currentSessionId);
+      subscriptionCleanupRef.current = cleanup;
+    } catch (error) {
+      console.error("Error asking Kyper:", error);
+      setIsAskingKyper(false);
+      alert("Failed to get AI response. Please try again.");
+    }
+  };
+
+  const handleFieldFocus = (fieldName, e) => {
+    if (blurTimeout) {
+      clearTimeout(blurTimeout);
+      setBlurTimeout(null);
+    }
+    setFocusedField(fieldName);
+
+    if (e && e.target) {
+      const rect = e.target.getBoundingClientRect();
+      setFieldPosition({
+        top: rect.bottom + 10,
+        left: rect.left,
+      });
+    }
+  };
+
+  const handleFieldBlur = () => {
+    const timeout = setTimeout(() => {
+      setFocusedField(null);
+      setFieldPosition(null);
+    }, 300);
+    setBlurTimeout(timeout);
+  };
+
+  const handlePopupInteract = () => {
+    if (blurTimeout) {
+      clearTimeout(blurTimeout);
+      setBlurTimeout(null);
+    }
+  };
+
   return (
-    <form
-      onSubmit={handleSubmit(handleFormSubmit)}
-      className="flex flex-col flex-1 w-full h-full bg-background rounded-xl"
-    >
-      <div className="w-full px-2 pt-2">
-        <SectionHeader title="Create New Comet" />
-      </div>
-      <div
-        className="p-1 sm:p-2 w-full h-full overflow-y-auto create-comet-scrollbar"
+    <>
+      <form
+        onSubmit={handleSubmit(handleFormSubmit)}
+        className="flex flex-col flex-1 w-full h-full bg-background rounded-xl"
       >
-        <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 bg-primary-50 rounded-xl h-full p-1 sm:p-2">
-          {/* Left Column */}
-          <div className="flex p-1 sm:p-2 w-full lg:w-1/2 bg-background rounded-xl">
-            <div
-              className="flex flex-1 flex-col border rounded-xl h-full space-y-3 sm:space-y-4 p-2 sm:p-4 overflow-y-auto create-comet-scrollbar"
-            >
-              {/* Basic Information */}
-              <FormCard title="Basic Information" className="text-semibold !p-0 !m-0" headerClassName="p-0 m-0">
-                <CardContent className="space-y-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="comet-title">Comet Title *</Label>
-                    <Input
-                      id="comet-title"
-                      placeholder="Enter comet title"
-                      {...register("cometTitle")}
-                      onFocus={() => setFocusedField("cometTitle")}
-                      onBlur={() => setFocusedField(null)}
+        <div className="w-full px-2 pt-2">
+          <SectionHeader title="Create New Comet" />
+        </div>
+        <div className="p-1 sm:p-2 w-full h-full overflow-y-auto create-comet-scrollbar">
+          <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 bg-primary-50 rounded-xl h-full p-1 sm:p-2">
+            <div className="flex p-1 sm:p-2 w-full lg:w-1/2 bg-background rounded-xl">
+              <div className="flex flex-1 flex-col border rounded-xl h-full space-y-3 sm:space-y-4 p-2 sm:p-4 overflow-y-auto create-comet-scrollbar">
+                <FormCard
+                  title="Basic Information"
+                  className="text-semibold !p-0 !m-0"
+                  headerClassName="p-0 m-0"
+                >
+                  <CardContent className="space-y-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="comet-title">Comet Title *</Label>
+                      <Input
+                        id="comet-title"
+                        placeholder="Enter comet title"
+                        {...register("cometTitle")}
+                        onFocus={(e) => handleFieldFocus("cometTitle", e)}
+                        onBlur={handleFieldBlur}
+                      />
+                      {errors.cometTitle && (
+                        <p className="text-red-600 text-sm">
+                          {errors.cometTitle.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="client-org">Client Organization *</Label>
+                      <Input
+                        id="client-org"
+                        placeholder="Enter client organization"
+                        {...register("clientOrg")}
+                        onFocus={(e) => handleFieldFocus("clientOrg", e)}
+                        onBlur={handleFieldBlur}
+                      />
+                      {errors.clientOrg && (
+                        <p className="text-red-600 text-sm">
+                          {errors.clientOrg.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="client-website">Client Website</Label>
+                      <Input
+                        id="client-website"
+                        placeholder="Enter client website URL"
+                        {...register("clientWebsite")}
+                        onFocus={(e) => handleFieldFocus("clientWebsite", e)}
+                        onBlur={handleFieldBlur}
+                      />
+                      {errors.clientWebsite && (
+                        <p className="text-red-600 text-sm">
+                          {errors.clientWebsite.message}
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </FormCard>
+
+                <FormCard title="Audience & Objectives">
+                  <CardContent className="space-y-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="target-audience">Target Audience *</Label>
+                      <Textarea
+                        id="target-audience"
+                        rows={3}
+                        placeholder="Describe your target audience"
+                        {...register("targetAudience")}
+                      />
+                      {errors.targetAudience && (
+                        <p className="text-red-600 text-sm">
+                          {errors.targetAudience.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="learning-objectives">
+                        Learning Objectives *
+                      </Label>
+                      <Textarea
+                        id="learning-objectives"
+                        rows={3}
+                        placeholder="Define learning objectives"
+                        {...register("learningObjectives")}
+                      />
+                      {errors.learningObjectives && (
+                        <p className="text-red-600 text-sm">
+                          {errors.learningObjectives.message}
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </FormCard>
+
+                <FormCard title="Experience Design">
+                  <CardContent className="space-y-4">
+                    <MultipleChoiceField
+                      label="What's the focus of this Comet?"
+                      name="cometFocus"
+                      options={[
+                        {
+                          value: "learning_new_content",
+                          label: "Learning new content",
+                        },
+                        {
+                          value: "reinforcing_applying",
+                          label: "Reinforcing & applying",
+                        },
+                      ]}
+                      value={""}
+                      onChange={(e) => {
+                        setValue("cometFocus", e.target.value);
+                      }}
+                      orientation="horizontal"
                     />
-                    {errors.cometTitle && (
-                      <p className="text-red-600 text-sm">
-                        {errors.cometTitle.message}
-                      </p>
-                    )}
-                  </div>
 
-                  <div className="space-y-1">
-                    <Label htmlFor="client-org">Client Organization *</Label>
-                    <Input
-                      id="client-org"
-                      placeholder="Enter client organization"
-                      {...register("clientOrg")}
-                      onFocus={() => setFocusedField("clientOrg")}
-                      onBlur={() => setFocusedField(null)}
+                    <SliderField
+                      label="How closely should this Comet follow your source materials?"
+                      name="sourceMaterialFidelity"
+                      options={[
+                        { value: "fidelity", label: "Fidelity" },
+                        { value: "balanced", label: "Balanced" },
+                        { value: "extension", label: "Extension" },
+                      ]}
+                      value="balanced"
+                      onChange={(e) => {
+                        setValue("sourceMaterialFidelity", e.target.value);
+                      }}
                     />
-                    {errors.clientOrg && (
-                      <p className="text-red-600 text-sm">
-                        {errors.clientOrg.message}
-                      </p>
-                    )}
-                  </div>
 
-                  <div className="space-y-1">
-                    <Label htmlFor="client-website">Client Website</Label>
-                    <Input
-                      id="client-website"
-                      placeholder="Enter client website URL"
-                      {...register("clientWebsite")}
-                      onFocus={() => setFocusedField("clientWebsite")}
-                      onBlur={() => setFocusedField(null)}
+                    <MultipleChoiceField
+                      label="How often should learners engage?"
+                      name="engagementFrequency"
+                      options={[
+                        { value: "daily", label: "Daily" },
+                        { value: "weekly", label: "Weekly" },
+                      ]}
+                      value={""}
+                      onChange={(e) => {
+                        setValue("engagementFrequency", e.target.value);
+                      }}
+                      orientation="horizontal"
                     />
-                    {errors.clientWebsite && (
-                      <p className="text-red-600 text-sm">
-                        {errors.clientWebsite.message}
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </FormCard>
 
-              {/* Audience & Objectives */}
-              <FormCard title="Audience & Objectives">
-                <CardContent className="space-y-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="target-audience">Target Audience *</Label>
-                    <Textarea
-                      id="target-audience"
-                      rows={3}
-                      placeholder="Describe your target audience"
-                      {...register("targetAudience")}
-                      onFocus={() => setFocusedField("targetAudience")}
-                      onBlur={() => setFocusedField(null)}
-                    />
-                    {errors.targetAudience && (
-                      <p className="text-red-600 text-sm">
-                        {errors.targetAudience.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label htmlFor="learning-objectives">
-                      Learning Objectives *
-                    </Label>
-                    <Textarea
-                      id="learning-objectives"
-                      rows={3}
-                      placeholder="Define learning objectives"
-                      {...register("learningObjectives")}
-                      onFocus={() => setFocusedField("learningObjectives")}
-                      onBlur={() => setFocusedField(null)}
-                    />
-                    {errors.learningObjectives && (
-                      <p className="text-red-600 text-sm">
-                        {errors.learningObjectives.message}
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </FormCard>
-
-              {/* Experience Design */}
-              <FormCard title="Experience Design">
-                <CardContent className="space-y-4">
-                  {/* Dynamic Multiple Choice Field - Comet Focus */}
-                  <MultipleChoiceField
-                    label="What's the focus of this Comet?"
-                    name="cometFocus"
-                    options={[
-                      {
-                        value: "learning_new_content",
-                        label: "Learning new content",
-                      },
-                      {
-                        value: "reinforcing_applying",
-                        label: "Reinforcing & applying",
-                      },
-                    ]}
-                    value={""}
-                    onChange={(e) => {
-                      setValue("cometFocus", e.target.value);
-                    }}
-                    orientation="horizontal"
-                  />
-
-                  {/* Dynamic Slider Field - Source Material Fidelity */}
-                  <SliderField
-                    label="How closely should this Comet follow your source materials?"
-                    name="sourceMaterialFidelity"
-                    options={[
-                      { value: "fidelity", label: "Fidelity" },
-                      { value: "balanced", label: "Balanced" },
-                      { value: "extension", label: "Extension" },
-                    ]}
-                    value="balanced"
-                    onChange={(e) => {
-                      setValue("sourceMaterialFidelity", e.target.value);
-                    }}
-                  />
-
-                  {/* Dynamic Multiple Choice Field - Engagement Frequency */}
-                  <MultipleChoiceField
-                    label="How often should learners engage?"
-                    name="engagementFrequency"
-                    options={[
-                      { value: "daily", label: "Daily" },
-                      { value: "weekly", label: "Weekly" },
-                    ]}
-                    value={""}
-                    onChange={(e) => {
-                      setValue("engagementFrequency", e.target.value);
-                    }}
-                    orientation="horizontal"
-                  />
-
-                  {/* Length & Frequency Input */}
-                  <div className="space-y-1">
-                    <Label htmlFor="length-frequency">
-                      How long should this Comet be?
-                    </Label>
-                    <Input
-                      id="length-frequency"
-                      placeholder="e.g., 4 weeks - 2 microlearning steps per week"
-                      {...register("lengthFrequency")}
-                      onFocus={() => setFocusedField("lengthFrequency")}
-                      onBlur={() => setFocusedField(null)}
-                    />
-                  </div>
-
-                  {/* Special Instructions */}
-                  <div className="space-y-1">
-                    <Label htmlFor="special-instructions">
-                      Special Instructions
-                    </Label>
-                    <Textarea
-                      id="special-instructions"
-                      rows={3}
-                      placeholder="Focus on practical scenarios for first-time managers. Include at least one interactive quiz and one downloadable tool template"
-                      {...register("specialInstructions")}
-                      onFocus={() => setFocusedField("specialInstructions")}
-                      onBlur={() => setFocusedField(null)}
-                    />
-                  </div>
-                </CardContent>
-              </FormCard>
+                    <div className="space-y-1">
+                      <Label htmlFor="length-frequency">
+                        How long should this Comet be?
+                      </Label>
+                      <Input
+                        id="length-frequency"
+                        placeholder="e.g., 4 weeks - 2 microlearning steps per week"
+                        {...register("lengthFrequency")}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="special-instructions">
+                        Special Instructions
+                      </Label>
+                      <Textarea
+                        id="special-instructions"
+                        rows={3}
+                        placeholder="Focus on practical scenarios for first-time managers. Include at least one interactive quiz and one downloadable tool template"
+                        {...register("specialInstructions")}
+                      />
+                    </div>
+                  </CardContent>
+                </FormCard>
+              </div>
             </div>
-          </div>
 
-          <div className="flex p-1 sm:p-2 w-full lg:w-1/2 bg-background rounded-xl">
-            <div
-              className="flex-1 w-full border rounded-xl overflow-auto h-full create-comet-scrollbar p-2 sm:p-4"
-            >
-              <SourceMaterialCard files={files} setFiles={setFiles} />
+            <div className="flex p-1 sm:p-2 w-full lg:w-1/2 bg-background rounded-xl">
+              <div className="flex-1 w-full border rounded-xl overflow-auto h-full create-comet-scrollbar p-2 sm:p-4">
+                <SourceMaterialCard files={files} setFiles={setFiles} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <CreateCometFooter
-        reset={reset}
-        handleSubmit={handleSubmit(handleFormSubmit)}
-        isFormValid={isValid && !isSubmitting}
-        hasChanges={false}
-        dirtyCount={0}
-        isUpdating={isLoading || isSubmitting}
-        error={error}
+        <CreateCometFooter
+          reset={reset}
+          handleSubmit={handleSubmit(handleFormSubmit)}
+          isFormValid={isValid && !isSubmitting}
+          hasChanges={false}
+          dirtyCount={0}
+          isUpdating={isLoading || isSubmitting}
+          error={error}
+        />
+      </form>
+
+      <AskKyperPopup
+        focusedField={focusedField}
+        fieldPosition={fieldPosition}
+        isLoading={isAskingKyper}
+        onClose={() => {
+          if (blurTimeout) {
+            clearTimeout(blurTimeout);
+            setBlurTimeout(null);
+          }
+          setFocusedField(null);
+          setFieldPosition(null);
+        }}
+        onAskKyper={handleAskKyper}
+        onPopupInteract={handlePopupInteract}
       />
-    </form>
+    </>
   );
 }
