@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
-import { FileIcon, MessageCircleMore, X, Check } from "lucide-react";
+import { FileIcon, MessageCircleMore, X, Check, Plus } from "lucide-react";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
+import Image from "next/image";
+import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
 
 export default function SourceMaterialCard({ files, setFiles }) {
   const sessionId = localStorage.getItem("sessionId");
@@ -80,27 +83,41 @@ export default function SourceMaterialCard({ files, setFiles }) {
       </CardHeader>
 
       <CardContent>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <input
-            type="file"
-            multiple
-            accept=".pdf,.doc,.docx,.txt"
-            onChange={handleFileSelect}
-            className="hidden"
-            id="file-upload"
-          />
-          <label
-            htmlFor="file-upload"
-            className="cursor-pointer flex flex-col items-center gap-2"
-          >
-            <FileIcon className="w-8 h-8 text-gray-400" />
-            <span className="text-sm text-gray-600">
-              Click to upload files or drag and drop
-            </span>
-            <span className="text-xs text-gray-500">
-              PDF, DOC, DOCX, TXT (max 10MB each)
-            </span>
-          </label>
+        <div className="flex flex-col w-full border-2 border-gray-200 rounded-xl bg-gray-100 p-2 sm:p-4">
+          <span className="text-md font-medium text-gray-700 mb-2">
+            Supported Format: PDFs, Videos, Audio, Images
+          </span>
+          <div className="border-2 border-dashed border-gray-300 bg-white rounded-lg p-6 text-center">
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.txt"
+              onChange={handleFileSelect}
+              className="hidden"
+              id="file-upload"
+            />
+            <label
+              htmlFor="file-upload"
+              className="cursor-pointer flex flex-col items-center gap-2"
+            >
+              <div className="flex size-[42px] items-center justify-center rounded-md bg-muted text-muted-foreground">
+                <Image src="/upload.svg" alt="Icon" width={42} height={42} />
+              </div>
+              <span className="text-sm font-medium">
+                Drag files here or click to upload
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                className={cn(
+                  "flex items-center gap-2 border-primary text-primary"
+                )}
+              >
+                <Plus />
+                <span>Upload File</span>
+              </Button>
+            </label>
+          </div>
         </div>
       </CardContent>
 

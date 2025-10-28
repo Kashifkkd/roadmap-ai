@@ -6,7 +6,7 @@ import { ArrowUp, Paperclip, Search, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import { graphqlClient } from "@/lib/graphql-client";
-// import Stars from "@/components/icons/stars";
+import Stars from "@/components/icons/Stars";
 
 const SUGGESTIONS = [
   "Create a go-to microlearning experience for new managers",
@@ -28,20 +28,20 @@ export default function WelcomePage() {
     e.preventDefault();
 
     if (!inputText.trim() || isDisabled) return;
-    
+
     try {
       setIsDisabled(true);
-      
+
       // Check if sessionId already exists in localStorage
-      let sessionId = localStorage.getItem('sessionId');
-      
+      let sessionId = localStorage.getItem("sessionId");
+
       // If no sessionId exists, create a new session
       if (!sessionId) {
         const sessionResponse = await graphqlClient.createSession();
         sessionId = sessionResponse.createSession.sessionId;
-        localStorage.setItem('sessionId', sessionId);
+        localStorage.setItem("sessionId", sessionId);
       }
-      
+
       router.push(`/dashboard?initialInput=${encodeURIComponent(inputText)}`);
     } catch (error) {
       console.error("Error creating session:", error);
@@ -140,7 +140,7 @@ export default function WelcomePage() {
                     key={index}
                     onClick={() => handleSuggestionSelect(suggestion)}
                     disabled={isDisabled}
-                    className="px-4 py-2 text-sm border border-primary-300 rounded-md bg-white text-primary-700 transition-all duration-200 hover:bg-primary-50 hover:border-primary-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-sm border rounded-md bg-white text-primary-600 font-medium transition-all duration-200 hover:bg-primary-50 hover:border-primary-400 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {suggestion}
                   </button>
@@ -155,10 +155,8 @@ export default function WelcomePage() {
       <section className="max-w-3xl w-full p-4 mx-auto bg-background rounded-3xl">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <h3 className="text-xl font-bold text-primary-600">
-              My recent Comets
-            </h3>
-            <ArrowDown className="text-primary-600" size={20} />
+            <h3 className="text-xl font-bold">My recent Comets</h3>
+            <ArrowDown size={20} />
           </div>
           <Button
             variant="default"
@@ -166,7 +164,7 @@ export default function WelcomePage() {
             onClick={handleCreateNewComet}
             disabled={isDisabled}
           >
-            {/* <Stars /> */}
+            <Stars />
             <span>Create New Comet</span>
           </Button>
         </div>
@@ -176,7 +174,7 @@ export default function WelcomePage() {
           {/* <div className="w-24 h-24 bg-primary-50 rounded-full flex items-center justify-center mb-6">
             <Stars className="w-12 h-12 text-primary-300" />
           </div> */}
-          <h4 className="text-xl font-semibold text-primary-900 mb-2">
+          <h4 className="text-xl font-bold text-primary-800 mb-2">
             No Comets yet? Your first one will appear here once you create it.
           </h4>
           <p className="text-muted-foreground mb-6 max-w-md">
@@ -189,7 +187,7 @@ export default function WelcomePage() {
             onClick={handleCreateNewComet}
             disabled={isDisabled}
           >
-            {/* <Stars /> */}
+            <Stars />
             <span>Create Your First Comet</span>
           </Button>
         </div>
