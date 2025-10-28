@@ -37,13 +37,8 @@ export default function DashboardLayout() {
       cleanup = await graphqlClient.subscribeToSessionUpdates(
         sessionId,
         (sessionData) => {
-          console.log("Session update received in DashboardLayout:", sessionData);
           setIsGeneratingOutline(false);
-
-          // Store session data in localStorage for outline-manager
-          localStorage.setItem('outlineData', JSON.stringify(sessionData));
-
-          // Redirect to outline-manager
+          localStorage.setItem('sessionData', JSON.stringify(sessionData));
           router.push('/outline-manager');
         },
         (error) => {
@@ -65,7 +60,6 @@ export default function DashboardLayout() {
 
   // Handle form submission and navigation
   const handleFormSubmit = async (formData) => {
-    console.log("Form submitted with data:", formData);
 
     try {
       setIsLoading(true);
@@ -156,7 +150,6 @@ export default function DashboardLayout() {
               suggestion={suggestion}
               initialInput={initialInput}
               cometData={null}
-              sessionData={sessionData}
               sessionId={sessionId}
               prefillData={prefillData}
               onSubmit={handleFormSubmit}

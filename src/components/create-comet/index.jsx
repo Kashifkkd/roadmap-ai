@@ -19,7 +19,6 @@ export default function CreateComet({
   initialInput,
   cometData,
   sessionData = null,
-  sessionId = null,
   prefillData = null,
   onSubmit,
   isLoading = false,
@@ -114,6 +113,13 @@ export default function CreateComet({
     console.log("Form validation state:", { isValid, errors });
 
     try {
+      // Upload files before submitting the form
+      if (typeof window !== 'undefined' && window.uploadAllFiles) {
+        console.log('Uploading files before creating outline...');
+        await window.uploadAllFiles();
+        console.log('File upload complete');
+      }
+
       if (onSubmit) {
         await onSubmit(data);
       }

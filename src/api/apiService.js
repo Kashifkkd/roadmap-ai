@@ -1,7 +1,7 @@
 import axios from "axios";
 import { endpoints } from "./endpoint";
 
-const BACKEND_URL = "https://kyper-stage.1st90.com/api/auth/v1";
+const BACKEND_URL = "https://kyper-stage.1st90.com";
 
 export const apiService = async ({
   endpoint,
@@ -47,10 +47,9 @@ export const apiService = async ({
     const { data: res } = await axios.request(requestObj);
     return { response: res };
   } catch (error) {
+    // Handle 401 errors without redirecting
     if (error?.response?.status === 401) {
-      if (typeof window !== "undefined") {
-        window.location.href = "/";
-      }
+      console.error("Unauthorized access - token may be expired or invalid");
     }
     console.error(error, "backend endpoint error");
     return { success: false, error: true, ...(error || {}) };

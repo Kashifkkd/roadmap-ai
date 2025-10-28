@@ -1,9 +1,41 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
 import { FileIcon, MessageCircleMore, X, Check } from "lucide-react";
+import { apiService } from "@/api/apiService";
+import { endpoints } from "@/api/endpoint";
 
 export default function SourceMaterialCard({ files, setFiles }) {
+  const sessionId = localStorage.getItem("sessionId");
+
+  const uploadFile = useCallback(
+    async (file) => {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("session_id", sessionId);
+
+        const result = await apiService({
+          endpoint: endpoints.uploadSourceMaterial,
+          method: "POST",
+          data: formData,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        if (result.error) {
+          console.error("Error uploading file:", result.error);
+        } else {
+          console.log("File uploaded successfully:", result.response);
+        }
+      } catch (error) {
+        console.error("Error uploading file:", error);
+      }
+    },
+    [sessionId]
+  );
+
   const handleDrop = (acceptedFiles, fileRejections, event) => {
     if (acceptedFiles && Array.isArray(acceptedFiles)) {
       setFiles(acceptedFiles);
@@ -12,8 +44,32 @@ export default function SourceMaterialCard({ files, setFiles }) {
 
   const handleFileSelect = (event) => {
     const selectedFiles = Array.from(event.target.files);
+    console.log("Files selected:", selectedFiles.length);
+    console.log("Session ID:", sessionId);
     setFiles(selectedFiles);
   };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.uploadAllFiles = async () => {
+        if (files && files.length > 0 && sessionId) {
+          console.log("Uploading all files on submit...");
+          for (const file of files) {
+            await uploadFile(file);
+          }
+        } else if (files.length === 0) {
+          console.log("No files to upload");
+        } else {
+          console.warn("Cannot upload: no session ID");
+        }
+      };
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        delete window.uploadAllFiles;
+      }
+    };
+  }, [files, sessionId, uploadFile]);
 
   return (
     <Card className="border-none shadow-none p-0">
