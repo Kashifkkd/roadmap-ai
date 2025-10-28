@@ -22,7 +22,6 @@ export default function CreateComet({
   cometData,
   sessionData = null,
   prefillData = null,
-  sessionId: propsSessionId,
   onSubmit,
   isLoading = false,
   error = null,
@@ -33,6 +32,8 @@ export default function CreateComet({
   const [fieldPosition, setFieldPosition] = useState(null);
   const [isAskingKyper, setIsAskingKyper] = useState(false);
   const subscriptionCleanupRef = useRef(null);
+
+  const sessionId = localStorage.getItem("sessionId");
 
   const {
     register,
@@ -74,118 +75,85 @@ export default function CreateComet({
     };
   }, []);
 
-  const subscribeToUpdates = useCallback(
-    async (sessionId) => {
-      return await graphqlClient.subscribeToSessionUpdates(
+  // Listen for socket response when asking Kyper
+  useEffect(() => {
+    console.log("sessionId", sessionId);
+    console.log("isAskingKyper", isAskingKyper);
+    if (!isAskingKyper || !sessionId) return;
+
+    let cleanup;
+    const subscribeToUpdates = async () => {
+      cleanup = await graphqlClient.subscribeToSessionUpdates(
         sessionId,
         (sessionData) => {
           console.log("AI response received:", sessionData);
 
-          if (sessionData.chatbot_conversation) {
-            const agentMessage = sessionData.chatbot_conversation.find(
-              (conv) => conv.agent
-            )?.agent;
+          // Update entire form with comet_creation_data like prefill
+          if (sessionData.comet_creation_data) {
+            console.log("Updating entire form with comet_creation_data:", sessionData.comet_creation_data);
+            
+            const basicInfo = sessionData.comet_creation_data["Basic Information"];
+            const audienceObjectives = sessionData.comet_creation_data["Audience & Objectives"];
+            const experienceDesign = sessionData.comet_creation_data["Experience Design"];
 
-            if (agentMessage && focusedField) {
-              try {
-                const parsedResponse = JSON.parse(agentMessage);
-                if (parsedResponse.value || parsedResponse.updatedValue) {
-                  setValue(
-                    focusedField,
-                    parsedResponse.value || parsedResponse.updatedValue
-                  );
-                }
-              } catch {
-                setValue(focusedField, agentMessage.trim());
-              }
-              setIsAskingKyper(false);
+            if (basicInfo) {
+              if (basicInfo["Comet Title"]) setValue("cometTitle", basicInfo["Comet Title"]);
+              if (basicInfo["Client Organization"]) setValue("clientOrg", basicInfo["Client Organization"]);
+              if (basicInfo["Client Website"]) setValue("clientWebsite", basicInfo["Client Website"]);
             }
-          }
 
-          if (sessionData.comet_creation_data && focusedField) {
-            const fieldLabelMap = {
-              cometTitle: "Comet Title",
-              clientOrg: "Client Organization",
-              clientWebsite: "Client Website",
-              targetAudience: "Target Audience",
-              learningObjectives: "Learning Objectives",
-              lengthFrequency: "Length & Frequency",
-              specialInstructions: "Special Instructions",
-            };
+            if (audienceObjectives) {
+              if (audienceObjectives["Target Audience"]) setValue("targetAudience", audienceObjectives["Target Audience"]);
+              if (audienceObjectives["Learning Objectives"]) setValue("learningObjectives", audienceObjectives["Learning Objectives"]);
+            }
 
-            const fieldLabel = fieldLabelMap[focusedField];
-            const basicInfo =
-              sessionData.comet_creation_data["Basic Information"];
-            const audienceObjectives =
-              sessionData.comet_creation_data["Audience & Objectives"];
-            const experienceDesign =
-              sessionData.comet_creation_data["Experience Design"];
-
-            if (basicInfo && fieldLabel === "Comet Title") {
-              setValue("cometTitle", basicInfo["Comet Title"] || "");
-            } else if (basicInfo && fieldLabel === "Client Organization") {
-              setValue("clientOrg", basicInfo["Client Organization"] || "");
-            } else if (basicInfo && fieldLabel === "Client Website") {
-              setValue("clientWebsite", basicInfo["Client Website"] || "");
-            } else if (audienceObjectives && fieldLabel === "Target Audience") {
-              setValue(
-                "targetAudience",
-                audienceObjectives["Target Audience"] || ""
-              );
-            } else if (
-              audienceObjectives &&
-              fieldLabel === "Learning Objectives"
-            ) {
-              setValue(
-                "learningObjectives",
-                audienceObjectives["Learning Objectives"] || ""
-              );
-            } else if (
-              experienceDesign &&
-              fieldLabel === "Length & Frequency"
-            ) {
-              setValue(
-                "lengthFrequency",
-                experienceDesign["Length & Frequency"] || ""
-              );
-            } else if (
-              experienceDesign &&
-              fieldLabel === "Special Instructions"
-            ) {
-              setValue(
-                "specialInstructions",
-                experienceDesign["Special Instructions"] || ""
-              );
+            if (experienceDesign) {
+              if (experienceDesign["Length & Frequency"]) setValue("lengthFrequency", experienceDesign["Length & Frequency"]);
+              if (experienceDesign["Experience Type"]) setValue("experienceType", experienceDesign["Experience Type"]);
+              if (experienceDesign["Special Instructions"]) setValue("specialInstructions", experienceDesign["Special Instructions"]);
             }
 
             setIsAskingKyper(false);
           }
+
+          // Previous approach - update only specific field (commented out for potential revert)
+          // if (sessionData.chatbot_conversation) {
+          //   const agentMessage = sessionData.chatbot_conversation.find(
+          //     (conv) => conv.agent
+          //   )?.agent;
+
+          //   if (agentMessage && focusedField) {
+          //     try {
+          //       const parsedResponse = JSON.parse(agentMessage);
+          //       if (parsedResponse.value || parsedResponse.updatedValue) {
+          //         setValue(
+          //           focusedField,
+          //           parsedResponse.value || parsedResponse.updatedValue
+          //         );
+          //       }
+          //     } catch {
+          //       setValue(focusedField, agentMessage.trim());
+          //     }
+          //     setIsAskingKyper(false);
+          //   }
+          // }
         },
         (error) => {
           console.error("Subscription error:", error);
           setIsAskingKyper(false);
         }
       );
-    },
-    [focusedField, setValue]
-  );
+    };
 
-  // Cleanup subscription when done asking Kyper
-  useEffect(() => {
-    if (!isAskingKyper && subscriptionCleanupRef.current) {
-      subscriptionCleanupRef.current();
-      subscriptionCleanupRef.current = null;
-    }
-  }, [isAskingKyper]);
+    subscribeToUpdates();
 
-  // Cleanup subscription on unmount
-  useEffect(() => {
     return () => {
-      if (subscriptionCleanupRef.current) {
-        subscriptionCleanupRef.current();
+      if (cleanup) {
+        cleanup();
       }
     };
-  }, []);
+  }, [isAskingKyper, sessionId, focusedField, setValue]);
+
 
   useEffect(() => {
     if (prefillData) {
@@ -296,13 +264,8 @@ export default function CreateComet({
 
       const formValues = watch();
       let currentSessionId =
-        propsSessionId || localStorage.getItem("sessionId");
+        localStorage.getItem("sessionId");
 
-      if (!currentSessionId) {
-        const sessionResponse = await graphqlClient.createSession();
-        currentSessionId = sessionResponse.createSession.sessionId;
-        localStorage.setItem("sessionId", currentSessionId);
-      }
       const formattedCometData = {
         "Basic Information": {
           "Comet Title": formValues.cometTitle || "",
@@ -329,11 +292,16 @@ export default function CreateComet({
       const fieldLabel = fieldLabelMap[focusedField] || focusedField;
       const currentFieldValue = formValues[focusedField] || "";
 
-      const conversationMessage = JSON.stringify({
-        field: fieldLabel,
-        value: currentFieldValue,
-        instruction: query,
-      });
+      const conversationMessage = `{ 'field': '${fieldLabel}', 'value': '${currentFieldValue}', 'instruction': '${query}' }`;
+      // {
+      //   field: fieldLabel,
+      //   value: currentFieldValue,
+      //   instruction: query,
+      // };
+
+
+      console.log("conversationMessage object:", conversationMessage);
+
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: "comet_data_update",
@@ -344,6 +312,15 @@ export default function CreateComet({
         to_modify: {},
       });
 
+      console.log("Final payload:", cometJsonForMessage, {
+        session_id: currentSessionId,
+        input_type: "comet_data_update",
+        comet_creation_data: formattedCometData,
+        response_outline: {},
+        response_path: {},
+        chatbot_conversation: [{ user: conversationMessage }],
+        to_modify: {},
+      });
       const messageResponse = await graphqlClient.sendMessage(
         cometJsonForMessage
       );
@@ -352,13 +329,8 @@ export default function CreateComet({
         messageResponse
       );
 
-      // Subscribe to WebSocket updates after sending the message
-      const cleanup = await subscribeToUpdates(currentSessionId);
-      subscriptionCleanupRef.current = cleanup;
     } catch (error) {
       console.error("Error asking Kyper:", error);
-      setIsAskingKyper(false);
-      alert("Failed to get AI response. Please try again.");
     }
   };
 

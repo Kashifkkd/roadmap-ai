@@ -24,7 +24,7 @@ export const apiService = async ({
         }
       } catch {}
       if (!token) {
-        token = localStorage.getItem("token");
+        token = localStorage.getItem("access_token");
       }
     }
     const requestHeaders = {

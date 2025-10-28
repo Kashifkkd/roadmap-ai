@@ -17,7 +17,7 @@ class WebSocketGraphQLClient {
         }
       } catch {}
       if (!token) {
-        token = localStorage.getItem("token");
+        token = localStorage.getItem("access_token");
       }
     }
     return token;
