@@ -15,11 +15,7 @@ class GraphQLClient {
         }
       } catch {}
       if (!token) {
-<<<<<<< HEAD
         token = localStorage.getItem("access_token");
-=======
-        token = localStorage.getItem("auth_token");
->>>>>>> ca0d82506cc7c5aeab2cfa15c0eb5085d1858e39
       }
     }
 
