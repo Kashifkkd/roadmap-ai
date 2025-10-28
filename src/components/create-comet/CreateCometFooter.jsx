@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft } from "lucide-react";
+import Stars from "../icons/Stars";
 
 export default function CreateCometFooter({
   reset,
@@ -40,6 +41,12 @@ export default function CreateCometFooter({
 
         {/* Right side container */}
         <div className="flex flex-row items-center gap-2 sm:gap-3">
+          <Button
+            className="bg-white border border-primary text-primary w-32 sm:w-auto flex items-center justify-center gap-2"
+            onClick={reset}
+          >
+            <span>Reset</span>
+          </Button>
           {hasChanges && (
             <div className="text-xs sm:text-sm text-muted-foreground text-right">
               {dirtyCount} unsaved changes
@@ -51,6 +58,7 @@ export default function CreateCometFooter({
             onClick={handleSubmit}
             disabled={!canSubmit}
           >
+            <Stars size={16} />
             <span>{isLoading ? "Saving..." : "Create Outline"}</span>
           </Button>
         </div>

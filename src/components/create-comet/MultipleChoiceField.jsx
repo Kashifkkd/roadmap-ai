@@ -48,7 +48,7 @@ export default function MultipleChoiceField({
             key={option.value}
             type="button"
             onClick={() => handleValueChange(option.value)}
-            className={`px-3 sm:px-4 py-2 rounded-lg border transition-all text-sm sm:text-base ${
+            className={` sm:px-2  rounded-lg border transition-all text-sm sm:text-base ${
               value === option.value
                 ? "bg-primary text-white border-primary"
                 : "bg-background text-gray-700 border-gray-300 hover:border-primary hover:text-primary"

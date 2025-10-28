@@ -21,14 +21,16 @@ function LayoutContent({ children }) {
 
   if (isAuthPage) {
     return (
-      <div className="flex flex-col h-full overflow-hidden">{children}</div>
+      <div className="flex flex-col h-full  overflow-hidden">{children}</div>
     );
   }
 
   return (
     <div className="flex flex-col h-full w-full">
       <Header />
-      <div className="flex-1 bg-gray-50 overflow-y-auto h-full w-full">{children}</div>
+      <div className="flex-1 bg-gray-50 overflow-y-auto h-full w-full">
+        {children}
+      </div>
     </div>
   );
 }

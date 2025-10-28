@@ -62,7 +62,7 @@ export default function ClientDropdown({
         <span className="max-w-[80px] sm:max-w-[120px] md:max-w-[150px] text-sm sm:text-base md:text-lg font-bold truncate">
           {getDisplayText()}
         </span>
-        <div className="flex items-center justify-center size-5 sm:size-6 bg-gray-300 rounded-full">
+        <div className="flex items-center justify-center size-5 sm:size-6 bg-gray-100 rounded-full">
           <ChevronDown
             strokeWidth={1.5}
             className="w-3 h-3 sm:w-4 sm:h-4 text-[#1C274C]"

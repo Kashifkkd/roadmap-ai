@@ -1,8 +1,8 @@
-import { wsGraphQLClient } from './ws-graphql-client';
+import { wsGraphQLClient } from "./ws-graphql-client";
 
 class GraphQLClient {
   constructor() {
-    this.baseURL = 'https://kyper-stage.1st90.com/graphql';
+    this.baseURL = "https://kyper-stage.1st90.com/graphql";
   }
 
   async request(query, variables = {}) {
@@ -15,20 +15,25 @@ class GraphQLClient {
         }
       } catch {}
       if (!token) {
+<<<<<<< HEAD
         token = localStorage.getItem("access_token");
+=======
+        token = localStorage.getItem("auth_token");
+>>>>>>> ca0d82506cc7c5aeab2cfa15c0eb5085d1858e39
       }
     }
-    
+
+    console.log("token", localStorage.getItem("auth_token"));
     if (!token) {
-      throw new Error('No authentication token found');
+      throw new Error("No authentication token found");
     }
 
     const response = await fetch(this.baseURL, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
-        'Authorization': `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         query,
@@ -46,7 +51,7 @@ class GraphQLClient {
     }
 
     const result = await response.json();
-    
+
     if (result.errors) {
       throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
     }
@@ -82,7 +87,11 @@ class GraphQLClient {
   }
 
   async subscribeToSessionUpdates(sessionId, onUpdate, onError) {
-    return wsGraphQLClient.subscribeToSessionUpdates(sessionId, onUpdate, onError);
+    return wsGraphQLClient.subscribeToSessionUpdates(
+      sessionId,
+      onUpdate,
+      onError
+    );
   }
   cleanup() {
     wsGraphQLClient.cleanup();

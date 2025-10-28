@@ -40,8 +40,8 @@ const Chat = ({
             ))}
           </div>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-4xl mx-auto w-full">
-            <div className="mb-2 sm:mb-4 w-full flex justify-center items-center">
+          <div className="flex flex-col items-center pt-10 sm:space-y-6 max-w-4xl mx-auto w-full">
+            <div className="w-full flex justify-center items-center">
               <Image
                 src="/logo2.svg"
                 alt="Kyper Logo"
@@ -53,27 +53,25 @@ const Chat = ({
                 }}
               />
             </div>
-
             <div className="text-center space-y-1 sm:space-y-2 w-full">
-              <h1 className="text-2xl sm:text-3xl font-bold text-primary mt-10">Welcome!</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-primary ">
+                Welcome!
+              </h1>
               <h2 className="text-xl sm:text-2xl font-semibold text-primary">
                 Let&apos;s build your next
                 <br />
                 Comet together.
               </h2>
             </div>
-
             {/* Description */}
             <p className="text-center text-base sm:text-lg text-gray-600 w-full max-w-2xl px-2">
               You can type your idea below, or pick one of the suggestions to
               get started.
             </p>
-
             {/* Heading for suggestions */}
             <h3 className="text-lg sm:text-xl font-medium text-primary w-full text-center">
               Pick an idea to get started
             </h3>
-
             <div className="space-y-2 sm:space-y-3 w-full max-w-2xl">
               <button
                 onClick={() =>

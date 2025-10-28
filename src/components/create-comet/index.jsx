@@ -383,7 +383,7 @@ export default function CreateComet({
                   className="text-semibold !p-0 !m-0"
                   headerClassName="p-0 m-0"
                 >
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-3 pb-4">
                     <div className="space-y-1">
                       <Label htmlFor="comet-title">Comet Title *</Label>
                       <Input
@@ -401,10 +401,10 @@ export default function CreateComet({
                     </div>
 
                     <div className="space-y-1">
-                      <Label htmlFor="client-org">Client Organization *</Label>
+                      <Label htmlFor="client-org">Description *</Label>
                       <Input
                         id="client-org"
-                        placeholder="Enter client organization"
+                        placeholder="Enter description"
                         {...register("clientOrg")}
                         onFocus={(e) => handleFieldFocus("clientOrg", e)}
                         onBlur={handleFieldBlur}
@@ -416,7 +416,7 @@ export default function CreateComet({
                       )}
                     </div>
 
-                    <div className="space-y-1">
+                    {/* <div className="space-y-1">
                       <Label htmlFor="client-website">Client Website</Label>
                       <Input
                         id="client-website"
@@ -429,8 +429,8 @@ export default function CreateComet({
                         <p className="text-red-600 text-sm">
                           {errors.clientWebsite.message}
                         </p>
-                      )}
-                    </div>
+                      )} 
+                    </div> */}
                   </CardContent>
                 </FormCard>
 
@@ -485,7 +485,7 @@ export default function CreateComet({
                           label: "Reinforcing & applying",
                         },
                       ]}
-                      value={""}
+                      value={watch("cometFocus")}
                       onChange={(e) => {
                         setValue("cometFocus", e.target.value);
                       }}
@@ -513,7 +513,7 @@ export default function CreateComet({
                         { value: "daily", label: "Daily" },
                         { value: "weekly", label: "Weekly" },
                       ]}
-                      value={""}
+                      value={watch("engagementFrequency")}
                       onChange={(e) => {
                         setValue("engagementFrequency", e.target.value);
                       }}
