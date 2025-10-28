@@ -28,6 +28,41 @@ export default function DashboardLayout() {
     };
   }, []);
 
+  // Listen for socket response when generating outline
+  useEffect(() => {
+    if (!isGeneratingOutline || !sessionId) return;
+
+    let cleanup;
+    const subscribeToUpdates = async () => {
+      cleanup = await graphqlClient.subscribeToSessionUpdates(
+        sessionId,
+        (sessionData) => {
+          console.log("Session update received in DashboardLayout:", sessionData);
+          setIsGeneratingOutline(false);
+
+          // Store session data in localStorage for outline-manager
+          localStorage.setItem('outlineData', JSON.stringify(sessionData));
+
+          // Redirect to outline-manager
+          router.push('/outline-manager');
+        },
+        (error) => {
+          console.error("Subscription error:", error);
+          setError(error.message);
+          setIsGeneratingOutline(false);
+        }
+      );
+    };
+
+    subscribeToUpdates();
+
+    return () => {
+      if (cleanup) {
+        cleanup();
+      }
+    };
+  }, [isGeneratingOutline, sessionId, router]);
+
   // Handle form submission and navigation
   const handleFormSubmit = async (formData) => {
     console.log("Form submitted with data:", formData);
@@ -88,28 +123,8 @@ export default function DashboardLayout() {
       const messageResponse = await graphqlClient.sendMessage(cometJsonForMessage);
       console.log("Message sent:", messageResponse.sendMessage);
 
-      // Step 3: Show loading and start subscription
+      // Step 3: Show loading - useEffect will handle the subscription
       setIsGeneratingOutline(true);
-
-      // Subscribe to session updates
-      const cleanup = await graphqlClient.subscribeToSessionUpdates(
-        newSessionId,
-        (sessionData) => {
-          console.log("Session update received:", sessionData);
-          setIsGeneratingOutline(false);
-
-          // Store session data in localStorage for outline-manager
-          localStorage.setItem('outlineData', JSON.stringify(sessionData));
-
-          // Redirect to outline-manager
-          router.push('/outline-manager');
-        },
-        (error) => {
-          console.error("Subscription error:", error);
-          setError(error.message);
-          setIsGeneratingOutline(false);
-        }
-      );
 
     } catch (error) {
       console.error("Error creating session or sending message:", error);
@@ -120,11 +135,7 @@ export default function DashboardLayout() {
     }
   };
 
-  // Handle chat interactions
-  const handleChatSubmit = (message) => {
-    console.log("Chat message:", message);
-    // Here you would typically send the message to your chat service
-  };
+
 
   return (
     <>
@@ -133,7 +144,7 @@ export default function DashboardLayout() {
         <div className="flex flex-1 gap-2 flex-col lg:flex-row overflow-y-auto">
           {/* Chat Window - Hidden on small screens, Desktop: 25% width */}
           <div className="lg:block w-full lg:w-1/4 h-full lg:h-full">
-            <ChatWindow 
+            <ChatWindow
               initialInput={initialInput}
               onResponseReceived={setPrefillData}
             />
