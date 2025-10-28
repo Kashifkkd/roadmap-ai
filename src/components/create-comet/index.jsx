@@ -59,43 +59,52 @@ export default function CreateComet({
     if (prefillData) {
       console.log("Prefilling form with data:", prefillData);
 
-      // Map prefillData to form fields
-      if (prefillData.cometTitle) {
-        setValue("cometTitle", prefillData.cometTitle);
-      }
-      if (prefillData.description) {
-        setValue("specialInstructions", prefillData.description);
-      }
-      if (prefillData.specialInstructions) {
-        setValue("specialInstructions", prefillData.specialInstructions);
-      }
-      if (prefillData.targetAudience) {
-        setValue("targetAudience", prefillData.targetAudience);
-      }
-      if (prefillData.learningObjectives) {
-        // Handle both string and array formats
-        const objectives = Array.isArray(prefillData.learningObjectives)
-          ? prefillData.learningObjectives.join('\n')
-          : prefillData.learningObjectives;
-        setValue("learningObjectives", objectives);
-      }
-      if (prefillData.cometFocus) {
-        setValue("cometFocus", prefillData.cometFocus);
-      }
-      if (prefillData.sourceMaterialFidelity) {
-        setValue("sourceMaterialFidelity", prefillData.sourceMaterialFidelity);
-      }
-      if (prefillData.engagementFrequency) {
-        setValue("engagementFrequency", prefillData.engagementFrequency);
-      }
-      if (prefillData.lengthFrequency) {
-        setValue("lengthFrequency", prefillData.lengthFrequency);
-      }
-      if (prefillData.clientOrg) {
-        setValue("clientOrg", prefillData.clientOrg);
-      }
-      if (prefillData.clientWebsite) {
-        setValue("clientWebsite", prefillData.clientWebsite);
+      // Check if data has nested structure from sessionData
+      if (prefillData.comet_creation_data) {
+        const basicInfo = prefillData.comet_creation_data["Basic Information"];
+        const audienceObjectives = prefillData.comet_creation_data["Audience & Objectives"];
+        const experienceDesign = prefillData.comet_creation_data["Experience Design"];
+        
+        if (basicInfo) {
+          if (basicInfo["Comet Title"]) setValue("cometTitle", basicInfo["Comet Title"]);
+          if (basicInfo["Client Organization"]) setValue("clientOrg", basicInfo["Client Organization"]);
+          if (basicInfo["Client Website"]) setValue("clientWebsite", basicInfo["Client Website"]);
+        }
+        
+        if (audienceObjectives) {
+          if (audienceObjectives["Target Audience"]) setValue("targetAudience", audienceObjectives["Target Audience"]);
+          if (audienceObjectives["Learning Objectives"]) setValue("learningObjectives", audienceObjectives["Learning Objectives"]);
+        }
+        
+        if (experienceDesign) {
+          if (experienceDesign["Length & Frequency"]) setValue("lengthFrequency", experienceDesign["Length & Frequency"]);
+          if (experienceDesign["Experience Type"]) setValue("experienceType", experienceDesign["Experience Type"]);
+          if (experienceDesign["Special Instructions"]) setValue("specialInstructions", experienceDesign["Special Instructions"]);
+        }
+        
+        // Handle source materials if present
+        if (prefillData.comet_creation_data["Source Materials"]) {
+          // You might want to handle this differently based on your needs
+          console.log("Source Materials:", prefillData.comet_creation_data["Source Materials"]);
+        }
+      } else {
+        // Handle flat structure (legacy support)
+        if (prefillData.cometTitle) setValue("cometTitle", prefillData.cometTitle);
+        if (prefillData.description) setValue("specialInstructions", prefillData.description);
+        if (prefillData.specialInstructions) setValue("specialInstructions", prefillData.specialInstructions);
+        if (prefillData.targetAudience) setValue("targetAudience", prefillData.targetAudience);
+        if (prefillData.learningObjectives) {
+          const objectives = Array.isArray(prefillData.learningObjectives)
+            ? prefillData.learningObjectives.join('\n')
+            : prefillData.learningObjectives;
+          setValue("learningObjectives", objectives);
+        }
+        if (prefillData.cometFocus) setValue("cometFocus", prefillData.cometFocus);
+        if (prefillData.sourceMaterialFidelity) setValue("sourceMaterialFidelity", prefillData.sourceMaterialFidelity);
+        if (prefillData.engagementFrequency) setValue("engagementFrequency", prefillData.engagementFrequency);
+        if (prefillData.lengthFrequency) setValue("lengthFrequency", prefillData.lengthFrequency);
+        if (prefillData.clientOrg) setValue("clientOrg", prefillData.clientOrg);
+        if (prefillData.clientWebsite) setValue("clientWebsite", prefillData.clientWebsite);
       }
     }
   }, [prefillData, setValue]);

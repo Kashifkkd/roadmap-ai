@@ -37,7 +37,7 @@ export default function ChatWindow({ initialInput = null, onResponseReceived = n
       engagementFrequency: "",
       lengthFrequency: "",
     };
-    
+
     // Try to extract structured data from the response
     // Extract title
     const titlePatterns = [
@@ -52,7 +52,7 @@ export default function ChatWindow({ initialInput = null, onResponseReceived = n
         break;
       }
     }
-    
+
     // Extract target audience
     const audiencePatterns = [
       /Target Audience:\s*([^\n]+)/i,
@@ -66,19 +66,19 @@ export default function ChatWindow({ initialInput = null, onResponseReceived = n
         break;
       }
     }
-    
+
     // Extract learning objectives
     const objectivesMatch = responseText.match(/Learning Objectives?:\s*([^\n]+)/i);
     if (objectivesMatch) {
       data.learningObjectives = objectivesMatch[1].trim();
     }
-    
+
     // Extract description/special instructions if the whole response is descriptive
     if (!data.cometTitle && responseText.length > 0) {
       data.description = responseText;
       data.specialInstructions = responseText;
     }
-    
+
     return data;
   };
 
@@ -152,38 +152,6 @@ export default function ChatWindow({ initialInput = null, onResponseReceived = n
 
       setInputValue("");
 
-      // Parse response to extract structured data for prefill
-      if (onResponseReceived) {
-        try {
-          // Try to parse the bot response as JSON
-          let parsedData = null;
-          try {
-            parsedData = JSON.parse(messageResponse.sendMessage);
-          } catch {
-            // If not JSON, try to extract structured data from text
-            // Look for common patterns or use the bot's message as description
-            parsedData = parseResponseForFormData(messageResponse.sendMessage);
-          }
-          onResponseReceived(parsedData);
-        } catch (error) {
-          console.error("Error parsing response for prefill:", error);
-        }
-      }
-
-      // Subscribe to session updates
-      const cleanup = await graphqlClient.subscribeToSessionUpdates(
-        currentSessionId,
-        (sessionData) => {
-          console.log("Session update received:", sessionData);
-        },
-        (error) => {
-          console.error("Subscription error:", error);
-          setError(error.message);
-        }
-      );
-
-      cleanup()
-
     } catch (error) {
       console.error("Error creating session or sending message:", error);
       setError(error.message);
@@ -191,6 +159,44 @@ export default function ChatWindow({ initialInput = null, onResponseReceived = n
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    let cleanup;
+    const subscribeToUpdates = async () => {
+      cleanup = await graphqlClient.subscribeToSessionUpdates(
+        sessionId,
+        (sessionData) => {
+          console.log("Session update received:", sessionData);
+
+          if (onResponseReceived) {
+            onResponseReceived(sessionData);
+          }
+          if (sessionData.chatbot_conversation) {
+            const agentMessage = sessionData.chatbot_conversation.find(conv => conv.agent)?.agent;
+            if (agentMessage) {
+              setMessages(prev => {
+                // Remove the last message (processing message) and add the agent message
+                const updatedMessages = prev.slice(0, -1);
+                return [...updatedMessages, { from: "bot", content: agentMessage }];
+              });
+            }
+          }
+        },
+        (error) => {
+          console.error("Subscription error:", error);
+          setError(error.message);
+        }
+      );
+    };
+
+    subscribeToUpdates();
+
+    return () => {
+      if (cleanup) {
+        cleanup();
+      }
+    };
+  }, [sessionId, onResponseReceived]);
 
   return (
     <div className="bg-white h-full p-2 rounded-2xl">
