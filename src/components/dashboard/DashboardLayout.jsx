@@ -20,6 +20,7 @@ export default function DashboardLayout() {
   const [isGeneratingOutline, setIsGeneratingOutline] = useState(false);
   const [error, setError] = useState(null);
   const [prefillData, setPrefillData] = useState(null);
+  const [allMessages, setAllMessages] = useState([]);
 
   // Cleanup WebSocket connections on unmount
   useEffect(() => {
@@ -89,8 +90,11 @@ export default function DashboardLayout() {
         },
         "Audience & Objectives": {
           "Target Audience": formData.targetAudience || "",
-          "Learning Objectives": formData.learningObjectives ?
-            formData.learningObjectives.split('\n').filter(obj => obj.trim()) : []
+          "Learning Objectives": Array.isArray(formData.learningObjectives)
+            ? formData.learningObjectives.map(String).map(obj => obj.trim()).filter(Boolean)
+            : (typeof formData.learningObjectives === 'string'
+              ? formData.learningObjectives.split(',').map(obj => obj.trim()).filter(Boolean)
+              : [])
         },
         "Experience Design": {
           "Focus": formData.cometFocus || "",
@@ -104,7 +108,7 @@ export default function DashboardLayout() {
 
       const cometJsonForMessage = JSON.stringify({
         session_id: newSessionId,
-        input_type: "comet_creation",
+        input_type: "outline_creation",
         comet_creation_data: formattedCometData,
         response_outline: {},
         response_path: {},
@@ -141,6 +145,8 @@ export default function DashboardLayout() {
             <ChatWindow
               initialInput={initialInput}
               onResponseReceived={setPrefillData}
+              allMessages={allMessages}
+              setAllMessages={setAllMessages}
             />
           </div>
 
@@ -155,6 +161,7 @@ export default function DashboardLayout() {
               onSubmit={handleFormSubmit}
               isLoading={isLoading}
               error={error}
+              setAllMessages={setAllMessages}
             />
           </div>
         </div>

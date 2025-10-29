@@ -6,11 +6,10 @@ import Loading from "@/components/common/Loading";
 import { graphqlClient } from "@/lib/graphql-client";
 import { useRouter } from "next/navigation";
 
-export default function ChatWindow({ initialInput = null, onResponseReceived = null }) {
+export default function ChatWindow({ initialInput = null, onResponseReceived = null, allMessages = [], setAllMessages = () => {} }) {
   const router = useRouter();
   const processedInitialInputRef = useRef(false);
 
-  const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
   const [isGeneratingOutline, setIsGeneratingOutline] = useState(false);
@@ -103,7 +102,7 @@ export default function ChatWindow({ initialInput = null, onResponseReceived = n
     setInputValue(suggestionText);
   };
 
-  console.log(">>MESSAGES", messages);
+  console.log(">>MESSAGES", allMessages);
 
   const handleInputChange = (value) => {
     setInputValue(value);
@@ -144,7 +143,7 @@ export default function ChatWindow({ initialInput = null, onResponseReceived = n
       console.log("Message sent:", messageResponse.sendMessage);
 
       // Add messages in a single setState call to avoid duplicates
-      setMessages(prev => [
+      setAllMessages(prev => [
         ...prev,
         { from: "user", content: text },
         { from: "bot", content: messageResponse.sendMessage }
@@ -174,7 +173,7 @@ export default function ChatWindow({ initialInput = null, onResponseReceived = n
           if (sessionData.chatbot_conversation) {
             const agentMessage = sessionData.chatbot_conversation.find(conv => conv.agent)?.agent;
             if (agentMessage) {
-              setMessages(prev => {
+              setAllMessages(prev => {
                 // Remove the last message (processing message) and add the agent message
                 const updatedMessages = prev.slice(0, -1);
                 return [...updatedMessages, { from: "bot", content: agentMessage }];
@@ -201,7 +200,7 @@ export default function ChatWindow({ initialInput = null, onResponseReceived = n
   return (
     <div className="bg-white h-full p-2 rounded-2xl">
       <Chat
-        messages={messages}
+        messages={allMessages}
         isLoading={isLoading || isInitialLoading}
         onSuggestionClick={handleSuggestionClick}
         inputValue={inputValue}
