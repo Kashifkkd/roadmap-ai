@@ -25,6 +25,8 @@ export default function CreateComet({
   onSubmit,
   isLoading = false,
   error = null,
+  allMessages = [],
+  setAllMessages = () => {},
 }) {
   const [files, setFiles] = useState([]);
   const [focusedField, setFocusedField] = useState(null);
@@ -90,27 +92,71 @@ export default function CreateComet({
 
           // Update entire form with comet_creation_data like prefill
           if (sessionData.comet_creation_data) {
-            console.log("Updating entire form with comet_creation_data:", sessionData.comet_creation_data);
-            
-            const basicInfo = sessionData.comet_creation_data["Basic Information"];
-            const audienceObjectives = sessionData.comet_creation_data["Audience & Objectives"];
-            const experienceDesign = sessionData.comet_creation_data["Experience Design"];
+            console.log(
+              "Updating entire form with comet_creation_data:",
+              sessionData.comet_creation_data
+            );
+
+            const basicInfo =
+              sessionData.comet_creation_data["Basic Information"];
+            const audienceObjectives =
+              sessionData.comet_creation_data["Audience & Objectives"];
+            const experienceDesign =
+              sessionData.comet_creation_data["Experience Design"];
+
+            setAllMessages((prev) => {
+              const filteredPrev = prev.filter((msg, index) => {
+                if (msg.from === "bot" && index === prev.length - 1) {
+                  return false;
+                }
+                return true;
+              });
+              return [
+                ...filteredPrev,
+                {
+                  from: "bot",
+                  content:
+                    basicInfo["Comet Title"] ||
+                    basicInfo["Client Organization"],
+                },
+              ];
+            });
 
             if (basicInfo) {
-              if (basicInfo["Comet Title"]) setValue("cometTitle", basicInfo["Comet Title"]);
-              if (basicInfo["Client Organization"]) setValue("clientOrg", basicInfo["Client Organization"]);
-              if (basicInfo["Client Website"]) setValue("clientWebsite", basicInfo["Client Website"]);
+              if (basicInfo["Comet Title"])
+                setValue("cometTitle", basicInfo["Comet Title"]);
+              if (basicInfo["Client Organization"])
+                setValue("clientOrg", basicInfo["Client Organization"]);
+              if (basicInfo["Client Website"])
+                setValue("clientWebsite", basicInfo["Client Website"]);
             }
 
             if (audienceObjectives) {
-              if (audienceObjectives["Target Audience"]) setValue("targetAudience", audienceObjectives["Target Audience"]);
-              if (audienceObjectives["Learning Objectives"]) setValue("learningObjectives", audienceObjectives["Learning Objectives"]);
+              if (audienceObjectives["Target Audience"])
+                setValue(
+                  "targetAudience",
+                  audienceObjectives["Target Audience"]
+                );
+              if (audienceObjectives["Learning Objectives"])
+                setValue(
+                  "learningObjectives",
+                  audienceObjectives["Learning Objectives"]
+                );
             }
 
             if (experienceDesign) {
-              if (experienceDesign["Length & Frequency"]) setValue("lengthFrequency", experienceDesign["Length & Frequency"]);
-              if (experienceDesign["Experience Type"]) setValue("experienceType", experienceDesign["Experience Type"]);
-              if (experienceDesign["Special Instructions"]) setValue("specialInstructions", experienceDesign["Special Instructions"]);
+              if (experienceDesign["Length & Frequency"])
+                setValue(
+                  "lengthFrequency",
+                  experienceDesign["Length & Frequency"]
+                );
+              if (experienceDesign["Experience Type"])
+                setValue("experienceType", experienceDesign["Experience Type"]);
+              if (experienceDesign["Special Instructions"])
+                setValue(
+                  "specialInstructions",
+                  experienceDesign["Special Instructions"]
+                );
             }
 
             setIsAskingKyper(false);
@@ -153,7 +199,6 @@ export default function CreateComet({
       }
     };
   }, [isAskingKyper, sessionId, focusedField, setValue]);
-
 
   useEffect(() => {
     if (prefillData) {
@@ -263,8 +308,7 @@ export default function CreateComet({
       setIsAskingKyper(true);
 
       const formValues = watch();
-      let currentSessionId =
-        localStorage.getItem("sessionId");
+      let currentSessionId = localStorage.getItem("sessionId");
 
       const formattedCometData = {
         "Basic Information": {
@@ -299,8 +343,11 @@ export default function CreateComet({
       //   instruction: query,
       // };
 
-
       console.log("conversationMessage object:", conversationMessage);
+      setAllMessages((prev) => [
+        ...prev,
+        { from: "user", content: query || "" },
+      ]);
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
@@ -328,7 +375,10 @@ export default function CreateComet({
         "Message sent, waiting for AI response via WebSocket:",
         messageResponse
       );
-
+      setAllMessages((prev) => [
+        ...prev,
+        { from: "bot", content: messageResponse.sendMessage },
+      ]);
     } catch (error) {
       console.error("Error asking Kyper:", error);
     }

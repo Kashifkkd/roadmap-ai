@@ -1,11 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ChatWindow from "@/components/chat/ChatWindow";
 import CometManager from "./CometManager";
 
 export default function CometManagerLayout() {
   const [sessionData, setSessionData] = useState(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("sessionData");
+    if (stored) {
+      try {
+        const parsedData = JSON.parse(stored);
+        console.log("parsedData in CometManagerLayout:", parsedData);
+        setTimeout(() => {
+          setSessionData(parsedData);
+        }, 0);
+      } catch {}
+    }
+  }, []);
 
   // Handle chat interactions
   const handleChatSubmit = (message) => {
