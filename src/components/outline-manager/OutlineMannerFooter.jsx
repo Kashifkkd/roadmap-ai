@@ -54,7 +54,10 @@ export default function OutlineMannerFooter() {
         const cometJson = sessionResponse.createSession.cometJson;
         if (cometJson) {
           try {
-            localStorage.setItem("sessionData", JSON.stringify(JSON.parse(cometJson)));
+            localStorage.setItem(
+              "sessionData",
+              JSON.stringify(JSON.parse(cometJson))
+            );
           } catch {}
         }
       }
@@ -62,13 +65,19 @@ export default function OutlineMannerFooter() {
       setSessionId(currentSessionId);
 
       // Send a message to trigger server-side processing similar to outline creation
+      let parsedSessionData = null;
+      try {
+        const raw = localStorage.getItem("sessionData");
+        if (raw) parsedSessionData = JSON.parse(raw);
+      } catch {}
+
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: "path_creation",
-        comet_creation_data: {},
+        comet_creation_data: parsedSessionData?.comet_creation_data || {},
         response_outline: {},
         response_path: {},
-        chatbot_conversation: [{ user: "Generate outline and path for comet" }],
+        chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
         to_modify: {},
       });
 
@@ -92,21 +101,24 @@ export default function OutlineMannerFooter() {
   };
 
   return (
-    <div className="border-t p-4 bg-background w-full rounded-b-xl">
-      <div className="flex items-center justify-between">
-        <Button className="bg-muted text-primary" onClick={handleBackClick}>
-          <ArrowLeft size={16} />
-          <span>Back</span>
-        </Button>
-        <Button
-          variant="default"
-          className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
-          onClick={handleSubmit}
-        >
-          <Stars />
-          <span>Create Comet</span>
-        </Button>
+    <>
+      <Loading isOpen={isGenerating} message="Generating your comet..." />
+      <div className="border-t p-4 bg-background w-full rounded-b-xl">
+        <div className="flex items-center justify-between">
+          <Button className="bg-muted text-primary" onClick={handleBackClick}>
+            <ArrowLeft size={16} />
+            <span>Back</span>
+          </Button>
+          <Button
+            variant="default"
+            className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
+            onClick={handleSubmit}
+          >
+            <Stars />
+            <span>Create Comet</span>
+          </Button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
