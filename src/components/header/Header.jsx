@@ -17,6 +17,8 @@ import {
   UserPlus,
   Users,
   MessagesSquare,
+  Pencil,
+  Eye,
 } from "lucide-react";
 import Image from "next/image";
 import ClientDropdown from "@/components/common/ClientDropdown";
@@ -28,6 +30,8 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const isHome = pathname === "/";
+  const isCometManager = pathname?.startsWith("/comet-manager");
 
   // Mock client data - replace with actual data fetching
   const mockClients = [
@@ -99,6 +103,80 @@ export default function Header() {
     console.log("Selected client:", client);
   };
 
+  // Small presentational helpers
+  const Collaborators = () => (
+    <div className="flex items-center -space-x-4">
+      {mockCollaborators.map((collaborator) => (
+        <div
+          key={collaborator.id}
+          className="relative w-9 h-9 rounded-full border-2 border-white overflow-hidden bg-gray-100 z-10"
+          title={collaborator.name}
+        >
+          <Image
+            src={collaborator.image_url}
+            alt={collaborator.name}
+            width={36}
+            height={36}
+            className="object-cover"
+          />
+        </div>
+      ))}
+    </div>
+  );
+
+  const FeedbackButton = ({ compact = false }) => (
+    <button
+      className={`flex items-center gap-2 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700 hover:cursor-pointer ${
+        compact ? "px-2 py-1" : "px-3 py-2"
+      }`}
+    >
+      <MessagesSquare className="w-4 h-4" />
+      {!compact && <span className="text-sm font-medium">Feedback</span>}
+    </button>
+  );
+
+  const InviteButton = () => (
+    <button className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700">
+      <span className="text-sm font-medium">Invite</span>
+    </button>
+  );
+
+  const RightSectionGeneric = () => (
+    <div className="flex items-center gap-3 my-1">
+      <FeedbackButton />
+      <button className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700">
+        <Download className="w-5 h-5" />
+      </button>
+      <Collaborators />
+      <InviteButton />
+    </div>
+  );
+
+  const RightSectionCometManager = () => (
+    <div className="flex items-center gap-2 sm:gap-3 my-1">
+      <div className="flex items-center gap-1 px-2 py-1 rounded-sm bg-primary-50 text-primary border border-primary-200 hover:cursor-pointer">
+        <Pencil className="w-4 h-4" />
+        <span className="text-xs font-medium">Editor</span>
+      </div>
+      <button className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700 hover:cursor-pointer">
+        <Eye className="w-5 h-5" />
+      </button>
+      <button className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700 hover:cursor-pointer">
+        <Settings className="w-5 h-5" />
+      </button>
+      <div className="hidden md:block">
+        <FeedbackButton />
+      </div>
+      <div className="hidden sm:block">
+        <Collaborators />
+      </div>
+      <InviteButton />
+      <button className="px-4 py-2 rounded-md bg-primary hover:bg-primary-dark text-white text-sm font-medium hover:cursor-pointer">
+        Publish
+      </button>
+    </div>
+  );
+
   return (
     <header className="px-4 pt-4 bg-primary-50 border-gray-200 w-full">
       <div className="bg-white px-6 py-1 rounded-lg  w-full">
@@ -134,7 +212,7 @@ export default function Header() {
               <Image src="home.svg" alt="" width={20} height={20} />
             </div>
 
-            {pathname === "/" && (
+            {isHome && (
               <nav className="hidden lg:flex items-stretch gap-8 h-12">
                 {navItems.map((item) => (
                   <button
@@ -155,7 +233,16 @@ export default function Header() {
             )}
           </div>
 
-          {pathname === "/" && (
+          {/* Center title for comet-manager */}
+          {isCometManager && (
+            <div className="hidden md:flex flex-1 items-center justify-center">
+              <span className="text-2xl font-semibold text-primary select-none">
+                New Manager Essentials
+              </span>
+            </div>
+          )}
+
+          {isHome && (
             <div className="flex items-center gap-2 sm:gap-4 mr-2">
               {/* User Profile Section */}
               {isAuthenticated ? (
@@ -247,44 +334,8 @@ export default function Header() {
               </button>
             </div>
           )}
-          {pathname === "/dashboard" && (
-            <div className="flex items-center gap-3">
-              {/* Feedback button */}
-              <button className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700">
-                <MessagesSquare className="w-4 h-4" />
-                <span className="text-sm font-medium">Feedback</span>
-              </button>
-
-              {/* Download button */}
-              <button className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700">
-                <Download className="w-5 h-5" />
-              </button>
-
-              {/* Profile avatars */}
-              <div className="flex items-center -space-x-4">
-                {mockCollaborators.map((collaborator, index) => (
-                  <div
-                    key={collaborator.id}
-                    className="relative w-9 h-9 rounded-full border-2 border-white overflow-hidden bg-gray-100 z-10 transition-transform hover:scale-110"
-                    title={collaborator.name}
-                  >
-                    <Image
-                      src={collaborator.image_url}
-                      alt={collaborator.name}
-                      width={36}
-                      height={36}
-                      className="object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-
-              {/* Invite button */}
-              <button className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700">
-                <span className="text-sm font-medium">Invite</span>
-              </button>
-            </div>
-          )}
+          {!isHome && !isCometManager && <RightSectionGeneric />}
+          {isCometManager && <RightSectionCometManager />}
         </div>
 
         {isMobileMenuOpen && (

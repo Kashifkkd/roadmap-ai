@@ -9,7 +9,10 @@ export default function OutlineManagerLayout() {
 
   useEffect(() => {
     const storedSessionData = localStorage.getItem("sessionData");
-    console.log("storedSessionData in OutlineManagerLayout:", storedSessionData);
+    console.log(
+      "storedSessionData in OutlineManagerLayout:",
+      storedSessionData
+    );
     setTimeout(() => {
       if (storedSessionData) {
         const parsedData = JSON.parse(storedSessionData);
@@ -23,7 +26,7 @@ export default function OutlineManagerLayout() {
   };
 
   return (
-    <div className="flex h-full w-full">
+    <div className="flex h-full w-full bg-primary-50">
       <div className="flex flex-1 gap-2 p-2 overflow-y-auto">
         <div className="hidden lg:block w-full lg:w-1/4 h-full">
           <ChatWindow />

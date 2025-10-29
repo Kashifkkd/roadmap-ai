@@ -58,7 +58,6 @@ export function useCometManager() {
     },
   ]);
 
-
   useEffect(() => {
     const sampleScreens = [
       {

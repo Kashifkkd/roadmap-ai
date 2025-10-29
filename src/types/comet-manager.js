@@ -9,7 +9,7 @@ export const SCREEN_TYPES = {
   GROUP: "group",
 };
 
-export const EASE_CATEGORIES = ["Engagement", "Aha", "Support", "Execution"];
+// export const EASE_CATEGORIES = ["Engagement", "Aha", "Support", "Execution"];
 
 export const SCREEN_TYPE_CONSTANTS = [
   {

@@ -30,14 +30,22 @@ export default function OutlineMannerFooter() {
           <ArrowLeft size={16} />
           <span>Back</span>
         </Button>
-        <Button
-          variant="default"
-          className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
-          onClick={handleSubmit}
-        >
-          <Stars />
-          <span>Create Comet</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            className="bg-white border border-primary text-primary justify-items-end"
+            onClick={handleBackClick}
+          >
+            Reset
+          </Button>
+          <Button
+            variant="default"
+            className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
+            onClick={handleSubmit}
+          >
+            <Stars />
+            <span>Create Comet</span>
+          </Button>
+        </div>
       </div>
     </div>
   );

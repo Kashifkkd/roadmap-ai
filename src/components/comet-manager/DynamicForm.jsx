@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { EASE_CATEGORIES } from "@/types/comet-manager";
+// import { EASE_CATEGORIES } from "@/types/comet-manager";
 
 export default function DynamicForm({ screen, onUpdate, onClose }) {
   const [formData, setFormData] = useState({
@@ -54,25 +54,25 @@ export default function DynamicForm({ screen, onUpdate, onClose }) {
     updateField(listName, newList);
   };
 
-  const renderEaseCategories = () => (
-    <div className="">
-      <div className="flex gap-2 flex-wrap">
-        {EASE_CATEGORIES.map((category) => (
-          <Button
-            key={category}
-            onClick={() => toggleEaseCategory(category)}
-            className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm bg-muted text-muted-foreground transition-colors ${
-              formData.easeCategories.includes(category)
-                ? "bg-primary text-white"
-                : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            {category}
-          </Button>
-        ))}
-      </div>
-    </div>
-  );
+  // const renderEaseCategories = () => (
+  //   <div className="">
+  //     <div className="flex gap-2 flex-wrap">
+  //       {SCREEN_TYPE_CONSTANTS.map((category) => (
+  //         <Button
+  //           key={category}
+  //           onClick={() => toggleEaseCategory(category)}
+  //           className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm bg-muted text-muted-foreground transition-colors ${
+  //             formData.easeCategories.includes(category)
+  //               ? "bg-primary text-white"
+  //               : "bg-gray-100 text-gray-700"
+  //           }`}
+  //         >
+  //           {category}
+  //         </Button>
+  //       ))}
+  //     </div>
+  //   </div>
+  // );
 
   const renderTextField = (label, field, placeholder = "") => (
     <div className="mb-4">
@@ -216,12 +216,12 @@ export default function DynamicForm({ screen, onUpdate, onClose }) {
 
   return (
     <div className="bg-white h-fit rounded-md no-scrollbar overflow-auto">
-      <div className="p-4 flex justify-between items-center">
+      {/* <div className="p-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <h3 className="font-medium text-primary text-xl">{screen.name}</h3>
         </div>
         {renderEaseCategories()}
-      </div>
+      </div> */}
       <div className="p-4">{renderFormContent()}</div>
     </div>
   );
