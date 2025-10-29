@@ -74,8 +74,9 @@ export default function OutlineMannerFooter() {
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: "path_creation",
-        comet_creation_data: parsedSessionData?.comet_creation_data || {},
-        response_outline: {},
+        // comet_creation_data: parsedSessionData?.comet_creation_data || {},
+        comet_data: parsedSessionData?.comet_creation_data || {},
+        response_outline: parsedSessionData?.response_outline || {},
         response_path: {},
         chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
         to_modify: {},

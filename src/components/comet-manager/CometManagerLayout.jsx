@@ -31,7 +31,7 @@ export default function CometManagerLayout() {
       <div className="flex flex-1 gap-2 p-2 overflow-y-auto">
         {/* Chat Window - Hidden on small screens, Desktop: 25% width */}
         <div className="lg:block w-full lg:w-1/4 h-full">
-          <ChatWindow />
+          <ChatWindow inputType="path_updation" />
         </div>
 
         {/* Comet Manager - Mobile: Full width, Desktop: 75% width */}

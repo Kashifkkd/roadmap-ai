@@ -143,6 +143,7 @@ export default function DashboardLayout() {
           {/* Chat Window - Hidden on small screens, Desktop: 25% width */}
           <div className="lg:block w-full lg:w-1/4 h-full lg:h-full">
             <ChatWindow
+              inputType={"comet_data_update"}
               initialInput={initialInput}
               onResponseReceived={setPrefillData}
               allMessages={allMessages}

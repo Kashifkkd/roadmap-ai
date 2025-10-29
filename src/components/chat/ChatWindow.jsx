@@ -6,7 +6,13 @@ import Loading from "@/components/common/Loading";
 import { graphqlClient } from "@/lib/graphql-client";
 import { useRouter } from "next/navigation";
 
-export default function ChatWindow({ initialInput = null, onResponseReceived = null, allMessages = [], setAllMessages = () => {} }) {
+export default function ChatWindow({ initialInput = null,
+  inputType = "comet_data_update",
+  onResponseReceived = null,
+  allMessages = [],
+  setAllMessages = () => { },
+  sessionData
+}) {
   const router = useRouter();
   const processedInitialInputRef = useRef(false);
 
@@ -129,10 +135,10 @@ export default function ChatWindow({ initialInput = null, onResponseReceived = n
       setSessionId(currentSessionId);
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
-        input_type: "comet_data_creation",
-        comet_creation_data: {},
-        response_outline: {},
-        response_path: {},
+        input_type: inputType,
+        comet_creation_data: sessionData?.comet_creation_data || {},
+        response_outline: sessionData?.response_outline || {},
+        response_path: sessionData?.response_path || {},
         chatbot_conversation: [
           { user: text }
         ],
@@ -171,7 +177,7 @@ export default function ChatWindow({ initialInput = null, onResponseReceived = n
             onResponseReceived(sessionData);
           }
           if (sessionData.chatbot_conversation) {
-            const agentMessage = sessionData.chatbot_conversation.find(conv => conv.agent)?.agent;
+            const agentMessage = sessionData?.chatbot_conversation?.find(conv => conv?.agent)?.agent;
             if (agentMessage) {
               setAllMessages(prev => {
                 // Remove the last message (processing message) and add the agent message
