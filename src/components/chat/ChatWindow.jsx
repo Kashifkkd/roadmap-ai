@@ -130,7 +130,7 @@ export default function ChatWindow({ initialInput = null, onResponseReceived = n
       setSessionId(currentSessionId);
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
-        input_type: "comet_creation",
+        input_type: "comet_data_creation",
         comet_creation_data: {},
         response_outline: {},
         response_path: {},
