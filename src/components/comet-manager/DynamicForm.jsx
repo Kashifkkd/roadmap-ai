@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -104,6 +104,33 @@ export default function DynamicForm({ screen, onUpdate, onClose }) {
     </div>
   );
 
+  const renderNumberField = (label, field, placeholder = "") => (
+    <div className="mb-4">
+      <Label className="block text-sm font-medium text-gray-700 mb-2">
+        {label}
+      </Label>
+      <Input
+        type="number"
+        value={formData[field] ?? ""}
+        onChange={(e) =>
+          updateField(
+            field,
+            e.target.value === "" ? "" : Number(e.target.value)
+          )
+        }
+        placeholder={placeholder}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+  );
+
+  const SectionHeader = ({ title }) => (
+    <div className="w-full mb-4">
+      <div className="h-2 bg-primary rounded mb-4" />
+      <h3 className="text-sm font-semibold text-primary">{title}</h3>
+    </div>
+  );
+
   const renderList = (label, field, buttonText) => (
     <div className="mb-4">
       <Label className="block text-sm font-medium text-gray-700 mb-2">
@@ -122,7 +149,7 @@ export default function DynamicForm({ screen, onUpdate, onClose }) {
               onClick={() => removeListItem(field, index)}
               className="px-2 py-2 text-red-500 hover:bg-red-50 rounded-lg"
             >
-              <X size={16} />
+              <Trash2 size={16} />
             </Button>
           </div>
         ))}
@@ -137,81 +164,157 @@ export default function DynamicForm({ screen, onUpdate, onClose }) {
     </div>
   );
 
-  const renderContentForm = () => (
+  // Force Rank
+  const renderForceRankSection = () => (
     <>
-      {renderTextField("Screen Title", "title")}
-      {renderTextField("Heading", "heading")}
-      {renderTextArea("Body Content", "bodyContent")}
-      {renderTextField("Image URL", "imageUrl", "Enter image URL")}
+      <SectionHeader title="Poll Question/Force Rank" />
+      {renderTextField("Title", "pollTitle")}
+      {renderTextField("Top Label", "topLabel")}
+      {renderTextField("Bottom Label", "bottomLabel")}
+      {renderTextArea("Key Learning", "keyLearning")}
     </>
   );
 
-  const renderPollForm = () => (
+  // Rank Options (separate)
+  const renderRankOptionsSection = () => (
+    <>{renderList("Rank Option", "options", "Add Option")}</>
+  );
+
+  // Poll Question / MCQ
+  const renderPollMcqSection = () => (
     <>
-      {renderTextField("Screen Title", "title")}
-      {renderTextField("Question", "question")}
-      {renderList("Options", "options", "Add Option")}
+      <SectionHeader title="Poll Question/MCQ" />
+      {renderTextField("Title (Question)", "mcqTitle")}
+      {renderTextField("Top Label", "mcqTopLabel")}
+      {renderTextField("Bottom Label", "mcqBottomLabel")}
+      {renderTextArea("Key Learning", "mcqKeyLearning")}
+      {renderList("Poll Options", "mcqOptions", "Add Option")}
     </>
   );
 
-  const renderColumnForm = () => (
+  // Poll Question / Linear
+  const renderPollLinearSection = () => (
     <>
-      {renderTextField("Screen Title", "title")}
-      {renderTextArea("Instructions", "instructions")}
-      {renderList("Left Column", "leftColumn", "Add Item")}
-      {renderList("Right Column", "rightColumn", "Add Match")}
-    </>
-  );
-
-  const renderReflectionForm = () => (
-    <>
-      {renderTextField("Screen Title", "title")}
-      {renderTextArea("Reflection Prompt", "reflectionPrompt")}
-      {renderTextField("Placeholder Text", "placeholderText")}
-    </>
-  );
-
-  const renderAssessmentForm = () => (
-    <>
-      {renderTextField("Screen Title", "title")}
-      {renderTextArea("Instructions", "instructions")}
+      <SectionHeader title="Poll Question/Linear" />
+      {renderTextField("Title", "linearTitle")}
+      {renderTextField("Top Label", "linearTopLabel")}
+      {renderTextField("Bottom Label", "linearBottomLabel")}
+      {renderTextArea("Key Learning", "linearKeyLearning")}
+      <div className="mb-4">
+        <Label className="block text-sm font-medium text-gray-700 mb-2">
+          Select Scale
+        </Label>
+        <div className="flex items-center gap-3">
+          <Input
+            type="number"
+            value={formData.linearScaleMin ?? ""}
+            onChange={(e) =>
+              updateField(
+                "linearScaleMin",
+                e.target.value === "" ? "" : Number(e.target.value)
+              )
+            }
+            placeholder="Enter Number"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <span className="text-sm font-medium text-gray-700">To</span>
+          <Input
+            type="number"
+            value={formData.linearScaleMax ?? ""}
+            onChange={(e) =>
+              updateField(
+                "linearScaleMax",
+                e.target.value === "" ? "" : Number(e.target.value)
+              )
+            }
+            placeholder="Enter Number"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
       <div className="mb-4 w-full">
         <Label className="block text-sm font-medium text-gray-700 mb-2">
-          Tool Selection
+          Benchmark Type
         </Label>
         <Select
-          value={formData.toolSelection || ""}
-          onValueChange={(value) => updateField("toolSelection", value)}
+          value={formData.linearBenchmarkType || ""}
+          onValueChange={(value) => updateField("linearBenchmarkType", value)}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select or create an assessment tool" />
+            <SelectValue placeholder="Select Value" />
           </SelectTrigger>
           <SelectContent className="w-full overflow-auto">
-            <SelectItem value="quiz">Quiz</SelectItem>
-            <SelectItem value="survey">Survey</SelectItem>
-            <SelectItem value="checklist">Checklist</SelectItem>
-            <SelectItem value="rubric">Rubric</SelectItem>
+            <SelectItem value="none">None</SelectItem>
+            <SelectItem value="team">Team</SelectItem>
+            <SelectItem value="company">Company</SelectItem>
+            <SelectItem value="industry">Industry</SelectItem>
           </SelectContent>
         </Select>
       </div>
     </>
   );
 
+  // Content + Image
+  const renderContentImageSection = () => (
+    <>
+      <SectionHeader title="Content + Image" />
+      {renderTextField("Title", "contentTitle")}
+      {renderTextArea("Body content", "contentBody")}
+      <div className="mb-4">
+        <Label className="block text-sm font-medium text-gray-700 mb-2">
+          Image
+        </Label>
+        <Input
+          type="file"
+          accept="image/*"
+          onChange={(e) =>
+            updateField(
+              "contentImage",
+              e.target.files && e.target.files[0] ? e.target.files[0] : null
+            )
+          }
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+    </>
+  );
+
+  // Reflection
+  const renderReflectionSection = () => (
+    <>
+      <SectionHeader title="Reflection" />
+      {renderTextField("Title", "reflectionTitle")}
+      <div className="mb-4">
+        <Label className="block text-sm font-medium text-gray-700 mb-2">
+          Image
+        </Label>
+        <Input
+          type="file"
+          accept="image/*"
+          onChange={(e) =>
+            updateField(
+              "reflectionImage",
+              e.target.files && e.target.files[0] ? e.target.files[0] : null
+            )
+          }
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      {renderTextArea("Prompt", "reflectionPrompt")}
+    </>
+  );
+
   const renderFormContent = () => {
-    switch (screen.type) {
-      case "content":
-        return renderContentForm();
-      case "poll":
-        return renderPollForm();
-      case "column":
-        return renderColumnForm();
-      case "reflection":
-        return renderReflectionForm();
-      case "assessment":
-        return renderAssessmentForm();
-      default:
-        return renderContentForm();
-    }
+    return (
+      <>
+        {renderForceRankSection()}
+        {renderRankOptionsSection()}
+        {renderPollMcqSection()}
+        {renderPollLinearSection()}
+        {renderContentImageSection()}
+        {renderReflectionSection()}
+      </>
+    );
   };
 
   return (
