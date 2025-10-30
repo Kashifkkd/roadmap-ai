@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import ClientDropdown from "@/components/common/ClientDropdown";
+import { getClients } from "@/api/client";
 
 export default function Header() {
   const pathname = usePathname();
@@ -30,6 +31,9 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [clients, setClients] = useState([]);
+  const [clientsLoading, setClientsLoading] = useState(false);
+  const [clientsError, setClientsError] = useState(false);
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
 
@@ -40,6 +44,11 @@ export default function Header() {
       name: "Jhon Doe",
       image_url: "/profile.png",
     },
+    {
+      id: 2,
+      name: "Jane Doe",
+      image_url: "/profile.png",
+    }
   ];
 
   // Mock collaborators data
@@ -74,12 +83,36 @@ export default function Header() {
     setIsAuthenticated(true);
   }, []);
 
-  // Set default selected client when component mounts
   useEffect(() => {
-    if (mockClients.length > 0 && !selectedClient) {
-      setSelectedClient(mockClients[0]);
+    const load = async () => {
+      setClientsLoading(true);
+      setClientsError(false);
+      try {
+        const res = await getClients({ skip: 0, limit: 5, enabledOnly: true });
+        if (res?.response && Array.isArray(res.response)) {
+          setClients(res.response);
+          if (!selectedClient && res.response.length > 0) {
+            setSelectedClient(res.response[0]);
+          }
+        } else {
+          setClients([]);
+        }
+      } catch (error) {
+        setClientsError(true);
+        setClients([]);
+      }
+      setClientsLoading(false);
+    };
+    if (isAuthenticated) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
+
+  // Update selectedClient if clients change (e.g., after fetch)
+  useEffect(() => {
+    if (clients.length > 0 && !selectedClient) {
+      setSelectedClient(clients[0]);
     }
-  }, [selectedClient]);
+  }, [clients]);
 
   const handleLogoClick = () => {
     router.push("/");
@@ -199,11 +232,11 @@ export default function Header() {
             {isAuthenticated && (
               <div className="hidden sm:block">
                 <ClientDropdown
-                  clients={mockClients}
+                  clients={clients}
                   selectedClient={selectedClient}
                   onClientSelect={handleClientSelect}
-                  isLoading={false}
-                  isError={false}
+                  isLoading={clientsLoading}
+                  isError={clientsError}
                 />
               </div>
             )}
@@ -345,11 +378,11 @@ export default function Header() {
               {isAuthenticated && (
                 <div className="mb-4 pb-4 border-b border-gray-200">
                   <ClientDropdown
-                    clients={mockClients}
+                    clients={clients}
                     selectedClient={selectedClient}
                     onClientSelect={handleClientSelect}
-                    isLoading={false}
-                    isError={false}
+                    isLoading={clientsLoading}
+                    isError={clientsError}
                   />
                 </div>
               )}

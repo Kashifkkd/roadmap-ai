@@ -10,23 +10,32 @@ export default function OutlineManagerLayout() {
   const [prefillData, setPrefillData] = useState(null);
 
   useEffect(() => {
-    const storedSessionData = localStorage.getItem("sessionData");
-    console.log(
-      "storedSessionData in OutlineManagerLayout:",
-      storedSessionData
-    );
-    setTimeout(() => {
-      if (storedSessionData) {
-        const parsedData = JSON.parse(storedSessionData);
-        const userMessage = sessionData?.chatbot_conversation?.find(conv => conv?.user)?.user;
-        const agentMessage = sessionData?.chatbot_conversation?.find(conv => conv?.agent)?.agent;
+    // Access localStorage only on the client
+    const storedSessionData = typeof window !== 'undefined' ? localStorage.getItem("sessionData") : null;
+    if (storedSessionData && !sessionData) {
+      setSessionData(JSON.parse(storedSessionData));
+    }
+  }, []);
 
-        if (agentMessage) {
-          setAllMessages(prev => [...prev, { from: "user", content: userMessage }, { from: "bot", content: agentMessage }]);
+  useEffect(() => {
+    if (!sessionData) return;
+    const userMessage = sessionData?.chatbot_conversation?.find(conv => conv?.user)?.user;
+    const agentMessage = sessionData?.chatbot_conversation?.find(conv => conv?.agent)?.agent;
+
+    if (agentMessage) {
+      setAllMessages(prev => {
+        const lastUser = prev.length > 1 ? prev[prev.length - 2]?.content : null;
+        const lastAgent = prev.length > 0 ? prev[prev.length - 1]?.content : null;
+        if (lastUser === userMessage && lastAgent === agentMessage) {
+          return prev;
         }
-        setSessionData(parsedData);
-      }
-    }, 0);
+        return [
+          ...prev,
+          { from: "user", content: userMessage },
+          { from: "bot", content: agentMessage }
+        ];
+      });
+    }
   }, [sessionData]);
 
   return (

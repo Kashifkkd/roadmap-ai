@@ -6,6 +6,16 @@ import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { isArrayWithValues } from "@/utils/isArrayWithValues";
 
+function isValidHttpUrl(string) {
+  if (!string) return false;
+  try {
+    const url = new URL(string);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch (_) {
+    return false;
+  }
+}
+
 export default function ClientDropdown({
   onClientSelect,
   clients = [],
@@ -49,11 +59,21 @@ export default function ClientDropdown({
         disabled={isLoading}
         className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 bg-background border-none shadow-none rounded-lg text-sm font-medium text-gray-800 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed active:bg-primary-100"
       >
-        {(selectedClient?.image_url ||
-          (isArrayWithValues(clients) && clients[0]?.image_url)) && (
+        {(
+          isValidHttpUrl(selectedClient?.image_url)
+          || (isArrayWithValues(clients) && isValidHttpUrl(clients[0]?.image_url))
+        ) ? (
           <Image
             src={selectedClient?.image_url || clients[0]?.image_url}
-            alt={selectedClient?.name || clients[0]?.name}
+            alt={selectedClient?.name || clients[0]?.name || 'Client profile image'}
+            width={24}
+            height={24}
+            className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-gray-300"
+          />
+        ) : (
+          <Image
+            src="/profile.png"
+            alt={selectedClient?.name || clients[0]?.name || 'Client profile image'}
             width={24}
             height={24}
             className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-gray-300"
@@ -79,22 +99,28 @@ export default function ClientDropdown({
               </div>
             ) : (
               isArrayWithValues(clients) &&
-              clients?.slice(0, 1).map((client) => (
+              clients.map((client) => (
                 <Button
                   key={client?.id}
                   onClick={() => handleClientClick(client)}
                   className="flex justify-start items-start gap-2 px-3 sm:px-4 py-2 bg-background border-none shadow-none hover:bg-primary-100 rounded transition-colors text-left"
                 >
-                  {client?.image_url ? (
+                  {isValidHttpUrl(client?.image_url) ? (
                     <Image
                       src={client?.image_url}
-                      alt={client.name}
+                      alt={client?.name || 'Client profile image'}
                       className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-gray-300 shrink-0"
                       width={24}
                       height={24}
                     />
                   ) : (
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-muted border border-gray-300 shrink-0" />
+                    <Image
+                      src="/profile.png"
+                      alt={client?.name || 'Client profile image'}
+                      className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-gray-300 shrink-0"
+                      width={24}
+                      height={24}
+                    />
                   )}
                   <span className="text-sm sm:text-base font-semibold text-gray-900 truncate">
                     {client?.name}
