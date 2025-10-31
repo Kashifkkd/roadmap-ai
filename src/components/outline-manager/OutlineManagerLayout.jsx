@@ -22,7 +22,7 @@ export default function OutlineManagerLayout() {
     const userMessage = sessionData?.chatbot_conversation?.find(conv => conv?.user)?.user;
     const agentMessage = sessionData?.chatbot_conversation?.find(conv => conv?.agent)?.agent;
 
-    if (agentMessage) {
+    if (agentMessage || userMessage) {
       setAllMessages(prev => {
         const lastUser = prev.length > 1 ? prev[prev.length - 2]?.content : null;
         const lastAgent = prev.length > 0 ? prev[prev.length - 1]?.content : null;
@@ -51,7 +51,7 @@ export default function OutlineManagerLayout() {
           />
         </div>
         <div className="w-full lg:w-3/4 h-full">
-          <OutlineMannerCreateComet sessionData={sessionData} prefillData={prefillData} />
+          <OutlineMannerCreateComet sessionData={sessionData} prefillData={prefillData} setAllMessages={setAllMessages} />
         </div>
       </div>
     </div>

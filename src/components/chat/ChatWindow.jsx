@@ -30,6 +30,17 @@ export default function ChatWindow({ initialInput = null,
     };
   }, []);
 
+  // Initialize sessionId from localStorage so subscription can start even if other components send messages
+  useEffect(() => {
+    if (sessionId) return;
+    try {
+      const existing = localStorage.getItem('sessionId');
+      if (existing) {
+        setSessionId(existing);
+      }
+    } catch {}
+  }, [sessionId]);
+
   // Function to parse response and extract form data
   const parseResponseForFormData = (responseText) => {
     const data = {
@@ -176,11 +187,11 @@ export default function ChatWindow({ initialInput = null,
           if (onResponseReceived) {
             onResponseReceived(sessionData);
           }
+          localStorage.setItem("sessionData", JSON.stringify(sessionData));
           if (sessionData.chatbot_conversation) {
             const agentMessage = sessionData?.chatbot_conversation?.find(conv => conv?.agent)?.agent;
             if (agentMessage) {
               setAllMessages(prev => {
-                // Remove the last message (processing message) and add the agent message
                 const updatedMessages = prev.slice(0, -1);
                 return [...updatedMessages, { from: "bot", content: agentMessage }];
               });

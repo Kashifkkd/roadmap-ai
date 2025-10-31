@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { isArrayWithValues } from "@/utils/isArrayWithValues";
 import SectionHeader from "@/components/section-header";
 import OutlineMannerFooter from "./OutlineMannerFooter";
@@ -9,22 +9,33 @@ import { Label } from "@/components/ui/Label";
 import { Button } from "@/components/ui/Button";
 import { Plus, GripVertical, Zap, ChevronDown } from "lucide-react";
 import SelectIcon from "@/components/icons/SelectIcon";
+import ChapterTextarea from "./ChapterTextarea";
 
-export default function OutlineMannerCreateComet({ sessionData }) {
-  // Use session data for chapters if available, otherwise fall back to default health model
+export default function OutlineMannerCreateComet({ sessionData, prefillData, setAllMessages }) {
   console.log("sessionData in OutlineMannerCreateComet:", sessionData);
-  const chapters = isArrayWithValues(sessionData?.response_outline)
-    ? sessionData.response_outline.map((chapter) => ({
-        chapter: chapter?.chapter || "Untitled Chapter",
-        steps: isArrayWithValues(chapter?.steps) ? chapter.steps : [],
-      }))
-    : [];
+  console.log("prefillData in OutlineMannerCreateComet:", prefillData);
+
+  const sourceOutline = useMemo(() => {
+    if (isArrayWithValues(prefillData?.response_outline)) return prefillData.response_outline;
+    if (isArrayWithValues(sessionData?.response_outline)) return sessionData.response_outline;
+    return [];
+  }, [prefillData, sessionData]);
+
+  const chapters = useMemo(() => {
+    return isArrayWithValues(sourceOutline)
+      ? sourceOutline.map((chapter) => ({
+          chapter: chapter?.chapter || "Untitled Chapter",
+          steps: isArrayWithValues(chapter?.steps) ? chapter.steps : [],
+        }))
+      : [];
+  }, [sourceOutline]);
+
   console.log("chapters", chapters);
   const [expandedChapters, setExpandedChapters] = useState([]);
 
-  // State for selected chapter
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [selectedStep, setSelectedStep] = useState(null);
+  const [showChapterTextarea, setShowChapterTextarea] = useState(false);
 
   const handleChapterClick = (index, chapter) => {
     setSelectedChapter(chapter);
@@ -52,11 +63,21 @@ export default function OutlineMannerCreateComet({ sessionData }) {
                 <Button
                   variant="outline"
                   className="text-primary border-primary"
+                  onClick={() => setShowChapterTextarea(true)}
                 >
                   <Plus size={16} />
                   Add Chapter
                 </Button>
               </div>
+              {showChapterTextarea ? (
+                <div className="p-2 border-b border-gray-200">
+                  <ChapterTextarea
+                    sessionData={sessionData}
+                    setAllMessages={setAllMessages}
+                    onClose={() => setShowChapterTextarea(false)}
+                  />
+                </div>
+              ) : null}
               <div className="py-2 flex flex-col gap-2">
                 {isArrayWithValues(chapters) ? (
                   chapters.map((chapter, index) => (
