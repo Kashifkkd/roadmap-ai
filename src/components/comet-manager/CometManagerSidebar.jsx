@@ -26,6 +26,7 @@ export default function CometManagerSidebar({
 }) {
   const [tab, setTab] = useState(0);
   const [selectedChapter, setSelectedChapter] = useState(null);
+  const [expandedChapters, setExpandedChapters] = useState(new Set());
 
   // Source materials state
   const [sourceMaterials, setSourceMaterials] = useState([]);
@@ -34,6 +35,18 @@ export default function CometManagerSidebar({
 
   const handleTabChange = (index) => {
     setTab(index);
+  };
+
+  const toggleChapter = (chapterId) => {
+    setExpandedChapters((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(chapterId)) {
+        newSet.delete(chapterId);
+      } else {
+        newSet.add(chapterId);
+      }
+      return newSet;
+    });
   };
 
   // Fetch source materials when Sources tab is selected
@@ -180,50 +193,85 @@ export default function CometManagerSidebar({
           {tab === 0 &&
             (chapters && chapters.length > 0 ? (
               chapters.map((chapter, index) => {
-                const chapterId = `chapter-${index}`;
+                const chapterId = chapter.id || `chapter-${index}`;
                 const stepCount = chapter.steps?.length || 0;
                 const isSelected = selectedChapter === chapterId;
+                const isExpanded = expandedChapters.has(chapterId);
 
                 return (
-                  <div
-                    key={index}
-                    onClick={() => {
-                      setSelectedChapter(chapterId);
-                      if (onChapterClick) {
-                        onChapterClick(chapterId, chapter);
-                      }
-                    }}
-                    className={`flex items-center gap-2 p-4 bg-white border rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md ${
-                      isSelected
-                        ? "border-primary bg-primary/5"
-                        : "border-gray-300 hover:border-gray-400"
-                    }`}
-                  >
+                  <div key={chapterId} className="flex flex-col gap-2">
+                    {/* Chapter Header */}
                     <div
-                      className={`rounded-full p-1 ${
-                        isSelected ? "bg-primary" : "bg-primary-100"
+                      onClick={() => {
+                        setSelectedChapter(chapterId);
+                        toggleChapter(chapterId);
+                        if (onChapterClick) {
+                          onChapterClick(chapterId, chapter);
+                        }
+                      }}
+                      className={`flex items-center gap-2 p-4 bg-white border rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md ${
+                        isSelected
+                          ? "border-primary bg-primary/5"
+                          : "border-gray-300 hover:border-gray-400"
                       }`}
                     >
-                      <ChevronDown
-                        size={16}
-                        className={isSelected ? "text-white" : "text-primary"}
-                      />
-                    </div>
-                    <div className="flex flex-col font-semibold flex-1">
-                      <h2 className="text-xs text-gray-900">
-                        Chapter {index + 1}
-                      </h2>
-                      <p
-                        className={`text-base ${
-                          isSelected ? "text-primary" : "text-gray-800"
+                      <div
+                        className={`rounded-full p-1 ${
+                          isSelected ? "bg-primary" : "bg-primary-100"
                         }`}
                       >
-                        {chapter.chapter || chapter.name || "Untitled Chapter"}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {stepCount} {stepCount === 1 ? "step" : "steps"}
-                      </p>
+                        <ChevronDown
+                          size={16}
+                          className={`${
+                            isSelected ? "text-white" : "text-primary"
+                          } transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                        />
+                      </div>
+                      <div className="flex flex-col font-semibold flex-1">
+                        <h2 className="text-xs text-gray-900">
+                          Chapter {index + 1}
+                        </h2>
+                        <p
+                          className={`text-base ${
+                            isSelected ? "text-primary" : "text-gray-800"
+                          }`}
+                        >
+                          {chapter.chapter || chapter.name || "Untitled Chapter"}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {stepCount} {stepCount === 1 ? "step" : "steps"}
+                        </p>
+                      </div>
                     </div>
+
+                    {/* Expanded Steps */}
+                    {isExpanded && chapter.steps && chapter.steps.length > 0 && (
+                      <div className="flex flex-col gap-2 ml-4">
+                        {chapter.steps.map((step, stepIndex) => {
+                          const stepId = step.id || `step-${index}-${stepIndex}`;
+                          return (
+                            <div
+                              key={stepId}
+                              className="flex items-center gap-2 p-3 bg-white border border-gray-200 rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md hover:border-gray-400"
+                            >
+                              <div className="rounded-full p-1.5 bg-gray-100">
+                                <File size={14} className="text-gray-600" />
+                              </div>
+                              <div className="flex flex-col font-medium flex-1">
+                                <p className="text-sm text-gray-900">
+                                  {step.name || `Step ${stepIndex + 1}`}
+                                </p>
+                                {step.description && (
+                                  <p className="text-xs text-gray-500 mt-0.5">
+                                    {step.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })

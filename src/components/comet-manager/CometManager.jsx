@@ -118,7 +118,11 @@ export default function CometManager({ sessionData }) {
     deleteScreen: deleteScreenData,
     reorderScreensList,
     insertScreenAt,
-  } = useCometManager();
+  } = useCometManager(sessionData);
+
+  console.log("screens", screens)
+  console.log("chapters", chapters)
+  console.log("sessionData", sessionData)
 
   const [currentScreen, setCurrentScreen] = useState(0);
   const [selectedScreen, setSelectedScreen] = useState(null);
@@ -131,7 +135,8 @@ export default function CometManager({ sessionData }) {
     if (screens && screens.length > 0 && !selectedScreen) {
       setSelectedScreen(screens[0]);
     }
-  }, [screens, selectedScreen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screens]);
 
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
