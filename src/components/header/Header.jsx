@@ -48,7 +48,7 @@ export default function Header() {
       id: 2,
       name: "Jane Doe",
       image_url: "/profile.png",
-    }
+    },
   ];
 
   // Mock collaborators data
@@ -138,15 +138,19 @@ export default function Header() {
 
   // Small presentational helpers
   const Collaborators = () => (
-    <div className="flex items-center -space-x-4">
-      {mockCollaborators.map((collaborator) => (
+    <div className="flex items-center">
+      {mockCollaborators.map((collaborator, index) => (
         <div
           key={collaborator.id}
-          className="relative w-9 h-9 rounded-full border-2 border-white overflow-hidden bg-gray-100 z-10"
+          className="relative w-9 h-9 rounded-full border-2 border-white overflow-hidden bg-gray-100"
+          style={{
+            marginLeft: index > 0 ? "-16px" : "0",
+            zIndex: mockCollaborators.length - index,
+          }}
           title={collaborator.name}
         >
           <Image
-            src={collaborator.image_url}
+            src={collaborator.image_url || "/profile.png"}
             alt={collaborator.name}
             width={36}
             height={36}
@@ -159,11 +163,11 @@ export default function Header() {
 
   const FeedbackButton = ({ compact = false }) => (
     <button
-      className={`flex items-center gap-2 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700 hover:cursor-pointer ${
+      className={`flex items-center gap-2 rounded-md bg-[#ECF7F6] hover:bg-[#E2F2F1] transition-colors text-gray-700 hover:cursor-pointer ${
         compact ? "px-2 py-1" : "px-3 py-2"
       }`}
     >
-      <MessagesSquare className="w-4 h-4" />
+      <Image src="/Dialog 2.png" alt="" width={20} height={20} />
       {!compact && <span className="text-sm font-medium">Feedback</span>}
     </button>
   );
@@ -178,7 +182,8 @@ export default function Header() {
     <div className="flex items-center gap-3 my-1">
       <FeedbackButton />
       <button className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700">
-        <Download className="w-5 h-5" />
+        {/* <Download className="w-5 h-5" /> */}
+        <Image src="/download.png" alt="" width={20} height={20} />
       </button>
       <Collaborators />
       <InviteButton />
@@ -186,10 +191,13 @@ export default function Header() {
   );
 
   const RightSectionCometManager = () => (
-    <div className="flex items-center gap-2 sm:gap-3 my-1">
-      <div className="flex items-center gap-1 px-2 py-1 rounded-sm bg-primary-50 text-primary border border-primary-200 hover:cursor-pointer">
-        <Pencil className="w-4 h-4" />
-        <span className="text-xs font-medium">Editor</span>
+    <div className="flex items-center  gap-2 my-1">
+      <div
+        className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-primary-50 text-primary border-2 border-primary-400 hover:cursor-pointer"
+        style={{ width: "80px", height: "36px" }}
+      >
+        <Pencil className="w-[16.67px] h-[16.67px]" />
+        <span className="text-[14px] font-medium">Editor</span>
       </div>
       <button className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700 hover:cursor-pointer">
         <Eye className="w-5 h-5" />
@@ -211,7 +219,7 @@ export default function Header() {
   );
 
   return (
-    <header className="px-4 pt-4 bg-primary-50 border-gray-200 w-full">
+    <header className="px-2 pt-2 bg-primary-50 border-gray-200 w-full">
       <div className="bg-white px-6 py-1 rounded-lg  w-full">
         <div className="flex items-center justify-between w-full h-full text-base">
           <div className="flex items-center gap-4 sm:gap-8 lg:gap-16">
@@ -221,8 +229,8 @@ export default function Header() {
                 <Image
                   src="/logo.png"
                   alt="Kyper Logo"
-                  width={90}
-                  height={25}
+                  width={112}
+                  height={52}
                   // className="w-10 h-10"
                 />
               </div>
@@ -240,20 +248,21 @@ export default function Header() {
                 />
               </div>
             )}
-
-            <div className=" size-7 cursor-pointer bg-gray-100 rounded-sm flex items-center justify-center -ml-4 ">
-              <Image src="home.svg" alt="" width={20} height={20} />
-            </div>
+            {!isHome && (
+              <div className=" size-7 cursor-pointer bg-gray-100 rounded-sm flex items-center justify-center -ml-12">
+                <Image src="/home.png" alt="" width={20} height={20} />
+              </div>
+            )}
 
             {isHome && (
-              <nav className="hidden lg:flex items-stretch gap-8 h-12">
+              <nav className="hidden lg:flex items-stretch gap-8 h-10">
                 {navItems.map((item) => (
                   <button
                     key={item.name}
                     onClick={() => router.push(item.path)}
-                    className={`relative font-medium text-sm tracking-wide h-full transition-colors duration-300 group ${
+                    className={`relative font-medium text-base tracking-wide h-full transition-colors duration-300 group ${
                       pathname === item.path
-                        ? "text-blue-600"
+                        ? "text-gray-700"
                         : "text-gray-700 hover:text-blue-600"
                     }`}
                   >
@@ -269,7 +278,16 @@ export default function Header() {
           {/* Center title for comet-manager */}
           {isCometManager && (
             <div className="hidden md:flex flex-1 items-center justify-center">
-              <span className="text-2xl font-semibold text-primary select-none">
+              <span
+                className="text-primary select-none"
+                style={{
+                  fontFamily: "Noto Serif",
+                  fontWeight: 500,
+                  fontSize: "24px",
+                  lineHeight: "32px",
+                  letterSpacing: "0%",
+                }}
+              >
                 New Manager Essentials
               </span>
             </div>
@@ -280,21 +298,33 @@ export default function Header() {
               {/* User Profile Section */}
               {isAuthenticated ? (
                 <div className="relative">
-                  <button
-                    onClick={toggleUserMenu}
-                    className="flex items-center gap-2 sm:gap-3 cursor-pointer outline-none hover:opacity-80 transition-opacity"
-                  >
-                    <div className="hidden sm:flex flex-col justify-start">
-                      <span className="text-sm font-medium text-gray-700">
-                        Adam S.
-                      </span>
-                      <span className="text-xs font-medium text-gray-300">
-                        Super Admin
+                  <div className="flex items-center gap-2">
+                    <div className="relative size-6 cursor-pointer bg-gray-100 rounded-full flex items-center justify-center">
+                      <Bell className="w-3 h-3 text-gray-600" />
+                      <span className="absolute -top-[2px] -right-[2px] flex h-[10px] min-w-[10px] items-center justify-center rounded-full bg-red-500 px-[3px] text-[8px] leading-none text-white ring-2 ring-white">
+                        4
                       </span>
                     </div>
 
-                    <ChevronDown className="w-4 h-4 text-gray-600" />
-                  </button>
+                    <div className="size-8 cursor-pointer bg-gray-100 rounded-full flex items-center justify-center">
+                      <Image src="/profile.png" alt="" width={32} height={32} />
+                    </div>
+                    <button
+                      onClick={toggleUserMenu}
+                      className="flex items-center gap-2 sm:gap-3 cursor-pointer outline-none hover:opacity-80 transition-opacity"
+                    >
+                      <div className="hidden sm:flex flex-col justify-start">
+                        <span className="text-sm font-medium text-gray-700">
+                          Adam S.
+                        </span>
+                        <span className="text-xs font-medium text-gray-300">
+                          Super Admin
+                        </span>
+                      </div>
+
+                      <ChevronDown className="w-4 h-4 text-gray-600" />
+                    </button>
+                  </div>
 
                   {isUserMenuOpen && (
                     <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
@@ -354,6 +384,13 @@ export default function Header() {
                   </button>
                 </div>
               )}
+
+              <button
+                onClick={() => router.push("/login")}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+              >
+                Login
+              </button>
 
               <button
                 onClick={toggleMobileMenu}
