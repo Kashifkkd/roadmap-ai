@@ -26,7 +26,8 @@ import {
 import Image from "next/image";
 import ClientDropdown from "@/components/common/ClientDropdown";
 import { getClients } from "@/api/client";
-import { inviteUser } from "@/api/invite";
+import { shareComet } from "@/api/shareComet";
+import { publishComet } from "@/api/publishComet";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -38,6 +39,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export default function Header() {
   const pathname = usePathname();
@@ -53,6 +55,7 @@ export default function Header() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [isInviting, setIsInviting] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
 
@@ -166,7 +169,7 @@ export default function Header() {
 
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(inviteEmail)) {
@@ -175,21 +178,66 @@ export default function Header() {
     }
 
     setIsInviting(true);
-    
+
     try {
-      const response = await inviteUser({ email: inviteEmail });
-      
+      // Get sessionId from localStorage
+      const sessionId = typeof window !== "undefined" ? localStorage.getItem("sessionId") : null;
+
+      if (!sessionId) {
+        alert("No comet session found. Please create or open a comet first.");
+        setIsInviting(false);
+        return;
+      }
+
+      const response = await shareComet(sessionId, inviteEmail);
+
       if (response && response.response && !response.error) {
-        alert(`Invitation sent to ${inviteEmail}`);
+        toast.success(`Comet shared with ${inviteEmail}`);
         handleInviteClose();
       } else {
-        alert("Failed to send invitation. Please try again.");
+        console.log(">>>>>", response)
+        // Check for error details in response
+        const errorMessage = response?.response?.data?.detail ||
+          "Failed to share comet. Please try again.";
+
+        toast.error(errorMessage);
       }
     } catch (error) {
-      console.error("Failed to send invitation:", error);
-      alert("Failed to send invitation. Please try again.");
+      console.error("Failed to share comet:", error);
+      const errorMessage = error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to share comet. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setIsInviting(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    setIsPublishing(true);
+
+    try {
+      // Get sessionId from localStorage
+      const sessionId = typeof window !== "undefined" ? localStorage.getItem("sessionId") : null;
+
+      if (!sessionId) {
+        alert("No comet session found. Please create or open a comet first.");
+        setIsPublishing(false);
+        return;
+      }
+
+      const response = await publishComet(sessionId);
+
+      if (response && response.response && !response.error) {
+        toast.success("Comet published successfully!");
+      } else {
+        const errorResponse = response?.response?.data?.detail || "Failed to publish comet. Please try again."
+        toast.error(errorResponse);
+      }
+    } catch (error) {
+      console.error("Failed to publish comet:", error);
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -220,9 +268,8 @@ export default function Header() {
 
   const FeedbackButton = ({ compact = false }) => (
     <button
-      className={`flex items-center gap-2 rounded-md bg-[#ECF7F6] hover:bg-[#E2F2F1] transition-colors text-gray-700 hover:cursor-pointer ${
-        compact ? "px-2 py-1" : "px-3 py-2"
-      }`}
+      className={`flex items-center gap-2 rounded-md bg-[#ECF7F6] hover:bg-[#E2F2F1] transition-colors text-gray-700 hover:cursor-pointer ${compact ? "px-2 py-1" : "px-3 py-2"
+        }`}
     >
       <Image src="/Dialog 2.png" alt="" width={20} height={20} />
       {!compact && <span className="text-sm font-medium">Feedback</span>}
@@ -230,7 +277,7 @@ export default function Header() {
   );
 
   const InviteButton = () => (
-    <button 
+    <button
       onClick={handleInviteClick}
       className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700 cursor-pointer"
     >
@@ -273,8 +320,12 @@ export default function Header() {
         <Collaborators />
       </div>
       <InviteButton />
-      <button className="px-4 py-2 rounded-md bg-primary hover:bg-primary-dark text-white text-sm font-medium hover:cursor-pointer">
-        Publish
+      <button
+        onClick={handlePublish}
+        disabled={isPublishing}
+        className="px-4 py-2 rounded-md bg-primary hover:bg-primary-dark text-white text-sm font-medium hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isPublishing ? "Publishing..." : "Publish"}
       </button>
     </div>
   );
@@ -292,7 +343,7 @@ export default function Header() {
                   alt="Kyper Logo"
                   width={112}
                   height={52}
-                  // className="w-10 h-10"
+                // className="w-10 h-10"
                 />
               </div>
             </div>
@@ -321,11 +372,10 @@ export default function Header() {
                   <button
                     key={item.name}
                     onClick={() => router.push(item.path)}
-                    className={`relative font-medium text-base tracking-wide h-full transition-colors duration-300 group ${
-                      pathname === item.path
+                    className={`relative font-medium text-base tracking-wide h-full transition-colors duration-300 group ${pathname === item.path
                         ? "text-gray-700"
                         : "text-gray-700 hover:text-blue-600"
-                    }`}
+                      }`}
                   >
                     {item.name}
 
@@ -492,11 +542,10 @@ export default function Header() {
                     router.push(item.path);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full text-left px-3 py-2 font-medium rounded-lg transition-colors ${
-                    pathname === item.path
+                  className={`w-full text-left px-3 py-2 font-medium rounded-lg transition-colors ${pathname === item.path
                       ? "text-blue-600 bg-blue-50"
                       : "text-gray-700 hover:bg-gray-50"
-                  }`}
+                    }`}
                 >
                   {item.name}
                 </button>
