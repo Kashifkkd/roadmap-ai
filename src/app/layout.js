@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/header/Header";
 import { usePathname } from "next/navigation";
+import { PreviewModeProvider } from "@/contexts/PreviewModeContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,7 +42,9 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-[100vh] w-[100vw]`}
       >
-        <LayoutContent>{children}</LayoutContent>
+        <PreviewModeProvider>
+          <LayoutContent>{children}</LayoutContent>
+        </PreviewModeProvider>
       </body>
     </html>
   );

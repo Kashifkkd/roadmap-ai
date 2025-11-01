@@ -45,6 +45,7 @@ import DynamicForm from "./DynamicForm";
 import ScreenCard from "./ScreenCard";
 import AddScreenPopup from "./AddScreenPopup";
 import DevicePreview from "./DevicePreview";
+import FromDoerToEnabler from "./FromDoerToEnabler";
 
 const SCREEN_TYPES = [
   {
@@ -107,7 +108,7 @@ const SCREEN_TYPES = [
 
 const EASE_CATEGORIES = ["Engagement", "Aha", "Support", "Execution"];
 
-export default function CometManager({ sessionData }) {
+export default function CometManager({ sessionData, isPreviewMode }) {
   // Use comet manager hook to get actual data
   const {
     isLoading,
@@ -251,7 +252,7 @@ export default function CometManager({ sessionData }) {
             </div>
 
             {/*right section */}
-            <div className="flex flex-col col-span-11 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl">
+            {isPreviewMode === false ? <div className="flex flex-col col-span-11 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl">
               <div className="flex flex-col flex-1 overflow-hidden">
                 {selectedScreen && (
                   <div className="shrink-0 p-4 rounded-t-2xl">
@@ -338,7 +339,11 @@ export default function CometManager({ sessionData }) {
                   )}
                 </div>
               </div>
-            </div>
+            </div> : (
+              <div className="flex flex-col col-span-11 h-full overflow-hidden min-w-0 bg-white rounded-xl">
+                <FromDoerToEnabler />
+              </div>
+            )}
           </div>
         </>
       )}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { usePreviewMode } from "@/contexts/PreviewModeContext";
 import {
   Bell,
   ChevronDown,
@@ -19,6 +20,7 @@ import {
   MessagesSquare,
   Pencil,
   Eye,
+  EyeOff,
 } from "lucide-react";
 import Image from "next/image";
 import ClientDropdown from "@/components/common/ClientDropdown";
@@ -27,6 +29,7 @@ import { getClients } from "@/api/client";
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
+  const { isPreviewMode, setIsPreviewMode } = usePreviewMode();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -199,8 +202,8 @@ export default function Header() {
         <Pencil className="w-[16.67px] h-[16.67px]" />
         <span className="text-[14px] font-medium">Editor</span>
       </div>
-      <button className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700 hover:cursor-pointer">
-        <Eye className="w-5 h-5" />
+      <button onClick={() => setIsPreviewMode(!isPreviewMode)} className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700 hover:cursor-pointer">
+        {isPreviewMode ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
       </button>
       <button className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700 hover:cursor-pointer">
         <Settings className="w-5 h-5" />
