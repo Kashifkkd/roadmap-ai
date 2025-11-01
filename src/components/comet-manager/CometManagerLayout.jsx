@@ -6,7 +6,7 @@ import CometManager from "./CometManager";
 import { usePreviewMode } from "@/contexts/PreviewModeContext";
 
 export default function CometManagerLayout() {
-  const { isPreviewMode } = usePreviewMode();
+  const { isPreviewMode, setIsPreviewMode } = usePreviewMode();
   const [sessionData, setSessionData] = useState(null);
   const [allMessages, setAllMessages] = useState([]);
   const [prefillData, setPrefillData] = useState(null);
@@ -74,6 +74,7 @@ export default function CometManagerLayout() {
             prefillData={prefillData}
             setAllMessages={setAllMessages}
             isPreviewMode={isPreviewMode}
+            setIsPreviewMode={setIsPreviewMode}
           />
         </div>
       </div>

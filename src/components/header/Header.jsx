@@ -21,10 +21,23 @@ import {
   Pencil,
   Eye,
   EyeOff,
+  Mail,
 } from "lucide-react";
 import Image from "next/image";
 import ClientDropdown from "@/components/common/ClientDropdown";
 import { getClients } from "@/api/client";
+import { inviteUser } from "@/api/invite";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Header() {
   const pathname = usePathname();
@@ -37,6 +50,9 @@ export default function Header() {
   const [clients, setClients] = useState([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [clientsError, setClientsError] = useState(false);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [isInviting, setIsInviting] = useState(false);
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
 
@@ -139,6 +155,44 @@ export default function Header() {
     console.log("Selected client:", client);
   };
 
+  const handleInviteClick = () => {
+    setIsInviteDialogOpen(true);
+  };
+
+  const handleInviteClose = () => {
+    setIsInviteDialogOpen(false);
+    setInviteEmail("");
+  };
+
+  const handleInviteSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(inviteEmail)) {
+      alert("Please enter a valid email address");
+      return;
+    }
+
+    setIsInviting(true);
+    
+    try {
+      const response = await inviteUser({ email: inviteEmail });
+      
+      if (response && response.response && !response.error) {
+        alert(`Invitation sent to ${inviteEmail}`);
+        handleInviteClose();
+      } else {
+        alert("Failed to send invitation. Please try again.");
+      }
+    } catch (error) {
+      console.error("Failed to send invitation:", error);
+      alert("Failed to send invitation. Please try again.");
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
   // Small presentational helpers
   const Collaborators = () => (
     <div className="flex items-center">
@@ -176,7 +230,11 @@ export default function Header() {
   );
 
   const InviteButton = () => (
-    <button className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700">
+    <button 
+      onClick={handleInviteClick}
+      className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700 cursor-pointer"
+    >
+      <UserPlus size={18} className="text-gray-600" />
       <span className="text-sm font-medium">Invite</span>
     </button>
   );
@@ -460,6 +518,55 @@ export default function Header() {
             onClick={() => setIsUserMenuOpen(false)}
           />
         )}
+
+        {/* Invite Dialog */}
+        <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Invite User</DialogTitle>
+              <DialogDescription>
+                Send an invitation to collaborate on this project
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleInviteSubmit}>
+              <div className="mb-4">
+                <Label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                  <Input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="Enter email address"
+                    required
+                    className="w-full pl-10 pr-3 py-2"
+                    disabled={isInviting}
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleInviteClose}
+                  disabled={isInviting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isInviting}
+                >
+                  {isInviting ? "Sending..." : "Send Invite"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </header>
   );

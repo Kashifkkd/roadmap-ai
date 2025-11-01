@@ -18,6 +18,8 @@ import {
   Target,
   Menu,
   Expand,
+  Maximize2,
+  ExpandIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -46,6 +48,13 @@ import ScreenCard from "./ScreenCard";
 import AddScreenPopup from "./AddScreenPopup";
 import DevicePreview from "./DevicePreview";
 import FromDoerToEnabler from "./FromDoerToEnabler";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 
 const SCREEN_TYPES = [
   {
@@ -108,7 +117,7 @@ const SCREEN_TYPES = [
 
 const EASE_CATEGORIES = ["Engagement", "Aha", "Support", "Execution"];
 
-export default function CometManager({ sessionData, isPreviewMode }) {
+export default function CometManager({ sessionData, isPreviewMode, setIsPreviewMode }) {
   // Use comet manager hook to get actual data
   const {
     isLoading,
@@ -252,7 +261,7 @@ export default function CometManager({ sessionData, isPreviewMode }) {
             </div>
 
             {/*right section */}
-            {isPreviewMode === false ? <div className="flex flex-col col-span-11 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl">
+            <div className="flex flex-col col-span-11 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl">
               <div className="flex flex-col flex-1 overflow-hidden">
                 {selectedScreen && (
                   <div className="shrink-0 p-4 rounded-t-2xl">
@@ -339,11 +348,7 @@ export default function CometManager({ sessionData, isPreviewMode }) {
                   )}
                 </div>
               </div>
-            </div> : (
-              <div className="flex flex-col col-span-11 h-full overflow-hidden min-w-0 bg-white rounded-xl">
-                <FromDoerToEnabler />
-              </div>
-            )}
+            </div>
           </div>
         </>
       )}
@@ -355,6 +360,32 @@ export default function CometManager({ sessionData, isPreviewMode }) {
         onAddScreen={handleAddNewScreen}
         screenTypes={SCREEN_TYPES}
       />
+
+      {/* Preview Drawer */}
+      <Drawer direction="right" open={isPreviewMode} onOpenChange={setIsPreviewMode}>
+        <DrawerContent className="min-w-[50vw] sm:max-w-4xl h-screen bg-primary-50  p-0">
+          {/* Preview Header */}
+          <div className="bg-primary-50 border-b border-gray-200 py-3  px-4 flex items-center justify-between">
+            <h3 className="text-[1.125rem] font-bold text-gray-900">Preview</h3>
+            <div className="flex items-center gap-2">
+              <button className="p-1 hover:bg-gray-100 rounded border-1 border-black transition-colors">
+                <ExpandIcon size={14} className="text-black stroke-[2.5]" />
+              </button>
+              <button 
+                onClick={() => setIsPreviewMode(false)}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+              >
+                <X size={20} className="text-black stroke-[2.5]" />
+              </button>
+            </div>
+          </div>
+          
+          {/* Preview Content */}
+          <div className="flex-1 overflow-hidden p-2 border-lg bg-primary-50">
+            <FromDoerToEnabler />
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

@@ -20,18 +20,18 @@ export default function FromDoerToEnabler() {
 
   const DeviceIcon = ({ view, isActive, onClick }) => {
     const icons = {
-      mobile: <Smartphone size={16} className={isActive ? "stroke-2" : "stroke-[1.5]"} />,
-      tablet: <Tablet size={16} className={isActive ? "stroke-2" : "stroke-[1.5]"} />,
-      desktop: <Monitor size={16} className={isActive ? "stroke-2" : "stroke-[1.5]"} />,
+      mobile: <Smartphone size={16} className={isActive ? "stroke-[2.5]" : "stroke-[2.5]"} />,
+      tablet: <Tablet size={16} className={isActive ? "stroke-[2.5]" : "stroke-[2.5]"} />,
+      desktop: <Monitor size={16} className={isActive ? "stroke-[2.5]" : "stroke-[2.5]"} />,
     };
 
     return (
       <button
         onClick={onClick}
-        className={`flex items-center justify-center w-8 h-8 rounded-md transition-all ${
+        className={`flex items-center justify-center w-8 h-8 rounded transition-all ${
           isActive
-            ? "bg-primary text-white"
-            : "bg-primary-100 text-primary border border-primary"
+            ? "bg-primary text-white shadow-sm"
+            : "bg-white text-primary border-2 border-primary"
         }`}
         aria-label={`Switch to ${view} view`}
       >
@@ -96,7 +96,7 @@ export default function FromDoerToEnabler() {
   );
 
   return (
-    <div className="flex flex-col h-full w-full bg-white">
+    <div className="flex flex-col h-full border-lg w-full bg-white">
       <div className="border border-gray-200 w-full py-3 px-4 flex items-center justify-center">
         <div className="flex items-center justify-center gap-2 bg-primary-100 rounded-md px-2 py-1">
           <DeviceIcon
