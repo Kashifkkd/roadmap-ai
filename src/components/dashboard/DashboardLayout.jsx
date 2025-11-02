@@ -39,8 +39,8 @@ export default function DashboardLayout() {
         sessionId,
         (sessionData) => {
           setIsGeneratingOutline(false);
-          localStorage.setItem('sessionData', JSON.stringify(sessionData));
-          router.push('/outline-manager');
+          localStorage.setItem("sessionData", JSON.stringify(sessionData));
+          router.push("/outline-manager");
         },
         (error) => {
           console.error("Subscription error:", error);
@@ -61,13 +61,12 @@ export default function DashboardLayout() {
 
   // Handle form submission and navigation
   const handleFormSubmit = async (formData) => {
-
     try {
       setIsLoading(true);
       setError(null);
 
       // Check if sessionId already exists in localStorage
-      let newSessionId = localStorage.getItem('sessionId');
+      let newSessionId = localStorage.getItem("sessionId");
       let cometJson;
 
       // If no sessionId exists, create a new session
@@ -75,7 +74,7 @@ export default function DashboardLayout() {
         const sessionResponse = await graphqlClient.createSession();
         newSessionId = sessionResponse.createSession.sessionId;
         cometJson = sessionResponse.createSession.cometJson;
-        localStorage.setItem('sessionId', newSessionId);
+        localStorage.setItem("sessionId", newSessionId);
         setSessionData(JSON.parse(cometJson));
       }
 
@@ -86,25 +85,32 @@ export default function DashboardLayout() {
       const formattedCometData = {
         "Basic Information": {
           "Comet Title": formData.cometTitle || "",
-          "Description": formData.specialInstructions || ""
+          Description: formData.specialInstructions || "",
         },
         "Audience & Objectives": {
           "Target Audience": formData.targetAudience || "",
           "Learning Objectives": Array.isArray(formData.learningObjectives)
-            ? formData.learningObjectives.map(String).map(obj => obj.trim()).filter(Boolean)
-            : (typeof formData.learningObjectives === 'string'
-              ? formData.learningObjectives.split(',').map(obj => obj.trim()).filter(Boolean)
-              : [])
+            ? formData.learningObjectives
+                .map(String)
+                .map((obj) => obj.trim())
+                .filter(Boolean)
+            : typeof formData.learningObjectives === "string"
+            ? formData.learningObjectives
+                .split(",")
+                .map((obj) => obj.trim())
+                .filter(Boolean)
+            : [],
         },
         "Experience Design": {
-          "Focus": formData.cometFocus || "",
+          Focus: formData.cometFocus || "",
           "Source Alignment": formData.sourceMaterialFidelity || "",
           "Engagement Frequency": formData.engagementFrequency || "",
-          "Duration": formData.lengthFrequency || "",
-          "Special Instructions": formData.specialInstructions || ""
-        }
+          Duration: formData.lengthFrequency || "",
+          "Special Instructions": formData.specialInstructions || "",
+        },
       };
-      const messageText = initialInput || formData.cometTitle || "Create a new comet";
+      const messageText =
+        initialInput || formData.cometTitle || "Create a new comet";
 
       const cometJsonForMessage = JSON.stringify({
         session_id: newSessionId,
@@ -112,18 +118,17 @@ export default function DashboardLayout() {
         comet_creation_data: formattedCometData,
         response_outline: {},
         response_path: {},
-        chatbot_conversation: [
-          { user: messageText }
-        ],
-        to_modify: {}
+        chatbot_conversation: [{ user: messageText }],
+        to_modify: {},
       });
 
-      const messageResponse = await graphqlClient.sendMessage(cometJsonForMessage);
+      const messageResponse = await graphqlClient.sendMessage(
+        cometJsonForMessage
+      );
       console.log("Message sent:", messageResponse.sendMessage);
 
       // Step 3: Show loading - useEffect will handle the subscription
       setIsGeneratingOutline(true);
-
     } catch (error) {
       console.error("Error creating session or sending message:", error);
       setError(error.message);
@@ -133,12 +138,10 @@ export default function DashboardLayout() {
     }
   };
 
-
-
   return (
     <>
       <Loading isOpen={isGeneratingOutline} />
-      <div className="flex flex-col bg-primary-50 px-4 py-2 lg:flex-row h-full">
+      <div className="flex flex-col bg-primary-50 px-2 py-2 lg:flex-row h-full">
         <div className="flex flex-1 gap-2 flex-col lg:flex-row overflow-y-auto">
           {/* Chat Window - Hidden on small screens, Desktop: 25% width */}
           <div className="lg:block w-full lg:w-1/4 h-full lg:h-full">
