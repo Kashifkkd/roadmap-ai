@@ -57,6 +57,10 @@ export default function Header() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [isInviting, setIsInviting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [activeModeButton, setActiveModeButton] = useState("editor");
+  const [isFeedbackActive, setIsFeedbackActive] = useState(false);
+  const [isDownloadActive, setIsDownloadActive] = useState(false);
+  const [isInviteButtonActive, setIsInviteButtonActive] = useState(false);
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
 
@@ -195,7 +199,10 @@ export default function Header() {
 
     try {
       // Get sessionId from localStorage
-      const sessionId = typeof window !== "undefined" ? localStorage.getItem("sessionId") : null;
+      const sessionId =
+        typeof window !== "undefined"
+          ? localStorage.getItem("sessionId")
+          : null;
 
       if (!sessionId) {
         alert("No comet session found. Please create or open a comet first.");
@@ -209,16 +216,18 @@ export default function Header() {
         toast.success(`Comet shared with ${inviteEmail}`);
         handleInviteClose();
       } else {
-        console.log(">>>>>", response)
+        console.log(">>>>>", response);
         // Check for error details in response
-        const errorMessage = response?.response?.data?.detail ||
+        const errorMessage =
+          response?.response?.data?.detail ||
           "Failed to share comet. Please try again.";
 
         toast.error(errorMessage);
       }
     } catch (error) {
       console.error("Failed to share comet:", error);
-      const errorMessage = error?.response?.data?.detail ||
+      const errorMessage =
+        error?.response?.data?.detail ||
         error?.message ||
         "Failed to share comet. Please try again.";
       toast.error(errorMessage);
@@ -232,7 +241,10 @@ export default function Header() {
 
     try {
       // Get sessionId from localStorage
-      const sessionId = typeof window !== "undefined" ? localStorage.getItem("sessionId") : null;
+      const sessionId =
+        typeof window !== "undefined"
+          ? localStorage.getItem("sessionId")
+          : null;
 
       if (!sessionId) {
         alert("No comet session found. Please create or open a comet first.");
@@ -245,7 +257,9 @@ export default function Header() {
       if (response && response.response && !response.error) {
         toast.success("Comet published successfully!");
       } else {
-        const errorResponse = response?.response?.data?.detail || "Failed to publish comet. Please try again."
+        const errorResponse =
+          response?.response?.data?.detail ||
+          "Failed to publish comet. Please try again.";
         toast.error(errorResponse);
       }
     } catch (error) {
@@ -363,13 +377,13 @@ export default function Header() {
         style={{
           transition:
             "width 10s ease-in-out, padding 1.2s ease-in-out, background-color 1.2s ease-in-out, border-color 1.2s ease-in-out, color 1.2s ease-in-out",
-          width: activeModeButton === "editor" ? "85px" : "2.8px",
+          width: activeModeButton === "editor" ? "85px" : "28px",
           willChange: "width",
         }}
         className={`hidden md:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${
           activeModeButton === "editor"
             ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
-            : "bg-white text-gray-700 border-transparent h-7 sm:h-8 md:h-9 justify-center p-0 hover:bg-gray-50"
+            : "bg-gray-50 text-gray-700 border-transparent h-7 sm:h-8 md:h-9 justify-center p-0 hover:bg-gray-100"
         }`}
       >
         <div
@@ -566,7 +580,7 @@ export default function Header() {
                   alt="Kyper Logo"
                   width={112}
                   height={52}
-                // className="w-10 h-10"
+                  // className="w-10 h-10"
                 />
               </div>
             </div>
@@ -619,10 +633,11 @@ export default function Header() {
                   <button
                     key={item.name}
                     onClick={() => router.push(item.path)}
-                    className={`relative font-medium text-base tracking-wide h-full transition-colors duration-300 group ${pathname === item.path
+                    className={`relative font-medium text-base tracking-wide h-full transition-colors duration-300 group ${
+                      pathname === item.path
                         ? "text-gray-700"
                         : "text-gray-700 hover:text-blue-600"
-                      }`}
+                    }`}
                   >
                     {item.name}
                     <span className="absolute top-0 h-[3px] bg-blue-600 transition-all duration-300 ease-linear left-1/2 -translate-x-1/2 w-0 group-hover:w-full" />
@@ -823,10 +838,11 @@ export default function Header() {
                     router.push(item.path);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full text-left px-3 py-2 font-medium rounded-lg transition-colors ${pathname === item.path
+                  className={`w-full text-left px-3 py-2 font-medium rounded-lg transition-colors ${
+                    pathname === item.path
                       ? "text-blue-600 bg-blue-50"
                       : "text-gray-700 hover:bg-gray-50"
-                    }`}
+                  }`}
                 >
                   {item.name}
                 </button>
