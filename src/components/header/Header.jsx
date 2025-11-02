@@ -380,7 +380,7 @@ export default function Header() {
           : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
       }`}
     >
-      <UserPlus size={16} className="sm:w-[18px] sm:h-[18px]" />
+      <UserPlus size={16} className="sm:w-[18px] sm:h-[18px] sm:hidden" />
       <span className="hidden sm:inline text-xs sm:text-sm font-medium">
         Invite
       </span>
