@@ -60,8 +60,23 @@ export default function Header() {
   const [isFeedbackActive, setIsFeedbackActive] = useState(false);
   const [isDownloadActive, setIsDownloadActive] = useState(false);
   const [isInviteButtonActive, setIsInviteButtonActive] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
+
+  // Check if user is super admin
+  const isSuperAdmin = () => {
+    const client = selectedClient || clients[0];
+    if (!client) return false;
+    // Check for various possible super admin indicators
+    return (
+      client.is_super_admin === true ||
+      client.isSuperAdmin === true ||
+      client.role === "super_admin" ||
+      client.role === "Super Admin" ||
+      client.access_level === 1 // Assuming 1 is super admin level
+    );
+  };
 
   // Mock client data - replace with actual data fetching
   const mockClients = [
@@ -139,6 +154,35 @@ export default function Header() {
       setSelectedClient(clients[0]);
     }
   }, [clients]);
+
+  // Fetch notification count
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const fetchNotifications = async () => {
+      try {
+        // TODO: Replace with actual notifications API endpoint
+        // Example:
+        // const res = await apiService({
+        //   endpoint: endpoints.getNotifications,
+        //   method: "GET",
+        // });
+        // if (res?.response?.count !== undefined) {
+        //   setNotificationCount(res.response.count);
+        // }
+        // For now, you can set notificationCount manually:
+        // setNotificationCount(4);
+      } catch (error) {
+        console.error("Failed to fetch notifications:", error);
+      }
+    };
+
+    fetchNotifications();
+
+    // Optionally set up polling or WebSocket subscription for real-time updates
+    // const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
+    // return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   const handleLogoClick = () => {
     router.push("/");
@@ -234,6 +278,8 @@ export default function Header() {
       setIsInviting(false);
     }
   };
+  console.log("clients", clients);
+  console.log("selectedClient", selectedClient);
 
   const handlePublish = async () => {
     setIsPublishing(true);
@@ -266,6 +312,10 @@ export default function Header() {
     } finally {
       setIsPublishing(false);
     }
+  };
+  const getClientInitial = (client) => {
+    const name = client?.name || "";
+    return name.charAt(0).toUpperCase() || "?";
   };
 
   // Small presentational helpers
@@ -330,7 +380,7 @@ export default function Header() {
           : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
       }`}
     >
-      {/* <UserPlus size={16} className="sm:w-[18px] sm:h-[18px]" /> */}
+      <UserPlus size={16} className="sm:w-[18px] sm:h-[18px]" />
       <span className="hidden sm:inline text-xs sm:text-sm font-medium">
         Invite
       </span>
@@ -339,7 +389,7 @@ export default function Header() {
 
   const RightSectionGeneric = () => (
     <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 my-1">
-      <div className="hidden sm:block">
+      <div>
         <FeedbackButton
           isActive={isFeedbackActive}
           onClick={handleFeedbackClick}
@@ -347,7 +397,7 @@ export default function Header() {
       </div>
       <button
         onClick={handleDownloadClick}
-        className={`hidden md:flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-sm border transition-colors duration-200 shrink-0 ${
+        className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-sm border transition-colors duration-200 shrink-0 ${
           isDownloadActive
             ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
             : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
@@ -361,10 +411,10 @@ export default function Header() {
           className="sm:w-5 sm:h-5"
         />
       </button>
-      <div className="hidden md:flex">
+      <div className="hidden lg:flex">
         <Collaborators />
       </div>
-      <div className="hidden md:block">
+      <div>
         <InviteButton />
       </div>
     </div>
@@ -657,19 +707,17 @@ export default function Header() {
 
           {isHome && (
             <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 ml-auto shrink-0">
-              {/* Invite Button */}
-              <div className="hidden md:block">
-                <InviteButton />
-              </div>
               {/* User Profile Section */}
               {isAuthenticated ? (
                 <div className="relative">
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <div className="relative w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 cursor-pointer bg-gray-100 rounded-full flex items-center justify-center shrink-0">
-                      <Bell className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 text-gray-600" />
-                      <span className="absolute -top-[2px] -right-[2px] flex h-[10px] min-w-[10px] items-center justify-center rounded-full bg-red-500 px-[3px] text-[8px] leading-none text-white ring-2 ring-white">
-                        4
-                      </span>
+                      <Bell className="w-4 h-4 text-gray-600" />
+                      {notificationCount > 0 && (
+                        <span className="absolute -top-[2px] -right-[2px] flex h-[10px] min-w-[10px] items-center justify-center rounded-full bg-red-500 px-[3px] text-[8px] leading-none text-white ring-2 ring-white">
+                          {notificationCount > 99 ? "99+" : notificationCount}
+                        </span>
+                      )}
                       {!isHome && (
                         <div
                           onClick={handleHomeButtonClick}
@@ -702,14 +750,8 @@ export default function Header() {
                       )}
                     </div>
 
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 cursor-pointer bg-gray-100 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
-                      <Image
-                        src="/profile.png"
-                        alt="Profile"
-                        width={32}
-                        height={32}
-                        className="w-full h-full object-cover"
-                      />
+                    <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
+                      {getClientInitial(selectedClient || clients[0])}
                     </div>
 
                     <button
@@ -718,11 +760,13 @@ export default function Header() {
                     >
                       <div className="hidden sm:flex flex-col justify-start">
                         <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
-                          Adam S.
+                          {clients[0]?.name}
                         </span>
-                        <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
-                          Super Admin
-                        </span>
+                        {isSuperAdmin() && (
+                          <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
+                            Super Admin
+                          </span>
+                        )}
                       </div>
                       <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 shrink-0" />
                     </button>
@@ -732,10 +776,10 @@ export default function Header() {
                     <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-medium text-gray-900">
-                          Adam S.
+                          {clients[0]?.name}
                         </p>
                         <p className="text-xs text-gray-500">
-                          adam.s@example.com
+                          {clients[0]?.email}
                         </p>
                       </div>
 
