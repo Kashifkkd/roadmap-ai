@@ -168,17 +168,17 @@ export default function CometManagerSidebar({
       <div className="flex justify-between w-full rounded-xl shrink-0">
         <Stack
           direction="row"
-          className="bg-background rounded-xl w-full gap-2 justify-between"
+          className="bg-background rounded-xl w-full gap-1 sm:gap-2 justify-between"
         >
           {buttons.map((button, index) => (
             <Button
               key={index}
               onClick={button.onClick}
-              className={
+              className={`text-xs sm:text-sm ${
                 index === tab
                   ? "bg-primary text-background"
                   : "bg-background text-gray-400 hover:bg-primary hover:text-background shadow-none"
-              }
+              }`}
             >
               {button.children}
             </Button>
@@ -209,7 +209,7 @@ export default function CometManagerSidebar({
                           onChapterClick(chapterId, chapter);
                         }
                       }}
-                      className={`flex items-center gap-2 p-4 bg-white border rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md ${
+                      className={`flex items-center gap-2 p-3 sm:p-4 bg-white border rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md ${
                         isSelected
                           ? "border-primary bg-primary/5"
                           : "border-gray-300 hover:border-gray-400"
@@ -227,12 +227,12 @@ export default function CometManagerSidebar({
                           } transition-transform ${isExpanded ? "rotate-180" : ""}`}
                         />
                       </div>
-                      <div className="flex flex-col font-semibold flex-1">
+                      <div className="flex flex-col font-semibold flex-1 min-w-0">
                         <h2 className="text-xs text-gray-900">
                           Chapter {index + 1}
                         </h2>
                         <p
-                          className={`text-base ${
+                          className={`text-sm sm:text-base truncate ${
                             isSelected ? "text-primary" : "text-gray-800"
                           }`}
                         >
@@ -252,17 +252,17 @@ export default function CometManagerSidebar({
                           return (
                             <div
                               key={stepId}
-                              className="flex items-center gap-2 p-3 bg-white border border-gray-200 rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md hover:border-gray-400"
+                              className="flex items-center gap-2 p-2 sm:p-3 bg-white border border-gray-200 rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md hover:border-gray-400"
                             >
-                              <div className="rounded-full p-1.5 bg-gray-100">
+                              <div className="rounded-full p-1.5 bg-gray-100 shrink-0">
                                 <File size={14} className="text-gray-600" />
                               </div>
-                              <div className="flex flex-col font-medium flex-1">
-                                <p className="text-sm text-gray-900">
+                              <div className="flex flex-col font-medium flex-1 min-w-0">
+                                <p className="text-xs sm:text-sm text-gray-900 truncate">
                                   {step.name || `Step ${stepIndex + 1}`}
                                 </p>
                                 {step.description && (
-                                  <p className="text-xs text-gray-500 mt-0.5">
+                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
                                     {step.description}
                                   </p>
                                 )}

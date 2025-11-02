@@ -117,7 +117,11 @@ const SCREEN_TYPES = [
 
 const EASE_CATEGORIES = ["Engagement", "Aha", "Support", "Execution"];
 
-export default function CometManager({ sessionData, isPreviewMode, setIsPreviewMode }) {
+export default function CometManager({
+  sessionData,
+  isPreviewMode,
+  setIsPreviewMode,
+}) {
   // Use comet manager hook to get actual data
   const {
     isLoading,
@@ -130,9 +134,9 @@ export default function CometManager({ sessionData, isPreviewMode, setIsPreviewM
     insertScreenAt,
   } = useCometManager(sessionData);
 
-  console.log("screens", screens)
-  console.log("chapters", chapters)
-  console.log("sessionData", sessionData)
+  console.log("screens", screens);
+  console.log("chapters", chapters);
+  console.log("sessionData", sessionData);
 
   const [currentScreen, setCurrentScreen] = useState(0);
   const [selectedScreen, setSelectedScreen] = useState(null);
@@ -172,7 +176,7 @@ export default function CometManager({ sessionData, isPreviewMode, setIsPreviewM
     newScreens.splice(draggedIndex, 1);
     newScreens.splice(dropIndex, 0, draggedScreen);
 
-    setScreens(newScreens);
+    reorderScreensList(newScreens);
     setDraggedIndex(null);
   };
 
@@ -239,10 +243,8 @@ export default function CometManager({ sessionData, isPreviewMode, setIsPreviewM
         </div>
       ) : (
         <>
-          {/* Container for left */}
-          <div className="grid grid-cols-16 overflow-hidden h-full gap-2">
-            {/* Sidebar - middle section width */}
-            <div className="bg-background rounded-xl col-span-5 h-full overflow-hidden">
+          <div className="flex flex-col lg:flex-row overflow-hidden h-full gap-2 p-2 lg:p-0">
+            <div className="bg-background rounded-xl w-full lg:w-1/3 xl:w-1/4 h-auto lg:h-full overflow-hidden shrink-0">
               <CometManagerSidebar
                 selectedScreen={selectedScreen}
                 onAddScreen={handleAddScreen}
@@ -261,20 +263,20 @@ export default function CometManager({ sessionData, isPreviewMode, setIsPreviewM
               />
             </div>
 
-            {/*right section */}
-            <div className="flex flex-col col-span-11 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl">
+            {/* Right section - main content */}
+            <div className="flex flex-col w-full lg:w-2/3 xl:w-3/4 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl">
               <div className="flex flex-col flex-1 overflow-hidden">
                 {selectedScreen && (
-                  <div className="shrink-0 p-4 rounded-t-2xl">
+                  <div className="shrink-0 p-3 sm:p-4 rounded-t-2xl">
                     <div className="flex flex-col gap-1">
-                      <h2 className="text-sm font-medium text-gray-900">
+                      <h2 className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                         {selectedScreen.title || "Untitled Chapter"}
                       </h2>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-medium text-primary">
                           Step {currentScreen + 1}.1
                         </span>
-                        <span className="text-xs text-primary">
+                        <span className="text-xs text-primary truncate">
                           {selectedScreen.name || "Untitled Step"}
                         </span>
                       </div>
@@ -283,56 +285,56 @@ export default function CometManager({ sessionData, isPreviewMode, setIsPreviewM
                 )}
 
                 {/* Scrollable children container */}
-                <div className="overflow-y-auto p-2 no-scrollbar flex flex-col gap-2 flex-1">
+                <div className="overflow-y-auto p-2 sm:p-3 no-scrollbar flex flex-col gap-2 flex-1">
                   {/* Navigation - Screens */}
-                  <div className="bg-background rounded-md p-2 shrink-0">
-                    <div className="flex justify-between items-center w-full">
-                      <div className="flex flex-col justify-between items-center gap-2 w-full">
-                        <div className="flex items-center gap-2 w-full h-fit overflow-x-auto no-scrollbar">
-                          <div className="flex items-center gap-4 px-2">
-                            {screens.map((screen, index) => (
-                              <ScreenCard
-                                key={screen.id}
-                                screen={screen}
-                                selectedScreen={selectedScreen}
-                                index={index}
-                                onDragStart={handleDragStart}
-                                onDragEnd={handleDragEnd}
-                                onDragOver={handleDragOver}
-                                onDrop={handleDrop}
-                                onClick={handleScreenClick}
-                                onAddScreen={(insertIndex) =>
-                                  handleAddScreen(insertIndex)
-                                }
-                              />
-                            ))}
+                  <div className="bg-background rounded-md p-2 sm:p-3 shrink-0">
+                    <div className="flex flex-col gap-3 w-full">
+                      <div className="flex items-center gap-2 w-full h-fit overflow-x-auto no-scrollbar -mx-2 px-2">
+                        <div className="flex items-center gap-2 sm:gap-4 px-1">
+                          {screens.map((screen, index) => (
+                            <ScreenCard
+                              key={screen.id}
+                              screen={screen}
+                              selectedScreen={selectedScreen}
+                              index={index}
+                              onDragStart={handleDragStart}
+                              onDragEnd={handleDragEnd}
+                              onDragOver={handleDragOver}
+                              onDrop={handleDrop}
+                              onClick={handleScreenClick}
+                              onAddScreen={(insertIndex) =>
+                                handleAddScreen(insertIndex)
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      {/* Navigation controls */}
+                      <div className="w-full flex justify-between items-center gap-2">
+                        <button
+                          onClick={() => navigateScreen("prev")}
+                          disabled={currentScreen === 0}
+                          className="p-2 bg-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          aria-label="Previous screen"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        {/* Selected screen name */}
+                        {selectedScreen && (
+                          <div className="flex items-center gap-2 min-w-0 flex-1 justify-center px-2">
+                            <p className="text-xs sm:text-sm font-semibold text-center truncate">
+                              Screen {currentScreen + 1} - {selectedScreen.name}
+                            </p>
                           </div>
-                        </div>
-                        <div className="w-full flex justify-between items-center gap-2">
-                          <button
-                            onClick={() => navigateScreen("prev")}
-                            disabled={currentScreen === 0}
-                            className="p-2 bg-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <ChevronLeft size={16} />
-                          </button>
-                          {/* Selected screen name */}
-                          {selectedScreen && (
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-semibold">
-                                Screen {currentScreen + 1} -{" "}
-                                {selectedScreen.name}
-                              </p>
-                            </div>
-                          )}
-                          <button
-                            onClick={() => navigateScreen("next")}
-                            disabled={currentScreen === screens.length - 1}
-                            className="p-2 bg-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <ChevronRight size={16} />
-                          </button>
-                        </div>
+                        )}
+                        <button
+                          onClick={() => navigateScreen("next")}
+                          disabled={currentScreen === screens.length - 1}
+                          className="p-2 bg-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          aria-label="Next screen"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -363,36 +365,49 @@ export default function CometManager({ sessionData, isPreviewMode, setIsPreviewM
       />
 
       {/* Preview Drawer */}
-      <Drawer 
-        direction="right" 
-        open={isPreviewMode} 
+      <Drawer
+        direction="right"
+        open={isPreviewMode}
         onOpenChange={(open) => {
           setIsPreviewMode(open);
           if (!open) setIsMaximized(false);
         }}
       >
-        <DrawerContent className={`${isMaximized ? "min-w-[100vw]" : "min-w-[50vw] sm:max-w-4xl"} h-screen bg-primary-50 p-0`}>
+        <DrawerContent
+          className={`${
+            isMaximized
+              ? "w-screen"
+              : "w-full sm:w-[90vw] md:w-[70vw] lg:w-[50vw] xl:max-w-4xl"
+          } h-screen bg-primary-50 p-0`}
+        >
           {/* Preview Header */}
-          <div className="bg-primary-50 border-b border-gray-200 py-3  px-4 flex items-center justify-between">
-            <h3 className="text-[1.125rem] font-bold text-gray-900">Preview</h3>
+          <div className="bg-primary-50 border-b border-gray-200 py-3 px-3 sm:px-4 flex items-center justify-between">
+            <h3 className="text-base sm:text-[1.125rem] font-bold text-gray-900">
+              Preview
+            </h3>
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => setIsMaximized(!isMaximized)}
-                className="p-1 hover:bg-gray-200 cursor-pointer transition-all rounded border-1 border-black transition-colors"
+                className="p-1.5 sm:p-1 hover:bg-gray-200 cursor-pointer rounded border border-black transition-colors"
+                aria-label={isMaximized ? "Minimize" : "Maximize"}
               >
                 <ExpandIcon size={14} className="text-black stroke-[2.5]" />
               </button>
-              <button 
+              <button
                 onClick={() => setIsPreviewMode(false)}
-                className="p-1 hover:bg-gray-200 cursor-pointer transition-all rounded transition-colors"
+                className="p-1.5 sm:p-1 hover:bg-gray-200 cursor-pointer rounded transition-colors"
+                aria-label="Close preview"
               >
-                <X size={20} className="text-black stroke-[2.5]" />
+                <X
+                  size={18}
+                  className="sm:w-5 sm:h-5 text-black stroke-[2.5]"
+                />
               </button>
             </div>
           </div>
-          
+
           {/* Preview Content */}
-          <div className="flex-1 overflow-hidden p-2 border-lg bg-primary-50">
+          <div className="flex-1 overflow-hidden p-2 sm:p-3 border-lg bg-primary-50">
             <FromDoerToEnabler />
           </div>
         </DrawerContent>

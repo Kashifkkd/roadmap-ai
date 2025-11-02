@@ -11,8 +11,6 @@ export default function CometManagerLayout() {
   const [allMessages, setAllMessages] = useState([]);
   const [prefillData, setPrefillData] = useState(null);
 
-  
-  
   console.log("isPreviewMode444", isPreviewMode);
 
   useEffect(() => {
@@ -55,8 +53,7 @@ export default function CometManagerLayout() {
 
   return (
     <div className="flex h-full w-full">
-      <div className="flex flex-1 gap-2 p-2 overflow-y-auto">
-        {/* Chat Window - Hidden on small screens, Desktop: 25% width */}
+      <div className="flex flex-1 lg:flex-row flex-col gap-2 p-2 overflow-y-auto">
         <div className="lg:block w-full lg:w-1/4 h-full">
           <ChatWindow
             inputType="path_updation"
@@ -67,7 +64,6 @@ export default function CometManagerLayout() {
           />
         </div>
 
-        {/* Comet Manager - Mobile: Full width, Desktop: 75% width */}
         <div className="w-full lg:w-3/4 h-full">
           <CometManager
             sessionData={sessionData}

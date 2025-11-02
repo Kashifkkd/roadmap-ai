@@ -27,8 +27,8 @@ export default function ScreenCard({
         onClick={() => onClick(screen)}
         onMouseEnter={() => setShowAddButton(true)}
         onMouseLeave={() => setShowAddButton(false)}
-        className={`rounded-lg p-2 flex flex-col justify-between items-center gap-2 text-xs
-          min-w-[140px] max-w-[180px] shrink-0 shadow-sm hover:shadow-md transition-all cursor-pointer hover:border-gray-400
+        className={`rounded-lg p-1.5 sm:p-2 flex flex-col justify-between items-center gap-1 sm:gap-2 text-xs
+          min-w-[100px] sm:min-w-[140px] max-w-[140px] sm:max-w-[180px] shrink-0 shadow-sm hover:shadow-md transition-all cursor-pointer hover:border-gray-400
           ${
             selectedScreen?.id === screen.id ? "bg-primary-700" : "bg-gray-100 "
           }
@@ -62,8 +62,8 @@ export default function ScreenCard({
                 alt=""
                 className={`${
                   selectedScreen?.id === screen.id
-                    ? "w-[140px] h-[200px]"
-                    : "w-[110px] h-[150px]"
+                    ? "w-[100px] h-[140px] sm:w-[140px] sm:h-[200px]"
+                    : "w-[80px] h-[110px] sm:w-[110px] sm:h-[150px]"
                 }`}
               />
             </div>

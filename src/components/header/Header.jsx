@@ -378,13 +378,13 @@ export default function Header() {
         style={{
           transition:
             "width 10s ease-in-out, padding 1.2s ease-in-out, background-color 1.2s ease-in-out, border-color 1.2s ease-in-out, color 1.2s ease-in-out",
-          width: activeModeButton === "editor" ? "85px" : "28px",
+          width: activeModeButton === "editor" ? "85px" : undefined,
           willChange: "width",
         }}
         className={`hidden md:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${
           activeModeButton === "editor"
             ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
-            : "bg-gray-50 text-gray-700 border-transparent h-7 sm:h-8 md:h-9 justify-center p-0 hover:bg-gray-100"
+            : "bg-gray-50 text-gray-700 border-transparent h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 justify-center p-0 hover:bg-gray-100"
         }`}
       >
         <div
@@ -393,6 +393,8 @@ export default function Header() {
             alignItems: "center",
             width: "100%",
             overflow: "hidden",
+            justifyContent:
+              activeModeButton === "editor" ? "flex-start" : "center",
           }}
           className="flex items-center"
         >
@@ -403,8 +405,8 @@ export default function Header() {
             }}
             className={`${
               activeModeButton === "editor"
-                ? "w-4 sm:w-4 md:w-[16.67px] md:h-[16.67px] text-primary"
-                : "w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-700"
+                ? "w-5 h-3 sm:w-5 md:w-5 md:h-4 text-primary"
+                : "w-4 h-3 sm:w-5 sm:h-5 md:w-5 md:h-5 text-gray-700"
             }`}
           />
           <span
@@ -434,13 +436,13 @@ export default function Header() {
         style={{
           transition:
             "width 10s ease-in-out, padding 10s ease-in-out, background-color 10s ease-in-out, border-color 10s ease-in-out, color 10s ease-in-out",
-          width: activeModeButton === "preview" ? "90px" : "90px",
+          width: activeModeButton === "preview" ? "90px" : undefined,
           willChange: "width",
         }}
         className={`flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${
           activeModeButton === "preview"
-            ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-9"
-            : "bg-gray-50 text-gray-700 border-transparent h-9 px-1.5 sm:px-2 py-1.5 sm:py-2 hover:bg-gray-100"
+            ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-8 md:h-9"
+            : "bg-gray-50 text-gray-700 border-transparent h-8 w-8 md:h-9 md:w-9 justify-center p-0 hover:bg-gray-100"
         }`}
       >
         <div
@@ -448,7 +450,9 @@ export default function Header() {
             display: "flex",
             alignItems: "center",
             width: "100%",
-            // overflow: "hidden",
+            overflow: "hidden",
+            justifyContent:
+              activeModeButton === "preview" ? "flex-start" : "center",
           }}
           className="flex items-center"
         >
@@ -468,11 +472,10 @@ export default function Header() {
               transition:
                 "opacity 10s ease-in-out, max-width 10s ease-in-out, margin-left 10s ease-in-out",
               whiteSpace: "nowrap",
-              maxWidth: activeModeButton === "preview" ? "100px" : "100px",
-              opacity: activeModeButton === "preview" ? 1 : 1,
-              marginLeft:
-                activeModeButton === "preview" ? "0.375rem" : "0.375rem",
-              // overflow: "hidden",
+              maxWidth: activeModeButton === "preview" ? "100px" : "0px",
+              opacity: activeModeButton === "preview" ? 1 : 0,
+              marginLeft: activeModeButton === "preview" ? "0.375rem" : "0",
+              overflow: "hidden",
               flexShrink: 0,
             }}
             className="text-xs sm:text-sm md:text-[14px] font-medium"
@@ -488,13 +491,13 @@ export default function Header() {
         style={{
           transition:
             "width 10s ease-in-out, padding 10s ease-in-out, background-color 10s ease-in-out, border-color 10s ease-in-out, color 10s ease-in-out",
-          width: activeModeButton === "settings" ? "95px" : "28px",
+          width: activeModeButton === "settings" ? "95px" : undefined,
           willChange: "width",
         }}
         className={`hidden sm:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${
           activeModeButton === "settings"
             ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
-            : "bg-gray-50 text-gray-700 border-transparent h-7 sm:h-8 md:h-9 justify-center p-0 hover:bg-gray-100"
+            : "bg-gray-50 text-gray-700 border-transparent h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 justify-center p-0 hover:bg-gray-100"
         }`}
       >
         <div
@@ -503,6 +506,8 @@ export default function Header() {
             alignItems: "center",
             width: "100%",
             overflow: "hidden",
+            justifyContent:
+              activeModeButton === "settings" ? "flex-start" : "center",
           }}
           className="flex items-center"
         >
