@@ -51,8 +51,13 @@ export default function Header() {
   const [clientsLoading, setClientsLoading] = useState(false);
   const [clientsError, setClientsError] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [isHomeButtonActive, setIsHomeButtonActive] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [isInviting, setIsInviting] = useState(false);
+  const [isFeedbackActive, setIsFeedbackActive] = useState(false);
+  const [isDownloadActive, setIsDownloadActive] = useState(false);
+  const [isInviteButtonActive, setIsInviteButtonActive] = useState(false);
+  const [activeModeButton, setActiveModeButton] = useState("editor"); // 'editor', 'preview', or 'settings'
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
 
@@ -137,6 +142,18 @@ export default function Header() {
     router.push("/");
   };
 
+  const handleHomeButtonClick = () => {
+    setIsHomeButtonActive(!isHomeButtonActive);
+  };
+
+  const handleFeedbackClick = () => {
+    setIsFeedbackActive(!isFeedbackActive);
+  };
+
+  const handleDownloadClick = () => {
+    setIsDownloadActive(!isDownloadActive);
+  };
+
   const handleLogout = () => {
     setIsAuthenticated(false);
     router.push("/login");
@@ -156,6 +173,7 @@ export default function Header() {
   };
 
   const handleInviteClick = () => {
+    setIsInviteButtonActive(!isInviteButtonActive);
     setIsInviteDialogOpen(true);
   };
 
@@ -166,7 +184,7 @@ export default function Header() {
 
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(inviteEmail)) {
@@ -175,10 +193,10 @@ export default function Header() {
     }
 
     setIsInviting(true);
-    
+
     try {
       const response = await inviteUser({ email: inviteEmail });
-      
+
       if (response && response.response && !response.error) {
         alert(`Invitation sent to ${inviteEmail}`);
         handleInviteClose();
@@ -193,13 +211,12 @@ export default function Header() {
     }
   };
 
-  // Small presentational helpers
   const Collaborators = () => (
     <div className="flex items-center">
       {mockCollaborators.map((collaborator, index) => (
         <div
           key={collaborator.id}
-          className="relative w-9 h-9 rounded-full border-2 border-white overflow-hidden bg-gray-100"
+          className="relative w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full border-2 border-white overflow-hidden bg-gray-100"
           style={{
             marginLeft: index > 0 ? "-16px" : "0",
             zIndex: mockCollaborators.length - index,
@@ -211,95 +228,307 @@ export default function Header() {
             alt={collaborator.name}
             width={36}
             height={36}
-            className="object-cover"
+            className="object-cover w-full h-full"
           />
         </div>
       ))}
     </div>
   );
 
-  const FeedbackButton = ({ compact = false }) => (
+  const FeedbackButton = ({
+    compact = false,
+    isActive = false,
+    onClick = () => {},
+  }) => (
     <button
-      className={`flex items-center gap-2 rounded-md bg-[#ECF7F6] hover:bg-[#E2F2F1] transition-colors text-gray-700 hover:cursor-pointer ${
-        compact ? "px-2 py-1" : "px-3 py-2"
-      }`}
+      onClick={onClick}
+      className={`flex items-center gap-1 sm:gap-2 rounded-md border transition-colors hover:cursor-pointer ${
+        isActive
+          ? "bg-[#F5F5F5] text-[#399C8D] border-[#399C8D]"
+          : "bg-[#ECF7F6] hover:bg-[#D9F0EC] hover:text-[#399C8D] border-transparent"
+      } ${compact ? "px-2 py-1" : "px-2 sm:px-3 py-1.5 sm:py-2"}`}
     >
-      <Image src="/Dialog 2.png" alt="" width={20} height={20} />
-      {!compact && <span className="text-sm font-medium">Feedback</span>}
+      <Image
+        src="/Dialog 2.png"
+        alt="Feedback"
+        width={18}
+        height={18}
+        className="sm:w-5 sm:h-5"
+      />
+      {!compact && (
+        <span className="hidden sm:inline text-xs sm:text-sm font-medium">
+          Feedback
+        </span>
+      )}
     </button>
   );
 
-  const InviteButton = () => (
-    <button 
+  const InviteButton = ({ compact = false }) => (
+    <button
       onClick={handleInviteClick}
-      className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700 cursor-pointer"
+      className={`flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 rounded-sm border transition-colors duration-200 cursor-pointer shrink-0 ${
+        isInviteButtonActive
+          ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
+          : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
+      }`}
     >
-      <UserPlus size={18} className="text-gray-600" />
-      <span className="text-sm font-medium">Invite</span>
+      {/* <UserPlus size={16} className="sm:w-[18px] sm:h-[18px]" /> */}
+      <span className="hidden sm:inline text-xs sm:text-sm font-medium">
+        Invite
+      </span>
     </button>
   );
 
   const RightSectionGeneric = () => (
-    <div className="flex items-center gap-3 my-1">
-      <FeedbackButton />
-      <button className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700">
-        {/* <Download className="w-5 h-5" /> */}
-        <Image src="/download.png" alt="" width={20} height={20} />
+    <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 my-1">
+      <div className="hidden sm:block">
+        <FeedbackButton
+          isActive={isFeedbackActive}
+          onClick={handleFeedbackClick}
+        />
+      </div>
+      <button
+        onClick={handleDownloadClick}
+        className={`hidden md:flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-sm border transition-colors duration-200 shrink-0 ${
+          isDownloadActive
+            ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
+            : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
+        }`}
+      >
+        <Image
+          src="/download.png"
+          alt="Download"
+          width={18}
+          height={18}
+          className="sm:w-5 sm:h-5"
+        />
       </button>
-      <Collaborators />
+      <div className="hidden md:flex">
+        <Collaborators />
+      </div>
       <InviteButton />
     </div>
   );
 
   const RightSectionCometManager = () => (
-    <div className="flex items-center  gap-2 my-1">
-      <div
-        className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-primary-50 text-primary border-2 border-primary-400 hover:cursor-pointer"
-        style={{ width: "80px", height: "36px" }}
+    <div className="flex items-center my-1 gap-1 sm:gap-1.5 md:gap-2 shrink-0">
+      {/* Editor Button */}
+      <button
+        onClick={() => setActiveModeButton("editor")}
+        style={{
+          transition:
+            "width 10s ease-in-out, padding 1.2s ease-in-out, background-color 1.2s ease-in-out, border-color 1.2s ease-in-out, color 1.2s ease-in-out",
+          width: activeModeButton === "editor" ? "85px" : "2.8px",
+          willChange: "width",
+        }}
+        className={`hidden md:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${
+          activeModeButton === "editor"
+            ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
+            : "bg-white text-gray-700 border-transparent h-7 sm:h-8 md:h-9 justify-center p-0 hover:bg-gray-50"
+        }`}
       >
-        <Pencil className="w-[16.67px] h-[16.67px]" />
-        <span className="text-[14px] font-medium">Editor</span>
-      </div>
-      <button onClick={() => setIsPreviewMode(!isPreviewMode)} className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700 hover:cursor-pointer">
-        {isPreviewMode ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            width: "100%",
+            overflow: "hidden",
+          }}
+          className="flex items-center"
+        >
+          <Pencil
+            style={{
+              transition: "all 10s ease-in-out",
+              flexShrink: 0,
+            }}
+            className={`${
+              activeModeButton === "editor"
+                ? "w-4 sm:w-4 md:w-[16.67px] md:h-[16.67px] text-primary"
+                : "w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-700"
+            }`}
+          />
+          <span
+            style={{
+              transition:
+                "opacity 10s ease-in-out, max-width 10s ease-in-out, margin-left 10s ease-in-out",
+              whiteSpace: "nowrap",
+              maxWidth: activeModeButton === "editor" ? "100px" : "0px",
+              opacity: activeModeButton === "editor" ? 1 : 0,
+              marginLeft: activeModeButton === "editor" ? "0.375rem" : "0",
+              overflow: "hidden",
+              flexShrink: 0,
+            }}
+            className="text-xs sm:text-sm md:text-[14px] font-medium"
+          >
+            Editor
+          </span>
+        </div>
       </button>
-      <button className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700 hover:cursor-pointer">
-        <Settings className="w-5 h-5" />
+
+      {/* Preview Button */}
+      <button
+        onClick={() => {
+          setActiveModeButton("preview");
+          setIsPreviewMode(!isPreviewMode);
+        }}
+        style={{
+          transition:
+            "width 10s ease-in-out, padding 10s ease-in-out, background-color 10s ease-in-out, border-color 10s ease-in-out, color 10s ease-in-out",
+          width: activeModeButton === "preview" ? "90px" : "28px",
+          willChange: "width",
+        }}
+        className={`flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${
+          activeModeButton === "preview"
+            ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
+            : "bg-gray-50 text-gray-700 border-transparent h-7 sm:h-8 md:h-9 justify-center p-0 hover:bg-gray-100"
+        }`}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            width: "100%",
+            overflow: "hidden",
+          }}
+          className="flex items-center"
+        >
+          {isPreviewMode ? (
+            <Eye
+              style={{
+                transition: "all 10s ease-in-out",
+                flexShrink: 0,
+              }}
+              className={`${
+                activeModeButton === "preview"
+                  ? "w-4 sm:w-4 md:w-5 md:h-5 text-primary"
+                  : "w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-700"
+              }`}
+            />
+          ) : (
+            <EyeOff
+              style={{
+                transition: "all 10s ease-in-out",
+                flexShrink: 0,
+              }}
+              className={`${
+                activeModeButton === "preview"
+                  ? "w-4 sm:w-4 md:w-5 md:h-5 text-primary"
+                  : "w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-700"
+              }`}
+            />
+          )}
+          <span
+            style={{
+              transition:
+                "opacity 10s ease-in-out, max-width 10s ease-in-out, margin-left 10s ease-in-out",
+              whiteSpace: "nowrap",
+              maxWidth: activeModeButton === "preview" ? "100px" : "0px",
+              opacity: activeModeButton === "preview" ? 1 : 0,
+              marginLeft: activeModeButton === "preview" ? "0.375rem" : "0",
+              overflow: "hidden",
+              flexShrink: 0,
+            }}
+            className="text-xs sm:text-sm md:text-[14px] font-medium"
+          >
+            Preview
+          </span>
+        </div>
       </button>
-      <div className="hidden md:block">
-        <FeedbackButton />
+
+      {/* Settings Button */}
+      <button
+        onClick={() => setActiveModeButton("settings")}
+        style={{
+          transition:
+            "width 10s ease-in-out, padding 10s ease-in-out, background-color 10s ease-in-out, border-color 10s ease-in-out, color 10s ease-in-out",
+          width: activeModeButton === "settings" ? "95px" : "28px",
+          willChange: "width",
+        }}
+        className={`hidden sm:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${
+          activeModeButton === "settings"
+            ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
+            : "bg-gray-50 text-gray-700 border-transparent h-7 sm:h-8 md:h-9 justify-center p-0 hover:bg-gray-100"
+        }`}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            width: "100%",
+            overflow: "hidden",
+          }}
+          className="flex items-center"
+        >
+          <Settings
+            style={{
+              transition: "all 10s ease-in-out",
+              flexShrink: 0,
+            }}
+            className={`${
+              activeModeButton === "settings"
+                ? "w-4 sm:w-4 md:w-5 md:h-5 text-primary"
+                : "w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-700"
+            }`}
+          />
+          <span
+            style={{
+              transition:
+                "opacity 10s ease-in-out, max-width 10s ease-in-out, margin-left 10s ease-in-out",
+              whiteSpace: "nowrap",
+              maxWidth: activeModeButton === "settings" ? "100px" : "0px",
+              opacity: activeModeButton === "settings" ? 1 : 0,
+              marginLeft: activeModeButton === "settings" ? "0.375rem" : "0",
+              overflow: "hidden",
+              flexShrink: 0,
+            }}
+            className="text-xs sm:text-sm md:text-[14px] font-medium"
+          >
+            Setting
+          </span>
+        </div>
+      </button>
+
+      <div className="hidden lg:block">
+        <FeedbackButton
+          isActive={isFeedbackActive}
+          onClick={handleFeedbackClick}
+        />
       </div>
-      <div className="hidden sm:block">
+
+      <div className="hidden lg:flex">
         <Collaborators />
       </div>
-      <InviteButton />
-      <button className="px-4 py-2 rounded-md bg-primary hover:bg-primary-dark text-white text-sm font-medium hover:cursor-pointer">
+
+      <div className="hidden sm:block">
+        <InviteButton />
+      </div>
+
+      <button className="px-1.5 sm:px-2 md:px-3 py-1 sm:py-1.5 md:py-2 rounded-md bg-primary hover:bg-primary-dark text-white text-[10px] sm:text-xs md:text-sm font-medium hover:cursor-pointer whitespace-nowrap shrink-0">
         Publish
       </button>
     </div>
   );
 
   return (
-    <header className="px-2 pt-2 bg-primary-50 border-gray-200 w-full">
-      <div className="bg-white px-6 py-1 rounded-lg  w-full">
-        <div className="flex items-center justify-between w-full h-full text-base">
-          <div className="flex items-center gap-4 sm:gap-8 lg:gap-16">
-            {/* Logo */}
-            <div onClick={handleLogoClick} className="cursor-pointer">
-              <div className="flex items-center gap-2 ml-2">
+    <header className="px-1 sm:px-2 pt-2 bg-primary-50 border-gray-200 w-full">
+      <div className="bg-white px-3 sm:px-4 md:px-6 py-1 rounded-lg w-full">
+        <div className="flex items-center justify-between w-full h-full text-sm sm:text-base gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 md:gap-8 lg:gap-16 shrink-0 min-w-0">
+            <div onClick={handleLogoClick} className="cursor-pointer shrink-0">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <Image
                   src="/logo.png"
                   alt="Kyper Logo"
                   width={112}
                   height={52}
-                  // className="w-10 h-10"
+                  className="w-20 h-auto sm:w-24 md:w-28 lg:w-[112px]"
+                  priority
                 />
               </div>
             </div>
 
-            {/* Client Dropdown */}
             {isAuthenticated && (
-              <div className="hidden sm:block">
+              <div className="hidden md:flex items-center gap-2 shrink-0">
                 <ClientDropdown
                   clients={clients}
                   selectedClient={selectedClient}
@@ -307,28 +536,52 @@ export default function Header() {
                   isLoading={clientsLoading}
                   isError={clientsError}
                 />
-              </div>
-            )}
-            {!isHome && (
-              <div className=" size-7 cursor-pointer bg-gray-100 rounded-sm flex items-center justify-center -ml-12">
-                <Image src="/home.png" alt="" width={20} height={20} />
+                {!isHome && (
+                  <div
+                    onClick={handleHomeButtonClick}
+                    className={`hidden lg:flex w-9 h-9 cursor-pointer rounded-sm items-center justify-center shrink-0 transition-colors duration-200 border ${
+                      isHomeButtonActive
+                        ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
+                        : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
+                    }`}
+                  >
+                    <img
+                      src="/home.png"
+                      alt="Home"
+                      width={18}
+                      height={18}
+                      className="sm:w-5 sm:h-5 transition-all duration-200"
+                      style={
+                        isHomeButtonActive
+                          ? {
+                              // filter: "brightness(0) invert(1)",
+                              color: "primary-600",
+                              opacity: 1,
+                            }
+                          : {
+                              filter: "none",
+                              opacity: 1,
+                            }
+                      }
+                    />
+                  </div>
+                )}
               </div>
             )}
 
             {isHome && (
-              <nav className="hidden lg:flex items-stretch gap-8 h-10">
+              <nav className="hidden lg:flex items-stretch gap-6 xl:gap-8 h-10">
                 {navItems.map((item) => (
                   <button
                     key={item.name}
                     onClick={() => router.push(item.path)}
-                    className={`relative font-medium text-base tracking-wide h-full transition-colors duration-300 group ${
+                    className={`relative font-medium text-sm sm:text-base tracking-wide h-full transition-colors duration-300 group whitespace-nowrap ${
                       pathname === item.path
                         ? "text-gray-700"
                         : "text-gray-700 hover:text-blue-600"
                     }`}
                   >
                     {item.name}
-
                     <span className="absolute top-0 h-[3px] bg-blue-600 transition-all duration-300 ease-linear left-1/2 -translate-x-1/2 w-0 group-hover:w-full" />
                   </button>
                 ))}
@@ -336,17 +589,12 @@ export default function Header() {
             )}
           </div>
 
-          {/* Center title for comet-manager */}
           {isCometManager && (
-            <div className="hidden md:flex flex-1 items-center justify-center">
+            <div className="hidden xl:flex flex-1 items-center justify-center min-w-0 px-2">
               <span
-                className="text-primary select-none"
+                className="text-[#574EB6] select-none truncate text-2xl font-medium"
                 style={{
                   fontFamily: "Noto Serif",
-                  fontWeight: 500,
-                  fontSize: "24px",
-                  lineHeight: "32px",
-                  letterSpacing: "0%",
                 }}
               >
                 New Manager Essentials
@@ -355,35 +603,71 @@ export default function Header() {
           )}
 
           {isHome && (
-            <div className="flex items-center gap-2 sm:gap-4 mr-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 ml-auto shrink-0">
               {/* User Profile Section */}
               {isAuthenticated ? (
                 <div className="relative">
-                  <div className="flex items-center gap-2">
-                    <div className="relative size-6 cursor-pointer bg-gray-100 rounded-full flex items-center justify-center">
-                      <Bell className="w-3 h-3 text-gray-600" />
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="relative w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 cursor-pointer bg-gray-100 rounded-full flex items-center justify-center shrink-0">
+                      <Bell className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 text-gray-600" />
                       <span className="absolute -top-[2px] -right-[2px] flex h-[10px] min-w-[10px] items-center justify-center rounded-full bg-red-500 px-[3px] text-[8px] leading-none text-white ring-2 ring-white">
                         4
                       </span>
+                      {!isHome && (
+                        <div
+                          onClick={handleHomeButtonClick}
+                          className={`hidden lg:flex w-9 h-9 cursor-pointer rounded-sm items-center justify-center shrink-0 -ml-12 transition-colors duration-200 border ${
+                            isHomeButtonActive
+                              ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
+                              : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
+                          }`}
+                        >
+                          <img
+                            src="/home.png"
+                            alt="Home"
+                            width={18}
+                            height={18}
+                            className="sm:w-5 sm:h-5 transition-all duration-200"
+                            style={
+                              isHomeButtonActive
+                                ? {
+                                    // filter: "brightness(0) invert(1)",
+                                    color: "primary-600",
+                                    opacity: 1,
+                                  }
+                                : {
+                                    filter: "none",
+                                    opacity: 1,
+                                  }
+                            }
+                          />
+                        </div>
+                      )}
                     </div>
 
-                    <div className="size-8 cursor-pointer bg-gray-100 rounded-full flex items-center justify-center">
-                      <Image src="/profile.png" alt="" width={32} height={32} />
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 cursor-pointer bg-gray-100 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
+                      <Image
+                        src="/profile.png"
+                        alt="Profile"
+                        width={32}
+                        height={32}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
+
                     <button
                       onClick={toggleUserMenu}
-                      className="flex items-center gap-2 sm:gap-3 cursor-pointer outline-none hover:opacity-80 transition-opacity"
+                      className="flex items-center gap-1.5 sm:gap-2 md:gap-3 cursor-pointer outline-none hover:opacity-80 transition-opacity"
                     >
                       <div className="hidden sm:flex flex-col justify-start">
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
                           Adam S.
                         </span>
-                        <span className="text-xs font-medium text-gray-300">
+                        <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
                           Super Admin
                         </span>
                       </div>
-
-                      <ChevronDown className="w-4 h-4 text-gray-600" />
+                      <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 shrink-0" />
                     </button>
                   </div>
 
@@ -430,16 +714,16 @@ export default function Header() {
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <button
                     onClick={() => router.push("/login")}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                    className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 hover:text-gray-900 whitespace-nowrap"
                   >
                     Login
                   </button>
                   <button
                     onClick={() => router.push("/register")}
-                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                    className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
                   >
                     Sign Up
                   </button>
@@ -447,34 +731,38 @@ export default function Header() {
               )}
 
               <button
-                onClick={() => router.push("/login")}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-              >
-                Login
-              </button>
-
-              <button
                 onClick={toggleMobileMenu}
-                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="lg:hidden p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
+                aria-label="Toggle menu"
               >
                 {isMobileMenuOpen ? (
-                  <X className="w-6 h-6 text-gray-600" />
+                  <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
                 ) : (
-                  <Menu className="w-6 h-6 text-gray-600" />
+                  <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
                 )}
               </button>
             </div>
           )}
-          {!isHome && !isCometManager && <RightSectionGeneric />}
-          {isCometManager && <RightSectionCometManager />}
+
+          {!isHome && !isCometManager && (
+            <div className="ml-auto shrink-0 min-w-0">
+              <RightSectionGeneric />
+            </div>
+          )}
+
+          {isCometManager && (
+            <div className="ml-auto shrink-0 min-w-0 max-w-full overflow-hidden">
+              <RightSectionCometManager />
+            </div>
+          )}
         </div>
 
         {isMobileMenuOpen && (
-          <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-40">
-            <div className="px-4 py-4 space-y-2">
+          <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-40 mt-1 mx-1 sm:mx-2 rounded-lg">
+            <div className="px-3 sm:px-4 py-3 sm:py-4 space-y-2">
               {/* Mobile Client Dropdown */}
               {isAuthenticated && (
-                <div className="mb-4 pb-4 border-b border-gray-200">
+                <div className="mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-200">
                   <ClientDropdown
                     clients={clients}
                     selectedClient={selectedClient}
@@ -492,7 +780,7 @@ export default function Header() {
                     router.push(item.path);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full text-left px-3 py-2 font-medium rounded-lg transition-colors ${
+                  className={`w-full text-left px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base font-medium rounded-lg transition-colors ${
                     pathname === item.path
                       ? "text-blue-600 bg-blue-50"
                       : "text-gray-700 hover:bg-gray-50"
@@ -535,7 +823,10 @@ export default function Header() {
                   Email Address
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                  <Mail
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    size={18}
+                  />
                   <Input
                     type="email"
                     value={inviteEmail}
@@ -557,10 +848,7 @@ export default function Header() {
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={isInviting}
-                >
+                <Button type="submit" disabled={isInviting}>
                   {isInviting ? "Sending..." : "Send Invite"}
                 </Button>
               </DialogFooter>
