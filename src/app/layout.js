@@ -5,6 +5,7 @@ import "./globals.css";
 import Header from "@/components/header/Header";
 import { usePathname } from "next/navigation";
 import { PreviewModeProvider } from "@/contexts/PreviewModeContext";
+import { Toaster } from "@/components/ui/toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,6 +45,7 @@ export default function RootLayout({ children }) {
       >
         <PreviewModeProvider>
           <LayoutContent>{children}</LayoutContent>
+          <Toaster />
         </PreviewModeProvider>
       </body>
     </html>

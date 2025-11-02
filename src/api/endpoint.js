@@ -3,5 +3,6 @@ export const endpoints = {
     login: "api/auth/v1/token",
     uploadSourceMaterial: "api/n8n/upload_source_material",
     getClients: "api/clients/v1/",
-    inviteUser: "api/invites/v1/",
+    shareComet: (sessionId) => `api/comet/share_comets/${sessionId}`,
+    publishComet: (sessionId) => `api/comet/publish_comet/${sessionId}`,
 }

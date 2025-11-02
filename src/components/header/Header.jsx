@@ -26,7 +26,8 @@ import {
 import Image from "next/image";
 import ClientDropdown from "@/components/common/ClientDropdown";
 import { getClients } from "@/api/client";
-import { inviteUser } from "@/api/invite";
+import { shareComet } from "@/api/shareComet";
+import { publishComet } from "@/api/publishComet";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -38,6 +39,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export default function Header() {
   const pathname = usePathname();
@@ -54,10 +56,7 @@ export default function Header() {
   const [isHomeButtonActive, setIsHomeButtonActive] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [isInviting, setIsInviting] = useState(false);
-  const [isFeedbackActive, setIsFeedbackActive] = useState(false);
-  const [isDownloadActive, setIsDownloadActive] = useState(false);
-  const [isInviteButtonActive, setIsInviteButtonActive] = useState(false);
-  const [activeModeButton, setActiveModeButton] = useState("editor"); // 'editor', 'preview', or 'settings'
+  const [isPublishing, setIsPublishing] = useState(false);
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
 
@@ -195,22 +194,68 @@ export default function Header() {
     setIsInviting(true);
 
     try {
-      const response = await inviteUser({ email: inviteEmail });
+      // Get sessionId from localStorage
+      const sessionId = typeof window !== "undefined" ? localStorage.getItem("sessionId") : null;
+
+      if (!sessionId) {
+        alert("No comet session found. Please create or open a comet first.");
+        setIsInviting(false);
+        return;
+      }
+
+      const response = await shareComet(sessionId, inviteEmail);
 
       if (response && response.response && !response.error) {
-        alert(`Invitation sent to ${inviteEmail}`);
+        toast.success(`Comet shared with ${inviteEmail}`);
         handleInviteClose();
       } else {
-        alert("Failed to send invitation. Please try again.");
+        console.log(">>>>>", response)
+        // Check for error details in response
+        const errorMessage = response?.response?.data?.detail ||
+          "Failed to share comet. Please try again.";
+
+        toast.error(errorMessage);
       }
     } catch (error) {
-      console.error("Failed to send invitation:", error);
-      alert("Failed to send invitation. Please try again.");
+      console.error("Failed to share comet:", error);
+      const errorMessage = error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to share comet. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setIsInviting(false);
     }
   };
 
+  const handlePublish = async () => {
+    setIsPublishing(true);
+
+    try {
+      // Get sessionId from localStorage
+      const sessionId = typeof window !== "undefined" ? localStorage.getItem("sessionId") : null;
+
+      if (!sessionId) {
+        alert("No comet session found. Please create or open a comet first.");
+        setIsPublishing(false);
+        return;
+      }
+
+      const response = await publishComet(sessionId);
+
+      if (response && response.response && !response.error) {
+        toast.success("Comet published successfully!");
+      } else {
+        const errorResponse = response?.response?.data?.detail || "Failed to publish comet. Please try again."
+        toast.error(errorResponse);
+      }
+    } catch (error) {
+      console.error("Failed to publish comet:", error);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  // Small presentational helpers
   const Collaborators = () => (
     <div className="flex items-center">
       {mockCollaborators.map((collaborator, index) => (
@@ -263,7 +308,7 @@ export default function Header() {
     </button>
   );
 
-  const InviteButton = ({ compact = false }) => (
+  const InviteButton = () => (
     <button
       onClick={handleInviteClick}
       className={`flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 rounded-sm border transition-colors duration-200 cursor-pointer shrink-0 ${
@@ -498,13 +543,13 @@ export default function Header() {
       <div className="hidden lg:flex">
         <Collaborators />
       </div>
-
-      <div className="hidden sm:block">
-        <InviteButton />
-      </div>
-
-      <button className="px-1.5 sm:px-2 md:px-3 py-1 sm:py-1.5 md:py-2 rounded-md bg-primary hover:bg-primary-dark text-white text-[10px] sm:text-xs md:text-sm font-medium hover:cursor-pointer whitespace-nowrap shrink-0">
-        Publish
+      <InviteButton />
+      <button
+        onClick={handlePublish}
+        disabled={isPublishing}
+        className="px-4 py-2 rounded-md bg-primary hover:bg-primary-dark text-white text-sm font-medium hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isPublishing ? "Publishing..." : "Publish"}
       </button>
     </div>
   );
@@ -521,8 +566,7 @@ export default function Header() {
                   alt="Kyper Logo"
                   width={112}
                   height={52}
-                  className="w-20 h-auto sm:w-24 md:w-28 lg:w-[112px]"
-                  priority
+                // className="w-10 h-10"
                 />
               </div>
             </div>
@@ -575,11 +619,10 @@ export default function Header() {
                   <button
                     key={item.name}
                     onClick={() => router.push(item.path)}
-                    className={`relative font-medium text-sm sm:text-base tracking-wide h-full transition-colors duration-300 group whitespace-nowrap ${
-                      pathname === item.path
+                    className={`relative font-medium text-base tracking-wide h-full transition-colors duration-300 group ${pathname === item.path
                         ? "text-gray-700"
                         : "text-gray-700 hover:text-blue-600"
-                    }`}
+                      }`}
                   >
                     {item.name}
                     <span className="absolute top-0 h-[3px] bg-blue-600 transition-all duration-300 ease-linear left-1/2 -translate-x-1/2 w-0 group-hover:w-full" />
@@ -780,11 +823,10 @@ export default function Header() {
                     router.push(item.path);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full text-left px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base font-medium rounded-lg transition-colors ${
-                    pathname === item.path
+                  className={`w-full text-left px-3 py-2 font-medium rounded-lg transition-colors ${pathname === item.path
                       ? "text-blue-600 bg-blue-50"
                       : "text-gray-700 hover:bg-gray-50"
-                  }`}
+                    }`}
                 >
                   {item.name}
                 </button>

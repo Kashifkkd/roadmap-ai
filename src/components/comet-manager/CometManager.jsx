@@ -139,6 +139,7 @@ export default function CometManager({ sessionData, isPreviewMode, setIsPreviewM
   const [showAddPopup, setShowAddPopup] = useState(false);
   const [addAtIndex, setAddAtIndex] = useState(null);
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   // Update local screens when data changes
   useEffect(() => {
@@ -362,18 +363,28 @@ export default function CometManager({ sessionData, isPreviewMode, setIsPreviewM
       />
 
       {/* Preview Drawer */}
-      <Drawer direction="right" open={isPreviewMode} onOpenChange={setIsPreviewMode}>
-        <DrawerContent className="min-w-[50vw] sm:max-w-4xl h-screen bg-primary-50  p-0">
+      <Drawer 
+        direction="right" 
+        open={isPreviewMode} 
+        onOpenChange={(open) => {
+          setIsPreviewMode(open);
+          if (!open) setIsMaximized(false);
+        }}
+      >
+        <DrawerContent className={`${isMaximized ? "min-w-[100vw]" : "min-w-[50vw] sm:max-w-4xl"} h-screen bg-primary-50 p-0`}>
           {/* Preview Header */}
           <div className="bg-primary-50 border-b border-gray-200 py-3  px-4 flex items-center justify-between">
             <h3 className="text-[1.125rem] font-bold text-gray-900">Preview</h3>
             <div className="flex items-center gap-2">
-              <button className="p-1 hover:bg-gray-100 rounded border-1 border-black transition-colors">
+              <button 
+                onClick={() => setIsMaximized(!isMaximized)}
+                className="p-1 hover:bg-gray-200 cursor-pointer transition-all rounded border-1 border-black transition-colors"
+              >
                 <ExpandIcon size={14} className="text-black stroke-[2.5]" />
               </button>
               <button 
                 onClick={() => setIsPreviewMode(false)}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="p-1 hover:bg-gray-200 cursor-pointer transition-all rounded transition-colors"
               >
                 <X size={20} className="text-black stroke-[2.5]" />
               </button>
