@@ -364,7 +364,9 @@ export default function Header() {
       <div className="hidden md:flex">
         <Collaborators />
       </div>
-      <InviteButton />
+      <div className="hidden md:block">
+        <InviteButton />
+      </div>
     </div>
   );
 
@@ -432,13 +434,13 @@ export default function Header() {
         style={{
           transition:
             "width 10s ease-in-out, padding 10s ease-in-out, background-color 10s ease-in-out, border-color 10s ease-in-out, color 10s ease-in-out",
-          width: activeModeButton === "preview" ? "90px" : "28px",
+          width: activeModeButton === "preview" ? "90px" : "90px",
           willChange: "width",
         }}
         className={`flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${
           activeModeButton === "preview"
-            ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
-            : "bg-gray-50 text-gray-700 border-transparent h-7 sm:h-8 md:h-9 justify-center p-0 hover:bg-gray-100"
+            ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-9"
+            : "bg-gray-50 text-gray-700 border-transparent h-9 px-1.5 sm:px-2 py-1.5 sm:py-2 hover:bg-gray-100"
         }`}
       >
         <div
@@ -446,7 +448,7 @@ export default function Header() {
             display: "flex",
             alignItems: "center",
             width: "100%",
-            overflow: "hidden",
+            // overflow: "hidden",
           }}
           className="flex items-center"
         >
@@ -466,10 +468,11 @@ export default function Header() {
               transition:
                 "opacity 10s ease-in-out, max-width 10s ease-in-out, margin-left 10s ease-in-out",
               whiteSpace: "nowrap",
-              maxWidth: activeModeButton === "preview" ? "100px" : "0px",
-              opacity: activeModeButton === "preview" ? 1 : 0,
-              marginLeft: activeModeButton === "preview" ? "0.375rem" : "0",
-              overflow: "hidden",
+              maxWidth: activeModeButton === "preview" ? "100px" : "100px",
+              opacity: activeModeButton === "preview" ? 1 : 1,
+              marginLeft:
+                activeModeButton === "preview" ? "0.375rem" : "0.375rem",
+              // overflow: "hidden",
               flexShrink: 0,
             }}
             className="text-xs sm:text-sm md:text-[14px] font-medium"
@@ -542,7 +545,9 @@ export default function Header() {
       <div className="hidden lg:flex">
         <Collaborators />
       </div>
-      <InviteButton />
+      <div className="hidden md:block">
+        <InviteButton />
+      </div>
       <button
         onClick={handlePublish}
         disabled={isPublishing}
@@ -647,6 +652,10 @@ export default function Header() {
 
           {isHome && (
             <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 ml-auto shrink-0">
+              {/* Invite Button */}
+              <div className="hidden md:block">
+                <InviteButton />
+              </div>
               {/* User Profile Section */}
               {isAuthenticated ? (
                 <div className="relative">
