@@ -20,7 +20,6 @@ import {
   MessagesSquare,
   Pencil,
   Eye,
-  EyeOff,
   Mail,
 } from "lucide-react";
 import Image from "next/image";
@@ -451,31 +450,17 @@ export default function Header() {
           }}
           className="flex items-center"
         >
-          {isPreviewMode ? (
-            <Eye
-              style={{
-                transition: "all 10s ease-in-out",
-                flexShrink: 0,
-              }}
-              className={`${
-                activeModeButton === "preview"
-                  ? "w-4 sm:w-4 md:w-5 md:h-5 text-primary"
-                  : "w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-700"
-              }`}
-            />
-          ) : (
-            <EyeOff
-              style={{
-                transition: "all 10s ease-in-out",
-                flexShrink: 0,
-              }}
-              className={`${
-                activeModeButton === "preview"
-                  ? "w-4 sm:w-4 md:w-5 md:h-5 text-primary"
-                  : "w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-700"
-              }`}
-            />
-          )}
+          <Eye
+            style={{
+              transition: "all 1.2s ease-in-out",
+              flexShrink: 0,
+            }}
+            className={`${
+              activeModeButton === "preview"
+                ? "w-4 sm:w-4 md:w-5 md:h-5 text-primary"
+                : "w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-700"
+            }`}
+          />
           <span
             style={{
               transition:
