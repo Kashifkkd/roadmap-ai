@@ -17,16 +17,21 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Stack } from "@mui/material";
 import DevicePreview from "./DevicePreview";
+import { apiService } from "@/api/apiService";
+import { endpoints } from "@/api/endpoint";
 
 export default function CometManagerSidebar({
   selectedScreen,
   onAddScreen,
   chapters = [],
   onChapterClick,
+  sessionId,
 }) {
   const [tab, setTab] = useState(0);
   const [selectedChapter, setSelectedChapter] = useState(null);
+  const [selectedStep, setSelectedStep] = useState(null);
   const [expandedChapters, setExpandedChapters] = useState(new Set());
+  const [expandedSteps, setExpandedSteps] = useState(new Set());
 
   // Source materials state
   const [sourceMaterials, setSourceMaterials] = useState([]);
@@ -49,39 +54,62 @@ export default function CometManagerSidebar({
     });
   };
 
+  const toggleStep = (stepId) => {
+    setExpandedSteps((prev) => {
+      const newSet = new Set();
+      // If clicking on the same step that's already expanded, collapse it
+      // Otherwise, expand only the clicked step (close others)
+      if (!prev.has(stepId)) {
+        newSet.add(stepId);
+      }
+      return newSet;
+    });
+  };
+
   // Fetch source materials when Sources tab is selected
   useEffect(() => {
-    if (tab === 1) {
+    if (tab === 1 && sessionId) {
       fetchSourceMaterialsData();
     }
-  }, [tab]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, sessionId]);
 
   const fetchSourceMaterialsData = async () => {
+    if (!sessionId) {
+      setSourcesError("Session ID is required to fetch source materials");
+      setIsLoadingSources(false);
+      return;
+    }
+
     setIsLoadingSources(true);
     setSourcesError(null);
 
     try {
-      // Mock data for now - replace with actual API call
-      const mockMaterials = [
-        {
-          id: 1,
-          source_name: "document.pdf",
-          uuid: "abc12345-def6-7890-ghij-klmnopqrstuv",
-          source_path: "/path/to/document.pdf",
-          output_presigned_url: "https://example.com/processed/document.pdf",
+      const response = await apiService({
+        endpoint: endpoints.getSourceMaterials,
+        method: "GET",
+        params: {
+          session_id: sessionId,
         },
-        {
-          id: 2,
-          source_name: "image.jpg",
-          uuid: "xyz98765-4321-0987-wxyz-abcdefghijkl",
-          source_path: "/path/to/image.jpg",
-          output_presigned_url: "https://example.com/processed/image.jpg",
-        },
-      ];
-      setSourceMaterials(mockMaterials);
+      });
+
+      if (response.error) {
+        throw new Error(response.error?.message || "Failed to fetch source materials");
+      }
+
+      if (response.response) {
+        // Handle both array and object responses
+        const materials = Array.isArray(response?.response)
+          ? response.response
+          : [];
+        setSourceMaterials(materials);
+      } else {
+        setSourceMaterials([]);
+      }
     } catch (error) {
       console.error("Failed to fetch source materials:", error);
       setSourcesError(error.message || "Failed to load source materials");
+      setSourceMaterials([]);
     } finally {
       setIsLoadingSources(false);
     }
@@ -174,11 +202,10 @@ export default function CometManagerSidebar({
             <Button
               key={index}
               onClick={button.onClick}
-              className={`text-xs sm:text-sm ${
-                index === tab
+              className={`text-xs sm:text-sm ${index === tab
                   ? "bg-primary text-background"
                   : "bg-background text-gray-400 hover:bg-primary hover:text-background shadow-none"
-              }`}
+                }`}
             >
               {button.children}
             </Button>
@@ -199,32 +226,35 @@ export default function CometManagerSidebar({
                 const isExpanded = expandedChapters.has(chapterId);
 
                 return (
-                  <div key={chapterId} className="flex flex-col gap-2">
+                  <div
+                    key={chapterId}
+                    className={`flex flex-col rounded-lg transition-all ${isSelected || isExpanded
+                        ? "bg-primary-100"
+                        : "bg-gray-50"
+                      }`}
+                  >
                     {/* Chapter Header */}
                     <div
                       onClick={() => {
                         setSelectedChapter(chapterId);
                         toggleChapter(chapterId);
+                        // Clear step selection when clicking chapter
+                        setSelectedStep(null);
+                        setExpandedSteps(new Set());
                         if (onChapterClick) {
                           onChapterClick(chapterId, chapter);
                         }
                       }}
-                      className={`flex items-center gap-2 p-3 sm:p-4 bg-white border rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md ${
-                        isSelected
-                          ? "border-primary bg-primary/5"
-                          : "border-gray-300 hover:border-gray-400"
-                      }`}
+                      className="flex items-center gap-2 p-3 sm:p-4 cursor-pointer transition-all"
                     >
                       <div
-                        className={`rounded-full p-1 ${
-                          isSelected ? "bg-primary" : "bg-primary-100"
-                        }`}
+                        className={`rounded-full p-1 ${isSelected ? "bg-primary" : "bg-primary-100"
+                          }`}
                       >
                         <ChevronDown
                           size={16}
-                          className={`${
-                            isSelected ? "text-white" : "text-primary"
-                          } transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                          className={`${isSelected ? "text-white" : "text-primary"
+                            } transition-transform ${isExpanded ? "rotate-180" : ""}`}
                         />
                       </div>
                       <div className="flex flex-col font-semibold flex-1 min-w-0">
@@ -232,9 +262,8 @@ export default function CometManagerSidebar({
                           Chapter {index + 1}
                         </h2>
                         <p
-                          className={`text-sm sm:text-base truncate ${
-                            isSelected ? "text-primary" : "text-gray-800"
-                          }`}
+                          className={`text-sm sm:text-base truncate ${isSelected ? "text-primary" : "text-gray-800"
+                            }`}
                         >
                           {chapter.chapter || chapter.name || "Untitled Chapter"}
                         </p>
@@ -244,29 +273,89 @@ export default function CometManagerSidebar({
                       </div>
                     </div>
 
-                    {/* Expanded Steps */}
+                    {/* Expanded Steps - Inside the same card */}
                     {isExpanded && chapter.steps && chapter.steps.length > 0 && (
-                      <div className="flex flex-col gap-2 ml-4">
+                      <div className="flex flex-col gap-2 px-3 pb-3">
                         {chapter.steps.map((step, stepIndex) => {
-                          const stepId = step.id || `step-${index}-${stepIndex}`;
+                          // Create unique step ID that includes chapter index and step index
+                          const stepId = step.id || `step-${chapterId}-${stepIndex}`;
+                          const isStepSelected = selectedStep === stepId;
+                          const isStepExpanded = expandedSteps.has(stepId);
                           return (
                             <div
                               key={stepId}
-                              className="flex items-center gap-2 p-2 sm:p-3 bg-white border border-gray-200 rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md hover:border-gray-400"
+                              className={`flex flex-col rounded-lg transition-all ${isStepSelected || isStepExpanded
+                                  ? "bg-primary-700"
+                                  : "bg-gray-100"
+                                }`}
                             >
-                              <div className="rounded-full p-1.5 bg-gray-100 shrink-0">
-                                <File size={14} className="text-gray-600" />
-                              </div>
-                              <div className="flex flex-col font-medium flex-1 min-w-0">
-                                <p className="text-xs sm:text-sm text-gray-900 truncate">
-                                  {step.name || `Step ${stepIndex + 1}`}
-                                </p>
-                                {step.description && (
-                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
-                                    {step.description}
+                              {/* Step Header */}
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Only select the clicked step, deselect others
+                                  if (selectedStep === stepId && expandedSteps.has(stepId)) {
+                                    // If clicking the same step that's already expanded, collapse it
+                                    setSelectedStep(null);
+                                    setExpandedSteps(new Set());
+                                  } else {
+                                    // Select new step and collapse others
+                                    setSelectedStep(stepId);
+                                    // Close all other expanded steps, only expand the clicked one
+                                    setExpandedSteps(new Set([stepId]));
+                                  }
+                                }}
+                                className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${isStepSelected || isStepExpanded
+                                    ? "text-white"
+                                    : "hover:bg-gray-200"
+                                  }`}
+                              >
+                                <div
+                                  className={`rounded-full p-1 shrink-0 ${isStepSelected || isStepExpanded ? "bg-white" : "bg-primary-100"
+                                    }`}
+                                >
+                                  <ChevronDown
+                                    size={12}
+                                    className={`transition-transform ${isStepExpanded ? "rotate-180" : ""
+                                      } ${isStepSelected || isStepExpanded ? "text-primary-700" : "text-primary"
+                                      }`}
+                                  />
+                                </div>
+                                <div className="flex flex-col font-medium flex-1 min-w-0">
+                                  <p
+                                    className={`text-xs sm:text-sm truncate ${isStepSelected || isStepExpanded ? "text-white" : "text-gray-900"
+                                      }`}
+                                  >
+                                    Step {index + 1}.{stepIndex + 1}
                                   </p>
-                                )}
+                                  <p
+                                    className={`text-xs sm:text-sm font-semibold truncate ${isStepSelected || isStepExpanded ? "text-white" : "text-gray-900"
+                                      }`}
+                                  >
+                                    {step.name || `Step ${stepIndex + 1}`}
+                                  </p>
+                                </div>
                               </div>
+
+                              {/* Step Details (Expanded) - Inside the same card */}
+                              {isStepExpanded && (
+                                <div className="px-2 pb-2">
+                                  <div className="px-3 py-3 bg-white rounded-lg">
+                                    <div className="flex flex-col gap-2">
+                                      <div>
+                                        <h4 className="text-sm font-semibold text-black mb-1">
+                                          {step.name || `Step ${stepIndex + 1}`}
+                                        </h4>
+                                        {step.description && (
+                                          <p className="text-xs text-black leading-relaxed">
+                                            {step.description}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           );
                         })}

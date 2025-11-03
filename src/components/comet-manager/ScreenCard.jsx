@@ -2,6 +2,13 @@
 
 import React, { useState } from "react";
 import { Plus, GripVertical, Expand } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export default function ScreenCard({
   screen,
@@ -15,7 +22,7 @@ export default function ScreenCard({
   onAddScreen,
 }) {
   const [showAddButton, setShowAddButton] = useState(false);
-
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   return (
     <div className="relative">
       <div
@@ -28,9 +35,11 @@ export default function ScreenCard({
         onMouseEnter={() => setShowAddButton(true)}
         onMouseLeave={() => setShowAddButton(false)}
         className={`rounded-lg p-1.5 sm:p-2 flex flex-col justify-between items-center gap-1 sm:gap-2 text-xs
-          min-w-[100px] sm:min-w-[140px] max-w-[140px] sm:max-w-[180px] shrink-0 shadow-sm hover:shadow-md transition-all cursor-pointer hover:border-gray-400
-          ${
-            selectedScreen?.id === screen.id ? "bg-primary-700" : "bg-gray-100 "
+          shrink-0 shadow-sm hover:shadow-md cursor-pointer hover:border-gray-400
+          transition-all duration-300 ease-in-out
+          ${selectedScreen?.id === screen.id
+            ? "bg-primary-700 min-w-[140px] sm:min-w-[190px] max-w-[190px] sm:max-w-[240px]"
+            : "bg-gray-100 min-w-[110px] sm:min-w-[154px] max-w-[154px] sm:max-w-[198px]"
           }
         `}
       >
@@ -38,33 +47,43 @@ export default function ScreenCard({
           <div className="flex justify-between items-center gap-1 w-full">
             <div className="flex flex-col items-center">
               <div
-                className={`flex items-start gap-2  font-medium  w-full ${
-                  selectedScreen?.id === screen.id
-                    ? "text-white"
-                    : "text-gray-700"
-                }`}
+                className={`flex items-start gap-2 font-medium w-full transition-colors duration-300 ${selectedScreen?.id === screen.id
+                  ? "text-white"
+                  : "text-gray-700"
+                  }`}
               >
-                {screen.name} {index + 1}
+                Screen {index + 1}
               </div>
-              <div className="text-start w-full">
+              <div
+                className={`flex items-start gap-2 text-sm font-medium w-full transition-colors duration-300 ${selectedScreen?.id === screen.id
+                  ? "text-white"
+                  : "text-gray-700"
+                  }`}
+              >
+                {screen.title} {index + 1}
+              </div>
+              {/* <div className="text-start w-full">
                 <p
-                  className={`text-base font-semibold ${
+                  className={`text-base ${
                     selectedScreen?.id === screen.id
                       ? "text-white"
                       : "text-gray-600"
                   }`}
                 >
-                  {screen.title}
+                  {screen.heading}
                 </p>
-              </div>
+              </div> */}
               <img
-                src="/screen-preview.png"
-                alt=""
-                className={`${
-                  selectedScreen?.id === screen.id
-                    ? "w-[100px] h-[140px] sm:w-[140px] sm:h-[200px]"
-                    : "w-[80px] h-[110px] sm:w-[110px] sm:h-[150px]"
-                }`}
+                src={screen.thumbnail}
+                alt={screen.title || "Screen preview"}
+                className={`object-contain rounded transition-all duration-300 ease-in-out ${selectedScreen?.id === screen.id
+                  ? "w-[100px] h-[140px] sm:w-[140px] sm:h-[200px]"
+                  : "w-[80px] h-[110px] sm:w-[110px] sm:h-[150px]"
+                  }`}
+                onError={(e) => {
+                  // Fallback to default image if thumbnail fails to load
+                  e.target.src = "/error-img.png";
+                }}
               />
             </div>
           </div>
@@ -72,24 +91,25 @@ export default function ScreenCard({
         <div className=" w-full flex justify-between items-center">
           <Expand
             size={16}
-            className={`cursor-grab active:cursor-grabbing ${
-              selectedScreen?.id === screen.id ? "text-white" : "text-gray-500"
-            }`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsDialogOpen(true);
+            }}
+            className={`cursor-pointer hover:scale-110 transition-all duration-300 ${selectedScreen?.id === screen.id ? "text-white" : "text-gray-500"
+              }`}
           />
           <div
-            className={`p-1 rounded ${
-              selectedScreen?.id === screen.id
-                ? "bg-primary-800"
-                : "bg-background"
-            }`}
+            className={`p-1 rounded transition-colors duration-300 ${selectedScreen?.id === screen.id
+              ? "bg-primary-800"
+              : "bg-background"
+              }`}
           >
             <GripVertical
               size={16}
-              className={`cursor-grab active:cursor-grabbing ${
-                selectedScreen?.id === screen.id
-                  ? "text-white"
-                  : "text-gray-500"
-              }`}
+              className={`cursor-grab active:cursor-grabbing transition-colors duration-300 ${selectedScreen?.id === screen.id
+                ? "text-white"
+                : "text-gray-500"
+                }`}
             />
           </div>
         </div>
@@ -109,6 +129,79 @@ export default function ScreenCard({
           </button>
         </div>
       )}
+
+      {/* Full Screen Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">
+              Screen {index + 1}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-4">
+            {/* Heading */}
+            {(screen.screenContents?.content?.heading || screen.formData?.heading) && (
+              <div>
+                <h3 className="text-2xl font-semibold mb-3 text-gray-900">
+                  {screen.screenContents?.content?.heading || screen.formData?.heading}
+                </h3>
+              </div>
+            )}
+
+            {/* Body */}
+            {(screen.screenContents?.content?.body || screen.formData?.body) && (
+              <div>
+                <p className="text-base text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {screen.screenContents?.content?.body || screen.formData?.body}
+                </p>
+              </div>
+            )}
+
+            {/* Assets */}
+            {screen.assets && screen.assets.length > 0 && (
+              <div className="border-t pt-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {screen.assets.map((asset, assetIndex) => (
+                    <div key={assetIndex} className="rounded-lg overflow-hidden border shadow-sm">
+                      {asset.type === "image" && asset.url ? (
+                        <img
+                          src={asset.url}
+                          alt={`Media ${assetIndex + 1}`}
+                          className="w-full h-48 object-cover"
+                          onError={(e) => {
+                            e.target.src = "/error-img.png";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-48 bg-gray-100 flex items-center justify-center">
+                          <p className="text-sm text-gray-500 capitalize">{asset.type || "Asset"}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Ease Categories */}
+            {screen.easeCategories && screen.easeCategories.length > 0 && (
+              <div className="border-t pt-4">
+                <div className="flex flex-wrap gap-2">
+                  {screen.easeCategories.map((category, catIndex) => (
+                    <span
+                      key={catIndex}
+                      className="px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm font-medium"
+                    >
+                      {category}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

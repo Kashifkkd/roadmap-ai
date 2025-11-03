@@ -138,6 +138,9 @@ export default function CometManager({
   console.log("chapters", chapters);
   console.log("sessionData", sessionData);
 
+  // Extract session_id from sessionData or temp
+  const sessionId = sessionData?.session_id || (typeof window !== "undefined" && localStorage.getItem("sessionId")) || null;
+
   const [currentScreen, setCurrentScreen] = useState(0);
   const [selectedScreen, setSelectedScreen] = useState(null);
   const [showAddPopup, setShowAddPopup] = useState(false);
@@ -249,6 +252,7 @@ export default function CometManager({
                 selectedScreen={selectedScreen}
                 onAddScreen={handleAddScreen}
                 chapters={chapters}
+                sessionId={sessionId}
                 onChapterClick={(chapterId, chapter) => {
                   console.log("Chapter clicked", chapterId, chapter);
                   // Filter screens for this chapter
@@ -340,13 +344,21 @@ export default function CometManager({
                   </div>
 
                   {/* Dynamic Form */}
-                  {selectedScreen && (
+                  {/* {selectedScreen && (
                     <div className="shrink-0">
                       <DynamicForm
                         screen={selectedScreen}
                         onUpdate={handleUpdateScreen}
                         onClose={() => setSelectedScreen(null)}
                       />
+                    </div>
+                  )} */}
+
+                  {selectedScreen && (
+                    <div className="shrink-0 p-4 bg-white rounded-lg overflow-auto max-h-full">
+                      <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
+                        {JSON.stringify(selectedScreen?.screenContents, null, 2)}
+                      </pre>
                     </div>
                   )}
                 </div>
@@ -374,11 +386,10 @@ export default function CometManager({
         }}
       >
         <DrawerContent
-          className={`${
-            isMaximized
+          className={`${isMaximized
               ? "w-screen"
               : "w-full sm:w-[90vw] md:w-[70vw] lg:w-[50vw] xl:max-w-4xl"
-          } h-screen bg-primary-50 p-0`}
+            } h-screen bg-primary-50 p-0`}
         >
           {/* Preview Header */}
           <div className="bg-primary-50 border-b border-gray-200 py-3 px-3 sm:px-4 flex items-center justify-between">
