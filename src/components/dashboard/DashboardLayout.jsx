@@ -91,15 +91,15 @@ export default function DashboardLayout() {
           "Target Audience": formData.targetAudience || "",
           "Learning Objectives": Array.isArray(formData.learningObjectives)
             ? formData.learningObjectives
-                .map(String)
-                .map((obj) => obj.trim())
-                .filter(Boolean)
+              .map(String)
+              .map((obj) => obj.trim())
+              .filter(Boolean)
             : typeof formData.learningObjectives === "string"
-            ? formData.learningObjectives
+              ? formData.learningObjectives
                 .split(",")
                 .map((obj) => obj.trim())
                 .filter(Boolean)
-            : [],
+              : [],
         },
         "Experience Design": {
           Focus: formData.cometFocus || "",
@@ -115,6 +115,7 @@ export default function DashboardLayout() {
       const cometJsonForMessage = JSON.stringify({
         session_id: newSessionId,
         input_type: "outline_creation",
+        // input_type: "comet_data_creation",
         comet_creation_data: formattedCometData,
         response_outline: {},
         response_path: {},
@@ -146,7 +147,7 @@ export default function DashboardLayout() {
           {/* Chat Window - Hidden on small screens, Desktop: 25% width */}
           <div className="lg:block w-full lg:w-1/4 h-full lg:h-full">
             <ChatWindow
-              inputType={"comet_data_update"}
+              inputType={prefillData ? "comet_data_update" : "comet_data_creation"}
               initialInput={initialInput}
               onResponseReceived={setPrefillData}
               allMessages={allMessages}
