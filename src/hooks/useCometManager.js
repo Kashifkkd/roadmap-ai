@@ -10,8 +10,9 @@ export function useCometManager(sessionData = null) {
 
   // Transform temp data response_path to chapters and screens
   useEffect(() => {
-    if (temp && temp.length > 0 && temp[0].response_path) {
-      const responsePath = temp[0].response_path;
+    // if (temp && temp.length > 0 && temp[0].response_path) {
+    if (sessionData && sessionData[0].response_path) {
+      const responsePath = sessionData[0].response_path;
       const transformedChapters = [];
       const transformedScreens = [];
       let screenCounter = 0;
