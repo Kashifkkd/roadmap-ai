@@ -8,11 +8,13 @@ export function useCometManager(sessionData = null) {
   const [screens, setScreens] = useState([]);
   const [chapters, setChapters] = useState([]);
 
+  console.log(">>>", sessionData)
   // Transform temp data response_path to chapters and screens
   useEffect(() => {
     // if (temp && temp.length > 0 && temp[0].response_path) {
-    if (sessionData && sessionData[0].response_path) {
-      const responsePath = sessionData[0].response_path;
+    if (sessionData && sessionData.response_path) {
+      console.log(sessionData, sessionData.response_path)
+      const responsePath = sessionData.response_path;
       const transformedChapters = [];
       const transformedScreens = [];
       let screenCounter = 0;
@@ -100,7 +102,7 @@ export function useCometManager(sessionData = null) {
       setChapters(transformedChapters);
       setScreens(transformedScreens);
     }
-  }, []);
+  }, [sessionData]);
 
   // Transform sessionData response_path to chapters and screens
   // useEffect(() => {
