@@ -12,7 +12,7 @@ const ChatMessage = ({ role, text }) => {
         className={cn(
           "max-w-[80%] rounded-lg px-4 py-2",
           isUser
-            ? "bg-primary text-primary-foreground"
+            ? "bg-primary-100 text-primary-700 font-medium text-xs"
             : "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
         )}
       >

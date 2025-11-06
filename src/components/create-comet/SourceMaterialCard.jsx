@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Textarea } from "@/components/ui/Textarea";
-import { FileIcon, MessageCircleMore, X, Check, Plus } from "lucide-react";
+import { Input } from "@/components/ui/Input";
+
+import { Plus, CircleX, BadgeCheck } from "lucide-react";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import Image from "next/image";
@@ -83,10 +84,7 @@ export default function SourceMaterialCard({ files, setFiles }) {
       </CardHeader>
 
       <CardContent>
-        <div className="flex flex-col w-full border-2 border-gray-200 rounded-xl bg-gray-100 p-2 sm:p-4">
-          <span className="text-md font-medium text-gray-700 mb-2">
-            Supported Format: PDFs, Videos, Audio, Images
-          </span>
+        <div className="flex flex-col w-full border-2 border-gray-200 rounded-xl bg-gray-100 p-2 sm:p-2">
           <div className="border-2 border-dashed border-gray-300 bg-white rounded-lg p-6 text-center">
             <input
               type="file"
@@ -138,8 +136,6 @@ export default function SourceMaterialCard({ files, setFiles }) {
 }
 
 const FilePreview = ({ file, setFiles, files }) => {
-  const [openComment, setOpenComment] = useState(false);
-
   const formatFileSize = (bytes) => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -154,47 +150,48 @@ const FilePreview = ({ file, setFiles, files }) => {
   };
 
   return (
-    <div className="flex flex-col bg-muted p-1 rounded-xl">
-      <CardContent className="bg-background flex items-center justify-between p-4 border rounded-xl">
-        <div className="flex items-center gap-4">
-          <div className="bg-accent text-primary p-2 rounded-full">
-            <FileIcon className="w-6 h-6" fill="white" stroke="#746bda" />
+    <div className="flex flex-col bg-gray-100  rounded-xl p-1">
+      <div className="flex flex-col border border-gray-200 bg-white rounded-xl">
+        <CardContent className=" flex items-center justify-between p-4  rounded-xl">
+          <div className="flex items-center gap-4">
+            <div className="bg-accent text-primary p-2 rounded-full">
+              <Image src="/file.png" alt="File icon" width={24} height={24} />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">
+                {truncateFileName(file.name)}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                ({formatFileSize(file.size)})
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">
-              {truncateFileName(file.name)}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              ({formatFileSize(file.size)})
-            </span>
+          <div className="flex items-center gap-2">
+            <button className="cursor-pointer hover:text-green-600 transition-colors">
+              {/* <Image
+                src="/Verified Check.png"
+                alt="Verified"
+                width={24}
+                height={24}
+              /> */}
+              <BadgeCheck className="w-6 h-6 font-bold text-green-600 " />
+            </button>
+
+            <button
+              onClick={() => setFiles(files.filter((f) => f !== file))}
+              className="cursor-pointer hover:text-red-600 transition-colors"
+            >
+              <CircleX className="w-4 h-4 font-bold" />
+            </button>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="border p-1 rounded-full text-gray-500 hover:text-green-600 transition-colors">
-            <Check className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setOpenComment(!openComment)}
-            className="border p-1 rounded-full text-gray-500 hover:text-red-600 transition-colors"
-          >
-            <MessageCircleMore className="w-4 h-4 text-primary" />
-          </button>
-          <button
-            onClick={() => setFiles(files.filter((f) => f !== file))}
-            className="border p-1 rounded-full text-gray-500 hover:text-red-600 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      </CardContent>
-      {openComment && (
-        <div className="mt-1">
-          <Textarea
+        </CardContent>
+        <div className="m-2">
+          <Input
             placeholder="Add comment..."
             className="w-full bg-background rounded-lg"
           />
         </div>
-      )}
+      </div>
     </div>
   );
 };

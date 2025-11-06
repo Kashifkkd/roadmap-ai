@@ -384,19 +384,29 @@ export default function CreateComet({
     }
   };
 
-  const handleFieldFocus = (fieldName, e) => {
+  const handleTextSelection = (fieldName, e) => {
     if (blurTimeout) {
       clearTimeout(blurTimeout);
       setBlurTimeout(null);
     }
-    setFocusedField(fieldName);
 
-    if (e && e.target) {
-      const rect = e.target.getBoundingClientRect();
+    if (!e?.target) return;
+
+    const input = e.target;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const hasTextSelected = start !== end && start !== null && end !== null;
+
+    if (hasTextSelected) {
+      setFocusedField(fieldName);
+      const rect = input.getBoundingClientRect();
       setFieldPosition({
         top: rect.bottom + 10,
         left: rect.left,
       });
+    } else {
+      setFocusedField(null);
+      setFieldPosition(null);
     }
   };
 
@@ -404,7 +414,7 @@ export default function CreateComet({
     const timeout = setTimeout(() => {
       setFocusedField(null);
       setFieldPosition(null);
-    }, 300);
+    }, 200);
     setBlurTimeout(timeout);
   };
 
@@ -440,7 +450,7 @@ export default function CreateComet({
                         id="comet-title"
                         placeholder="Enter comet title"
                         {...register("cometTitle")}
-                        onFocus={(e) => handleFieldFocus("cometTitle", e)}
+                        onSelect={(e) => handleTextSelection("cometTitle", e)}
                         onBlur={handleFieldBlur}
                       />
                       {errors.cometTitle && (
@@ -456,7 +466,7 @@ export default function CreateComet({
                         id="client-org"
                         placeholder="Enter description"
                         {...register("clientOrg")}
-                        onFocus={(e) => handleFieldFocus("clientOrg", e)}
+                        onSelect={(e) => handleTextSelection("clientOrg", e)}
                         onBlur={handleFieldBlur}
                       />
                       {errors.clientOrg && (
@@ -493,6 +503,9 @@ export default function CreateComet({
                         rows={3}
                         placeholder="Describe your target audience"
                         {...register("targetAudience")}
+                        onSelect={(e) =>
+                          handleTextSelection("targetAudience", e)
+                        }
                       />
                       {errors.targetAudience && (
                         <p className="text-red-600 text-sm">
@@ -510,6 +523,9 @@ export default function CreateComet({
                         rows={3}
                         placeholder="Define learning objectives"
                         {...register("learningObjectives")}
+                        onSelect={(e) =>
+                          handleTextSelection("learningObjectives", e)
+                        }
                       />
                       {errors.learningObjectives && (
                         <p className="text-red-600 text-sm">
@@ -589,6 +605,9 @@ export default function CreateComet({
                         rows={3}
                         placeholder="Focus on practical scenarios for first-time managers. Include at least one interactive quiz and one downloadable tool template"
                         {...register("specialInstructions")}
+                        onSelect={(e) =>
+                          handleTextSelection("specialInstructions", e)
+                        }
                       />
                     </div>
                   </CardContent>

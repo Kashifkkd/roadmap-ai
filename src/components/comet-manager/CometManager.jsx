@@ -432,7 +432,6 @@ export default function CometManager({
           </div>
         </>
       )}
-
       {/* Add Screen Popup */}
       <AddScreenPopup
         isOpen={showAddPopup}
@@ -440,8 +439,7 @@ export default function CometManager({
         onAddScreen={handleAddNewScreen}
         screenTypeGroups={SCREEN_TYPE_GROUPS}
       />
-
-      {/* Preview Drawer */}
+      /** Preview Drawer
       <Drawer
         direction="right"
         open={isPreviewMode}
@@ -454,8 +452,8 @@ export default function CometManager({
           className={`${
             isMaximized
               ? "w-screen"
-              : "w-full sm:w-[90vw] md:w-[70vw] lg:w-[50vw] xl:max-w-4xl"
-          } h-screen bg-primary-50 p-0`}
+              : "w-full sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
+          } !max-w-none h-screen bg-primary-50 p-0`}
         >
           {/* Preview Header */}
           <div className="bg-primary-50 border-b border-gray-200 py-3 px-3 sm:px-4 flex items-center justify-between">
