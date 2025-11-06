@@ -41,6 +41,7 @@ export default function CometManagerSidebar({
   const handleTabChange = (index) => {
     setTab(index);
   };
+  console.log()
 
   const toggleChapter = (chapterId) => {
     setExpandedChapters((prev) => {
@@ -94,7 +95,9 @@ export default function CometManagerSidebar({
       });
 
       if (response.error) {
-        throw new Error(response.error?.message || "Failed to fetch source materials");
+        throw new Error(
+          response.error?.message || "Failed to fetch source materials"
+        );
       }
 
       if (response.response) {
@@ -164,7 +167,7 @@ export default function CometManagerSidebar({
     {
       onClick: () => handleTabChange(0),
       children: (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center">
           <File size={16} />
           Steps
         </div>
@@ -173,7 +176,7 @@ export default function CometManagerSidebar({
     {
       onClick: () => handleTabChange(1),
       children: (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center ">
           <File size={16} />
           Sources
         </div>
@@ -182,7 +185,7 @@ export default function CometManagerSidebar({
     {
       onClick: () => handleTabChange(2),
       children: (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center ">
           <Paperclip size={16} />
           Assets
         </div>
@@ -196,16 +199,17 @@ export default function CometManagerSidebar({
       <div className="flex justify-between w-full rounded-xl shrink-0">
         <Stack
           direction="row"
-          className="bg-background rounded-xl w-full gap-1 sm:gap-2 justify-between"
+          className="bg-background rounded-xl w-full gap-1 sm:gap-1 justify-between"
         >
           {buttons.map((button, index) => (
             <Button
               key={index}
               onClick={button.onClick}
-              className={`text-xs sm:text-sm ${index === tab
+              className={`text-xs sm:text-sm ${
+                index === tab
                   ? "bg-primary text-background"
                   : "bg-background text-gray-400 hover:bg-primary hover:text-background shadow-none"
-                }`}
+              }`}
             >
               {button.children}
             </Button>
@@ -228,10 +232,9 @@ export default function CometManagerSidebar({
                 return (
                   <div
                     key={chapterId}
-                    className={`flex flex-col rounded-lg transition-all ${isSelected || isExpanded
-                        ? "bg-primary-100"
-                        : "bg-gray-50"
-                      }`}
+                    className={`flex flex-col border-2 bg-white border-gray-300 rounded-sm transition-all ${
+                      isSelected || isExpanded ? "bg-primary-100" : "bg-gray-50"
+                    }`}
                   >
                     {/* Chapter Header */}
                     <div
@@ -248,13 +251,17 @@ export default function CometManagerSidebar({
                       className="flex items-center gap-2 p-3 sm:p-4 cursor-pointer transition-all"
                     >
                       <div
-                        className={`rounded-full p-1 ${isSelected ? "bg-primary" : "bg-primary-100"
-                          }`}
+                        className={`rounded-full p-1 ${
+                          isSelected ? "bg-primary" : "bg-primary-100"
+                        }`}
                       >
                         <ChevronDown
                           size={16}
-                          className={`${isSelected ? "text-white" : "text-primary"
-                            } transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                          className={`${
+                            isSelected ? "text-white" : "text-primary"
+                          } transition-transform ${
+                            isExpanded ? "rotate-180" : ""
+                          }`}
                         />
                       </div>
                       <div className="flex flex-col font-semibold flex-1 min-w-0">
@@ -262,105 +269,128 @@ export default function CometManagerSidebar({
                           Chapter {index + 1}
                         </h2>
                         <p
-                          className={`text-sm sm:text-base truncate ${isSelected ? "text-primary" : "text-gray-800"
-                            }`}
+                          className={`text-sm sm:text-base  ${
+                            isSelected ? "text-black" : "text-gray-800"
+                          }`}
                         >
-                          {chapter.chapter || chapter.name || "Untitled Chapter"}
+                          {chapter.chapter ||
+                            chapter.name ||
+                            "Untitled Chapter"}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        {/* <p className="text-xs text-gray-500 mt-1">
                           {stepCount} {stepCount === 1 ? "step" : "steps"}
-                        </p>
+                        </p> */}
                       </div>
                     </div>
 
                     {/* Expanded Steps - Inside the same card */}
-                    {isExpanded && chapter.steps && chapter.steps.length > 0 && (
-                      <div className="flex flex-col gap-2 px-3 pb-3">
-                        {chapter.steps.map((step, stepIndex) => {
-                          // Create unique step ID that includes chapter index and step index
-                          const stepId = step.id || `step-${chapterId}-${stepIndex}`;
-                          const isStepSelected = selectedStep === stepId;
-                          const isStepExpanded = expandedSteps.has(stepId);
-                          return (
-                            <div
-                              key={stepId}
-                              className={`flex flex-col rounded-lg transition-all ${isStepSelected || isStepExpanded
-                                  ? "bg-primary-700"
-                                  : "bg-gray-100"
-                                }`}
-                            >
-                              {/* Step Header */}
+                    {isExpanded &&
+                      chapter.steps &&
+                      chapter.steps.length > 0 && (
+                        <div className="flex flex-col gap-2 px-3 pb-3">
+                          {chapter.steps.map((step, stepIndex) => {
+                            // Create unique step ID that includes chapter index and step index
+                            const stepId =
+                              step.id || `step-${chapterId}-${stepIndex}`;
+                            const isStepSelected = selectedStep === stepId;
+                            const isStepExpanded = expandedSteps.has(stepId);
+                            return (
                               <div
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  // Only select the clicked step, deselect others
-                                  if (selectedStep === stepId && expandedSteps.has(stepId)) {
-                                    // If clicking the same step that's already expanded, collapse it
-                                    setSelectedStep(null);
-                                    setExpandedSteps(new Set());
-                                  } else {
-                                    // Select new step and collapse others
-                                    setSelectedStep(stepId);
-                                    // Close all other expanded steps, only expand the clicked one
-                                    setExpandedSteps(new Set([stepId]));
-                                  }
-                                }}
-                                className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${isStepSelected || isStepExpanded
-                                    ? "text-white"
-                                    : "hover:bg-gray-200"
-                                  }`}
+                                key={stepId}
+                                className={`flex flex-col rounded-sm transition-all ${
+                                  isStepExpanded
+                                    ? "bg-primary-700"
+                                    : isStepSelected
+                                    ? "bg-primary-700"
+                                    : "bg-gray-100"
+                                }`}
                               >
+                                {/* Step Header */}
                                 <div
-                                  className={`rounded-full p-1 shrink-0 ${isStepSelected || isStepExpanded ? "bg-white" : "bg-primary-100"
-                                    }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Only select step; do not expand/collapse here
+                                    setSelectedStep(stepId);
+                                  }}
+                                  className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
+                                    isStepSelected || isStepExpanded
+                                      ? "text-white"
+                                      : "hover:bg-gray-200"
+                                  }`}
                                 >
-                                  <ChevronDown
-                                    size={12}
-                                    className={`transition-transform ${isStepExpanded ? "rotate-180" : ""
-                                      } ${isStepSelected || isStepExpanded ? "text-primary-700" : "text-primary"
-                                      }`}
-                                  />
-                                </div>
-                                <div className="flex flex-col font-medium flex-1 min-w-0">
-                                  <p
-                                    className={`text-xs sm:text-sm truncate ${isStepSelected || isStepExpanded ? "text-white" : "text-gray-900"
-                                      }`}
+                                  <div
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleStep(stepId);
+                                    }}
+                                    className={`rounded-full p-1 shrink-0 ${
+                                      isStepSelected || isStepExpanded
+                                        ? "bg-white"
+                                        : "bg-primary-100"
+                                    }`}
                                   >
-                                    Step {index + 1}.{stepIndex + 1}
-                                  </p>
-                                  <p
-                                    className={`text-xs sm:text-sm font-semibold truncate ${isStepSelected || isStepExpanded ? "text-white" : "text-gray-900"
+                                    <ChevronDown
+                                      size={12}
+                                      className={`transition-transform ${
+                                        isStepExpanded ? "rotate-180" : ""
+                                      } ${
+                                        isStepSelected || isStepExpanded
+                                          ? "text-primary-700"
+                                          : "text-primary"
                                       }`}
-                                  >
-                                    {step.name || `Step ${stepIndex + 1}`}
-                                  </p>
+                                    />
+                                  </div>
+                                  <div className="flex flex-col py-1 flex-1 min-w-0">
+                                    <p
+                                      className={`text-xs sm:text-xs  ${
+                                        isStepSelected || isStepExpanded
+                                          ? "text-white"
+                                          : "text-gray-900"
+                                      }`}
+                                    >
+                                      Step {index + 1}.{stepIndex + 1}
+                                    </p>
+                                    <p
+                                      className={`text-xs sm:text-sm font-semibold ${
+                                        isStepSelected || isStepExpanded
+                                          ? ""
+                                          : "truncate"
+                                      } ${
+                                        isStepSelected || isStepExpanded
+                                          ? "text-white"
+                                          : "text-gray-900"
+                                      }`}
+                                    >
+                                      {step.name || `Step ${stepIndex + 1}`}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
 
-                              {/* Step Details (Expanded) - Inside the same card */}
-                              {isStepExpanded && (
-                                <div className="px-2 pb-2">
-                                  <div className="px-3 py-3 bg-white rounded-lg">
-                                    <div className="flex flex-col gap-2">
-                                      <div>
-                                        <h4 className="text-sm font-semibold text-black mb-1">
-                                          {step.name || `Step ${stepIndex + 1}`}
-                                        </h4>
-                                        {step.description && (
-                                          <p className="text-xs text-black leading-relaxed">
-                                            {step.description}
-                                          </p>
-                                        )}
+                                {/* Step Details (Expanded) - Inside the same card */}
+                                {isStepExpanded && (
+                                  <div className="px-2 pb-2">
+                                    <div className="px-3 py-3 bg-white rounded-lg">
+                                      <div className="flex flex-col gap-2">
+                                        <div>
+                                          <h4 className="text-sm font-semibold text-black mb-1">
+                                            {step.name ||
+                                              `Step ${stepIndex + 1}`}
+                                          </h4>
+                                          {step.description && (
+                                            <p className="text-xs text-black leading-relaxed">
+                                              {step.description}
+                                            </p>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                   </div>
                 );
               })

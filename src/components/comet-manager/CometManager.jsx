@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   File,
   Eye,
@@ -56,62 +56,85 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 
-const SCREEN_TYPES = [
+// Grouped screen types for Add dialog
+const SCREEN_TYPE_GROUPS = [
   {
-    id: "content",
-    name: "Content",
-    icon: <PanelsTopLeft size={20} />,
-    color: "bg-blue-100 border-blue-300",
-    description: "Text and media content",
+    group: "Content & Learning",
+    items: [
+      {
+        id: "content",
+        name: "Content",
+        icon: <PanelsTopLeft size={20} />,
+        color: "bg-blue-100 border-blue-300",
+        description: "Text, images, and embedded media.",
+      },
+    ],
   },
   {
-    id: "poll",
-    name: "Poll",
-    icon: <BarChart3 size={20} />,
-    color: "bg-green-100 border-green-300",
-    description: "Interactive polling questions",
+    group: "Polls & Surveys",
+    items: [
+      {
+        id: "multiple_choice",
+        name: "Multiple Choice/Survey",
+        icon: <Columns size={20} />,
+        color: "bg-purple-100 border-purple-300",
+        description: "Select one or more options.",
+      },
+      {
+        id: "force_question",
+        name: "Force Question",
+        icon: <Target size={20} />,
+        color: "bg-yellow-100 border-yellow-300",
+        description: "Rearrange responses.",
+      },
+      {
+        id: "linear_poll",
+        name: "Linear Poll",
+        icon: <BarChart3 size={20} />,
+        color: "bg-green-100 border-green-300",
+        description: "Slider based rating.",
+      },
+      {
+        id: "assessment",
+        name: "Assessment",
+        icon: <FileQuestion size={20} />,
+        color: "bg-red-100 border-red-300",
+        description: "Quizzes or graded questions.",
+      },
+    ],
   },
   {
-    id: "column",
-    name: "Column Match",
-    icon: <Columns size={20} />,
-    color: "bg-purple-100 border-purple-300",
-    description: "Matching activities",
-  },
-  {
-    id: "reflection",
-    name: "Reflection",
-    icon: <MessageSquare size={20} />,
-    color: "bg-orange-100 border-orange-300",
-    description: "Reflection prompts",
-  },
-  {
-    id: "assessment",
-    name: "Assessment",
-    icon: <FileQuestion size={20} />,
-    color: "bg-red-100 border-red-300",
-    description: "Assessment tools",
-  },
-  {
-    id: "interactive",
-    name: "Interactive",
-    icon: <Target size={20} />,
-    color: "bg-yellow-100 border-yellow-300",
-    description: "Interactive elements",
-  },
-  {
-    id: "video",
-    name: "Video",
-    icon: <Eye size={20} />,
-    color: "bg-indigo-100 border-indigo-300",
-    description: "Video content",
-  },
-  {
-    id: "group",
-    name: "Group Activity",
-    icon: <Users size={20} />,
-    color: "bg-teal-100 border-teal-300",
-    description: "Group activities",
+    group: "Prompts",
+    items: [
+      {
+        id: "reflection",
+        name: "Reflection",
+        icon: <MessageSquare size={20} />,
+        color: "bg-orange-100 border-orange-300",
+        description: "Open-ended prompts.",
+      },
+      {
+        id: "action",
+        name: "Action",
+        icon: <Columns size={20} />,
+        color: "bg-indigo-100 border-indigo-300",
+        description: "To-do items or practical exercises.",
+      },
+      {
+        id: "discussion",
+        name: "Discussion",
+        icon: <Users size={20} />,
+        color: "bg-teal-100 border-teal-300",
+        description: "Peer conversations, group prompts.",
+      },
+      {
+        id: "habits",
+        name: "Habits",
+        icon: <Eye size={20} />,
+        color: "bg-gray-100 border-gray-300",
+        description: "Step-by-step tasks.",
+      },
+    ],
   },
 ];
 
@@ -134,12 +157,11 @@ export default function CometManager({
     insertScreenAt,
   } = useCometManager(sessionData);
 
-  console.log("screens", screens);
-  console.log("chapters", chapters);
-  console.log("sessionData", sessionData);
-
   // Extract session_id from sessionData or temp
-  const sessionId = sessionData?.session_id || (typeof window !== "undefined" && localStorage.getItem("sessionId")) || null;
+  const sessionId =
+    sessionData?.session_id ||
+    (typeof window !== "undefined" && localStorage.getItem("sessionId")) ||
+    null;
 
   const [currentScreen, setCurrentScreen] = useState(0);
   const [selectedScreen, setSelectedScreen] = useState(null);
@@ -147,6 +169,10 @@ export default function CometManager({
   const [addAtIndex, setAddAtIndex] = useState(null);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [isMaximized, setIsMaximized] = useState(false);
+  const selectedScreenRef = useRef(null);
+
+  console.log("chapters", chapters);
+  console.log("selectedScreen", selectedScreen);
 
   // Update local screens when data changes
   useEffect(() => {
@@ -155,6 +181,18 @@ export default function CometManager({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screens]);
+
+  // Ensure the selected screen is visible in the horizontal list
+  useEffect(() => {
+    const target = selectedScreenRef.current;
+    if (target && typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    }
+  }, [currentScreen, selectedScreen]);
 
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
@@ -182,6 +220,11 @@ export default function CometManager({
     reorderScreensList(newScreens);
     setDraggedIndex(null);
   };
+
+  // selected chapter for header
+  const currentChapter = Array.isArray(chapters)
+    ? chapters.find((chapter) => chapter.id === selectedScreen?.chapterId)
+    : null;
 
   const handleScreenClick = (screen) => {
     setSelectedScreen(screen);
@@ -268,22 +311,31 @@ export default function CometManager({
             </div>
 
             {/* Right section - main content */}
-            <div className="flex flex-col w-full lg:w-2/3 xl:w-3/4 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl">
+            <div className="flex flex-col w-full lg:w-2/3 xl:w-3/4 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl my-2 mr-2">
               <div className="flex flex-col flex-1 overflow-hidden">
-                {selectedScreen && (
-                  <div className="shrink-0 p-3 sm:p-4 rounded-t-2xl">
+                {selectedScreen && chapters && (
+                  <div className="shrink-0 p-3 ml-4 sm:p-4 flex justify-between items-center rounded-t-2xl">
                     <div className="flex flex-col gap-1">
-                      <h2 className="text-xs sm:text-sm font-medium text-gray-900 truncate">
-                        {selectedScreen.title || "Untitled Chapter"}
+                      <h2 className="text-sm sm:text-md font-bold text-gray-900 truncate">
+                        {currentChapter?.chapter ||
+                          currentChapter?.name ||
+                          "Untitled Chapter"}
                       </h2>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-medium text-primary">
-                          Step {currentScreen + 1}.1
+                        <span className="text-sm font-medium text-primary">
+                          {selectedScreen.title || "Untitled Chapter"}
                         </span>
-                        <span className="text-xs text-primary truncate">
+                        {/* <span className="text-xs text-primary truncate">
                           {selectedScreen.name || "Untitled Step"}
-                        </span>
+                        </span> */}
                       </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={selectedScreen.thumbnail || "/error-img.png"}
+                        alt={selectedScreen.title || "Untitled Chapter"}
+                        className="w-10 h-10 rounded-lg"
+                      />
                     </div>
                   </div>
                 )}
@@ -293,23 +345,31 @@ export default function CometManager({
                   {/* Navigation - Screens */}
                   <div className="bg-background rounded-md p-2 sm:p-3 shrink-0">
                     <div className="flex flex-col gap-3 w-full">
-                      <div className="flex items-center gap-2 w-full h-fit overflow-x-auto no-scrollbar -mx-2 px-2">
-                        <div className="flex items-center gap-2 sm:gap-4 px-1">
+                      <div className="flex items-start gap-2 w-full h-fit overflow-x-auto no-scrollbar -mx-2 px-2">
+                        <div className="flex items-start gap-2 sm:gap-4 px-1">
                           {screens.map((screen, index) => (
-                            <ScreenCard
+                            <div
                               key={screen.id}
-                              screen={screen}
-                              selectedScreen={selectedScreen}
-                              index={index}
-                              onDragStart={handleDragStart}
-                              onDragEnd={handleDragEnd}
-                              onDragOver={handleDragOver}
-                              onDrop={handleDrop}
-                              onClick={handleScreenClick}
-                              onAddScreen={(insertIndex) =>
-                                handleAddScreen(insertIndex)
+                              ref={
+                                index === currentScreen
+                                  ? selectedScreenRef
+                                  : null
                               }
-                            />
+                            >
+                              <ScreenCard
+                                screen={screen}
+                                selectedScreen={selectedScreen}
+                                index={index}
+                                onDragStart={handleDragStart}
+                                onDragEnd={handleDragEnd}
+                                onDragOver={handleDragOver}
+                                onDrop={handleDrop}
+                                onClick={handleScreenClick}
+                                onAddScreen={(insertIndex) =>
+                                  handleAddScreen(insertIndex)
+                                }
+                              />
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -344,7 +404,7 @@ export default function CometManager({
                   </div>
 
                   {/* Dynamic Form */}
-                  {/* {selectedScreen && (
+                  {selectedScreen && (
                     <div className="shrink-0">
                       <DynamicForm
                         screen={selectedScreen}
@@ -352,15 +412,20 @@ export default function CometManager({
                         onClose={() => setSelectedScreen(null)}
                       />
                     </div>
-                  )} */}
+                  )}
 
-                  {selectedScreen && (
+                  {/* {selectedScreen && (
                     <div className="shrink-0 p-4 bg-white rounded-lg overflow-auto max-h-full">
+                      <h1>hellllo</h1>
                       <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
-                        {JSON.stringify(selectedScreen?.screenContents, null, 2)}
+                        {JSON.stringify(
+                          selectedScreen?.screenContents,
+                          null,
+                          2
+                        )}
                       </pre>
                     </div>
-                  )}
+                  )} */}
                 </div>
               </div>
             </div>
@@ -373,7 +438,7 @@ export default function CometManager({
         isOpen={showAddPopup}
         onClose={() => setShowAddPopup(false)}
         onAddScreen={handleAddNewScreen}
-        screenTypes={SCREEN_TYPES}
+        screenTypeGroups={SCREEN_TYPE_GROUPS}
       />
 
       {/* Preview Drawer */}
@@ -386,10 +451,11 @@ export default function CometManager({
         }}
       >
         <DrawerContent
-          className={`${isMaximized
+          className={`${
+            isMaximized
               ? "w-screen"
               : "w-full sm:w-[90vw] md:w-[70vw] lg:w-[50vw] xl:max-w-4xl"
-            } h-screen bg-primary-50 p-0`}
+          } h-screen bg-primary-50 p-0`}
         >
           {/* Preview Header */}
           <div className="bg-primary-50 border-b border-gray-200 py-3 px-3 sm:px-4 flex items-center justify-between">
