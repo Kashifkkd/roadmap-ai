@@ -1,20 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { temp } from "./temp";
 
 export function useCometManager(sessionData = null) {
   const [isLoading, setIsLoading] = useState(false);
   const [screens, setScreens] = useState([]);
   const [chapters, setChapters] = useState([]);
+  const [selectedStepId, setSelectedStepId] = useState(null);
 
   console.log(">>>", sessionData)
   // Transform temp data response_path to chapters and screens
   useEffect(() => {
-    // if (temp && temp.length > 0 && temp[0].response_path) {
-    if (sessionData && sessionData.response_path) {
-      console.log(sessionData, sessionData.response_path)
-      const responsePath = sessionData.response_path;
+    if (temp && temp.length > 0 && temp[0].response_path) {
+    // if (sessionData && sessionData.response_path) {
+      // console.log(sessionData, sessionData.response_path)
+      const responsePath = temp[0].response_path;
       const transformedChapters = [];
       const transformedScreens = [];
       let screenCounter = 0;
@@ -36,14 +37,44 @@ export function useCometManager(sessionData = null) {
           const stepTitle = step.title || step.name || `Step ${stepIndex + 1}`;
           const stepDescription = step.description || "";
 
+          // Transform screens for this step
+          const stepScreens = stepItem.screens || [];
+          
+          // Collect content types from all screens in this step
+          const contentTypes = new Set();
+          stepScreens.forEach((screen) => {
+            // Get contentType from screenContents
+            if (screen.screenContents?.contentType) {
+              const contentType = screen.screenContents.contentType;
+              // For "content" type, check if it has an image
+              if (contentType === "content") {
+                const hasImage = 
+                  screen.assets?.some(
+                    (asset) => asset.type === "image" || asset.url
+                  ) || 
+                  screen.screenContents.content?.media?.url ||
+                  screen.screenContents.content?.media?.type === "image";
+                if (hasImage) {
+                  contentTypes.add("content_image");
+                } else {
+                  contentTypes.add("content");
+                }
+              } else {
+                contentTypes.add(contentType);
+              }
+            } else if (screen.screenType) {
+              // Fallback to screenType if contentType is not available
+              contentTypes.add(screen.screenType);
+            }
+          });
+
           transformedSteps.push({
             id: stepId,
             name: stepTitle,
             description: stepDescription,
+            contentTypes: Array.from(contentTypes), // Array of unique content types
           });
 
-          // Transform screens for this step
-          const stepScreens = stepItem.screens || [];
           stepScreens.forEach((screen, screenIndex) => {
             const screenId = screen.id || `screen-${screenCounter}`;
 
@@ -320,10 +351,25 @@ export function useCometManager(sessionData = null) {
     });
   };
 
+  // Filter screens based on selected step
+  const filteredScreens = useMemo(() => {
+    if (!selectedStepId) {
+      return []; // Return empty array if no step is selected
+    }
+    return screens.filter((screen) => screen.stepId === selectedStepId);
+  }, [screens, selectedStepId]);
+
+  const setSelectedStep = (stepId) => {
+    setSelectedStepId(stepId);
+  };
+
   return {
     isLoading,
-    screens,
+    screens: filteredScreens, // Return filtered screens instead of all screens
+    allScreens: screens, // Keep all screens available if needed
     chapters,
+    selectedStepId,
+    setSelectedStep,
     updateScreen,
     addScreen,
     deleteScreen,

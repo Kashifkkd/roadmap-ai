@@ -150,6 +150,7 @@ export default function CometManager({
     isLoading,
     screens,
     chapters,
+    setSelectedStep,
     updateScreen: updateScreenData,
     addScreen: addScreenData,
     deleteScreen: deleteScreenData,
@@ -296,6 +297,7 @@ export default function CometManager({
                 onAddScreen={handleAddScreen}
                 chapters={chapters}
                 sessionId={sessionId}
+                setSelectedStep={setSelectedStep}
                 onChapterClick={(chapterId, chapter) => {
                   console.log("Chapter clicked", chapterId, chapter);
                   // Filter screens for this chapter

@@ -26,6 +26,7 @@ export default function CometManagerSidebar({
   chapters = [],
   onChapterClick,
   sessionId,
+  setSelectedStep: setSelectedStepFromHook,
 }) {
   const [tab, setTab] = useState(0);
   const [selectedChapter, setSelectedChapter] = useState(null);
@@ -41,7 +42,6 @@ export default function CometManagerSidebar({
   const handleTabChange = (index) => {
     setTab(index);
   };
-  console.log()
 
   const toggleChapter = (chapterId) => {
     setExpandedChapters((prev) => {
@@ -243,6 +243,9 @@ export default function CometManagerSidebar({
                         toggleChapter(chapterId);
                         // Clear step selection when clicking chapter
                         setSelectedStep(null);
+                        if (setSelectedStepFromHook) {
+                          setSelectedStepFromHook(null);
+                        }
                         setExpandedSteps(new Set());
                         if (onChapterClick) {
                           onChapterClick(chapterId, chapter);
@@ -311,6 +314,10 @@ export default function CometManagerSidebar({
                                     e.stopPropagation();
                                     // Only select step; do not expand/collapse here
                                     setSelectedStep(stepId);
+                                    // Call the hook's setSelectedStep to filter screens
+                                    if (setSelectedStepFromHook) {
+                                      setSelectedStepFromHook(stepId);
+                                    }
                                   }}
                                   className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
                                     isStepSelected || isStepExpanded
