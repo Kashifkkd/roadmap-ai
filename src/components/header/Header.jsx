@@ -1,27 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { usePreviewMode } from "@/contexts/PreviewModeContext";
 import {
   Bell,
   ChevronDown,
-  LogOut,
   User,
   Settings,
-  HelpCircle,
-  CreditCard,
   Menu,
   X,
-  MessageSquare,
-  Download,
   UserPlus,
-  Users,
-  MessagesSquare,
   Pencil,
   Eye,
   Mail,
 } from "lucide-react";
+import { tokenManager } from "@/lib/api-client";
 import Image from "next/image";
 import ClientDropdown from "@/components/common/ClientDropdown";
 import { getClients } from "@/api/client";
@@ -39,6 +33,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import LoginForm from "@/components/auth/LoginForm";
 
 export default function Header() {
   const pathname = usePathname();
@@ -53,6 +48,7 @@ export default function Header() {
   const [clientsError, setClientsError] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isHomeButtonActive, setIsHomeButtonActive] = useState(false);
+  const [activeButton, setActiveButton] = useState(null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [isInviting, setIsInviting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -61,6 +57,9 @@ export default function Header() {
   const [isDownloadActive, setIsDownloadActive] = useState(false);
   const [isInviteButtonActive, setIsInviteButtonActive] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
+  const [loginButtonPosition, setLoginButtonPosition] = useState(null);
+  const loginButtonRef = useRef(null);
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
 
@@ -120,9 +119,19 @@ export default function Header() {
   ];
 
   useEffect(() => {
-    // Mock authentication check - replace with actual auth logic
-    setIsAuthenticated(true);
-  }, []);
+    // Check authentication status
+    const isAuth = tokenManager.isAuthenticated();
+    console.log("isAuth", isAuth);
+    setIsAuthenticated(isAuth);
+  }, [pathname]);
+
+  // Re-check authentication when login dialog closes (in case user successfully logged in)
+  useEffect(() => {
+    if (!isLoginDialogOpen) {
+      const isAuth = tokenManager.isAuthenticated();
+      setIsAuthenticated(isAuth);
+    }
+  }, [isLoginDialogOpen]);
 
   useEffect(() => {
     const load = async () => {
@@ -188,6 +197,9 @@ export default function Header() {
     router.push("/");
   };
 
+  const handleButtonClick = (buttonName) => {
+    setActiveButton(buttonName);
+  };
   const handleHomeButtonClick = () => {
     setIsHomeButtonActive(!isHomeButtonActive);
   };
@@ -199,10 +211,48 @@ export default function Header() {
   const handleDownloadClick = () => {
     setIsDownloadActive(!isDownloadActive);
   };
+  const handleLoginClick = () => {
+    if (loginButtonRef.current) {
+      const rect = loginButtonRef.current.getBoundingClientRect();
+      const dialogWidth = 350; // Approximate dialog width
+      const dialogHeight = 450; // Approximate dialog height
+      const spacing = 8;
+
+      let top = rect.bottom + window.scrollY + spacing;
+      let left = rect.left + window.scrollX;
+
+      // Ensure dialog doesn't go off the right edge
+      if (left + dialogWidth > window.innerWidth + window.scrollX) {
+        left = window.innerWidth + window.scrollX - dialogWidth - 16;
+      }
+
+      // Ensure dialog doesn't go off the bottom edge
+      if (top + dialogHeight > window.innerHeight + window.scrollY) {
+        top = rect.top + window.scrollY - dialogHeight - spacing;
+        // If still off screen, position at top
+        if (top < window.scrollY) {
+          top = window.scrollY + 16;
+        }
+      }
+
+      // Ensure dialog doesn't go off the left edge
+      if (left < window.scrollX) {
+        left = window.scrollX + 16;
+      }
+
+      setLoginButtonPosition({
+        top,
+        left,
+        width: rect.width,
+      });
+    }
+    setIsLoginDialogOpen(true);
+  };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    router.push("/login");
+    tokenManager.removeToken();
+    router.push("/");
   };
 
   const toggleMobileMenu = () => {
@@ -357,12 +407,13 @@ export default function Header() {
       } ${compact ? "px-2 py-1" : "px-2 sm:px-3 py-1.5 sm:py-2"}`}
     >
       <Image
-        src="/Dialog 2.png"
+        src="/Dialog 2.svg"
         alt="Feedback"
         width={18}
         height={18}
-        className="sm:w-5 sm:h-5"
+        className="sm:w-5 sm:h-5 h"
       />
+
       {!compact && (
         <span className="hidden sm:inline text-xs sm:text-sm font-medium">
           Feedback
@@ -400,11 +451,11 @@ export default function Header() {
         className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-sm border transition-colors duration-200 shrink-0 ${
           isDownloadActive
             ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
-            : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
+            : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600 hover:cursor-pointer"
         }`}
       >
         <Image
-          src="/download.png"
+          src="/download.svg"
           alt="Download"
           width={18}
           height={18}
@@ -618,15 +669,113 @@ export default function Header() {
       <div className="bg-white px-3 sm:px-4 md:px-6 py-1 rounded-lg w-full">
         <div className="flex items-center justify-between w-full h-full text-sm sm:text-base gap-2 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-4 md:gap-8 lg:gap-16 shrink-0 min-w-0">
-            <div onClick={handleLogoClick} className="cursor-pointer shrink-0">
-              <div className="flex items-center gap-1 sm:gap-2">
-                <Image
-                  src="/logo.png"
-                  alt="Kyper Logo"
-                  width={112}
-                  height={52}
-                  // className="w-10 h-10"
-                />
+            <div className="relative ">
+              <div className="flex cursor-pointer shrink-0 flex-1 gap-2 items-center">
+                <div
+                  className="flex items-center gap-1 sm:gap-2"
+                  onClick={handleLogoClick}
+                >
+                  <Image
+                    src="/logo.png"
+                    alt="Kyper Logo"
+                    width={112}
+                    height={52}
+                    // className="w-10 h-10"
+                  />
+                </div>
+                <button
+                  onClick={toggleUserMenu}
+                  className="flex items-center gap-1.5 sm:gap-2 md:gap-3 cursor-pointer outline-none hover:opacity-80 transition-opacity relative z-50"
+                >
+                  <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 shrink-0" />
+                </button>
+                {isUserMenuOpen && (
+                  <div
+                    className="absolute left-0 top-full mt-3 w-48 bg-white rounded-sm shadow-lg border border-gray-200 z-50"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className=" p-2 border-gray-200 border-b">
+                      <button
+                        className={`px-4 py-1 w-full border-gray-100 flex  gap-2 cursor-pointer rounded-sm transition-all duration-200 items-center justify-start hover:cursor-pointer ${
+                          activeButton === "home"
+                            ? "bg-primary text-white"
+                            : "bg-white text-gray-900 hover:bg-primary-100"
+                        } `}
+                        onClick={() => handleButtonClick("home")}
+                      >
+                        <Image
+                          src="/home.svg"
+                          alt="Profile"
+                          width={20}
+                          height={20}
+                          className={
+                            activeButton === "home" ? "brightness-0 invert" : ""
+                          }
+                        />
+                        <span className="text-base ">Back to Home</span>
+                      </button>
+                    </div>
+
+                    <div className=" p-2 py-1   gap-2 flex flex-col">
+                      <button
+                        className={`w-full px-4 py-1 flex items-center justify-start gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${
+                          activeButton === "myAccount"
+                            ? "bg-primary text-white"
+                            : "bg-white text-gray-900 hover:bg-primary-100"
+                        }`}
+                        onClick={() => handleButtonClick("myAccount")}
+                      >
+                        <User
+                          className={`w-5 h-5 ${
+                            activeButton === "myAccount" ? "text-white" : ""
+                          }`}
+                        />
+                        <span className="text-base">My Account</span>
+                      </button>
+                      <button
+                        className={`px-4 py-1 w-full flex items-center  gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${
+                          activeButton === "settings"
+                            ? "bg-primary text-white"
+                            : "bg-white text-gray-900 hover:bg-primary-100"
+                        }`}
+                        onClick={() => handleButtonClick("settings")}
+                      >
+                        <Settings
+                          className={`w-5 h-5 ${
+                            activeButton === "settings" ? "text-white" : ""
+                          }`}
+                        />
+                        <span className="text-base   ">Clients Settings</span>
+                      </button>
+                    </div>
+
+                    <div className="p-2 border-t border-gray-100 ">
+                      <button
+                        onClick={() =>
+                          handleButtonClick("logout") || handleLogout()
+                        }
+                        className={`px-4 py-1 w-full flex items-center justify-start gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${
+                          activeButton === "logout"
+                            ? "bg-primary text-white"
+                            : "bg-white text-gray-900 hover:bg-primary-100"
+                        }`}
+                      >
+                        <Image
+                          src="/logout.svg"
+                          alt="Logout"
+                          width={20}
+                          height={20}
+                          className={
+                            activeButton === "logout"
+                              ? "brightness-0 invert"
+                              : ""
+                          }
+                        />
+                        <span className="text-base   ">Logout</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -649,7 +798,7 @@ export default function Header() {
                     }`}
                   >
                     <img
-                      src="/home.png"
+                      src="/home.svg"
                       alt="Home"
                       width={18}
                       height={18}
@@ -753,26 +902,26 @@ export default function Header() {
                     <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
                       {getClientInitial(selectedClient || clients[0])}
                     </div>
-
+                    {/* 
                     <button
                       onClick={toggleUserMenu}
                       className="flex items-center gap-1.5 sm:gap-2 md:gap-3 cursor-pointer outline-none hover:opacity-80 transition-opacity"
-                    >
-                      <div className="hidden sm:flex flex-col justify-start">
-                        <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
-                          {clients[0]?.name}
+                    > */}
+                    <div className="hidden sm:flex flex-col justify-start">
+                      <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
+                        {clients[0]?.name}
+                      </span>
+                      {isSuperAdmin() && (
+                        <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
+                          Super Admin
                         </span>
-                        {isSuperAdmin() && (
-                          <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
-                            Super Admin
-                          </span>
-                        )}
-                      </div>
-                      <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 shrink-0" />
-                    </button>
+                      )}
+                    </div>
+                    {/* <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 shrink-0" /> */}
+                    {/* </button> */}
                   </div>
 
-                  {isUserMenuOpen && (
+                  {/* {isUserMenuOpen && (
                     <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-medium text-gray-900">
@@ -812,22 +961,24 @@ export default function Header() {
                         </button>
                       </div>
                     </div>
-                  )}
+                  )} */}
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-3 relative">
                   <button
-                    onClick={() => router.push("/login")}
-                    className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 hover:text-gray-900 whitespace-nowrap"
+                    ref={loginButtonRef}
+                    onClick={handleLoginClick}
+                    className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-primary-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer"
                   >
                     Login
                   </button>
-                  <button
-                    onClick={() => router.push("/register")}
-                    className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
-                  >
-                    Sign Up
-                  </button>
+                  {isLoginDialogOpen && (
+                    <LoginForm
+                      open={isLoginDialogOpen}
+                      onOpenChange={setIsLoginDialogOpen}
+                      buttonPosition={loginButtonPosition}
+                    />
+                  )}
                 </div>
               )}
 
@@ -904,7 +1055,13 @@ export default function Header() {
         {isUserMenuOpen && (
           <div
             className="fixed inset-0 z-40"
-            onClick={() => setIsUserMenuOpen(false)}
+            onClick={(e) => {
+              // Don't close if clicking on the button or menu
+              if (e.target.closest("[data-user-menu]")) {
+                return;
+              }
+              setIsUserMenuOpen(false);
+            }}
           />
         )}
 

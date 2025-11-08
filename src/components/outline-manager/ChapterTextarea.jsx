@@ -54,7 +54,10 @@ export default function ChapterTextarea({ sessionData, setAllMessages, onClose }
         ],
         to_modify: {},
       });
-
+   /*
+        const conversationMessage = `{ 'chapter': '${chapter 3}', 'value': '${currentFieldValue}', 'instruction': '${query}' }`;
+         const conversationMessage = `{ 'field': '${fieldLabel}', 'value': '${currentFieldValue}', 'instruction': '${query}' }`;
+   */
       const messageResponse = await graphqlClient.sendMessage(cometJsonForMessage);
 
       setAllMessages((prev) => [

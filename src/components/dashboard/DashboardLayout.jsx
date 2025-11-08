@@ -144,6 +144,7 @@ export default function DashboardLayout() {
       <Loading isOpen={isGeneratingOutline} />
       <div className="flex flex-col bg-primary-50 px-2 py-2 lg:flex-row h-full">
         <div className="flex flex-1 gap-2 flex-col lg:flex-row overflow-y-auto">
+          
           {/* Chat Window - Hidden on small screens, Desktop: 25% width */}
           <div className="lg:block w-full lg:w-1/4 h-full lg:h-full">
             <ChatWindow

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import ChatWindow from "@/components/chat/ChatWindow";
-import OutlineMannerCreateComet from "./OutlineMannerCreateComet.jsx.jsx";
+import OutlineMannerCreateComet from "./OutlineMannerCreateComet.jsx";
 
 export default function OutlineManagerLayout() {
   const [sessionData, setSessionData] = useState(null);

@@ -1,4 +1,5 @@
 import React from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft } from "lucide-react";
 import Stars from "../icons/Stars";
@@ -12,6 +13,7 @@ export default function CreateCometFooter({
   isUpdating = false,
   error = null,
 }) {
+  const [isReviewingWithKyper, setIsReviewingWithKyper] = useState(false);
   const handleBackClick = () => {
     // Navigate back or reset form
     if (reset) {
@@ -21,6 +23,15 @@ export default function CreateCometFooter({
 
   const isLoading = isUpdating;
   const canSubmit = isFormValid && !isLoading;
+
+  const handleReviewWithKyperClick = () => {
+    console.log("Review with Kyper");
+    if (isReviewingWithKyper === true) {
+      setIsReviewingWithKyper(false);
+    } else {
+      setIsReviewingWithKyper(true);
+    }
+  };
 
   return (
     <div className="border-t p-2 sm:p-4 bg-background w-full rounded-b-2xl">
@@ -42,10 +53,17 @@ export default function CreateCometFooter({
         {/* Right side container */}
         <div className="flex flex-row items-center gap-2 sm:gap-3">
           <Button
-            className="bg-white border border-primary text-primary w-32 sm:w-auto flex items-center justify-center gap-2"
-            onClick={reset}
+            variant="default"
+            className={`bg-white border border-primary text-primary w-32 sm:w-auto flex items-center justify-center gap-2 ${
+              isReviewingWithKyper
+                ? "bg-primary-600 text-white"
+                : "hover:cursor-pointer  hover:bg-primary-100 hover:text-primary"
+            }`}
+            onClick={handleReviewWithKyperClick}
+            // disabled={isReviewingWithKyper}
           >
-            <span>Reset</span>
+            {/* <Brain size={16} /> */}
+            <span>Review With Kyper</span>
           </Button>
           {hasChanges && (
             <div className="text-xs sm:text-sm text-muted-foreground text-right">

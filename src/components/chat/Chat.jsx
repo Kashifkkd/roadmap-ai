@@ -31,8 +31,8 @@ const Chat = ({
   const hasMessages = messages && messages.length > 0;
 
   return (
-    <div className="h-full bg-background flex flex-col border border-primary rounded-lg overflow-hidden">
-      <div className="flex-1 overflow-y-auto no-scrollbar p-2 sm:p-4 pb-4">
+    <div className="h-full bg-background flex flex-col border-2 border-[#C7C2F9] rounded-lg overflow-hidden">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-2 sm:p-2 pb-4">
         {hasMessages ? (
           <div className="max-w-4xl mx-auto w-full">
             {messages.map((msg, idx) => (
@@ -132,7 +132,7 @@ const Chat = ({
         <div ref={bottomRef} />
       </div>
 
-      <div className="bg-background border-gray-200 p-2 sm:p-4">
+      <div className="bg-background border-gray-200 p-2 sm:p-2">
         {error && (
           <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-600 text-sm">{error}</p>

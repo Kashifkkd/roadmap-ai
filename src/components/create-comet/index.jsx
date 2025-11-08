@@ -437,7 +437,7 @@ export default function CreateComet({
         <div className="p-1 sm:p-2 w-full h-full overflow-y-auto create-comet-scrollbar">
           <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 bg-primary-50 rounded-xl h-full p-1 sm:p-2">
             <div className="flex p-1 sm:p-2 w-full lg:w-1/2 bg-background rounded-xl">
-              <div className="flex flex-1 flex-col border rounded-xl h-full space-y-3 sm:space-y-4 p-2 sm:p-4 overflow-y-auto create-comet-scrollbar">
+              <div className="flex flex-1 flex-col border border-gray-200 rounded-sm h-full space-y-3 sm:space-y-4 p-2 sm:p-4 overflow-y-auto ">
                 <FormCard
                   title="Basic Information"
                   className="text-semibold !p-0 !m-0"
@@ -452,6 +452,7 @@ export default function CreateComet({
                         {...register("cometTitle")}
                         onSelect={(e) => handleTextSelection("cometTitle", e)}
                         onBlur={handleFieldBlur}
+                        className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
                       />
                       {errors.cometTitle && (
                         <p className="text-red-600 text-sm">
@@ -468,6 +469,7 @@ export default function CreateComet({
                         {...register("clientOrg")}
                         onSelect={(e) => handleTextSelection("clientOrg", e)}
                         onBlur={handleFieldBlur}
+                        className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
                       />
                       {errors.clientOrg && (
                         <p className="text-red-600 text-sm">
@@ -506,6 +508,7 @@ export default function CreateComet({
                         onSelect={(e) =>
                           handleTextSelection("targetAudience", e)
                         }
+                        className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
                       />
                       {errors.targetAudience && (
                         <p className="text-red-600 text-sm">
@@ -526,6 +529,7 @@ export default function CreateComet({
                         onSelect={(e) =>
                           handleTextSelection("learningObjectives", e)
                         }
+                        className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
                       />
                       {errors.learningObjectives && (
                         <p className="text-red-600 text-sm">
@@ -594,6 +598,7 @@ export default function CreateComet({
                         id="length-frequency"
                         placeholder="e.g., 4 weeks - 2 microlearning steps per week"
                         {...register("lengthFrequency")}
+                        className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
                       />
                     </div>
                     <div className="space-y-1">
@@ -608,6 +613,7 @@ export default function CreateComet({
                         onSelect={(e) =>
                           handleTextSelection("specialInstructions", e)
                         }
+                        className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
                       />
                     </div>
                   </CardContent>

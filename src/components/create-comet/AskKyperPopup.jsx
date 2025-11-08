@@ -1,28 +1,46 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { X, Grid3x3, Lightbulb, Zap, Search, ArrowUp, Loader2 } from "lucide-react";
+import {
+  X,
+  Grid3x3,
+  Lightbulb,
+  Zap,
+  Search,
+  ArrowUp,
+  Loader2,
+  GripVertical,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import Stars from "@/components/icons/Stars";
 
-export default function AskKyperPopup({ focusedField, fieldPosition, onClose, onAskKyper, onPopupInteract, isLoading = false }) {
+export default function AskKyperPopup({
+  focusedField,
+  fieldPosition,
+  onClose,
+  onAskKyper,
+  onPopupInteract,
+  isLoading = false,
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [query, setQuery] = useState("");
-  
+
   const position = useMemo(() => {
     if (!fieldPosition) {
-      return { bottom: '1.5rem', right: '1.5rem' };
+      return { bottom: "1.5rem", right: "1.5rem" };
     }
-    
-    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
-    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    
+
+    const viewportHeight =
+      typeof window !== "undefined" ? window.innerHeight : 800;
+    const viewportWidth =
+      typeof window !== "undefined" ? window.innerWidth : 1200;
+
     let left = fieldPosition.left;
     const popupWidth = 450;
     if (left + popupWidth > viewportWidth) {
       left = viewportWidth - popupWidth - 20;
     }
-    
+
     let top = fieldPosition.top;
     const popupHeight = isExpanded ? 100 : 60;
     if (top + popupHeight > viewportHeight) {
@@ -31,17 +49,17 @@ export default function AskKyperPopup({ focusedField, fieldPosition, onClose, on
         top = 20;
       }
     }
-    
+
     if (left < 20) {
       left = 20;
     }
-    
+
     return {
       top: `${top}px`,
       left: `${left}px`,
     };
   }, [fieldPosition, isExpanded]);
-  
+
   if (!focusedField) return null;
 
   const handleExpand = () => {
@@ -64,7 +82,7 @@ export default function AskKyperPopup({ focusedField, fieldPosition, onClose, on
   };
 
   return (
-    <div 
+    <div
       className="fixed z-50 animate-in slide-in-from-bottom-4"
       style={position}
       onMouseEnter={(e) => {
@@ -77,18 +95,18 @@ export default function AskKyperPopup({ focusedField, fieldPosition, onClose, on
         {!isExpanded && (
           <div className="flex items-center justify-between gap-3 p-3">
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                 title="Options"
               >
-                <Grid3x3 className="w-5 h-5 text-gray-600" />
+                <GripVertical className="w-5 h-5 text-gray-600" />
               </button>
-              <button 
+              <button
                 className="p-2 hover:bg-gray-200 rounded-lg transition-colors relative"
                 title="Suggestions"
               >
                 <Lightbulb className="w-5 h-5 text-gray-600" />
-                <Zap className="w-3 h-3 text-yellow-500 absolute -top-1 -right-1" fill="currentColor" />
+                {/* <Zap className="w-3 h-3 text-yellow-500 absolute -top-1 -right-1" fill="currentColor" /> */}
               </button>
             </div>
 
@@ -114,7 +132,12 @@ export default function AskKyperPopup({ focusedField, fieldPosition, onClose, on
         {isExpanded && (
           <div className="p-3">
             <div className="relative">
-              <form onSubmit={handleSubmit} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} className="flex items-center gap-2">
+              <form
+                onSubmit={handleSubmit}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+                className="flex items-center gap-2"
+              >
                 <button
                   type="button"
                   onClick={() => {
@@ -126,7 +149,7 @@ export default function AskKyperPopup({ focusedField, fieldPosition, onClose, on
                 >
                   <X className="w-5 h-5 text-gray-600" />
                 </button>
-                
+
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                   <input
@@ -159,4 +182,3 @@ export default function AskKyperPopup({ focusedField, fieldPosition, onClose, on
     </div>
   );
 }
-
