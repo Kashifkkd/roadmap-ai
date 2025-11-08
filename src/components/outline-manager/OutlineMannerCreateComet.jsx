@@ -44,16 +44,26 @@ export default function OutlineMannerCreateComet({
   const [expandedChapters, setExpandedChapters] = useState([]);
 
   const [selectedChapter, setSelectedChapter] = useState(null);
+  const [selectedChapterNumber, setSelectedChapterNumber] = useState(null);
   const [selectedStep, setSelectedStep] = useState(null);
   const [showChapterTextarea, setShowChapterTextarea] = useState(false);
 
   const handleChapterClick = (index, chapter) => {
     setSelectedChapter(chapter);
+    setSelectedChapterNumber(index + 1);
+    setSelectedStep(null);
     if (isArrayWithValues(chapter?.steps)) {
       setExpandedChapters((prev) => ({ ...prev, [index]: !prev[index] }));
     } else {
       setExpandedChapters((prev) => ({ ...prev, [index]: false }));
     }
+  };
+
+  const handleStepClick = (e, chapter, step, chapterIndex) => {
+    e.stopPropagation();
+    setSelectedChapter(chapter);
+    setSelectedChapterNumber(chapterIndex + 1); // Chapter number (1-based index)
+    setSelectedStep(step);
   };
 
   return (
@@ -170,12 +180,14 @@ export default function OutlineMannerCreateComet({
                                 {chapter?.steps.map((step, stepIndex) => (
                                   <div
                                     key={stepIndex}
-                                    className="flex items-center gap-3 bg-white p-2 hover:bg-accent cursor-pointer"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedChapter(chapter);
-                                      setSelectedStep(step);
-                                    }}
+                                    className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all duration-200 ${
+                                      selectedStep?.title === step?.title
+                                        ? "bg-primary/10 border border-primary shadow-sm"
+                                        : "bg-white hover:bg-accent hover:shadow-md"
+                                    }`}
+                                    onClick={(e) =>
+                                      handleStepClick(e, chapter, step, index)
+                                    }
                                   >
                                     <div className="flex justify-center items-center gap-4 h-full shrink-0">
                                       <GripVertical
@@ -185,11 +197,23 @@ export default function OutlineMannerCreateComet({
                                       />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <div className="text-md font-medium text-primary shrink-0 mt-0.5">
-                                        step 1.{stepIndex + 1}
+                                      <div
+                                        className={`text-md font-medium shrink-0 mt-0.5 ${
+                                          selectedStep?.title === step?.title
+                                            ? "text-primary"
+                                            : "text-primary/70"
+                                        }`}
+                                      >
+                                        step {index + 1}.{stepIndex + 1}
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <p className="text-base font-medium text-primary">
+                                        <p
+                                          className={`text-base font-medium ${
+                                            selectedStep?.title === step?.title
+                                              ? "text-primary"
+                                              : "text-primary/80"
+                                          }`}
+                                        >
                                           {step?.title ||
                                             `Step ${stepIndex + 1}`}
                                         </p>
@@ -216,7 +240,11 @@ export default function OutlineMannerCreateComet({
 
           {/* Right Column - Steps Display */}
           <div className="flex p-2 w-full sm:w-2/3 bg-background rounded-xl overflow-hidden">
-            <StepsDisplay selectedChapter={selectedChapter} />
+            <StepsDisplay
+              selectedChapter={selectedChapter}
+              chapterNumber={selectedChapterNumber}
+              setAllMessages={setAllMessages}
+            />
           </div>
         </div>
       </div>
