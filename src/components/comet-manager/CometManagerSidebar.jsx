@@ -13,12 +13,14 @@ import {
   FileVideo,
   FileAudio,
   FileIcon,
+  SquareKanban,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Stack } from "@mui/material";
 import DevicePreview from "./DevicePreview";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
+import Image from "next/image";
 
 export default function CometManagerSidebar({
   selectedScreen,
@@ -56,6 +58,10 @@ export default function CometManagerSidebar({
   };
 
   const toggleStep = (stepId) => {
+    setSelectedStep(stepId);
+    if (setSelectedStepFromHook) {
+      setSelectedStepFromHook(stepId);
+    }
     setExpandedSteps((prev) => {
       const newSet = new Set();
       // If clicking on the same step that's already expanded, collapse it
@@ -167,27 +173,28 @@ export default function CometManagerSidebar({
     {
       onClick: () => handleTabChange(0),
       children: (
-        <div className="flex items-center">
-          <File size={16} />
-          Steps
+        <div className="flex items-center gap-1">
+          <SquareKanban size={18} className="rotate-180 rounded-md" />
+          {/* <Image src="/chart.svg" alt="Steps" width={16} height={16} /> */}
+          <span className="text-xs sm:text-sm">Steps</span>
         </div>
       ),
     },
     {
       onClick: () => handleTabChange(1),
       children: (
-        <div className="flex items-center ">
-          <File size={16} />
-          Sources
+        <div className="flex items-center gap-1">
+          <File size={18} />
+          <span className="text-xs sm:text-sm">Sources</span>
         </div>
       ),
     },
     {
       onClick: () => handleTabChange(2),
       children: (
-        <div className="flex items-center ">
-          <Paperclip size={16} />
-          Assets
+        <div className="flex items-center gap-1">
+          <Paperclip size={18} />
+          <span className="text-xs sm:text-sm">Assets</span>
         </div>
       ),
     },
@@ -199,16 +206,18 @@ export default function CometManagerSidebar({
       <div className="flex justify-between w-full rounded-xl shrink-0">
         <Stack
           direction="row"
-          className="bg-background rounded-xl w-full gap-1 sm:gap-1 justify-between"
+          className="bg-background rounded-xl w-full justify-between"
         >
           {buttons.map((button, index) => (
             <Button
+              size="sm"
+              variant="default"
               key={index}
               onClick={button.onClick}
               className={`text-xs sm:text-sm ${
                 index === tab
                   ? "bg-primary text-background"
-                  : "bg-background text-gray-400 hover:bg-primary hover:text-background shadow-none"
+                  : "bg-background text-gray-400 hover:bg-primary-100 hover:text-primary shadow-none"
               }`}
             >
               {button.children}
@@ -232,8 +241,8 @@ export default function CometManagerSidebar({
                 return (
                   <div
                     key={chapterId}
-                    className={`flex flex-col border-2 bg-white border-gray-300 rounded-sm transition-all ${
-                      isSelected || isExpanded ? "bg-primary-100" : "bg-gray-50"
+                    className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
+                      isSelected && isExpanded ? "bg-primary-100" : "bg-white"
                     }`}
                   >
                     {/* Chapter Header */}
@@ -267,13 +276,13 @@ export default function CometManagerSidebar({
                           }`}
                         />
                       </div>
-                      <div className="flex flex-col font-semibold flex-1 min-w-0">
-                        <h2 className="text-xs text-gray-900">
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <p className="text-[10px] font-medium text-gray-900">
                           Chapter {index + 1}
-                        </h2>
+                        </p>
                         <p
-                          className={`text-sm sm:text-base  ${
-                            isSelected ? "text-black" : "text-gray-800"
+                          className={`text-sm sm:text-sm font-medium ${
+                            isSelected ? "text-gray-900" : "text-primary"
                           }`}
                         >
                           {chapter.chapter ||
@@ -313,11 +322,11 @@ export default function CometManagerSidebar({
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     // Only select step; do not expand/collapse here
-                                    setSelectedStep(stepId);
-                                    // Call the hook's setSelectedStep to filter screens
-                                    if (setSelectedStepFromHook) {
-                                      setSelectedStepFromHook(stepId);
-                                    }
+                                    // setSelectedStep(stepId);
+                                    // // Call the hook's setSelectedStep to filter screens
+                                    // if (setSelectedStepFromHook) {
+                                    //   setSelectedStepFromHook(stepId);
+                                    // }
                                   }}
                                   className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
                                     isStepSelected || isStepExpanded
@@ -361,7 +370,7 @@ export default function CometManagerSidebar({
                                       className={`text-xs sm:text-sm font-semibold ${
                                         isStepSelected || isStepExpanded
                                           ? ""
-                                          : "truncate"
+                                          : ""
                                       } ${
                                         isStepSelected || isStepExpanded
                                           ? "text-white"

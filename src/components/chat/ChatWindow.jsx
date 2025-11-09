@@ -6,12 +6,13 @@ import Loading from "@/components/common/Loading";
 import { graphqlClient } from "@/lib/graphql-client";
 import { useRouter } from "next/navigation";
 
-export default function ChatWindow({ initialInput = null,
+export default function ChatWindow({
+  initialInput = null,
   inputType = "comet_data_update",
   onResponseReceived = null,
   allMessages = [],
-  setAllMessages = () => { },
-  sessionData
+  setAllMessages = () => {},
+  sessionData,
 }) {
   const router = useRouter();
   const processedInitialInputRef = useRef(false);
@@ -34,7 +35,7 @@ export default function ChatWindow({ initialInput = null,
   useEffect(() => {
     if (sessionId) return;
     try {
-      const existing = localStorage.getItem('sessionId');
+      const existing = localStorage.getItem("sessionId");
       if (existing) {
         setSessionId(existing);
       }
@@ -84,7 +85,9 @@ export default function ChatWindow({ initialInput = null,
     }
 
     // Extract learning objectives
-    const objectivesMatch = responseText.match(/Learning Objectives?:\s*([^\n]+)/i);
+    const objectivesMatch = responseText.match(
+      /Learning Objectives?:\s*([^\n]+)/i
+    );
     if (objectivesMatch) {
       data.learningObjectives = objectivesMatch[1].trim();
     }
@@ -106,10 +109,10 @@ export default function ChatWindow({ initialInput = null,
 
       handleSubmit(initialInput);
 
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         const url = new URL(window.location.href);
-        url.searchParams.delete('initialInput');
-        window.history.replaceState({}, '', url.pathname);
+        url.searchParams.delete("initialInput");
+        window.history.replaceState({}, "", url.pathname);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -134,13 +137,13 @@ export default function ChatWindow({ initialInput = null,
       let currentSessionId = sessionId;
 
       if (!currentSessionId) {
-        currentSessionId = localStorage.getItem('sessionId');
+        currentSessionId = localStorage.getItem("sessionId");
       }
 
       if (!currentSessionId) {
         const sessionResponse = await graphqlClient.createSession();
         currentSessionId = sessionResponse.createSession.sessionId;
-        localStorage.setItem('sessionId', currentSessionId);
+        localStorage.setItem("sessionId", currentSessionId);
       }
 
       setSessionId(currentSessionId);
@@ -150,24 +153,23 @@ export default function ChatWindow({ initialInput = null,
         comet_creation_data: sessionData?.comet_creation_data || {},
         response_outline: sessionData?.response_outline || {},
         response_path: sessionData?.response_path || {},
-        chatbot_conversation: [
-          { user: text }
-        ],
-        to_modify: {}
+        chatbot_conversation: [{ user: text }],
+        to_modify: {},
       });
 
-      const messageResponse = await graphqlClient.sendMessage(cometJsonForMessage);
+      const messageResponse = await graphqlClient.sendMessage(
+        cometJsonForMessage
+      );
       console.log("Message sent:", messageResponse.sendMessage);
 
       // Add messages in a single setState call to avoid duplicates
-      setAllMessages(prev => [
+      setAllMessages((prev) => [
         ...prev,
         { from: "user", content: text },
-        { from: "bot", content: messageResponse.sendMessage }
+        { from: "bot", content: messageResponse.sendMessage },
       ]);
 
       setInputValue("");
-
     } catch (error) {
       console.error("Error creating session or sending message:", error);
       setError(error.message);
@@ -189,11 +191,16 @@ export default function ChatWindow({ initialInput = null,
           }
           localStorage.setItem("sessionData", JSON.stringify(sessionData));
           if (sessionData.chatbot_conversation) {
-            const agentMessage = sessionData?.chatbot_conversation?.find(conv => conv?.agent)?.agent;
+            const agentMessage = sessionData?.chatbot_conversation?.find(
+              (conv) => conv?.agent
+            )?.agent;
             if (agentMessage) {
-              setAllMessages(prev => {
+              setAllMessages((prev) => {
                 const updatedMessages = prev.slice(0, -1);
-                return [...updatedMessages, { from: "bot", content: agentMessage }];
+                return [
+                  ...updatedMessages,
+                  { from: "bot", content: agentMessage },
+                ];
               });
             }
           }
@@ -215,7 +222,7 @@ export default function ChatWindow({ initialInput = null,
   }, [sessionId, onResponseReceived]);
 
   return (
-    <div className="bg-white h-full p-2 rounded-2xl">
+    <div className="bg-white h-full w-full p-2 rounded-2xl">
       <Chat
         messages={allMessages}
         isLoading={isLoading || isInitialLoading}

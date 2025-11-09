@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Image from "next/image";
 import { ArrowUp, Paperclip, Search, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +18,10 @@ const SUGGESTIONS = [
 export default function WelcomePage() {
   const [inputText, setInputText] = useState("");
   const [isDisabled, setIsDisabled] = useState(false);
+  const [isAttachActive, setIsAttachActive] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const textareaRef = useRef(null);
+  const isCollapsingRef = useRef(false);
   const router = useRouter();
 
   const handleSuggestionSelect = (suggestion) => {
@@ -61,6 +65,69 @@ export default function WelcomePage() {
     }
   };
 
+  const handleAttach = () => {
+    setIsAttachActive(!isAttachActive);
+  };
+
+  const handleExpandTextarea = () => {
+    setIsExpanded(true);
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    }, 0);
+  };
+
+  const handleToggleTextarea = (e) => {
+    e.stopPropagation();
+    if (isExpanded) {
+      setIsExpanded(false);
+      if (textareaRef.current) {
+        textareaRef.current.blur();
+      }
+    } else {
+      setIsExpanded(true);
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+        }
+      }, 0);
+    }
+  };
+
+  const handleTextareaMouseDown = (e) => {
+    if (isExpanded && !inputText.trim()) {
+      isCollapsingRef.current = true;
+      e.preventDefault();
+    } else {
+      isCollapsingRef.current = false;
+    }
+  };
+
+  const handleTextareaClick = (e) => {
+    if (!inputText.trim()) {
+      if (isCollapsingRef.current) {
+        setIsExpanded(false);
+        setTimeout(() => {
+          isCollapsingRef.current = false;
+        }, 200);
+      } else if (!isExpanded) {
+        setIsExpanded(true);
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+          }
+        }, 0);
+      }
+    } else {
+      // If has content, just ensure it's expanded
+      if (!isExpanded) {
+        handleExpandTextarea();
+      }
+    }
+  };
+
   return (
     <div className="bg-primary-50 p-4 min-h-full">
       <main className="px-6 py-12 max-w-3xl mx-auto">
@@ -94,29 +161,51 @@ export default function WelcomePage() {
           <div className="space-y-8">
             <div className="relative w-full max-w-3xl mx-auto">
               <div
-                className="w-full p-2 flex flex-col items-center gap-2 rounded-xl min-h-28 h-40 relative"
+                className={`w-full p-2 flex flex-col items-center gap-2 rounded-xl min-h-28 relative transition-all duration-200 ${
+                  isExpanded ? "h-auto" : "h-40"
+                }`}
                 style={{
                   background:
                     "linear-gradient(278.54deg, #F8F7FE 6.44%, #E3E1FC 94.6%)",
                 }}
               >
-                <div className="relative flex-1 w-full">
-                  <Search className="w-4 h-4 text-placeholder-gray-500 absolute left-4 top-4 z-10 pointer-events-none" />
+                <div className="relative w-full">
+                  <Search
+                    className="w-5 h-5 text-placeholder-gray-500 absolute left-4 top-4 z-10 cursor-pointer hover:text-primary-600 transition-colors"
+                    onClick={handleToggleTextarea}
+                  />
                   <textarea
+                    ref={textareaRef}
                     placeholder="I'll guide you step by step - just tell me what you want to create."
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyPress={handleKeyPress}
+                    onMouseDown={handleTextareaMouseDown}
+                    onClick={handleTextareaClick}
+                    onFocus={() => {
+                      // Only auto-expand on focus if not intentionally collapsing
+                      if (!isCollapsingRef.current && !isExpanded) {
+                        setIsExpanded(true);
+                      }
+                    }}
                     disabled={isDisabled}
-                    className="w-full h-full pl-10 pr-3 pt-3 pb-3 text-lg shadow-none rounded-xl bg-background hover:bg-gray-50 border border-primary-300 hover:border-gray-50 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none focus:ring-2 focus:ring-primary-300"
-                    rows={4}
+                    className="w-full pl-10 pr-3 pt-3 pb-3 text-lg shadow-none rounded-xl bg-background hover:bg-gray-50 border border-primary-300 hover:border-gray-50 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none cursor-pointer transition-all duration-200"
+                    rows={isExpanded ? 24 : 4}
                   />
                 </div>
                 <div className="w-[95%] flex flex-row justify-between items-center gap-2 absolute bottom-4 border-t-2 border-gray-200 pt-2">
-                  <div className="bg-white p-1 rounded-md flex items-center gap-2 text-sm text-placeholder-gray-500 cursor-pointer hover:text-placeholder-gray-600 transition-colors">
+                  <Button
+                    variant="default"
+                    className={`cursor-pointer ${
+                      isAttachActive
+                        ? "text-white bg-primary-600"
+                        : "text-placeholder-gray-500 bg-white  hover:text-placeholder-gray-100 hover:bg-primary-50"
+                    }`}
+                    onClick={handleAttach}
+                  >
                     <Paperclip className="w-4 h-4" />
                     <span>Attach</span>
-                  </div>
+                  </Button>
 
                   <button
                     onClick={(e) => handleSubmit(e)}

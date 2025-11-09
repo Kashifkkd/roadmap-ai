@@ -15,10 +15,14 @@ export default function ChatInput({
 }) {
   const [text, setText] = useState("");
   const [isClicked, setIsClicked] = useState(false);
+  const [isAttachActive, setIsAttachActive] = useState(false);
 
-  // Use external value if provided, otherwise use internal state
   const currentValue = value !== undefined ? value : text;
   const setCurrentValue = onChange || setText;
+
+  const handleAttach = () => {
+    setIsAttachActive(!isAttachActive);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -39,19 +43,19 @@ export default function ChatInput({
   };
 
   return (
-    <div className="w-full p-2 bg-accent flex flex-col items-center gap-2 rounded-xl">
-      <div className="relative w-full rounded-xl  text-[#717680]">
+    <div className="w-full p-2 bg-accent flex flex-col items-center gap-2 rounded-xl h-[96px] sm:h-[116px]">
+      <div className="relative w-full h-full rounded-xl  text-[#717680]">
         <Search className="absolute top-3 left-2 w-4 h-4 text-[#717680]" />
         <Textarea
           placeholder={placeholder || "Ask me anything"}
           value={currentValue}
           onChange={(e) => setCurrentValue(e.target.value)}
           disabled={disabled}
-          className={`pl-[30px] pt-2 pb-3 pr-3 text-sm text-gray-900 placeholder:text-[#717680] shadow-none border-0 rounded-xl bg-background w-full min-h-20 focus-visible:ring-primary-300 focus-visible:ring-1 focus-visible:ring-offset-2 leading-5 ${
+          className={`pl-[30px] pt-2 pb-3 pr-3 text-sm text-gray-900 placeholder:text-[#717680] shadow-none border-0 rounded-xl bg-background w-full min-h-full focus-visible:ring-primary-300 focus-visible:ring-1 focus-visible:ring-offset-2 leading-5 resize-none ${
             disabled ? " cursor-not-allowed" : ""
           }`}
         />
-        <div className="absolute top-2 right-2">
+        <div className="absolute bottom-2 right-2">
           <Button
             variant="default"
             size="icon"
@@ -71,10 +75,19 @@ export default function ChatInput({
             )}
           </Button>
         </div>
-        <div className="absolute bottom-0 left-0 flex flex-1 p-2 items-center gap-2 text-[#717680">
-          <Paperclip className="w-4 h-4" />
-          <span className="text-xs font-normal text-[#717680]">Attach</span>
-        </div>
+        <Button
+          variant="default"
+          size="xs"
+          className={`absolute p-1 bottom-2 left-2 cursor-pointer flex text-center gap-0 rounded-sm ${
+            isAttachActive
+              ? "text-white bg-primary-600"
+              : "text-placeholder-gray-500 bg-white  hover:text-primary-600 hover:bg-primary-50"
+          }`}
+          onClick={handleAttach}
+        >
+          <Paperclip className="w-2 h-2" />
+          <span className="text-xs">Attach</span>
+        </Button>
       </div>
     </div>
   );

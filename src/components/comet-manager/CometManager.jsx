@@ -441,7 +441,7 @@ export default function CometManager({
         onAddScreen={handleAddNewScreen}
         screenTypeGroups={SCREEN_TYPE_GROUPS}
       />
-      /** Preview Drawer
+      {/* Preview Drawer */}
       <Drawer
         direction="right"
         open={isPreviewMode}

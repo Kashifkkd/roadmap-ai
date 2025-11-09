@@ -67,14 +67,7 @@ export default function Header() {
   const isSuperAdmin = () => {
     const client = selectedClient || clients[0];
     if (!client) return false;
-    // Check for various possible super admin indicators
-    return (
-      client.is_super_admin === true ||
-      client.isSuperAdmin === true ||
-      client.role === "super_admin" ||
-      client.role === "Super Admin" ||
-      client.access_level === 1 // Assuming 1 is super admin level
-    );
+    return client.role === "Super Admin";
   };
 
   // Mock client data - replace with actual data fetching
@@ -117,6 +110,7 @@ export default function Header() {
     { name: "About Us", path: "/about" },
     { name: "Contact Us", path: "/contact" },
   ];
+  const userName = localStorage.getItem("user_name");
 
   useEffect(() => {
     // Check authentication status
@@ -199,6 +193,7 @@ export default function Header() {
 
   const handleButtonClick = (buttonName) => {
     setActiveButton(buttonName);
+    // setIsUserMenuOpen(false);
   };
   const handleHomeButtonClick = () => {
     setIsHomeButtonActive(!isHomeButtonActive);
@@ -251,7 +246,9 @@ export default function Header() {
 
   const handleLogout = () => {
     setIsAuthenticated(false);
+    setIsUserMenuOpen(false);
     tokenManager.removeToken();
+    localStorage.removeItem("user_name");
     router.push("/");
   };
 
@@ -472,7 +469,7 @@ export default function Header() {
   );
 
   const RightSectionCometManager = () => (
-    <div className="flex items-center my-1 gap-1 sm:gap-1.5 md:gap-2 shrink-0">
+    <div className="flex items-center my-1 gap-0.5 sm:gap-1 md:gap-1 shrink-0">
       {/* Editor Button */}
       <button
         onClick={() => setActiveModeButton("editor")}
@@ -534,56 +531,13 @@ export default function Header() {
           setActiveModeButton("preview");
           setIsPreviewMode(!isPreviewMode);
         }}
-        style={{
-          transition:
-            "width 10s ease-in-out, padding 10s ease-in-out, background-color 10s ease-in-out, border-color 10s ease-in-out, color 10s ease-in-out",
-          width: activeModeButton === "preview" ? "90px" : undefined,
-          willChange: "width",
-        }}
-        className={`flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${
+        className={`flex items-center justify-center rounded-md border-2 hover:cursor-pointer shrink-0 transition-colors h-8 w-8 md:h-9 md:w-9 p-0 ${
           activeModeButton === "preview"
-            ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-8 md:h-9"
-            : "bg-gray-50 text-gray-700 border-transparent h-8 w-8 md:h-9 md:w-9 justify-center p-0 hover:bg-gray-100"
+            ? "bg-primary-50 text-primary border-primary-400 hover:bg-primary-100"
+            : "bg-gray-50 text-gray-700 border-transparent hover:bg-gray-100"
         }`}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            width: "100%",
-            overflow: "hidden",
-            justifyContent:
-              activeModeButton === "preview" ? "flex-start" : "center",
-          }}
-          className="flex items-center"
-        >
-          <Eye
-            style={{
-              transition: "all 1.2s ease-in-out",
-              flexShrink: 0,
-            }}
-            className={`${
-              activeModeButton === "preview"
-                ? "w-4 sm:w-4 md:w-5 md:h-5 text-primary"
-                : "w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-700"
-            }`}
-          />
-          <span
-            style={{
-              transition:
-                "opacity 10s ease-in-out, max-width 10s ease-in-out, margin-left 10s ease-in-out",
-              whiteSpace: "nowrap",
-              maxWidth: activeModeButton === "preview" ? "100px" : "0px",
-              opacity: activeModeButton === "preview" ? 1 : 0,
-              marginLeft: activeModeButton === "preview" ? "0.375rem" : "0",
-              overflow: "hidden",
-              flexShrink: 0,
-            }}
-            className="text-xs sm:text-sm md:text-[14px] font-medium"
-          >
-            Preview
-          </span>
-        </div>
+        <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
       </button>
 
       {/* Settings Button */}
@@ -647,6 +601,22 @@ export default function Header() {
           onClick={handleFeedbackClick}
         />
       </div>
+      <button
+        onClick={handleDownloadClick}
+        className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-sm border transition-colors duration-200 shrink-0 ${
+          isDownloadActive
+            ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
+            : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600 hover:cursor-pointer"
+        }`}
+      >
+        <Image
+          src="/download.svg"
+          alt="Download"
+          width={18}
+          height={18}
+          className="sm:w-5 sm:h-5"
+        />
+      </button>
 
       <div className="hidden lg:flex">
         <Collaborators />
@@ -668,7 +638,7 @@ export default function Header() {
     <header className="px-1 sm:px-2 pt-2 bg-primary-50 border-gray-200 w-full">
       <div className="bg-white px-3 sm:px-4 md:px-6 py-1 rounded-lg w-full">
         <div className="flex items-center justify-between w-full h-full text-sm sm:text-base gap-2 sm:gap-4">
-          <div className="flex items-center gap-2 sm:gap-4 md:gap-8 lg:gap-16 shrink-0 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-4 md:gap-6 lg:gap-8 shrink-0 min-w-0">
             <div className="relative ">
               <div className="flex cursor-pointer shrink-0 flex-1 gap-2 items-center">
                 <div
@@ -842,7 +812,7 @@ export default function Header() {
           </div>
 
           {isCometManager && (
-            <div className="hidden xl:flex flex-1 items-center justify-center min-w-0 px-2">
+            <div className="hidden xl:flex flex-1 items-center min-w-0 px-4">
               <span
                 className="text-[#574EB6] select-none truncate text-2xl font-medium"
                 style={{
@@ -900,7 +870,7 @@ export default function Header() {
                     </div>
 
                     <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
-                      {getClientInitial(selectedClient || clients[0])}
+                      {userName.charAt(0).toUpperCase()}
                     </div>
                     {/* 
                     <button
@@ -909,7 +879,7 @@ export default function Header() {
                     > */}
                     <div className="hidden sm:flex flex-col justify-start">
                       <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
-                        {clients[0]?.name}
+                        {userName.split(" ")[0]}
                       </span>
                       {isSuperAdmin() && (
                         <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">

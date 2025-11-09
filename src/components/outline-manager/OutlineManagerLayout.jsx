@@ -11,7 +11,10 @@ export default function OutlineManagerLayout() {
 
   useEffect(() => {
     // Access localStorage only on the client
-    const storedSessionData = typeof window !== 'undefined' ? localStorage.getItem("sessionData") : null;
+    const storedSessionData =
+      typeof window !== "undefined"
+        ? localStorage.getItem("sessionData")
+        : null;
     if (storedSessionData && !sessionData) {
       setSessionData(JSON.parse(storedSessionData));
     }
@@ -19,20 +22,26 @@ export default function OutlineManagerLayout() {
 
   useEffect(() => {
     if (!sessionData) return;
-    const userMessage = sessionData?.chatbot_conversation?.find(conv => conv?.user)?.user;
-    const agentMessage = sessionData?.chatbot_conversation?.find(conv => conv?.agent)?.agent;
+    const userMessage = sessionData?.chatbot_conversation?.find(
+      (conv) => conv?.user
+    )?.user;
+    const agentMessage = sessionData?.chatbot_conversation?.find(
+      (conv) => conv?.agent
+    )?.agent;
 
     if (agentMessage || userMessage) {
-      setAllMessages(prev => {
-        const lastUser = prev.length > 1 ? prev[prev.length - 2]?.content : null;
-        const lastAgent = prev.length > 0 ? prev[prev.length - 1]?.content : null;
+      setAllMessages((prev) => {
+        const lastUser =
+          prev.length > 1 ? prev[prev.length - 2]?.content : null;
+        const lastAgent =
+          prev.length > 0 ? prev[prev.length - 1]?.content : null;
         if (lastUser === userMessage && lastAgent === agentMessage) {
           return prev;
         }
         return [
           ...prev,
           { from: "user", content: userMessage },
-          { from: "bot", content: agentMessage }
+          { from: "bot", content: agentMessage },
         ];
       });
     }
@@ -41,7 +50,7 @@ export default function OutlineManagerLayout() {
   return (
     <div className="flex h-full w-full bg-primary-50">
       <div className="flex flex-1 gap-2 p-2 overflow-y-auto">
-        <div className="hidden lg:block w-full lg:w-1/4 h-full">
+        <div className="hidden lg:block w-full lg:w-[360px] h-full">
           <ChatWindow
             inputType="outline_updation"
             allMessages={allMessages}
@@ -50,8 +59,12 @@ export default function OutlineManagerLayout() {
             sessionData={sessionData}
           />
         </div>
-        <div className="w-full lg:w-3/4 h-full">
-          <OutlineMannerCreateComet sessionData={sessionData} prefillData={prefillData} setAllMessages={setAllMessages} />
+        <div className="w-full lg:flex-1 h-full">
+          <OutlineMannerCreateComet
+            sessionData={sessionData}
+            prefillData={prefillData}
+            setAllMessages={setAllMessages}
+          />
         </div>
       </div>
     </div>

@@ -71,8 +71,9 @@ export default function AskKyperPopup({
     if (query.trim() && !isLoading) {
       await onAskKyper(query);
       setQuery("");
-      setIsExpanded(false);
+      // setIsExpanded(false);
     }
+    onClose();
   };
 
   const handleClose = () => {

@@ -50,7 +50,9 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
       }
 
       const data = result.response;
+      console.log("data", data);
 
+      localStorage.setItem("user_name", data.full_name);
       localStorage.setItem("access_token", data.access_token);
       localStorage.setItem("token_type", data.token_type);
 

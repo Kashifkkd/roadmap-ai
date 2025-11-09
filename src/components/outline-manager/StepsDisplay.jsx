@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { isArrayWithValues } from "@/utils/isArrayWithValues";
 import AskOutlineKyper from "./AskOutlineKyper";
 import { graphqlClient } from "@/lib/graphql-client";
+import Image from "next/image";
 
 const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
   const [focusedField, setFocusedField] = useState(null);
@@ -31,29 +32,34 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
 
   const handleSelectStart = () => {
     setIsSelecting(true);
-    setFocusedField(null);
-    setFieldPosition(null);
   };
 
   const handleMouseUp = (e) => {
     if (!isSelecting) return;
-    const target = e.target;
-    const stepElement = target.closest("[data-step-index]");
-    const stepIndex = stepElement?.getAttribute("data-step-index");
-    const fieldType = stepElement?.getAttribute("data-field-type");
 
     setTimeout(() => {
       const selection = window.getSelection();
       const text = selection?.toString().trim();
 
       if (text && text.length > 0) {
-        selectionRef.current = {
-          text: text,
-          range: selection.getRangeAt(0).cloneRange(),
-        };
+        const target = e.target;
+        const stepElement = target.closest("[data-step-index]");
+
+        if (!stepElement) {
+          setIsSelecting(false);
+          return;
+        }
+
+        const stepIndex = stepElement?.getAttribute("data-step-index");
+        const fieldType = stepElement?.getAttribute("data-field-type");
 
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
+
+        selectionRef.current = {
+          text: text,
+          range: range.cloneRange(),
+        };
 
         setSelectedText(text);
         setFocusedField("stepContent");
@@ -61,6 +67,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
           top: rect.bottom + window.scrollY + 10,
           left: rect.left + window.scrollX,
         });
+
         if (stepIndex !== null) {
           const stepIndexNum = parseInt(stepIndex);
           setSelectedStepInfo({
@@ -77,6 +84,8 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
               "Unknown",
           });
         }
+      } else {
+        handleClosePopup();
       }
       setIsSelecting(false);
     }, 10);
@@ -91,12 +100,22 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
   }, [focusedField]);
 
   useEffect(() => {
+    const handleDocumentMouseUp = (e) => {
+      const target = e.target;
+      const stepElement = target.closest("[data-step-index]");
+      if (stepElement) {
+        handleMouseUp(e);
+      } else if (isSelecting) {
+        setIsSelecting(false);
+      }
+    };
+
     document.addEventListener("selectstart", handleSelectStart);
-    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("mouseup", handleDocumentMouseUp);
 
     return () => {
       document.removeEventListener("selectstart", handleSelectStart);
-      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mouseup", handleDocumentMouseUp);
     };
   }, [isSelecting, selectedChapter]);
 
@@ -120,6 +139,8 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
       selectedChapter?.chapterNumber ||
       selectedChapter?.step ||
       "Unknown";
+
+    console.log("=== Ask Kyper Context ===");
     console.log("Chapter Number:", currentChapterNumber);
     console.log(
       "Selected Chapter:",
@@ -152,10 +173,6 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
 
       const conversationMessage = JSON.stringify(conversationMessageObj);
 
-      console.log(conversationMessageObj);
-
-      console.log(conversationMessage);
-
       setAllMessages((prev) => [
         ...prev,
         { from: "user", content: query || "" },
@@ -176,17 +193,18 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
         cometJsonForMessage
       );
 
-      console.log(
-        "Message sent, waiting for AI response via WebSocket:",
-        messageResponse
-      );
+      console.log("Message sent, AI response:", messageResponse.sendMessage);
 
       setAllMessages((prev) => [
         ...prev,
         { from: "bot", content: messageResponse.sendMessage },
       ]);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error sending message to Kyper:", error);
+      setAllMessages((prev) => [
+        ...prev,
+        { from: "bot", content: "Error: Unable to get response from Kyper" },
+      ]);
     } finally {
       setIsAskingKyper(false);
     }
@@ -209,6 +227,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
       selectedChapter?.step ||
       "Unknown";
 
+    console.log("=== Edit Step Context ===");
     console.log("Chapter Number:", currentChapterNumber);
     console.log(
       "Selected Chapter:",
@@ -224,6 +243,9 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
 
     setEditingField(`${stepIndex}-${fieldType}`);
     setEditValue(currentValue);
+
+    // Close selection popup when editing
+    handleClosePopup();
   };
 
   const handleSaveEdit = (stepIndex, fieldType) => {
@@ -232,11 +254,16 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
       selectedChapter?.chapterNumber ||
       selectedChapter?.step ||
       "Unknown";
+
+    console.log("=== Save Edit ===");
     console.log("Chapter Number:", currentChapterNumber);
     console.log("Chapter:", selectedChapter?.chapter);
     console.log("Step:", stepIndex + 1);
     console.log("Field:", fieldType);
     console.log("New Value:", editValue);
+
+    // TODO: Implement actual save logic here
+    // await graphqlClient.updateStepContent(...)
 
     setEditingField(null);
     setEditValue("");
@@ -272,12 +299,15 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
             <Label className="text-base text-[#7367F0] font-medium">
               Steps
             </Label>
-            <Button variant="outline" className="text-primary border-primary">
+            <Button
+              variant="outline"
+              className="text-primary border-2 border-primary"
+            >
               <Plus size={16} />
               Add Step
             </Button>
           </div>
-          <p className="text-base text-start text-gray-900 font-medium w-full">
+          <p className="text-lg text-start text-gray-900 font-semibold w-full">
             {selectedChapter?.chapter || "Untitled Chapter"}
           </p>
         </div>
@@ -308,33 +338,40 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
                         data-field-type="aha"
                       >
                         <div className="flex-shrink-0 mt-1">
-                          <Lightbulb className="w-5 h-5 text-yellow-500" />
+                          {/* <Lightbulb className="w-5 h-5 text-yellow-500" /> */}
+                          <Image
+                            src="/bulb.svg"
+                            alt="Aha"
+                            width={24}
+                            height={24}
+                          />
                         </div>
                         <div className="flex-1 pr-8">
-                          <p className="font-medium text-gray-900 mb-1">
-                            Aha Moment
-                          </p>
+                          <p className="font-medium text-gray-900 mb-1">Aha</p>
                           {editingField === `${index}-aha` ? (
                             <div className="space-y-2">
                               <textarea
                                 ref={inputRef}
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
-                                className="w-full min-h-20  p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                className="w-full min-h-20 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                                 rows={3}
                               />
                               <div className="flex gap-2">
-                                <Button
+                                <button
                                   onClick={() => handleSaveEdit(index, "aha")}
+                                  className="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-1 text-sm"
                                 >
+                                  <Check className="w-4 h-4" />
                                   Save
-                                </Button>
-                                <Button
-                                  variant="outline"
+                                </button>
+                                <button
                                   onClick={handleCancelEdit}
+                                  className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-1 text-sm"
                                 >
+                                  <X className="w-4 h-4" />
                                   Cancel
-                                </Button>
+                                </button>
                               </div>
                             </div>
                           ) : (
@@ -365,7 +402,12 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
                         data-field-type="action"
                       >
                         <div className="flex-shrink-0 mt-1">
-                          <Target className="w-5 h-5 text-blue-500" />
+                          <Image
+                            src="/markup.svg"
+                            alt="Action"
+                            width={24}
+                            height={24}
+                          />
                         </div>
                         <div className="flex-1 pr-8">
                           <p className="font-medium text-gray-900 mb-1">
@@ -377,7 +419,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
                                 ref={inputRef}
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
-                                className="w-full min-h-20  p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                className="w-full min-h-20 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                                 rows={3}
                               />
                               <div className="flex gap-2">
@@ -427,7 +469,12 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
                         data-field-type="tool"
                       >
                         <div className="flex-shrink-0 mt-1">
-                          <Wrench className="w-5 h-5 text-green-500" />
+                          <Image
+                            src="/tool.svg"
+                            alt="Tool"
+                            width={24}
+                            height={24}
+                          />
                         </div>
                         <div className="flex-1 pr-8">
                           <p className="font-medium text-gray-900 mb-1">Tool</p>
@@ -437,24 +484,21 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
                                 ref={inputRef}
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
-                                className="w-full min-h-20  p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                className="w-full min-h-20 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                                 rows={3}
                               />
                               <div className="flex gap-2">
-                                <button
+                                <Button
                                   onClick={() => handleSaveEdit(index, "tool")}
-                                  className="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-1 text-sm"
                                 >
-                                  <Check className="w-4 h-4" />
                                   Save
-                                </button>
-                                <button
+                                </Button>
+                                <Button
+                                  variant="outline"
                                   onClick={handleCancelEdit}
-                                  className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-1 text-sm"
                                 >
-                                  <X className="w-4 h-4" />
                                   Cancel
-                                </button>
+                                </Button>
                               </div>
                             </div>
                           ) : (
@@ -490,14 +534,18 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
         </div>
       </div>
 
-      <AskOutlineKyper
-        focusedField={focusedField}
-        fieldPosition={fieldPosition}
-        onClose={handleClosePopup}
-        onAskKyper={handleAskKyper}
-        onPopupInteract={handlePopupInteract}
-        isLoading={isAskingKyper}
-      />
+      {focusedField && fieldPosition && (
+        <AskOutlineKyper
+          focusedField={focusedField}
+          fieldPosition={fieldPosition}
+          onClose={handleClosePopup}
+          onAskKyper={handleAskKyper}
+          onPopupInteract={handlePopupInteract}
+          isLoading={isAskingKyper}
+          selectedText={selectedText}
+          selectedStepInfo={selectedStepInfo}
+        />
+      )}
     </>
   );
 };

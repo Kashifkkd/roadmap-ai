@@ -1,6 +1,6 @@
 "use client";
 
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Serif, Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/header/Header";
 import { usePathname } from "next/navigation";
@@ -15,6 +15,16 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const notoSerif = Noto_Serif({
+  variable: "--font-noto-serif",
+  subsets: ["latin"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin", "latin-ext"],
 });
 
 function LayoutContent({ children }) {
@@ -41,7 +51,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-[100vh] w-[100vw]`}
+        className={`font-sans ${notoSerif.variable} ${inter.variable} antialiased 
+        h-[100vh] w-[100vw]`}
       >
         <PreviewModeProvider>
           <LayoutContent>{children}</LayoutContent>

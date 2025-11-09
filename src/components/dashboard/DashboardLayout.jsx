@@ -145,8 +145,8 @@ export default function DashboardLayout() {
       <div className="flex flex-col bg-primary-50 px-2 py-2 lg:flex-row h-full">
         <div className="flex flex-1 gap-2 flex-col lg:flex-row overflow-y-auto">
           
-          {/* Chat Window - Hidden on small screens, Desktop: 25% width */}
-          <div className="lg:block w-full lg:w-1/4 h-full lg:h-full">
+          {/* Chat Window - Hidden on small screens, Desktop: 360px width */}
+          <div className="lg:block w-full lg:w-[360px] h-full lg:h-full">
             <ChatWindow
               inputType={prefillData ? "comet_data_update" : "comet_data_creation"}
               initialInput={initialInput}
@@ -156,8 +156,8 @@ export default function DashboardLayout() {
             />
           </div>
 
-          {/* Create Comet Form - Mobile: Full width, Desktop: 75% width */}
-          <div className="w-full lg:w-3/4 h-full lg:h-full">
+          {/* Create Comet Form - Mobile: Full width, Desktop: flex-1 */}
+          <div className="w-full lg:flex-1 h-full lg:h-full">
             <CreateComet
               suggestion={suggestion}
               initialInput={initialInput}
