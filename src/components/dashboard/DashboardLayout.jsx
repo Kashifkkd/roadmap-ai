@@ -17,7 +17,7 @@ export default function DashboardLayout() {
   const [sessionData, setSessionData] = useState(null);
   const [sessionId, setSessionId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGeneratingOutline, setIsGeneratingOutline] = useState(true);
+  const [isGeneratingOutline, setIsGeneratingOutline] = useState(false);
   const [error, setError] = useState(null);
   const [prefillData, setPrefillData] = useState(null);
   const [allMessages, setAllMessages] = useState([]);
