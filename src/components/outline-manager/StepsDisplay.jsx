@@ -17,7 +17,7 @@ import AskOutlineKyper from "./AskOutlineKyper";
 import { graphqlClient } from "@/lib/graphql-client";
 import Image from "next/image";
 
-const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
+const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionData }) => {
   const [focusedField, setFocusedField] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
   const [selectedText, setSelectedText] = useState("");
@@ -26,7 +26,6 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
   const [editValue, setEditValue] = useState("");
   const [selectedStepInfo, setSelectedStepInfo] = useState(null);
   const [isAskingKyper, setIsAskingKyper] = useState(false);
-  const [allMessages, setAllMessages] = useState([]);
   const selectionRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -133,64 +132,45 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
     }
   };
 
+  console.log(">>", chapterNumber, selectedStepInfo)
   const handleAskKyper = async (query) => {
-    const currentChapterNumber =
-      chapterNumber ||
-      selectedChapter?.chapterNumber ||
-      selectedChapter?.step ||
-      "Unknown";
-
-    console.log("=== Ask Kyper Context ===");
-    console.log("Chapter Number:", currentChapterNumber);
-    console.log(
-      "Selected Chapter:",
-      selectedStepInfo?.chapterName ||
-        selectedChapter?.chapter ||
-        "Unknown Chapter"
-    );
-    console.log("Step Number:", selectedStepInfo?.stepNumber || "Unknown");
-    console.log("Step Title:", selectedStepInfo?.stepTitle || "Unknown");
-    console.log("Field Type:", selectedStepInfo?.fieldType || "Unknown");
-    console.log("Selected Text:", selectedText);
-    console.log("User Query:", query);
 
     try {
       setIsAskingKyper(true);
 
       let currentSessionId = localStorage.getItem("sessionId");
       const conversationMessageObj = {
-        chapterNumber: currentChapterNumber,
-        chapterName:
-          selectedStepInfo?.chapterName ||
-          selectedChapter?.chapter ||
-          "Unknown Chapter",
-        stepNumber: selectedStepInfo?.stepNumber || "Unknown",
-        stepTitle: selectedStepInfo?.stepTitle || "Unknown",
-        fieldType: selectedStepInfo?.fieldType || "Unknown",
-        selectedText: selectedText || "",
+        // path: `chapter-${chapterNumber}-step-${selectedStepInfo?.stepNumber}-screen-${selectedStepInfo?.fieldType}`,
+        field: selectedStepInfo?.fieldType,
+        value: selectedText,
         instruction: query,
       };
 
-      const conversationMessage = JSON.stringify(conversationMessageObj);
+      // const conversationMessage = JSON.stringify(conversationMessageObj);
 
       setAllMessages((prev) => [
         ...prev,
         { from: "user", content: query || "" },
       ]);
 
-      const payloadObject = {
-        session_id: currentSessionId,
-        input_type: "step_content_update",
-        chatbot_conversation: [{ user: conversationMessage }],
-      };
+      const conversationMessage = `{ 'field': '${selectedStepInfo?.fieldType}', 'value': '${selectedText}', 'instruction': '${query}' }`;
 
-      const cometJsonForMessage = JSON.stringify(payloadObject);
+
+      const payloadObject = JSON.stringify({
+        session_id: currentSessionId,
+        input_type: "outline_updation",
+        comet_creation_data: sessionData?.comet_creation_data || {},
+        response_outline: sessionData?.response_outline || {},
+        response_path: sessionData?.response_path || {},
+        chatbot_conversation: [{ user: conversationMessage }],
+        to_modify: {},
+      });
+
 
       console.log("Payload Object:", payloadObject);
-      console.log("Payload String:", cometJsonForMessage);
 
       const messageResponse = await graphqlClient.sendMessage(
-        cometJsonForMessage
+        payloadObject
       );
 
       console.log("Message sent, AI response:", messageResponse.sendMessage);
@@ -199,6 +179,8 @@ const StepsDisplay = ({ selectedChapter, chapterNumber }) => {
         ...prev,
         { from: "bot", content: messageResponse.sendMessage },
       ]);
+
+      handleClosePopup()
     } catch (error) {
       console.error("Error sending message to Kyper:", error);
       setAllMessages((prev) => [

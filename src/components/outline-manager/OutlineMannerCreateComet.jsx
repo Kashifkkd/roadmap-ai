@@ -284,6 +284,7 @@ export default function OutlineMannerCreateComet({
               selectedChapter={selectedChapter}
               chapterNumber={selectedChapterNumber}
               setAllMessages={setAllMessages}
+              sessionData={sessionData}
             />
           </div>
         </div>
