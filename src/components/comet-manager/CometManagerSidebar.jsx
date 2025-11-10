@@ -214,7 +214,7 @@ export default function CometManagerSidebar({
               variant="default"
               key={index}
               onClick={button.onClick}
-              className={`text-xs sm:text-sm ${
+              className={`text-xs sm:text-sm p-2 ${
                 index === tab
                   ? "bg-primary text-background"
                   : "bg-background text-gray-400 hover:bg-primary-100 hover:text-primary shadow-none"
@@ -322,11 +322,11 @@ export default function CometManagerSidebar({
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     // Only select step; do not expand/collapse here
-                                    // setSelectedStep(stepId);
+                                    setSelectedStep(stepId);
                                     // // Call the hook's setSelectedStep to filter screens
-                                    // if (setSelectedStepFromHook) {
-                                    //   setSelectedStepFromHook(stepId);
-                                    // }
+                                    if (setSelectedStepFromHook) {
+                                      setSelectedStepFromHook(stepId);
+                                    }
                                   }}
                                   className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
                                     isStepSelected || isStepExpanded
