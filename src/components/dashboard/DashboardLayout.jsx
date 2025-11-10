@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import CreateComet from "@/components/create-comet";
 import ChatWindow from "@/components/chat/ChatWindow";
-import Loading from "@/components/common/Loading";
+import ProgressbarLoader from "@/components/loader";
 import { graphqlClient } from "@/lib/graphql-client";
 
 export default function DashboardLayout() {
@@ -17,10 +17,11 @@ export default function DashboardLayout() {
   const [sessionData, setSessionData] = useState(null);
   const [sessionId, setSessionId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGeneratingOutline, setIsGeneratingOutline] = useState(false);
+  const [isGeneratingOutline, setIsGeneratingOutline] = useState(true);
   const [error, setError] = useState(null);
   const [prefillData, setPrefillData] = useState(null);
   const [allMessages, setAllMessages] = useState([]);
+  const [formProgress, setFormProgress] = useState(0);
 
   // Cleanup WebSocket connections on unmount
   useEffect(() => {
@@ -91,15 +92,15 @@ export default function DashboardLayout() {
           "Target Audience": formData.targetAudience || "",
           "Learning Objectives": Array.isArray(formData.learningObjectives)
             ? formData.learningObjectives
-              .map(String)
-              .map((obj) => obj.trim())
-              .filter(Boolean)
+                .map(String)
+                .map((obj) => obj.trim())
+                .filter(Boolean)
             : typeof formData.learningObjectives === "string"
-              ? formData.learningObjectives
+            ? formData.learningObjectives
                 .split(",")
                 .map((obj) => obj.trim())
                 .filter(Boolean)
-              : [],
+            : [],
         },
         "Experience Design": {
           Focus: formData.cometFocus || "",
@@ -139,16 +140,26 @@ export default function DashboardLayout() {
     }
   };
 
+  if (isGeneratingOutline) {
+    return <ProgressbarLoader />;
+  }
+
   return (
     <>
-      <Loading isOpen={isGeneratingOutline} />
-      <div className="flex flex-col bg-primary-50 px-2 py-2 lg:flex-row h-full">
-        <div className="flex flex-1 gap-2 flex-col lg:flex-row overflow-y-auto">
-          
+      <div className="flex flex-col bg-primary-50 px-2 py-2 h-full">
+        <div className="h-[6px] sm:h-2 rounded-full bg-white overflow-hidden shadow-inner">
+          <div
+            className="h-full bg-linear-to-r from-primary-400 via-primary-500 to-primary-600 transition-[width] duration-500 ease-out shadow-[0_6px_18px_rgba(79,70,229,0.35)]"
+            style={{ width: `${formProgress}%` }}
+          />
+        </div>
+        <div className="flex flex-1 gap-2 mt-2 flex-col lg:flex-row overflow-y-auto">
           {/* Chat Window - Hidden on small screens, Desktop: 360px width */}
           <div className="lg:block w-full lg:w-[360px] h-full lg:h-full">
             <ChatWindow
-              inputType={prefillData ? "comet_data_update" : "comet_data_creation"}
+              inputType={
+                prefillData ? "comet_data_update" : "comet_data_creation"
+              }
               initialInput={initialInput}
               onResponseReceived={setPrefillData}
               allMessages={allMessages}
@@ -168,6 +179,7 @@ export default function DashboardLayout() {
               isLoading={isLoading}
               error={error}
               setAllMessages={setAllMessages}
+              onProgressChange={setFormProgress}
             />
           </div>
         </div>

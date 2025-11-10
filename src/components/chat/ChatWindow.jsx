@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Chat from "./Chat";
-import Loading from "@/components/common/Loading";
+import ProgressbarLoader from "@/components/loader";
 import { graphqlClient } from "@/lib/graphql-client";
 import { useRouter } from "next/navigation";
 
@@ -221,6 +221,10 @@ export default function ChatWindow({
     };
   }, [sessionId, onResponseReceived]);
 
+  if (isGeneratingOutline) {
+    return <ProgressbarLoader />;
+  }
+
   return (
     <div className="bg-white h-full w-full p-2 rounded-2xl">
       <Chat
@@ -232,7 +236,6 @@ export default function ChatWindow({
         onSubmit={handleSubmit}
         error={error}
       />
-      <Loading isOpen={isGeneratingOutline} />
     </div>
   );
 }

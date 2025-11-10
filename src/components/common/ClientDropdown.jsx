@@ -26,9 +26,7 @@ export default function ClientDropdown({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const userName = localStorage.getItem("user_name");
-  console.log("userName", userName);
-
+  
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -67,11 +65,11 @@ export default function ClientDropdown({
         className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 sm:py-2 bg-background border-none shadow-none rounded-lg text-xs sm:text-sm font-medium text-gray-800 hover:bg-background active:bg-background disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
-          {userName.charAt(0).toUpperCase()}
+          {selectedClient?.name?.charAt(0).toUpperCase()}
         </div>
 
         <span className="max-w-[80px] sm:max-w-[100px] md:max-w-[120px] lg:max-w-[150px] text-sm sm:text-base md:text-[18px] font-semibold truncate leading-tight sm:leading-[28px]">
-          {userName}
+          {selectedClient?.name}
         </span>
 
         <div

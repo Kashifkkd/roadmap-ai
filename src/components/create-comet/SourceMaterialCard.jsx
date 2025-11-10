@@ -168,13 +168,13 @@ const FilePreview = ({ file, setFiles, files }) => {
           </div>
           <div className="flex items-center gap-2">
             <button className="cursor-pointer hover:text-green-600 transition-colors">
-              {/* <Image
-                src="/Verified Check.png"
+              <Image
+                src="/Verified Check.svg"
                 alt="Verified"
                 width={24}
                 height={24}
-              /> */}
-              <BadgeCheck className="w-6 h-6 font-bold text-green-600 " />
+              />
+              {/* <BadgeCheck className="w-6 h-6 font-bold text-green-600 " /> */}
             </button>
 
             <button

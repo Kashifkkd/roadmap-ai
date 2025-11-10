@@ -301,3 +301,18 @@
     font-size: 1vw;
   }
 }
+
+/* Moving stripe animation for completed progress bar */
+@keyframes moveStripe {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 20px 0;
+  }
+}
+
+.progress-bar-moving-stripe {
+  animation: moveStripe 0.8s linear infinite;
+  background-size: 20px 100%;
+}

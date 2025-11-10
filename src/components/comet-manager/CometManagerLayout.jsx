@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import ChatWindow from "@/components/chat/ChatWindow";
 import CometManager from "./CometManager";
 import { usePreviewMode } from "@/contexts/PreviewModeContext";
-import { sampleSessionData } from "@/hooks/sampleSessionData";
+// import { sampleSessionData } from "@/hooks/sampleSessionData";
 
 export default function CometManagerLayout() {
   const { isPreviewMode, setIsPreviewMode } = usePreviewMode();
@@ -22,10 +22,12 @@ export default function CometManagerLayout() {
         : null;
     if (storedSessionData && !sessionData) {
       setSessionData(JSON.parse(storedSessionData));
-    } else if (!storedSessionData && !sessionData) {
-      // Fallback to sample data for testing
-      setSessionData(sampleSessionData);
     }
+    // sample data for testing
+    // else if (!storedSessionData && !sessionData) {
+    //   // Fallback to sample data for testing
+    //   setSessionData(sampleSessionData);
+    // }
   }, []);
 
   useEffect(() => {

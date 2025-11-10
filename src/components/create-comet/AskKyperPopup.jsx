@@ -90,6 +90,10 @@ export default function AskKyperPopup({
         e.stopPropagation();
         if (onPopupInteract) onPopupInteract();
       }}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+        if (onPopupInteract) onPopupInteract();
+      }}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="bg-gray-100 rounded-2xl shadow-2xl border border-gray-200 min-w-[450px] transition-all duration-200">

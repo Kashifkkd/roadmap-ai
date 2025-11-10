@@ -110,7 +110,9 @@ export default function Header() {
     { name: "About Us", path: "/about" },
     { name: "Contact Us", path: "/contact" },
   ];
-  const userName = localStorage.getItem("user_name");
+  const userName =
+    typeof window !== "undefined" ? localStorage.getItem("user_name") : null;
+  console.log("userName", userName);
 
   useEffect(() => {
     // Check authentication status
@@ -715,7 +717,9 @@ export default function Header() {
                             activeButton === "settings" ? "text-white" : ""
                           }`}
                         />
-                        <span className="text-base   ">Clients Settings</span>
+                        <span className="text-base ">
+                          Clients Settings
+                        </span>
                       </button>
                     </div>
 
@@ -870,16 +874,12 @@ export default function Header() {
                     </div>
 
                     <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
-                      {userName.charAt(0).toUpperCase()}
+                      {userName?.charAt(0).toUpperCase()}
                     </div>
-                    {/* 
-                    <button
-                      onClick={toggleUserMenu}
-                      className="flex items-center gap-1.5 sm:gap-2 md:gap-3 cursor-pointer outline-none hover:opacity-80 transition-opacity"
-                    > */}
+
                     <div className="hidden sm:flex flex-col justify-start">
                       <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
-                        {userName.split(" ")[0]}
+                        {userName?.split(" ")[0]}
                       </span>
                       {isSuperAdmin() && (
                         <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
@@ -887,8 +887,6 @@ export default function Header() {
                         </span>
                       )}
                     </div>
-                    {/* <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 shrink-0" /> */}
-                    {/* </button> */}
                   </div>
 
                   {/* {isUserMenuOpen && (
@@ -967,14 +965,90 @@ export default function Header() {
           )}
 
           {!isHome && !isCometManager && (
-            <div className="ml-auto shrink-0 min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 ml-auto shrink-0">
               <RightSectionGeneric />
+              {/* User Profile Section */}
+              {isAuthenticated ? (
+                <div className="relative">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
+                      {userName?.charAt(0).toUpperCase()}
+                    </div>
+
+                    <div className="hidden sm:flex flex-col justify-start">
+                      <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
+                        {userName?.split(" ")[0]}
+                      </span>
+                      {isSuperAdmin() && (
+                        <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
+                          Super Admin
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 sm:gap-3 relative">
+                  <button
+                    ref={loginButtonRef}
+                    onClick={handleLoginClick}
+                    className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-primary-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer"
+                  >
+                    Login
+                  </button>
+                  {isLoginDialogOpen && (
+                    <LoginForm
+                      open={isLoginDialogOpen}
+                      onOpenChange={setIsLoginDialogOpen}
+                      buttonPosition={loginButtonPosition}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           )}
 
           {isCometManager && (
-            <div className="ml-auto shrink-0 min-w-0 max-w-full overflow-hidden">
+            <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 ml-auto shrink-0 min-w-0 max-w-full overflow-hidden">
               <RightSectionCometManager />
+              {/* User Profile Section */}
+              {isAuthenticated ? (
+                <div className="relative">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
+                      {userName?.charAt(0).toUpperCase()}
+                    </div>
+
+                    <div className="hidden sm:flex flex-col justify-start">
+                      <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
+                        {userName?.split(" ")[0]}
+                      </span>
+                      {isSuperAdmin() && (
+                        <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
+                          Super Admin
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 sm:gap-3 relative">
+                  <button
+                    ref={loginButtonRef}
+                    onClick={handleLoginClick}
+                    className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-primary-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer"
+                  >
+                    Login
+                  </button>
+                  {isLoginDialogOpen && (
+                    <LoginForm
+                      open={isLoginDialogOpen}
+                      onOpenChange={setIsLoginDialogOpen}
+                      buttonPosition={loginButtonPosition}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

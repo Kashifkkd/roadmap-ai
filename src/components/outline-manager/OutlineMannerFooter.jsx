@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft } from "lucide-react";
 import Stars from "@/components/icons/Stars";
-import Loading from "@/components/common/Loading";
+import ProgressbarLoader from "@/components/loader";
 import { graphqlClient } from "@/lib/graphql-client";
 
 export default function OutlineMannerFooter() {
@@ -101,9 +101,12 @@ export default function OutlineMannerFooter() {
     }
   };
 
+  if (isGenerating) {
+    return <ProgressbarLoader />;
+  }
+
   return (
     <>
-      <Loading isOpen={isGenerating} message="Generating your comet..." />
       <div className="border-t p-4 bg-background w-full rounded-b-xl">
         <div className="flex items-center justify-between">
           <Button className="bg-muted text-primary" onClick={handleBackClick}>

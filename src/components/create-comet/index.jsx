@@ -27,6 +27,7 @@ export default function CreateComet({
   error = null,
   allMessages = [],
   setAllMessages = () => {},
+  onProgressChange = () => {},
 }) {
   const [files, setFiles] = useState([]);
   const [focusedField, setFocusedField] = useState(null);
@@ -45,7 +46,8 @@ export default function CreateComet({
     watch,
     formState: { errors, isValid, isSubmitting },
   } = useForm({
-    mode: "onSubmit",
+    mode: "onChange",
+    reValidateMode: "onChange",
     defaultValues: {
       cometTitle: "",
       clientOrg: "",
@@ -281,6 +283,18 @@ export default function CreateComet({
     }
   }, [prefillData, setValue]);
 
+  const requiredFields = [
+    "cometTitle",
+    "clientOrg",
+    "targetAudience",
+    "learningObjectives",
+    "cometFocus",
+    "sourceMaterialFidelity",
+    "engagementFrequency",
+    "lengthFrequency",
+    "specialInstructions",
+  ];
+
   const handleFormSubmit = async (data) => {
     console.log("Form submitted:", data);
     console.log("Form validation state:", { isValid, errors });
@@ -299,6 +313,29 @@ export default function CreateComet({
       console.error("Error saving comet data:", error);
     }
   };
+  //progress bar logic
+  useEffect(() => {
+    const calculateProgress = (values) => {
+      if (!requiredFields.length) return 0;
+      const filledCount = requiredFields.filter((field) => {
+        const value = values[field];
+        if (typeof value === "string") {
+          return value.trim().length > 0;
+        }
+        return Boolean(value);
+      }).length;
+      return Math.round((filledCount / requiredFields.length) * 100);
+    };
+
+    const initialValues = watch();
+    onProgressChange(calculateProgress(initialValues));
+
+    const subscription = watch((values) => {
+      onProgressChange(calculateProgress(values));
+    });
+
+    return () => subscription.unsubscribe();
+  }, [watch, onProgressChange]);
 
   const handleAskKyper = async (query) => {
     console.log("Ask Kyper clicked for field:", focusedField);
@@ -414,7 +451,7 @@ export default function CreateComet({
     const timeout = setTimeout(() => {
       setFocusedField(null);
       setFieldPosition(null);
-    }, 200);
+    }, 500);
     setBlurTimeout(timeout);
   };
 
@@ -440,7 +477,7 @@ export default function CreateComet({
               <div className="flex flex-1 flex-col border border-gray-200 rounded-sm h-full space-y-3 sm:space-y-4 p-2 sm:p-4 overflow-y-auto ">
                 <FormCard
                   title="Basic Information"
-                  className="text-semibold !p-0 !m-0"
+                  className="text-semibold p-0! m-0!"
                   headerClassName="p-0 m-0"
                 >
                   <CardContent className="space-y-3 pb-4">
@@ -449,7 +486,7 @@ export default function CreateComet({
                       <Input
                         id="comet-title"
                         placeholder="Enter comet title"
-                        {...register("cometTitle")}
+                        {...register("cometTitle", { required: true })}
                         onSelect={(e) => handleTextSelection("cometTitle", e)}
                         onBlur={handleFieldBlur}
                         className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
@@ -466,7 +503,7 @@ export default function CreateComet({
                       <Input
                         id="client-org"
                         placeholder="Enter description"
-                        {...register("clientOrg")}
+                        {...register("clientOrg", { required: true })}
                         onSelect={(e) => handleTextSelection("clientOrg", e)}
                         onBlur={handleFieldBlur}
                         className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
@@ -504,7 +541,7 @@ export default function CreateComet({
                         id="target-audience"
                         rows={3}
                         placeholder="Describe your target audience"
-                        {...register("targetAudience")}
+                        {...register("targetAudience", { required: true })}
                         onSelect={(e) =>
                           handleTextSelection("targetAudience", e)
                         }
@@ -525,7 +562,7 @@ export default function CreateComet({
                         id="learning-objectives"
                         rows={3}
                         placeholder="Define learning objectives"
-                        {...register("learningObjectives")}
+                        {...register("learningObjectives", { required: true })}
                         onSelect={(e) =>
                           handleTextSelection("learningObjectives", e)
                         }
@@ -555,6 +592,7 @@ export default function CreateComet({
                           label: "Reinforcing & applying",
                         },
                       ]}
+                      required={true}
                       value={watch("cometFocus")}
                       onChange={(e) => {
                         setValue("cometFocus", e.target.value);
@@ -570,7 +608,8 @@ export default function CreateComet({
                         { value: "balanced", label: "Balanced" },
                         { value: "extension", label: "Extension" },
                       ]}
-                      value="balanced"
+                      required={true}
+                      value={watch("sourceMaterialFidelity")}
                       onChange={(e) => {
                         setValue("sourceMaterialFidelity", e.target.value);
                       }}
@@ -583,6 +622,7 @@ export default function CreateComet({
                         { value: "daily", label: "Daily" },
                         { value: "weekly", label: "Weekly" },
                       ]}
+                      required={true}
                       value={watch("engagementFrequency")}
                       onChange={(e) => {
                         setValue("engagementFrequency", e.target.value);
@@ -597,7 +637,7 @@ export default function CreateComet({
                       <Input
                         id="length-frequency"
                         placeholder="e.g., 4 weeks - 2 microlearning steps per week"
-                        {...register("lengthFrequency")}
+                        {...register("lengthFrequency", { required: true })}
                         className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
                       />
                     </div>
@@ -609,7 +649,7 @@ export default function CreateComet({
                         id="special-instructions"
                         rows={3}
                         placeholder="Focus on practical scenarios for first-time managers. Include at least one interactive quiz and one downloadable tool template"
-                        {...register("specialInstructions")}
+                        {...register("specialInstructions", { required: true })}
                         onSelect={(e) =>
                           handleTextSelection("specialInstructions", e)
                         }
