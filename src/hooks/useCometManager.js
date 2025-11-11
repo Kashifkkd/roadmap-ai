@@ -14,11 +14,7 @@ export function useCometManager(sessionData = null) {
   useEffect(() => {
     // if (temp && temp.length > 0 && temp[0].response_path) {
     if (sessionData && sessionData.response_path) {
-      console.log(
-        ">>> sessionData, sessionData.response_path:",
-        sessionData.session_id,
-        sessionData.response_path
-      );
+      
       const responsePath = sessionData.response_path;
       const transformedChapters = [];
       const transformedScreens = [];
