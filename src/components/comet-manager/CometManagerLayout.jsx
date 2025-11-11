@@ -5,6 +5,7 @@ import ChatWindow from "@/components/chat/ChatWindow";
 import CometManager from "./CometManager";
 import { usePreviewMode } from "@/contexts/PreviewModeContext";
 // import { sampleSessionData } from "@/hooks/sampleSessionData";
+import { temp } from "@/hooks/temp";
 
 export default function CometManagerLayout() {
   const { isPreviewMode, setIsPreviewMode } = usePreviewMode();
@@ -24,10 +25,10 @@ export default function CometManagerLayout() {
       setSessionData(JSON.parse(storedSessionData));
     }
     // sample data for testing
-    // else if (!storedSessionData && !sessionData) {
-    //   // Fallback to sample data for testing
-    //   setSessionData(sampleSessionData);
-    // }
+    else if (!storedSessionData && !sessionData) {
+     
+      setSessionData(temp[0]);
+    }
   }, []);
 
   useEffect(() => {
