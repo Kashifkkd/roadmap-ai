@@ -2,7 +2,30 @@ export const temp = [
   {
     session_id: "6fce8c35-3d1d-4a7c-86b5-9aeb9e557067",
     input_type: "path_creation",
-    comet_creation_data: {},
+    comet_creation_data: {
+      "Basic Information": {
+        "Comet Title": "New Manager Essentials",
+        Description:
+          "A bite-sized learning path to help first-time managers ramp up quickly and lead their teams with confidence.",
+      },
+      "Audience & Objectives": {
+        "Target Audience": "First-time or newly promoted managers",
+        "Learning Objectives": [
+          "Set clear goals and expectations with team members",
+          "Run effective 1:1s and give constructive feedback",
+          "Delegate tasks effectively and track progress",
+          "Build trust and psychological safety",
+        ],
+      },
+      "Experience Design": {
+        Focus: "Learning new content",
+        "Source Alignment": "Balanced",
+        "Engagement Frequency": "Daily",
+        Duration: "4 weeks - 2 microlearning steps per week",
+        "Special Instructions":
+          "Focus on practical scenarios for first-time managers. Include at least one interactive quiz and one downloadable tool template.",
+      },
+    },
     response_outline: [
       {
         chapter: "Foundations of Effective Management",

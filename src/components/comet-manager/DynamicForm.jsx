@@ -243,6 +243,8 @@ export default function DynamicForm({
     });
   };
 
+  console.log(">>> sessionData", sessionData);
+
   const handleAskKyper = async (query) => {
     if (!askContext || !query?.trim()) return;
 

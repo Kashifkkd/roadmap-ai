@@ -13,7 +13,7 @@ export default function CometManagerLayout() {
   const [allMessages, setAllMessages] = useState([]);
   const [prefillData, setPrefillData] = useState(null);
 
-  console.log("isPreviewMode444", isPreviewMode);
+  console.log("sessionData", sessionData);
 
   useEffect(() => {
     // Access localStorage only on the client
@@ -24,12 +24,12 @@ export default function CometManagerLayout() {
     if (storedSessionData && !sessionData) {
       setSessionData(JSON.parse(storedSessionData));
     }
-    // sample data for testing
-    else if (!storedSessionData && !sessionData) {
+    // // sample data for testing
+    // else if (!storedSessionData && !sessionData) {
      
-      setSessionData(temp[0]);
-    }
-  }, []);
+    //   setSessionData(temp[0]);
+    // }
+  }, [sessionData]);
 
   useEffect(() => {
     if (!sessionData) return;
