@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { isArrayWithValues } from "@/utils/isArrayWithValues";
 import SectionHeader from "@/components/section-header";
 import OutlineMannerFooter from "./OutlineMannerFooter";
@@ -17,8 +17,8 @@ export default function OutlineMannerCreateComet({
   prefillData,
   setAllMessages,
 }) {
-  console.log("sessionData in OutlineMannerCreateComet:", sessionData);
-  console.log("prefillData in OutlineMannerCreateComet:", prefillData);
+  // console.log("sessionData in OutlineMannerCreateComet:", sessionData);
+  // console.log("prefillData in OutlineMannerCreateComet:", prefillData);
   // console.log("temp in OutlineMannerCreateComet:", temp);
 
   const sourceOutline = useMemo(() => {
@@ -33,6 +33,7 @@ export default function OutlineMannerCreateComet({
   }, [prefillData, sessionData]);
 
   const chapters = useMemo(() => {
+    // console.log("re-render chapters", sourceOutline);
     return isArrayWithValues(sourceOutline)
       ? sourceOutline.map((chapter) => ({
           chapter: chapter?.chapter || "Untitled Chapter",
@@ -47,8 +48,62 @@ export default function OutlineMannerCreateComet({
   const [selectedChapterNumber, setSelectedChapterNumber] = useState(null);
   const [selectedStep, setSelectedStep] = useState(null);
   const [showChapterTextarea, setShowChapterTextarea] = useState(false);
+  
+  const selectedChapterNameRef = useRef(null);
+  const selectedStepTitleRef = useRef(null);
+
+  useEffect(() => {
+    if (!isArrayWithValues(chapters)) {
+      if (selectedChapterNameRef.current) {
+        selectedChapterNameRef.current = null;
+        selectedStepTitleRef.current = null;
+        setSelectedChapter(null);
+        setSelectedChapterNumber(null);
+        setSelectedStep(null);
+      }
+      return;
+    }
+    const chapterName = selectedChapterNameRef.current;
+    if (chapterName) {
+      const chapterIndex = chapters.findIndex(
+        (ch) => ch?.chapter === chapterName
+      );
+
+      if (chapterIndex !== -1) {
+        const updatedChapter = chapters[chapterIndex];
+        setSelectedChapter(updatedChapter);
+        setSelectedChapterNumber(chapterIndex + 1);
+        const stepTitle = selectedStepTitleRef.current;
+        if (stepTitle && isArrayWithValues(updatedChapter?.steps)) {
+          const stepIndex = updatedChapter.steps.findIndex(
+            (step) => step?.title === stepTitle
+          );
+          if (stepIndex !== -1) {
+            setSelectedStep(updatedChapter.steps[stepIndex]);
+          } else {
+            selectedStepTitleRef.current = null;
+            setSelectedStep(null);
+          }
+        } else {
+          if (!isArrayWithValues(updatedChapter?.steps)) {
+            selectedStepTitleRef.current = null;
+            setSelectedStep(null);
+          }
+        }
+      } else {
+        selectedChapterNameRef.current = null;
+        selectedStepTitleRef.current = null;
+        setSelectedChapter(null);
+        setSelectedChapterNumber(null);
+        setSelectedStep(null);
+      }
+    }
+  }, [chapters]);
 
   const handleChapterClick = (index, chapter) => {
+    selectedChapterNameRef.current = chapter?.chapter || null;
+    selectedStepTitleRef.current = null;
+    
     setSelectedChapter(chapter);
     setSelectedChapterNumber(index + 1);
     setSelectedStep(null);
@@ -61,8 +116,11 @@ export default function OutlineMannerCreateComet({
 
   const handleStepClick = (e, chapter, step, chapterIndex) => {
     e.stopPropagation();
+    selectedChapterNameRef.current = chapter?.chapter || null;
+    selectedStepTitleRef.current = step?.title || null;
+    
     setSelectedChapter(chapter);
-    setSelectedChapterNumber(chapterIndex + 1); // Chapter number (1-based index)
+    setSelectedChapterNumber(chapterIndex + 1);
     setSelectedStep(step);
   };
 
