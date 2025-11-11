@@ -362,7 +362,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
                             </p>
                           )}
                         </div>
-                        {editingField !== `${index}-aha` && (
+                        {/* {editingField !== `${index}-aha` && (
                           <button
                             onClick={() =>
                               handleEditStep(index, "aha", step.aha)
@@ -372,7 +372,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
                           >
                             <Pencil className="w-4 h-4 text-gray-600" />
                           </button>
-                        )}
+                        )} */}
                       </div>
                     )}
 
@@ -429,7 +429,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
                             </p>
                           )}
                         </div>
-                        {editingField !== `${index}-action` && (
+                        {/* {editingField !== `${index}-action` && (
                           <button
                             onClick={() =>
                               handleEditStep(index, "action", step.action)
@@ -439,7 +439,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
                           >
                             <Pencil className="w-4 h-4 text-gray-600" />
                           </button>
-                        )}
+                        )} */}
                       </div>
                     )}
 
@@ -489,7 +489,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
                             </p>
                           )}
                         </div>
-                        {editingField !== `${index}-tool` && (
+                        {/* {editingField !== `${index}-tool` && (
                           <button
                             onClick={() =>
                               handleEditStep(index, "tool", step.tool)
@@ -499,7 +499,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
                           >
                             <Pencil className="w-4 h-4 text-gray-600" />
                           </button>
-                        )}
+                        )} */}
                       </div>
                     )}
                   </div>
