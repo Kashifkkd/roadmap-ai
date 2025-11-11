@@ -127,7 +127,7 @@ export default function AssessmentForm({
               </Label>
               <Input
                 type="text"
-                value={questionData.title || ""}
+                value={questionData.text || ""}
                 onChange={(e) =>
                   updateQuestionField(questionIndex, "title", e.target.value)
                 }
@@ -139,7 +139,7 @@ export default function AssessmentForm({
             {/* Question Field with Rich Text Editor */}
             <AssessmentRichTextArea
               label="Question"
-              value={questionData.question || ""}
+              value={questionData.text || ""}
               onChange={(value) =>
                 updateQuestionField(questionIndex, "question", value)
               }
@@ -152,7 +152,7 @@ export default function AssessmentForm({
               </Label>
               <div className="space-y-2">
                 {(questionData.options || []).map((option, optionIndex) => (
-                  <div key={optionIndex} className="flex items-center gap-2">
+                  <div key={option?.option_id} className="flex items-center gap-2">
                     {/* Drag Handle */}
                     <div className="cursor-move text-gray-400 hover:text-gray-600">
                       <GripVertical size={20} />
@@ -166,7 +166,7 @@ export default function AssessmentForm({
                     {/* Option Input */}
                     <Input
                       type="text"
-                      value={option}
+                      value={option?.text || ""}
                       onChange={(e) =>
                         updateOption(questionIndex, optionIndex, e.target.value)
                       }

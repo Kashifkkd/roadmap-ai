@@ -170,7 +170,7 @@ export default function ActionsForm({ formData, updateField }) {
       {/* User Options Section */}
       <div className="mb-6">
         <ToggleSwitch
-          checked={formData.actionCanCompleteImmediately ?? true}
+          checked={formData.actionCanCompleteImmediately ?? false}
           onChange={(value) =>
             updateField("actionCanCompleteImmediately", value)
           }
@@ -178,13 +178,13 @@ export default function ActionsForm({ formData, updateField }) {
         />
 
         <ToggleSwitch
-          checked={formData.actionCanSchedule ?? true}
+          checked={formData.actionCanSchedule ?? false}
           onChange={(value) => updateField("actionCanSchedule", value)}
           label="Users can schedule this action for later"
         />
 
         <ToggleSwitch
-          checked={formData.actionHasReflectionQuestion ?? true}
+          checked={formData.actionHasReflectionQuestion ?? false}
           onChange={(value) =>
             updateField("actionHasReflectionQuestion", value)
           }

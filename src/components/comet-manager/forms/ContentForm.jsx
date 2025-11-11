@@ -3,7 +3,18 @@ import { SectionHeader, TextField, RichTextArea } from "./FormFields";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
 
-export default function ContentForm({ formData, updateField }) {
+export default function ContentForm({
+  formData,
+  updateField,
+  askKyperHandlers = {},
+}) {
+  const {
+    onTextFieldSelect,
+    onFieldBlur,
+    onRichTextSelection,
+    onRichTextBlur,
+  } = askKyperHandlers;
+
   return (
     <>
       <SectionHeader title="Content" />
@@ -11,6 +22,15 @@ export default function ContentForm({ formData, updateField }) {
         label="Title"
         value={formData.contentSimpleTitle}
         onChange={(value) => updateField("contentSimpleTitle", value)}
+        inputProps={{
+          onSelect: (event) =>
+            onTextFieldSelect?.(
+              "contentSimpleTitle",
+              event,
+              formData.contentSimpleTitle
+            ),
+          onBlur: onFieldBlur,
+        }}
       />
       {/* <TextArea
         label="Description"
@@ -21,6 +41,14 @@ export default function ContentForm({ formData, updateField }) {
         label="Description"
         value={formData.contentSimpleDescription}
         onChange={(value) => updateField("contentSimpleDescription", value)}
+        onSelectionChange={(selectionInfo) =>
+          onRichTextSelection?.(
+            "contentSimpleDescription",
+            selectionInfo,
+            formData.contentSimpleDescription
+          )
+        }
+        onBlur={onRichTextBlur}
       />
 
       <div className="mb-6 flex items-center justify-between">

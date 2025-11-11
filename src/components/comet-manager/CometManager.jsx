@@ -142,6 +142,7 @@ const EASE_CATEGORIES = ["Engagement", "Aha", "Support", "Execution"];
 
 export default function CometManager({
   sessionData,
+  setAllMessages,
   isPreviewMode,
   setIsPreviewMode,
 }) {
@@ -263,6 +264,8 @@ export default function CometManager({
     setCurrentScreen(addAtIndex !== null ? addAtIndex : screens.length);
   };
 
+  console.log("currentChapter>>>", currentChapter)
+
   const handleUpdateScreen = (updatedScreen) => {
     // Update through the hook to persist changes
     updateScreenData(updatedScreen.id, updatedScreen);
@@ -280,6 +283,16 @@ export default function CometManager({
       setSelectedScreen(screens[newIndex]);
     }
   };
+
+  const chapterNumber =
+    typeof currentChapter?.position === "number"
+      ? currentChapter.position
+      : chapters.findIndex(ch => String(ch.id) === String(selectedScreen?.chapterId)) + 1 || 1;
+
+  const stepNumber =
+    (currentChapter?.steps?.findIndex(
+      step => String(step.id) === String(selectedScreen?.stepId)
+    ) ?? -1) + 1 || 1;
 
   return (
     <div className="flex flex-col w-full bg-background rounded-xl h-full">
@@ -409,9 +422,15 @@ export default function CometManager({
                   {selectedScreen && (
                     <div className="shrink-0">
                       <DynamicForm
+                        key={selectedScreen.id}
                         screen={selectedScreen}
+                        sessionData={sessionData}
+                        setAllMessages={setAllMessages}
                         onUpdate={handleUpdateScreen}
                         onClose={() => setSelectedScreen(null)}
+                        chapterNumber={chapterNumber}
+                        stepNumber={stepNumber
+                        }
                       />
                     </div>
                   )}
@@ -451,11 +470,10 @@ export default function CometManager({
         }}
       >
         <DrawerContent
-          className={`${
-            isMaximized
-              ? "w-screen"
-              : "w-full sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
-          } !max-w-none h-screen bg-primary-50 p-0`}
+          className={`${isMaximized
+            ? "w-screen"
+            : "w-full sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
+            } !max-w-none h-screen bg-primary-50 p-0`}
         >
           {/* Preview Header */}
           <div className="bg-primary-50 border-b border-gray-200 py-3 px-3 sm:px-4 flex items-center justify-between">

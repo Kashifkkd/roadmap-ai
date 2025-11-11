@@ -16,7 +16,13 @@ export const SectionHeader = ({ title }) => (
   </div>
 );
 
-export const TextField = ({ label, value, onChange, placeholder = "" }) => (
+export const TextField = ({
+  label,
+  value,
+  onChange,
+  placeholder = "",
+  inputProps = {},
+}) => (
   <div className="mb-4">
     <Label className="block text-sm font-medium text-gray-700 mb-2">
       {label}
@@ -27,6 +33,7 @@ export const TextField = ({ label, value, onChange, placeholder = "" }) => (
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      {...inputProps}
     />
   </div>
 );
@@ -110,20 +117,39 @@ export const ListField = ({
   </div>
 );
 
-export const RichTextArea = ({ label, value, onChange }) => {
+export const RichTextArea = ({
+  label,
+  value,
+  onChange,
+  onSelectionChange,
+  onBlur,
+}) => {
   const quillEditorRef = useRef(null);
   const editorRef = useRef(null);
   const toolbarRef = useRef(null);
+  const selectionCallbackRef = useRef(onSelectionChange);
+  const blurCallbackRef = useRef(onBlur);
+
+  useEffect(() => {
+    selectionCallbackRef.current = onSelectionChange;
+  }, [onSelectionChange]);
+
+  useEffect(() => {
+    blurCallbackRef.current = onBlur;
+  }, [onBlur]);
 
   useEffect(() => {
     if (quillEditorRef.current || !editorRef.current || !toolbarRef.current)
       return;
 
     //custom toolbar
-    const editor = new Quill(editorRef.current, {
+    const editorElement = editorRef.current;
+    const toolbarElement = toolbarRef.current;
+
+    const editor = new Quill(editorElement, {
       theme: "snow",
       modules: {
-        toolbar: toolbarRef.current,
+        toolbar: toolbarElement,
       },
     });
 
@@ -141,13 +167,55 @@ export const RichTextArea = ({ label, value, onChange }) => {
       onChange(JSON.stringify(editor.getContents()));
     });
 
+    editor.on("selection-change", (range, _oldRange, source) => {
+      const callback = selectionCallbackRef.current;
+      if (!callback || source !== "user") return;
+
+      if (range && range.length > 0) {
+        const bounds = editor.getBounds(range.index, range.length);
+        const editorElement = editorRef.current;
+        const editorRect = editorElement
+          ? editorElement.getBoundingClientRect()
+          : null;
+        const absolutePosition =
+          editorRect && typeof window !== "undefined"
+            ? {
+                top: editorRect.top + bounds.bottom + window.scrollY,
+                left: editorRect.left + bounds.left + window.scrollX,
+              }
+            : null;
+
+        callback({
+          text: editor.getText(range.index, range.length),
+          bounds,
+          range,
+          editorRect,
+          absolutePosition,
+          editor,
+        });
+      } else {
+        callback(null);
+      }
+    });
+
+    const handleEditorBlur = () => {
+      const callback = blurCallbackRef.current;
+      if (callback) {
+        callback();
+      }
+    };
+
+    const editorRoot = editor.root;
+    editorRoot.addEventListener("blur", handleEditorBlur);
+
     quillEditorRef.current = editor;
 
     // Cleanup
     return () => {
       quillEditorRef.current = null;
-      if (editorRef.current) editorRef.current.innerHTML = "";
-      if (toolbarRef.current) toolbarRef.current.innerHTML = "";
+      editorRoot.removeEventListener("blur", handleEditorBlur);
+      if (editorElement) editorElement.innerHTML = "";
+      if (toolbarElement) toolbarElement.innerHTML = "";
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
