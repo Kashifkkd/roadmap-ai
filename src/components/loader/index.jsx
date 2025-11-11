@@ -7,13 +7,13 @@ const ProgressbarLoader = () => {
   const estimatedTimeRemaining = 4;
   return (
     <>
-      <div className="w-screen h-screen flex flex-col bg-[#F1F0FE] gap-2 p-2 sm:p-3 md:p-4">
+      <div className="w-screen h-full flex flex-col bg-[#F1F0FE] p-2">
         {/* <Header /> */}
         {/* second part */}
-        <div className="flex flex-col w-full h-full p-2 sm:p-3 md:p-4 rounded-2xl gap-2 bg-white">
-          <div className="w-full h-full flex flex-col items-center rounded-lg px-2 sm:px-4 md:px-6 gap-2.5 border border-[#C7C2F9] overflow-y-auto">
-            <div className="flex flex-col w-full sm:w-5/6 md:w-3/4 lg:w-1/2 xl:w-2/5 h-full justify-between pt-4 sm:pt-5 md:pt-6 pb-4">
-              <div className="flex w-full items-center justify-center flex-col pt-1 gap-2 sm:gap-3">
+        <div className="flex flex-col w-full h-full rounded-2xl p-2 bg-white">
+          <div className="w-full h-full flex flex-col items-center rounded-lg px-2 sm:px-2 md:px-6 gap-2.5 border border-[#C7C2F9] overflow-y-auto">
+            <div className="flex flex-col w-full sm:w-5/6 md:w-3/4 lg:w-1/2 xl:w-2/5 h-full pt-2 sm:pt-2 justify-between md:pt-2 pb-2">
+              <div className="flex w-full items-center justify-center flex-col">
                 <div className="flex flex-col items-center justify-center gap-2 sm:gap-3">
                   <Image
                     src="/logo2.svg"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { temp } from "./temp";
+// import { temp } from "./temp";
 
 export function useCometManager(sessionData = null) {
   const [isLoading, setIsLoading] = useState(false);
@@ -9,13 +9,17 @@ export function useCometManager(sessionData = null) {
   const [chapters, setChapters] = useState([]);
   const [selectedStepId, setSelectedStepId] = useState(null);
 
-  console.log(">>>", sessionData)
+  console.log(">>>", sessionData);
   // Transform temp data response_path to chapters and screens
   useEffect(() => {
-    if (temp && temp.length > 0 && temp[0].response_path) {
-    // if (sessionData && sessionData.response_path) {
-      // console.log(sessionData, sessionData.response_path)
-      const responsePath = temp[0].response_path;
+    // if (temp && temp.length > 0 && temp[0].response_path) {
+    if (sessionData && sessionData.response_path) {
+      console.log(
+        ">>> sessionData, sessionData.response_path:",
+        sessionData.session_id,
+        sessionData.response_path
+      );
+      const responsePath = sessionData.response_path;
       const transformedChapters = [];
       const transformedScreens = [];
       let screenCounter = 0;
@@ -39,7 +43,7 @@ export function useCometManager(sessionData = null) {
 
           // Transform screens for this step
           const stepScreens = stepItem.screens || [];
-          
+
           // Collect content types from all screens in this step
           const contentTypes = new Set();
           stepScreens.forEach((screen) => {
@@ -48,10 +52,10 @@ export function useCometManager(sessionData = null) {
               const contentType = screen.screenContents.contentType;
               // For "content" type, check if it has an image
               if (contentType === "content") {
-                const hasImage = 
+                const hasImage =
                   screen.assets?.some(
                     (asset) => asset.type === "image" || asset.url
-                  ) || 
+                  ) ||
                   screen.screenContents.content?.media?.url ||
                   screen.screenContents.content?.media?.type === "image";
                 if (hasImage) {

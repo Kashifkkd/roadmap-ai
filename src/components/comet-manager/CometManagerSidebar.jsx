@@ -513,7 +513,7 @@ export default function CometManagerSidebar({
                                 material
                               );
                               if (material.source_path) {
-                                // Create a temporary link to download the file
+                                // Create a orary link to download the file
                                 const link = document.createElement("a");
                                 link.href = material.source_path;
                                 link.download =

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Plus, GripVertical, Zap, ChevronDown } from "lucide-react";
 import SelectIcon from "@/components/icons/SelectIcon";
 import ChapterTextarea from "./ChapterTextarea";
-import { temp } from "../../hooks/temp";
+// import { temp } from "../../hooks/temp";
 
 export default function OutlineMannerCreateComet({
   sessionData,
@@ -19,7 +19,7 @@ export default function OutlineMannerCreateComet({
 }) {
   console.log("sessionData in OutlineMannerCreateComet:", sessionData);
   console.log("prefillData in OutlineMannerCreateComet:", prefillData);
-   console.log("temp in OutlineMannerCreateComet:", temp);
+  // console.log("temp in OutlineMannerCreateComet:", temp);
 
   const sourceOutline = useMemo(() => {
     if (isArrayWithValues(prefillData?.response_outline))
@@ -27,8 +27,8 @@ export default function OutlineMannerCreateComet({
     if (isArrayWithValues(sessionData?.response_outline))
       return sessionData.response_outline;
     // sample data for testing
-    if (isArrayWithValues(temp[0]?.response_outline))
-      return temp[0].response_outline;
+    // if (isArrayWithValues(temp[0]?.response_outline))
+    //   return temp[0].response_outline;
     return [];
   }, [prefillData, sessionData]);
 
@@ -41,7 +41,6 @@ export default function OutlineMannerCreateComet({
       : [];
   }, [sourceOutline]);
 
-  console.log("chapters", chapters);
   const [expandedChapters, setExpandedChapters] = useState({});
 
   const [selectedChapter, setSelectedChapter] = useState(null);
