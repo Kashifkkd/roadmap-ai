@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-// import { temp } from "./temp";
+import { temp } from "./temp";
 
 export function useCometManager(sessionData = null) {
   const [isLoading, setIsLoading] = useState(false);
@@ -12,10 +12,11 @@ export function useCometManager(sessionData = null) {
   console.log(">>>", sessionData);
   // Transform temp data response_path to chapters and screens
   useEffect(() => {
-    // if (temp && temp.length > 0 && temp[0].response_path) {
-    if (sessionData && sessionData.response_path) {
-      
-      const responsePath = sessionData.response_path;
+    if (temp && temp.length > 0 && temp[0].response_path) {
+      // if (sessionData && sessionData.response_path) {
+
+      // const responsePath = sessionData.response_path;
+      const responsePath = temp[0].response_path;
       const transformedChapters = [];
       const transformedScreens = [];
       let screenCounter = 0;
