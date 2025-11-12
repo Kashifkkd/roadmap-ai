@@ -155,6 +155,7 @@ export default function CometManager({
     isLoading,
     screens,
     chapters,
+    selectedStepId,
     setSelectedStep,
     updateScreen: updateScreenData,
     addScreen: addScreenData,
@@ -185,11 +186,41 @@ export default function CometManager({
 
   // Update local screens when data changes
   useEffect(() => {
-    if (screens && screens.length > 0 && !selectedScreen) {
-      setSelectedScreen(screens[0]);
+    if (!screens || screens.length === 0) {
+      if (selectedScreen !== null) {
+        setSelectedScreen(null);
+      }
+      if (currentScreen !== 0) {
+        setCurrentScreen(0);
+      }
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screens]);
+
+    const existingIndex = selectedScreen
+      ? screens.findIndex((screen) => screen.id === selectedScreen.id)
+      : -1;
+
+    const nextIndex = existingIndex >= 0 ? existingIndex : 0;
+    const nextScreen = screens[nextIndex] || null;
+
+    if (!nextScreen) {
+      if (selectedScreen !== null) {
+        setSelectedScreen(null);
+      }
+      if (currentScreen !== 0) {
+        setCurrentScreen(0);
+      }
+      return;
+    }
+
+    if (selectedScreen?.id !== nextScreen.id) {
+      setSelectedScreen(nextScreen);
+    }
+
+    if (currentScreen !== nextIndex) {
+      setCurrentScreen(nextIndex);
+    }
+  }, [screens, selectedScreen, currentScreen]);
 
   // Ensure the selected screen is visible in the horizontal list
   useEffect(() => {
@@ -323,6 +354,7 @@ export default function CometManager({
                 onAddScreen={handleAddScreen}
                 chapters={chapters}
                 sessionId={sessionId}
+                selectedStepId={selectedStepId}
                 setSelectedStep={setSelectedStep}
                 onMaterialSelect={(material) => {
                   setSelectedMaterial(material);

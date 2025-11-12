@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Rocket,
   File,
@@ -57,6 +57,7 @@ export default function CometManagerSidebar({
   chapters = [],
   onChapterClick,
   sessionId,
+  selectedStepId,
   setSelectedStep: setSelectedStepFromHook,
   onMaterialSelect,
   onAssetCategorySelect,
@@ -95,6 +96,29 @@ export default function CometManagerSidebar({
       }
     }
   }, [filteredAssets, selectedAssetCategory, onAssetCategorySelect]);
+  useEffect(() => {
+    if (!selectedStepId) {
+      return;
+    }
+
+    const chapterIndex = chapters.findIndex((chapter) =>
+      Array.isArray(chapter.steps)
+        ? chapter.steps.some((step) => step.id === selectedStepId)
+        : false
+    );
+
+    if (chapterIndex === -1) {
+      return;
+    }
+
+    const chapter = chapters[chapterIndex];
+    const chapterId = chapter.id || `chapter-${chapterIndex}`;
+
+    setSelectedChapter(chapterId);
+    setExpandedChapters(new Set([chapterId]));
+    setSelectedStep(selectedStepId);
+    setExpandedSteps(new Set([selectedStepId]));
+  }, [selectedStepId, chapters]);
   const handleTabChange = (index) => {
     setTab(index);
   };
@@ -169,19 +193,7 @@ export default function CometManagerSidebar({
     return categories.filter((cat) => cat.materials.length > 0);
   };
 
-  // Fetch source materials when Sources tab is selected
-  useEffect(() => {
-    if (tab === 1 && sessionId) {
-      fetchSourceMaterialsData();
-    }
-  }, [tab, sessionId]);
-  useEffect(() => {
-    if (tab === 2 && sessionId) {
-      fetchAssetsData();
-    }
-  }, [tab, sessionId]);
-
-  const fetchSourceMaterialsData = async () => {
+  const fetchSourceMaterialsData = useCallback(async () => {
     if (!sessionId) {
       setSourcesError("Session ID is required to fetch source materials");
       setIsLoadingSources(false);
@@ -223,8 +235,8 @@ export default function CometManagerSidebar({
     } finally {
       setIsLoadingSources(false);
     }
-  };
-  const fetchAssetsData = async () => {
+  }, [sessionId]);
+  const fetchAssetsData = useCallback(async () => {
     if (!sessionId) {
       setAssetsError("Session ID is required to fetch source materials");
       setIsLoadingAssets(false);
@@ -260,7 +272,19 @@ export default function CometManagerSidebar({
     } finally {
       setIsLoadingAssets(false);
     }
-  };
+  }, [sessionId]);
+
+  // Fetch source materials when Sources tab is selected
+  useEffect(() => {
+    if (tab === 1 && sessionId) {
+      fetchSourceMaterialsData();
+    }
+  }, [tab, sessionId, fetchSourceMaterialsData]);
+  useEffect(() => {
+    if (tab === 2 && sessionId) {
+      fetchAssetsData();
+    }
+  }, [tab, sessionId, fetchAssetsData]);
 
   // Get material file size
   const getMaterialSize = (material) => {

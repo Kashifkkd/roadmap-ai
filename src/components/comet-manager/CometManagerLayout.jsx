@@ -24,7 +24,7 @@ export default function CometManagerLayout() {
     if (storedSessionData && !sessionData) {
       setSessionData(JSON.parse(storedSessionData));
     }
-    // // sample data for testing
+    // sample data for testing
     // else if (!storedSessionData && !sessionData) {
      
     //   setSessionData(temp[0]);

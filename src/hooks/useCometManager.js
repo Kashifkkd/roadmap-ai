@@ -132,6 +132,35 @@ export function useCometManager(sessionData = null) {
 
       setChapters(transformedChapters);
       setScreens(transformedScreens);
+
+      const firstStepId =
+        transformedChapters?.[0]?.steps?.[0]?.id ?? null;
+
+      if (firstStepId) {
+        const stepExistsInChapters = (stepId) =>
+          transformedChapters.some((chapter) =>
+            Array.isArray(chapter.steps)
+              ? chapter.steps.some((step) => step.id === stepId)
+              : false
+          );
+
+        setSelectedStepId((prevSelectedStepId) => {
+          if (prevSelectedStepId && stepExistsInChapters(prevSelectedStepId)) {
+            return prevSelectedStepId;
+          }
+          return firstStepId;
+        });
+      } else {
+        setSelectedStepId((prevSelectedStepId) =>
+          prevSelectedStepId && transformedChapters.some((chapter) =>
+            Array.isArray(chapter.steps)
+              ? chapter.steps.some((step) => step.id === prevSelectedStepId)
+              : false
+          )
+            ? prevSelectedStepId
+            : null
+        );
+      }
     }
   }, [sessionData]);
 
