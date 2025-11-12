@@ -20,6 +20,9 @@ import {
   Expand,
   Maximize2,
   ExpandIcon,
+  FileImage,
+  FileVideo,
+  FileIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -48,6 +51,7 @@ import ScreenCard from "./ScreenCard";
 import AddScreenPopup from "./AddScreenPopup";
 import DevicePreview from "./DevicePreview";
 import FromDoerToEnabler from "./FromDoerToEnabler";
+import PDFPreview from "./PDFPreview";
 import {
   Drawer,
   DrawerContent,
@@ -171,6 +175,9 @@ export default function CometManager({
   const [addAtIndex, setAddAtIndex] = useState(null);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState(null);
+  const [selectedAssetCategory, setSelectedAssetCategory] = useState(null);
+  const [selectedAssets, setSelectedAssets] = useState([]);
   const selectedScreenRef = useRef(null);
 
   console.log("chapters", chapters);
@@ -229,6 +236,10 @@ export default function CometManager({
     : null;
 
   const handleScreenClick = (screen) => {
+    setSelectedMaterial(null);
+    // Clear selected material when screen is clicked
+    setSelectedAssetCategory(null);
+    setSelectedAssets([]);
     setSelectedScreen(screen);
     const screenIndex = screens.findIndex((s) => s.id === screen.id);
     setCurrentScreen(screenIndex);
@@ -264,7 +275,7 @@ export default function CometManager({
     setCurrentScreen(addAtIndex !== null ? addAtIndex : screens.length);
   };
 
-  console.log("currentChapter>>>", currentChapter)
+  console.log("currentChapter>>>", currentChapter);
 
   const handleUpdateScreen = (updatedScreen) => {
     // Update through the hook to persist changes
@@ -287,11 +298,13 @@ export default function CometManager({
   const chapterNumber =
     typeof currentChapter?.position === "number"
       ? currentChapter.position
-      : chapters.findIndex(ch => String(ch.id) === String(selectedScreen?.chapterId)) + 1 || 1;
+      : chapters.findIndex(
+          (ch) => String(ch.id) === String(selectedScreen?.chapterId)
+        ) + 1 || 1;
 
   const stepNumber =
     (currentChapter?.steps?.findIndex(
-      step => String(step.id) === String(selectedScreen?.stepId)
+      (step) => String(step.id) === String(selectedScreen?.stepId)
     ) ?? -1) + 1 || 1;
 
   return (
@@ -311,8 +324,28 @@ export default function CometManager({
                 chapters={chapters}
                 sessionId={sessionId}
                 setSelectedStep={setSelectedStep}
+                onMaterialSelect={(material) => {
+                  setSelectedMaterial(material);
+                  // Clear selected screen and assets when material is selected
+                  if (material) {
+                    setSelectedScreen(null);
+                    setSelectedAssetCategory(null);
+                    setSelectedAssets([]);
+                  }
+                }}
+                onAssetCategorySelect={(category, assets) => {
+                  setSelectedAssetCategory(category);
+                  setSelectedAssets(assets || []);
+                  // Clear selected screen and material when assets are selected
+                  setSelectedScreen(null);
+                  setSelectedMaterial(null);
+                }}
                 onChapterClick={(chapterId, chapter) => {
                   console.log("Chapter clicked", chapterId, chapter);
+                  // Clear selected material and assets when chapter is clicked
+                  setSelectedMaterial(null);
+                  setSelectedAssetCategory(null);
+                  setSelectedAssets([]);
                   // Filter screens for this chapter
                   const chapterScreens = screens.filter(
                     (s) => s.chapterId === chapterId
@@ -327,127 +360,224 @@ export default function CometManager({
 
             {/* Right section - main content */}
             <div className="flex flex-col w-full lg:w-2/3 xl:w-3/4 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl my-2 mr-2">
-              <div className="flex flex-col flex-1 overflow-hidden">
-                {selectedScreen && chapters && (
-                  <div className="shrink-0 p-3 ml-4 sm:p-4 flex justify-between items-center rounded-t-2xl">
-                    <div className="flex flex-col gap-1">
-                      <h2 className="text-sm sm:text-md font-bold text-gray-900 truncate">
-                        {currentChapter?.chapter ||
-                          currentChapter?.name ||
-                          "Untitled Chapter"}
-                      </h2>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-primary">
-                          {selectedScreen.title || "Untitled Chapter"}
-                        </span>
-                        {/* <span className="text-xs text-primary truncate">
-                          {selectedScreen.name || "Untitled Step"}
-                        </span> */}
+              <div className="flex flex-col  flex-1 overflow-hidden">
+                {/* Show Assets Grid if asset category is selected */}
+                {selectedAssetCategory && selectedAssets ? (
+                  <div className="flex-1 overflow-hidden p-4">
+                    <div className="flex flex-col h-full gap-4">
+                      {/* Header */}
+                      <div className="shrink-0">
+                        <h2 className="text-lg font-semibold text-gray-900 capitalize">
+                          {selectedAssetCategory.name}
+                        </h2>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={selectedScreen.thumbnail || "/error-img.png"}
-                        alt={selectedScreen.title || "Untitled Chapter"}
-                        className="w-10 h-10 rounded-lg"
-                      />
-                    </div>
-                  </div>
-                )}
 
-                {/* Scrollable children container */}
-                <div className="overflow-y-auto p-2 sm:p-3 no-scrollbar flex flex-col gap-2 flex-1">
-                  {/* Navigation - Screens */}
-                  <div className="bg-background rounded-md p-2 sm:p-3 shrink-0">
-                    <div className="flex flex-col gap-3 w-full">
-                      <div className="flex items-start gap-2 w-full h-fit overflow-x-auto no-scrollbar -mx-2 px-2">
-                        <div className="flex items-start gap-2 sm:gap-4 px-1">
-                          {screens.map((screen, index) => (
-                            <div
-                              key={screen.id}
-                              ref={
-                                index === currentScreen
-                                  ? selectedScreenRef
-                                  : null
-                              }
-                            >
-                              <ScreenCard
-                                screen={screen}
-                                selectedScreen={selectedScreen}
-                                index={index}
-                                onDragStart={handleDragStart}
-                                onDragEnd={handleDragEnd}
-                                onDragOver={handleDragOver}
-                                onDrop={handleDrop}
-                                onClick={handleScreenClick}
-                                onAddScreen={(insertIndex) =>
-                                  handleAddScreen(insertIndex)
-                                }
-                              />
-                            </div>
-                          ))}
+                      {/* Assets Grid */}
+                      {selectedAssets.length > 0 ? (
+                        <div className="flex-1 bg-white p-6 rounded-md overflow-y-auto">
+                          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                            {selectedAssets.map((asset) => {
+                              const assetType =
+                                asset?.asset_type?.toLowerCase() || "";
+                              const assetUrl = asset?.asset_url || "";
+                              const isImage = assetType === "image";
+
+                              // Get file name from URL
+                              const getFileNameFromUrl = (url) => {
+                                if (!url) return "Untitled Asset";
+                                const urlPath = url.split("?")[0];
+                                const fileName = urlPath.split("/").pop();
+                                return fileName || "Untitled Asset";
+                              };
+
+                              const assetName = getFileNameFromUrl(assetUrl);
+
+                              // Get icon based on asset type
+                              const getIcon = () => {
+                                if (assetType === "image") return FileImage;
+                                if (assetType === "video") return FileVideo;
+                                return FileIcon;
+                              };
+
+                              const FileIconComponent = getIcon();
+
+                              return (
+                                <div
+                                  key={asset.id}
+                                  className="flex flex-col overflow-hidden bg-white"
+                                >
+                                  <div className="relative h-50 w-full bg-primary-50">
+                                    {isImage && assetUrl ? (
+                                      <img
+                                        src={assetUrl}
+                                        alt={assetName}
+                                        className="h-full w-full object-cover"
+                                        loading="lazy"
+                                      />
+                                    ) : (
+                                      <div className="flex h-full w-full items-center justify-center bg-primary-100 text-primary">
+                                        <FileIconComponent size={32} />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-1 p-3">
+                                    <span className="text-sm font-semibold text-gray-900 line-clamp-2">
+                                      {assetName}
+                                    </span>
+                                    <div className="flex items-center justify-between text-xs text-gray-500">
+                                      <span className="capitalize">
+                                        {assetType || "file"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                      {/* Navigation controls */}
-                      <div className="w-full flex justify-between items-center gap-2">
-                        <button
-                          onClick={() => navigateScreen("prev")}
-                          disabled={currentScreen === 0}
-                          className="p-2 bg-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          aria-label="Previous screen"
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-                        {/* Selected screen name */}
-                        {selectedScreen && (
-                          <div className="flex items-center gap-2 min-w-0 flex-1 justify-center px-2">
-                            <p className="text-xs sm:text-sm font-semibold text-center truncate">
-                              Screen {currentScreen + 1} - {selectedScreen.name}
+                      ) : (
+                        <div className="flex-1 flex items-center justify-center">
+                          <div className="text-center">
+                            <p className="text-sm text-gray-500">
+                              No assets found in this category
                             </p>
                           </div>
-                        )}
-                        <button
-                          onClick={() => navigateScreen("next")}
-                          disabled={currentScreen === screens.length - 1}
-                          className="p-2 bg-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          aria-label="Next screen"
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </div>
+                ) : selectedMaterial ? (
+                  <div className="flex-1 overflow-hidden p-4">
+                    <PDFPreview
+                      material={selectedMaterial}
+                      sessionId={sessionId}
+                      onClose={() => setSelectedMaterial(null)}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    {selectedScreen && chapters && (
+                      <div className="shrink-0 p-3 ml-4 sm:p-4 flex justify-between items-center rounded-t-2xl">
+                        <div className="flex flex-col gap-1">
+                          <h2 className="text-sm sm:text-md font-bold text-gray-900 truncate">
+                            {currentChapter?.chapter ||
+                              currentChapter?.name ||
+                              "Untitled Chapter"}
+                          </h2>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium text-primary">
+                              {selectedScreen.title || "Untitled Chapter"}
+                            </span>
+                            {/* <span className="text-xs text-primary truncate">
+                              {selectedScreen.name || "Untitled Step"}
+                            </span> */}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={selectedScreen.thumbnail || "/error-img.png"}
+                            alt={selectedScreen.title || "Untitled Chapter"}
+                            className="w-10 h-10 rounded-lg"
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Dynamic Form */}
-                  {selectedScreen && (
-                    <div className="shrink-0">
-                      <DynamicForm
-                        key={selectedScreen.id}
-                        screen={selectedScreen}
-                        sessionData={sessionData}
-                        setAllMessages={setAllMessages}
-                        onUpdate={handleUpdateScreen}
-                        onClose={() => setSelectedScreen(null)}
-                        chapterNumber={chapterNumber}
-                        stepNumber={stepNumber
-                        }
-                      />
-                    </div>
-                  )}
+                    {/* Scrollable children container */}
+                    <div className="overflow-y-auto p-2 sm:p-3 no-scrollbar flex flex-col gap-2 flex-1">
+                      {/* Navigation - Screens */}
+                      <div className="bg-background rounded-md p-2 sm:p-3 shrink-0">
+                        <div className="flex flex-col gap-3 w-full">
+                          <div className="flex items-start gap-2 w-full h-fit overflow-x-auto no-scrollbar -mx-2 px-2">
+                            <div className="flex items-start gap-2 sm:gap-4 px-1">
+                              {screens.map((screen, index) => (
+                                <div
+                                  key={screen.id}
+                                  ref={
+                                    index === currentScreen
+                                      ? selectedScreenRef
+                                      : null
+                                  }
+                                >
+                                  <ScreenCard
+                                    screen={screen}
+                                    selectedScreen={selectedScreen}
+                                    index={index}
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handleDragEnd}
+                                    onDragOver={handleDragOver}
+                                    onDrop={handleDrop}
+                                    onClick={handleScreenClick}
+                                    onAddScreen={(insertIndex) =>
+                                      handleAddScreen(insertIndex)
+                                    }
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          {/* Navigation controls */}
+                          <div className="w-full flex justify-between items-center gap-2">
+                            <button
+                              onClick={() => navigateScreen("prev")}
+                              disabled={currentScreen === 0}
+                              className="p-2 bg-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              aria-label="Previous screen"
+                            >
+                              <ChevronLeft size={16} />
+                            </button>
+                            {/* Selected screen name */}
+                            {selectedScreen && (
+                              <div className="flex items-center gap-2 min-w-0 flex-1 justify-center px-2">
+                                <p className="text-xs sm:text-sm font-semibold text-center truncate">
+                                  Screen {currentScreen + 1} -{" "}
+                                  {selectedScreen.name}
+                                </p>
+                              </div>
+                            )}
+                            <button
+                              onClick={() => navigateScreen("next")}
+                              disabled={currentScreen === screens.length - 1}
+                              className="p-2 bg-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              aria-label="Next screen"
+                            >
+                              <ChevronRight size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
 
-                  {/* {selectedScreen && (
-                    <div className="shrink-0 p-4 bg-white rounded-lg overflow-auto max-h-full">
-                      <h1>hellllo</h1>
-                      <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
-                        {JSON.stringify(
-                          selectedScreen?.screenContents,
-                          null,
-                          2
-                        )}
-                      </pre>
+                      {/* Dynamic Form */}
+                      {selectedScreen && (
+                        <div className="shrink-0">
+                          <DynamicForm
+                            key={selectedScreen.id}
+                            screen={selectedScreen}
+                            sessionData={sessionData}
+                            setAllMessages={setAllMessages}
+                            onUpdate={handleUpdateScreen}
+                            onClose={() => setSelectedScreen(null)}
+                            chapterNumber={chapterNumber}
+                            stepNumber={stepNumber}
+                          />
+                        </div>
+                      )}
+
+                      {/* {selectedScreen && (
+                        <div className="shrink-0 p-4 bg-white rounded-lg overflow-auto max-h-full">
+                          <h1>hellllo</h1>
+                          <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
+                            {JSON.stringify(
+                              selectedScreen?.screenContents,
+                              null,
+                              2
+                            )}
+                          </pre>
+                        </div>
+                      )} */}
                     </div>
-                  )} */}
-                </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -470,10 +600,11 @@ export default function CometManager({
         }}
       >
         <DrawerContent
-          className={`${isMaximized
-            ? "w-screen"
-            : "w-full sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
-            } !max-w-none h-screen bg-primary-50 p-0`}
+          className={`${
+            isMaximized
+              ? "w-screen"
+              : "w-full sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
+          } max-w-none! h-screen bg-primary-50 p-0`}
         >
           {/* Preview Header */}
           <div className="bg-primary-50 border-b border-gray-200 py-3 px-3 sm:px-4 flex items-center justify-between">

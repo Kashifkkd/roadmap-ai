@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { SectionHeader, TextField } from "./FormFields";
+import { SectionHeader, TextField, RichTextArea } from "./FormFields";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -82,7 +82,7 @@ export default function AssessmentForm({
   const questions = formData.assessmentQuestions || [
     {
       title: "",
-      question: "",
+      questions: [],
       options: [],
     },
   ];
@@ -127,7 +127,7 @@ export default function AssessmentForm({
               </Label>
               <Input
                 type="text"
-                value={questionData.text || ""}
+                value={questionData.title || ""}
                 onChange={(e) =>
                   updateQuestionField(questionIndex, "title", e.target.value)
                 }
@@ -137,9 +137,16 @@ export default function AssessmentForm({
             </div>
 
             {/* Question Field with Rich Text Editor */}
-            <AssessmentRichTextArea
+            {/* <AssessmentRichTextArea
               label="Question"
               value={questionData.text || ""}
+              onChange={(value) =>
+                updateQuestionField(questionIndex, "question", value)
+              }
+            /> */}
+            <RichTextArea
+              label="Question"
+              value={questionData.question || ""}
               onChange={(value) =>
                 updateQuestionField(questionIndex, "question", value)
               }
@@ -152,7 +159,10 @@ export default function AssessmentForm({
               </Label>
               <div className="space-y-2">
                 {(questionData.options || []).map((option, optionIndex) => (
-                  <div key={option?.option_id} className="flex items-center gap-2">
+                  <div
+                    key={option?.option_id}
+                    className="flex items-center gap-2"
+                  >
                     {/* Drag Handle */}
                     <div className="cursor-move text-gray-400 hover:text-gray-600">
                       <GripVertical size={20} />

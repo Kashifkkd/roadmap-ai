@@ -79,10 +79,10 @@ export default function ReflectionForm({ formData, updateField }) {
           Upload Image
         </Label>
 
-        <div className="space-y-3">
-          <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">
+        <div className="space-y-3 bg-gray-100 rounded-lg p-4 flex flex-1 gap-2 justify-between">
+          <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white p-2 justify-center items-center">
+            <div className="flex flex-col items-center justify-center h-full">
+              <span className="text-xs text-gray-700 mb-2">
                 Upload from Computer
               </span>
               <input
@@ -103,9 +103,11 @@ export default function ReflectionForm({ formData, updateField }) {
             </div>
           </div>
 
-          <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">Select from Assets</span>
+          <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white p-2 justify-center items-center">
+            <div className="flex flex-col items-center justify-center h-full">
+              <span className="text-xs text-gray-700 mb-2">
+                Select from Assets
+              </span>
               <Button
                 type="button"
                 onClick={handleSelectAssets}
@@ -117,9 +119,11 @@ export default function ReflectionForm({ formData, updateField }) {
             </div>
           </div>
 
-          <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">AI-Generate Image</span>
+          <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white p-2 justify-center items-center">
+            <div className="flex flex-col items-center justify-center h-full">
+              <span className="text-xs text-gray-700 mb-2">
+                AI-Generate Image
+              </span>
               <Button
                 type="button"
                 onClick={handleAIGenerate}

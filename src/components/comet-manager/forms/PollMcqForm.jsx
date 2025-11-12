@@ -15,13 +15,13 @@ export default function PollMcqForm({
 }) {
   return (
     <>
-      <SectionHeader title="Poll Question/MCQ" />
+      <SectionHeader title="Multiple Choice/Survey" />
       <TextField
         label="Title (Question)"
-        value={formData.mcqTitle}
+        value={formData.title}
         onChange={(value) => updateField("mcqTitle", value)}
       />
-      <TextField
+      {/* <TextField
         label="Top Label"
         value={formData.mcqTopLabel}
         onChange={(value) => updateField("mcqTopLabel", value)}
@@ -30,16 +30,16 @@ export default function PollMcqForm({
         label="Bottom Label"
         value={formData.mcqBottomLabel}
         onChange={(value) => updateField("mcqBottomLabel", value)}
-      />
+      /> */}
       {/* <TextArea
         label="Key Learning"
         value={formData.mcqKeyLearning}
         onChange={(value) => updateField("mcqKeyLearning", value)}
       /> */}
       <RichTextArea
-        label="Key Learning"
-        value={formData.mcqKeyLearning}
-        onChange={(value) => updateField("mcqKeyLearning", value)}
+        label="Question"
+        value={formData.question}
+        onChange={(value) => updateField("question", value)}
       />
       <ListField
         label="Poll Options"

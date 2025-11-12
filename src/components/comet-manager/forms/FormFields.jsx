@@ -1,17 +1,17 @@
+"use client";
+
 import React, { useRef, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
 import { Plus, Trash2 } from "lucide-react";
-import Quill from "quill";
 import "quill/dist/quill.snow.css";
 
 // Form field components for comet manager forms
 
 export const SectionHeader = ({ title }) => (
   <div className="w-full mb-4">
-    <div className="h-2 bg-primary rounded mb-4" />
     <h3 className="text-sm font-semibold text-primary">{title}</h3>
   </div>
 );
@@ -129,6 +129,7 @@ export const RichTextArea = ({
   const toolbarRef = useRef(null);
   const selectionCallbackRef = useRef(onSelectionChange);
   const blurCallbackRef = useRef(onBlur);
+  const blurHandlerRef = useRef(null);
 
   useEffect(() => {
     selectionCallbackRef.current = onSelectionChange;
@@ -142,78 +143,100 @@ export const RichTextArea = ({
     if (quillEditorRef.current || !editorRef.current || !toolbarRef.current)
       return;
 
-    //custom toolbar
-    const editorElement = editorRef.current;
-    const toolbarElement = toolbarRef.current;
+    // Dynamically import Quill only on client side
+    const initEditor = async () => {
+      if (typeof window === "undefined") return;
 
-    const editor = new Quill(editorElement, {
-      theme: "snow",
-      modules: {
-        toolbar: toolbarElement,
-      },
-    });
+      const QuillModule = await import("quill");
+      const Quill = QuillModule.default;
 
-    // Set initial content
-    if (value) {
-      try {
-        editor.setContents(JSON.parse(value));
-      } catch {
-        editor.setText(value);
+      //custom toolbar
+      const editorElement = editorRef.current;
+      const toolbarElement = toolbarRef.current;
+
+      if (!editorElement || !toolbarElement || quillEditorRef.current) return;
+
+      const editor = new Quill(editorElement, {
+        theme: "snow",
+        modules: {
+          toolbar: toolbarElement,
+        },
+      });
+
+      // Set initial content
+      if (value) {
+        try {
+          editor.setContents(JSON.parse(value));
+        } catch {
+          editor.setText(value);
+        }
       }
-    }
 
-    // Handle content change
-    editor.on("text-change", () => {
-      onChange(JSON.stringify(editor.getContents()));
-    });
+      // Handle content change
+      editor.on("text-change", () => {
+        onChange(JSON.stringify(editor.getContents()));
+      });
 
-    editor.on("selection-change", (range, _oldRange, source) => {
-      const callback = selectionCallbackRef.current;
-      if (!callback || source !== "user") return;
+      editor.on("selection-change", (range, _oldRange, source) => {
+        const callback = selectionCallbackRef.current;
+        if (!callback || source !== "user") return;
 
-      if (range && range.length > 0) {
-        const bounds = editor.getBounds(range.index, range.length);
-        const editorElement = editorRef.current;
-        const editorRect = editorElement
-          ? editorElement.getBoundingClientRect()
-          : null;
-        const absolutePosition =
-          editorRect && typeof window !== "undefined"
-            ? {
-                top: editorRect.top + bounds.bottom + window.scrollY,
-                left: editorRect.left + bounds.left + window.scrollX,
-              }
+        if (range && range.length > 0) {
+          const bounds = editor.getBounds(range.index, range.length);
+          const editorElement = editorRef.current;
+          const editorRect = editorElement
+            ? editorElement.getBoundingClientRect()
             : null;
+          const absolutePosition =
+            editorRect && typeof window !== "undefined"
+              ? {
+                  top: editorRect.top + bounds.bottom + window.scrollY,
+                  left: editorRect.left + bounds.left + window.scrollX,
+                }
+              : null;
 
-        callback({
-          text: editor.getText(range.index, range.length),
-          bounds,
-          range,
-          editorRect,
-          absolutePosition,
-          editor,
-        });
-      } else {
-        callback(null);
-      }
-    });
+          callback({
+            text: editor.getText(range.index, range.length),
+            bounds,
+            range,
+            editorRect,
+            absolutePosition,
+            editor,
+          });
+        } else {
+          callback(null);
+        }
+      });
 
-    const handleEditorBlur = () => {
-      const callback = blurCallbackRef.current;
-      if (callback) {
-        callback();
-      }
+      const handleEditorBlur = () => {
+        const callback = blurCallbackRef.current;
+        if (callback) {
+          callback();
+        }
+      };
+
+      blurHandlerRef.current = handleEditorBlur;
+      const editorRoot = editor.root;
+      editorRoot.addEventListener("blur", handleEditorBlur);
+
+      quillEditorRef.current = editor;
     };
 
-    const editorRoot = editor.root;
-    editorRoot.addEventListener("blur", handleEditorBlur);
-
-    quillEditorRef.current = editor;
+    initEditor();
 
     // Cleanup
     return () => {
-      quillEditorRef.current = null;
-      editorRoot.removeEventListener("blur", handleEditorBlur);
+      const editor = quillEditorRef.current;
+
+      if (editor && blurHandlerRef.current) {
+        const editorRoot = editor.root;
+        editorRoot.removeEventListener("blur", blurHandlerRef.current);
+        blurHandlerRef.current = null;
+        quillEditorRef.current = null;
+      }
+
+      const editorElement = editorRef.current;
+      const toolbarElement = toolbarRef.current;
       if (editorElement) editorElement.innerHTML = "";
       if (toolbarElement) toolbarElement.innerHTML = "";
     };
@@ -221,24 +244,31 @@ export const RichTextArea = ({
   }, []);
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 rounded-lg p-2">
       <Label className="block text-sm font-medium text-gray-700 mb-2">
         {label}
       </Label>
-      {/* Custom toolbar container */}
-      <div ref={toolbarRef} className="mb-2 border rounded p-1 flex gap-1">
-        <button className="ql-bold" title="Bold" />
-        <button className="ql-italic" title="Italic" />
-        <button className="ql-underline" title="Underline" />
-        <button className="ql-strike" title="Strikethrough" />
-        <button className="ql-header" value="1" title="Paragraph" />
-        <button className="ql-link" title="Link" />
-        <button className="ql-image" title="Image" />
-        <button className="ql-undo" title="Undo" />
-        <button className="ql-redo" title="Redo" />
-      </div>
       {/*Editor Area */}
-      <div ref={editorRef} className="h-96 border rounded p-2" />
+      <div className="bg-gray-200 rounded-lg p-0.5">
+        <div ref={editorRef} className="h-96 border rounded-lg bg-white p-2" />
+
+        {/* Custom toolbar container */}
+        <div
+          ref={toolbarRef}
+          className="p-1 flex gap-1"
+          style={{ border: "none" }}
+        >
+          <button className="ql-bold" title="Bold" />
+          <button className="ql-italic" title="Italic" />
+          <button className="ql-underline" title="Underline" />
+          <button className="ql-strike" title="Strikethrough" />
+          <button className="ql-header" value="1" title="Paragraph" />
+          <button className="ql-link" title="Link" />
+          <button className="ql-image" title="Image" />
+          <button className="ql-undo" title="Undo" />
+          <button className="ql-redo" title="Redo" />
+        </div>
+      </div>
     </div>
   );
 };

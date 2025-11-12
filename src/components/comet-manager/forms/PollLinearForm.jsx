@@ -18,7 +18,7 @@ import {
 export default function PollLinearForm({ formData, updateField }) {
   return (
     <>
-      <SectionHeader title="Poll Question/Linear" />
+      <SectionHeader title="Linear" />
       <TextField
         label="Title"
         value={formData.linearTitle}
@@ -40,9 +40,9 @@ export default function PollLinearForm({ formData, updateField }) {
         onChange={(value) => updateField("linearKeyLearning", value)}
       /> */}
       <RichTextArea
-        label="Key Learning"
-        value={formData.linearKeyLearning}
-        onChange={(value) => updateField("linearKeyLearning", value)}
+        label="Question"
+        value={formData.question}
+        onChange={(value) => updateField("question", value)}
       />
       <div className="mb-4">
         <Label className="block text-sm font-medium text-gray-700 mb-2">

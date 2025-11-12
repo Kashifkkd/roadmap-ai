@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Rocket,
   File,
@@ -14,13 +14,42 @@ import {
   FileAudio,
   FileIcon,
   SquareKanban,
+  Search,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Stack } from "@mui/material";
 import DevicePreview from "./DevicePreview";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
-import Image from "next/image";
+
+// Asset category buttons
+const ASSET_CATEGORIES = [
+  {
+    id: "image",
+    name: "Images & Graphic",
+    icon: FileImage,
+  },
+  {
+    id: "video",
+    name: "Video and Animation",
+    icon: FileVideo,
+  },
+  {
+    id: "tool",
+    name: "Tools",
+    icon: FileIcon,
+  },
+];
+
+// Filter assets by asset_type
+function filterAssetsByType(assets, assetType) {
+  if (!Array.isArray(assets) || assets.length === 0) return [];
+  return assets.filter((asset) => {
+    const type = asset?.asset_type?.toLowerCase() || "";
+    return type === assetType.toLowerCase();
+  });
+}
 
 export default function CometManagerSidebar({
   selectedScreen,
@@ -29,6 +58,8 @@ export default function CometManagerSidebar({
   onChapterClick,
   sessionId,
   setSelectedStep: setSelectedStepFromHook,
+  onMaterialSelect,
+  onAssetCategorySelect,
 }) {
   const [tab, setTab] = useState(0);
   const [selectedChapter, setSelectedChapter] = useState(null);
@@ -40,7 +71,30 @@ export default function CometManagerSidebar({
   const [sourceMaterials, setSourceMaterials] = useState([]);
   const [isLoadingSources, setIsLoadingSources] = useState(false);
   const [sourcesError, setSourcesError] = useState(null);
+  const [expandedCategories, setExpandedCategories] = useState(new Set());
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedMaterial, setSelectedMaterial] = useState(null);
+  const [assets, setAssets] = useState([]);
+  const [isLoadingAssets, setIsLoadingAssets] = useState(false);
+  const [assetsError, setAssetsError] = useState(null);
+  const [selectedAssetCategory, setSelectedAssetCategory] = useState(null);
 
+  // Filter assets by selected category
+  const filteredAssets = useMemo(() => {
+    if (!selectedAssetCategory) return [];
+    return filterAssetsByType(assets, selectedAssetCategory);
+  }, [assets, selectedAssetCategory]);
+
+  useEffect(() => {
+    if (selectedAssetCategory && onAssetCategorySelect) {
+      const category = ASSET_CATEGORIES.find(
+        (cat) => cat.id === selectedAssetCategory
+      );
+      if (category) {
+        onAssetCategorySelect(category, filteredAssets);
+      }
+    }
+  }, [filteredAssets, selectedAssetCategory, onAssetCategorySelect]);
   const handleTabChange = (index) => {
     setTab(index);
   };
@@ -73,12 +127,58 @@ export default function CometManagerSidebar({
     });
   };
 
+  const toggleCategory = (categoryId) => {
+    setExpandedCategories((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+
+  // categories
+  const organizeMaterialsByCategory = (materials) => {
+    const categories = [
+      { id: "training-manuals", name: "Training Manuals", materials: [] },
+      {
+        id: "presentations",
+        name: "Presentations & Slide Decks",
+        materials: [],
+      },
+      { id: "other", name: "Other", materials: [] },
+    ];
+
+    materials.forEach((material) => {
+      const extension =
+        material.source_name?.split(".").pop()?.toLowerCase() || "";
+
+      if (extension === "pdf") {
+        // PDFs
+        categories[0].materials.push(material);
+      } else if (["ppt", "pptx", "key"].includes(extension)) {
+        // Presentations
+        categories[1].materials.push(material);
+      } else {
+        categories[2].materials.push(material);
+      }
+    });
+
+    return categories.filter((cat) => cat.materials.length > 0);
+  };
+
   // Fetch source materials when Sources tab is selected
   useEffect(() => {
     if (tab === 1 && sessionId) {
       fetchSourceMaterialsData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, sessionId]);
+  useEffect(() => {
+    if (tab === 2 && sessionId) {
+      fetchAssetsData();
+    }
   }, [tab, sessionId]);
 
   const fetchSourceMaterialsData = async () => {
@@ -112,6 +212,7 @@ export default function CometManagerSidebar({
           ? response.response
           : [];
         setSourceMaterials(materials);
+        // console.log(">>> materials", materials);
       } else {
         setSourceMaterials([]);
       }
@@ -123,13 +224,49 @@ export default function CometManagerSidebar({
       setIsLoadingSources(false);
     }
   };
+  const fetchAssetsData = async () => {
+    if (!sessionId) {
+      setAssetsError("Session ID is required to fetch source materials");
+      setIsLoadingAssets(false);
+      return;
+    }
 
-  // Format file size helper
-  const formatFileSize = (bytes) => {
-    if (!bytes) return null;
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    setIsLoadingAssets(true);
+    setAssetsError(null);
+
+    try {
+      const response = await apiService({
+        endpoint: endpoints.getAssets,
+        method: "GET",
+        params: {
+          session_id: "80ee921a-2f4b-4611-80c2-649bae82467b",
+        },
+      });
+      if (response.error) {
+        throw new Error(response.error?.message || "Failed to fetch assets");
+      }
+
+      if (response.response) {
+        const assetsData = response?.response?.assets || [];
+        const materials = Array.isArray(assetsData) ? assetsData : [];
+        setAssets(materials);
+      } else {
+        setAssets([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch assets:", error);
+      setAssetsError(error.message || "Failed to load assets");
+      setAssets([]);
+    } finally {
+      setIsLoadingAssets(false);
+    }
+  };
+
+  // Get material file size
+  const getMaterialSize = (material) => {
+    if (material.file_size) return formatFileSize(material.file_size);
+    if (material.size) return formatFileSize(material.size);
+    return null;
   };
 
   // Get file type icon
@@ -321,9 +458,7 @@ export default function CometManagerSidebar({
                                 <div
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    // Only select step; do not expand/collapse here
                                     setSelectedStep(stepId);
-                                    // // Call the hook's setSelectedStep to filter screens
                                     if (setSelectedStepFromHook) {
                                       setSelectedStepFromHook(stepId);
                                     }
@@ -420,172 +555,334 @@ export default function CometManagerSidebar({
             ))}
 
           {/* Sources Tab Content */}
-          {tab === 1 && (
-            <>
-              {/* Sources Header with Refresh */}
-              <div className="flex items-center justify-between p-2 bg-background rounded-lg border border-gray-200">
-                <div className="flex items-center gap-2">
-                  <FileText size={16} className="text-primary" />
-                  <span className="text-sm font-medium text-gray-900">
-                    Source Materials ({sourceMaterials.length})
-                  </span>
-                </div>
+          {tab === 1 &&
+            (isLoadingSources ? (
+              <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                <Loader2 className="animate-spin h-8 w-8 text-primary mb-2" />
+                <p className="text-sm text-gray-500">
+                  Loading source materials...
+                </p>
+              </div>
+            ) : sourcesError ? (
+              <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                <p className="text-sm text-red-500 mb-2">
+                  Error loading source materials
+                </p>
+                <p className="text-xs text-gray-400 mb-4">{sourcesError}</p>
                 <Button
                   onClick={fetchSourceMaterialsData}
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  disabled={isLoadingSources}
-                  className="p-1 h-auto"
+                  className="text-xs"
                 >
-                  {isLoadingSources ? (
-                    <Loader2 size={14} className="animate-spin text-gray-400" />
-                  ) : (
-                    <FileText
-                      size={14}
-                      className="text-gray-400 hover:text-primary"
-                    />
-                  )}
+                  Try Again
                 </Button>
               </div>
+            ) : sourceMaterials && sourceMaterials.length > 0 ? (
+              organizeMaterialsByCategory(sourceMaterials).map(
+                (category, categoryIndex) => {
+                  const categoryId = category.id || `category-${categoryIndex}`;
+                  const isSelected = selectedCategory === categoryId;
+                  const isExpanded = expandedCategories.has(categoryId);
 
-              {isLoadingSources ? (
-                <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                  <Loader2 className="animate-spin h-8 w-8 text-primary mb-2" />
-                  <p className="text-sm text-gray-500">
-                    Loading source materials...
-                  </p>
-                </div>
-              ) : sourcesError ? (
-                <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                  <p className="text-sm text-red-500 mb-2">
-                    Error loading source materials
-                  </p>
-                  <p className="text-xs text-gray-400 mb-4">{sourcesError}</p>
-                  <Button
-                    onClick={fetchSourceMaterialsData}
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                  >
-                    Try Again
-                  </Button>
-                </div>
-              ) : sourceMaterials && sourceMaterials.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                  {sourceMaterials.map((material, index) => {
-                    const FileIcon = getFileIcon(material.source_name);
-                    return (
+                  return (
+                    <>
                       <div
-                        key={material.id || index}
-                        className="flex items-center gap-3 p-3 bg-background border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer"
+                        className="flex items-center justify-between px-2 
+              bg-background rounded-md border border-gray-200 
+              hover:border-primary-500"
                       >
-                        <div className="rounded-full p-2 bg-primary-100">
-                          <FileIcon size={16} className="text-primary" />
-                        </div>
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <p
-                            className="text-sm font-medium text-gray-900 truncate"
-                            title={
-                              material.source_name || `Document ${index + 1}`
-                            }
-                          >
-                            {material.source_name || `Document ${index + 1}`}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {material.source_name
-                              ?.split(".")
-                              .pop()
-                              ?.toUpperCase() || "Unknown type"}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            ID: {material.uuid?.substring(0, 8)}...
-                          </p>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-1 h-auto"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              console.log(
-                                "Download original material:",
-                                material
-                              );
-                              if (material.source_path) {
-                                // Create a orary link to download the file
-                                const link = document.createElement("a");
-                                link.href = material.source_path;
-                                link.download =
-                                  material.source_name || "download";
-                                link.target = "_blank";
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                              }
+                        <Search
+                          className="w-5 h-5 text-gray-400 ml-2 
+                hover:text-primary-400"
+                        />
+                        <input
+                          type="search"
+                          className="w-full p-1 focus:outline-none 
+                  hover:border-primary-500"
+                          placeholder="Search"
+                        />
+                      </div>
+                      <div className="flex flex-col flex-1 min-h-0 justify-between gap-87">
+                        <div
+                          key={categoryId}
+                          className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
+                            isSelected && isExpanded
+                              ? "bg-primary-100"
+                              : "bg-white"
+                          }`}
+                        >
+                          {/* Category Header */}
+                          <div
+                            onClick={() => {
+                              setSelectedCategory(categoryId);
+                              toggleCategory(categoryId);
+                              // Clear material selection when clicking category
+                              setSelectedMaterial(null);
                             }}
-                            title="Download original file"
+                            className="flex items-center gap-2 p-3 sm:p-4 cursor-pointer transition-all"
                           >
-                            <Download
-                              size={14}
-                              className="text-gray-400 hover:text-primary"
-                            />
-                          </Button>
-                          {material.output_presigned_url && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="p-1 h-auto"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                console.log(
-                                  "View processed content:",
-                                  material
-                                );
-                                window.open(
-                                  material.output_presigned_url,
-                                  "_blank"
-                                );
-                              }}
-                              title="View processed text content"
+                            <div
+                              className={`rounded-full p-1 ${
+                                isSelected ? "bg-primary" : "bg-primary-100"
+                              }`}
                             >
-                              <FileText
-                                size={14}
-                                className="text-gray-400 hover:text-primary"
+                              <ChevronDown
+                                size={16}
+                                className={`${
+                                  isSelected ? "text-white" : "text-primary"
+                                } transition-transform ${
+                                  isExpanded ? "rotate-180" : ""
+                                }`}
                               />
-                            </Button>
-                          )}
+                            </div>
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <p
+                                className={`text-sm sm:text-sm font-medium ${
+                                  isSelected ? "text-gray-900" : "text-gray-900"
+                                }`}
+                              >
+                                {category.name}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Expanded Materials */}
+                          {isExpanded &&
+                            category.materials &&
+                            category.materials.length > 0 && (
+                              <div className="flex flex-col gap-2 px-3 pb-3">
+                                {category.materials.map(
+                                  (material, materialIndex) => {
+                                    const materialId =
+                                      material.id ||
+                                      material.uuid ||
+                                      `material-${categoryId}-${materialIndex}`;
+                                    const isMaterialSelected =
+                                      selectedMaterial === materialId;
+                                    const fileSize = getMaterialSize(material);
+                                    const extension =
+                                      material.source_name
+                                        ?.split(".")
+                                        .pop()
+                                        ?.toLowerCase() || "";
+                                    const isPdf = extension === "pdf";
+
+                                    return (
+                                      <div
+                                        key={materialId}
+                                        className={`flex flex-col rounded-sm transition-all ${
+                                          isMaterialSelected
+                                            ? "bg-primary-700"
+                                            : "bg-gray-100"
+                                        }`}
+                                      >
+                                        {/* Material Header */}
+                                        <div
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            const newSelectedState =
+                                              isMaterialSelected
+                                                ? null
+                                                : materialId;
+                                            setSelectedMaterial(
+                                              newSelectedState
+                                            );
+
+                                            if (
+                                              newSelectedState &&
+                                              selectedAssetCategory
+                                            ) {
+                                              setSelectedAssetCategory(null);
+                                            }
+
+                                            if (isPdf && onMaterialSelect) {
+                                              onMaterialSelect(
+                                                newSelectedState
+                                                  ? material
+                                                  : null
+                                              );
+                                            }
+                                          }}
+                                          className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
+                                            isMaterialSelected
+                                              ? "text-white"
+                                              : "hover:bg-gray-200"
+                                          }`}
+                                        >
+                                          <div className="flex flex-col py-1 flex-1 min-w-0">
+                                            {/* <p
+                                            className={`text-xs sm:text-xs ${
+                                              isMaterialSelected
+                                                ? "text-white"
+                                                : "text-gray-900"
+                                            }`}
+                                          >
+                                            Document {categoryIndex + 1}.
+                                            {materialIndex + 1}
+                                          </p> */}
+                                            <p
+                                              className={`text-xs sm:text-sm font-semibold truncate ${
+                                                isMaterialSelected
+                                                  ? "text-white"
+                                                  : "text-gray-900"
+                                              }`}
+                                              title={
+                                                material.source_name ||
+                                                `Document ${materialIndex + 1}`
+                                              }
+                                            >
+                                              {material.source_name ||
+                                                `Document ${materialIndex + 1}`}
+                                            </p>
+                                            {fileSize && (
+                                              <p
+                                                className={`text-xs mt-0.5 ${
+                                                  isMaterialSelected
+                                                    ? "text-white"
+                                                    : "text-gray-500"
+                                                }`}
+                                              >
+                                                {fileSize || "123"}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                )}
+                              </div>
+                            )}
+                        </div>
+                        <div className=" m-auto bottom-6 z-50 w-full shrink-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs flex items-center gap-1 w-full"
+                          >
+                            <Plus size={16} />
+                            Add Source
+                          </Button>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                  <div className="rounded-full p-3 bg-gray-100 mb-3">
-                    <FileText size={24} className="text-gray-400" />
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    No source materials found
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Upload documents to see them here
-                  </p>
-                </div>
-              )}
-            </>
-          )}
+                    </>
+                  );
+                }
+              )
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                <p className="text-sm text-gray-500">
+                  No source materials found
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Upload documents to see them here
+                </p>
+              </div>
+            ))}
 
           {/* Assets Tab Content */}
           {tab === 2 && (
-            <div className="flex flex-col items-center justify-center h-full text-center p-4">
-              <div className="rounded-full p-3 bg-gray-100 mb-3">
-                <Paperclip size={24} className="text-gray-400" />
-              </div>
-              <p className="text-sm text-gray-500">No assets available</p>
-              <p className="text-xs text-gray-400 mt-1">
-                Assets will appear here when available
-              </p>
+            <div className="flex flex-1 flex-col">
+              {isLoadingAssets ? (
+                <div className="flex flex-1 items-center justify-center gap-2 text-sm text-gray-500">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  Loading assets...
+                </div>
+              ) : assetsError ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center p-4">
+                  <div className="rounded-full bg-red-50 p-3">
+                    <Paperclip size={24} className="text-red-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">
+                      Unable to load assets
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">{assetsError}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={fetchAssetsData}
+                    className="text-xs"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : assets.length === 0 ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-200 p-8 text-center">
+                  <div className="rounded-full bg-primary-50 p-3">
+                    <Paperclip size={24} className="text-primary" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-700">
+                    No assets available yet
+                  </p>
+                  <p className="text-xs text-gray-500 max-w-xs">
+                    Assets you upload or attach will appear here for quick reuse
+                    across your Comet.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-1 flex-col gap-3">
+                  {/* Search Bar */}
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search assets..."
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-500 placeholder:text-gray-400 cursor-not-allowed"
+                    />
+                  </div>
+
+                  {/* Category Buttons */}
+                  <div className="flex flex-col gap-2">
+                    {ASSET_CATEGORIES.map((category) => {
+                      const isActive = selectedAssetCategory === category.id;
+                      const categoryAssets = filterAssetsByType(
+                        assets,
+                        category.id
+                      );
+                      const assetCount = categoryAssets.length;
+
+                      return (
+                        <button
+                          key={category.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedAssetCategory(category.id);
+                            // Clear material selection in sidebar when asset category is selected
+                            // This prevents conflicts with the parent component's state
+                            if (selectedMaterial) {
+                              setSelectedMaterial(null);
+                            }
+                          }}
+                          className={`flex flex-col gap-1 rounded-sm border px-4 py-3 text-left transition-all ${
+                            isActive
+                              ? "border-primary bg-primary-600 text-white shadow-md"
+                              : "border-gray-300 bg-white text-gray-700 hover:border-primary/40 hover:bg-primary-100/60"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center p-2 gap-2">
+                              <span className="text-md font-semibold">
+                                {category.name}
+                              </span>
+                            </div>
+                            {/* <span
+                              className={`text-xs font-medium ${
+                                isActive ? "text-white/80" : "text-primary"
+                              }`}
+                            >
+                              {assetCount}
+                            </span> */}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

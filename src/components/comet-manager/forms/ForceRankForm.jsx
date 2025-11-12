@@ -1,10 +1,21 @@
 import React from "react";
-import { SectionHeader, TextField, RichTextArea } from "./FormFields";
+import {
+  SectionHeader,
+  TextField,
+  RichTextArea,
+  ListField,
+} from "./FormFields";
 
-export default function ForceRankForm({ formData, updateField }) {
+export default function ForceRankForm({
+  formData,
+  updateField,
+  addListItem,
+  updateListItem,
+  removeListItem,
+}) {
   return (
     <>
-      <SectionHeader title="Poll Question/Force Rank" />
+      <SectionHeader title="Force Rank" />
       <TextField
         label="Title"
         value={formData.pollTitle}
@@ -26,9 +37,17 @@ export default function ForceRankForm({ formData, updateField }) {
         onChange={(value) => updateField("keyLearning", value)}
       /> */}
       <RichTextArea
-        label="Key Learning"
-        value={formData.keyLearning}
-        onChange={(value) => updateField("keyLearning", value)}
+        label="Question "
+        value={formData.question}
+        onChange={(value) => updateField("question", value)}
+      />
+      <ListField
+        label="Options"
+        items={formData.mcqOptions || []}
+        onAdd={() => addListItem("mcqOptions")}
+        onUpdate={(index, value) => updateListItem("mcqOptions", index, value)}
+        onRemove={(index) => removeListItem("mcqOptions", index)}
+        buttonText="Add Option"
       />
     </>
   );

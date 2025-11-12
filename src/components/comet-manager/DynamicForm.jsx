@@ -77,7 +77,7 @@ const getFormDataFromScreen = (screen) => {
     initialData.description = content.habit_image?.description;
     initialData.url = content.habit_image?.url;
     initialData.habitsIsMandatory = content.enabled;
-    initialData.habits = content.habits
+    initialData.habits = content.habits;
   }
 
   if (contentType === "social_discussion") {
@@ -301,8 +301,8 @@ export default function DynamicForm({
         typeof screen?.position === "number"
           ? screen.position
           : typeof screen?.order === "number"
-            ? screen.order + 1
-            : 1;
+          ? screen.order + 1
+          : 1;
 
       const conversationMessage = `{ 'path': 'chapter-${chapterNumber}-step-${stepNumber}-screen-${screenNumber}', 'field': '${mappedField}', 'value': '${askContext.selectedText}', 'instruction': '${query}' }`;
 
@@ -394,7 +394,7 @@ export default function DynamicForm({
     }
 
     return (
-      <div className="p-4">
+      <div className="p-2">
         <p className="text-sm text-gray-600">
           No form available for this screen type:{" "}
           {screen?.screenType || "unknown"} /{" "}
@@ -412,7 +412,7 @@ export default function DynamicForm({
         </div>
         {renderEaseCategories()}
       </div> */}
-      <div className="p-4">{renderFormContent()}</div>
+      <div className="p-2">{renderFormContent()}</div>
       <AskKyperPopup
         focusedField={focusedField}
         fieldPosition={fieldPosition}

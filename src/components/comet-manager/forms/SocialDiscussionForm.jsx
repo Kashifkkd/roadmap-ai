@@ -11,12 +11,11 @@ export default function SocialDiscussionForm({ formData, updateField }) {
         onChange={(value) => updateField("socialTitle", value)}
       />
       <RichTextArea
-        label="Description"
-        value={formData.socialDescription}
-        onChange={(value) => updateField("socialDescription", value)}
-        field="socialDescription"
+        label="Question"
+        value={formData.question}
+        onChange={(value) => updateField("socialQuestion", value)}
+        field="socialQuestion"
       />
     </>
   );
 }
-
