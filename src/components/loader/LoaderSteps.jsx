@@ -82,13 +82,13 @@ export default function LoaderSteps() {
 
   return steps.map((step, idx) => (
     <div key={idx} className="flex w-full">
-      <div className="flex w-full flex-col py-2 sm:py-2.5">
+      <div className="flex w-full flex-col py-2">
         <div className="flex w-full items-center pb-2 gap-2 sm:gap-3">
-          <div className="flex-shrink-0">
-            <Image 
-              src={step.src} 
-              alt="file" 
-              height={42} 
+          <div className="shrink-0">
+            <Image
+              src={step.src}
+              alt="file"
+              height={42}
               width={42}
               className="w-8 h-8 sm:w-10 sm:h-10 md:w-[42px] md:h-[42px]"
             />
@@ -102,7 +102,7 @@ export default function LoaderSteps() {
             </span>
           </div>
           {idx < currentStep ? (
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <Image
                 src="/loading complete.svg"
                 alt="loaded"
@@ -112,14 +112,16 @@ export default function LoaderSteps() {
               />
             </div>
           ) : idx === currentStep ? (
-            <div className="flex items-end h-full flex-shrink-0 w-8 sm:w-10 md:w-12">
+            <div className="flex items-end h-full shrink-0 w-8 sm:w-10 md:w-12">
               <span className="text-[#7367F0] text-sm sm:text-base font-bold whitespace-nowrap">
                 {progress}%
               </span>
             </div>
           ) : (
-            <div className="flex items-end h-full flex-shrink-0 w-8 sm:w-10 md:w-12">
-              <span className="text-[#7367F0] text-sm sm:text-base font-bold whitespace-nowrap">0%</span>
+            <div className="flex items-end h-full shrink-0 w-8 sm:w-10 md:w-12">
+              <span className="text-[#7367F0] text-sm sm:text-base font-bold whitespace-nowrap">
+                0%
+              </span>
             </div>
           )}
         </div>

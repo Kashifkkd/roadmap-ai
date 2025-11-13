@@ -6,10 +6,9 @@ import Stars from "@/components/icons/Stars";
 import ProgressbarLoader from "@/components/loader";
 import { graphqlClient } from "@/lib/graphql-client";
 
-export default function OutlineMannerFooter() {
+export default function OutlineMannerFooter({ isGenerating, setIsGenerating }) {
   const router = useRouter();
   const [sessionId, setSessionId] = useState(null);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -44,6 +43,7 @@ export default function OutlineMannerFooter() {
   const handleSubmit = async () => {
     try {
       setError(null);
+      setIsGenerating(true);
 
       // Ensure session exists
       let currentSessionId = localStorage.getItem("sessionId");
@@ -85,7 +85,7 @@ export default function OutlineMannerFooter() {
       await graphqlClient.sendMessage(cometJsonForMessage);
 
       // Start listening for updates, then navigate on data
-      setIsGenerating(true);
+      // isGenerating is already set to true at the start
     } catch (error) {
       console.error("Error in handleSubmit:", error);
       setError(error?.message || "Unexpected error");
@@ -101,9 +101,9 @@ export default function OutlineMannerFooter() {
     }
   };
 
-  if (isGenerating) {
-    return <ProgressbarLoader />;
-  }
+  // if (isGenerating) {
+  //   return <ProgressbarLoader />;
+  // }
 
   return (
     <>
@@ -117,6 +117,7 @@ export default function OutlineMannerFooter() {
             variant="default"
             className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
             onClick={handleSubmit}
+            disabled={isGenerating}
           >
             <Stars />
             <span>Create Comet</span>

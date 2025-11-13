@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Plus, GripVertical, Zap, ChevronDown } from "lucide-react";
 import SelectIcon from "@/components/icons/SelectIcon";
 import ChapterTextarea from "./ChapterTextarea";
+import ProgressbarLoader from "@/components/loader";
 // import { temp } from "../../hooks/temp";
 
 export default function OutlineMannerCreateComet({
@@ -48,7 +49,8 @@ export default function OutlineMannerCreateComet({
   const [selectedChapterNumber, setSelectedChapterNumber] = useState(null);
   const [selectedStep, setSelectedStep] = useState(null);
   const [showChapterTextarea, setShowChapterTextarea] = useState(false);
-  
+  const [isGenerating, setIsGenerating] = useState(false);
+
   const selectedChapterNameRef = useRef(null);
   const selectedStepTitleRef = useRef(null);
 
@@ -103,7 +105,7 @@ export default function OutlineMannerCreateComet({
   const handleChapterClick = (index, chapter) => {
     selectedChapterNameRef.current = chapter?.chapter || null;
     selectedStepTitleRef.current = null;
-    
+
     setSelectedChapter(chapter);
     setSelectedChapterNumber(index + 1);
     setSelectedStep(null);
@@ -118,14 +120,22 @@ export default function OutlineMannerCreateComet({
     e.stopPropagation();
     selectedChapterNameRef.current = chapter?.chapter || null;
     selectedStepTitleRef.current = step?.title || null;
-    
+
     setSelectedChapter(chapter);
     setSelectedChapterNumber(chapterIndex + 1);
     setSelectedStep(step);
   };
 
+  if (isGenerating) {
+    return (
+      <div className="fixed  left-0 right-0 h-full">
+        <ProgressbarLoader />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col flex-1 w-full h-full bg-background rounded-xl overflow-hidden">
+    <div className="flex flex-col flex-1 w-full h-full bg-background rounded-xl overflow-hidden ">
       <div className="w-full p-2 shrink-0">
         <SectionHeader title="New Manager Essentials" />
       </div>
@@ -349,7 +359,10 @@ export default function OutlineMannerCreateComet({
 
       {/* Footer */}
       <div className="shrink-0">
-        <OutlineMannerFooter />
+        <OutlineMannerFooter
+          isGenerating={isGenerating}
+          setIsGenerating={setIsGenerating}
+        />
       </div>
     </div>
   );

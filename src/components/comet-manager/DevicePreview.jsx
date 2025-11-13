@@ -22,7 +22,7 @@ export default function DevicePreview({ selectedScreen }) {
             {/* Header */}
             <div className="shrink-0 mb-2">
               <h3 className="text-xs font-semibold text-gray-900 truncate">
-                {selectedScreen.title || "Untitled"}
+                {selectedScreen.title || "Untitled"} hfhfh
               </h3>
             </div>
 

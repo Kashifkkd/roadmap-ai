@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { temp } from "./temp";
+// import { temp2 } from "./temp2";
+import { temp2 } from "./temp2";
 
 export function useCometManager(sessionData = null) {
   const [isLoading, setIsLoading] = useState(false);
@@ -12,10 +13,10 @@ export function useCometManager(sessionData = null) {
   console.log(">>>", sessionData);
   // Transform temp data response_path to chapters and screens
   useEffect(() => {
-    // if (temp && temp.length > 0 && temp[0].response_path) {
-    if (sessionData && sessionData.response_path) {
-      const responsePath = sessionData.response_path;
-      // const responsePath = temp[0].response_path;
+    if (temp2 && temp2.length > 0 && temp2[0].response_path) {
+      // if (sessionData && sessionData.response_path) {
+      // const responsePath = sessionData.response_path;
+      const responsePath = temp2[0].response_path;
       const transformedChapters = [];
       const transformedScreens = [];
       let screenCounter = 0;
@@ -133,8 +134,7 @@ export function useCometManager(sessionData = null) {
       setChapters(transformedChapters);
       setScreens(transformedScreens);
 
-      const firstStepId =
-        transformedChapters?.[0]?.steps?.[0]?.id ?? null;
+      const firstStepId = transformedChapters?.[0]?.steps?.[0]?.id ?? null;
 
       if (firstStepId) {
         const stepExistsInChapters = (stepId) =>
@@ -152,7 +152,8 @@ export function useCometManager(sessionData = null) {
         });
       } else {
         setSelectedStepId((prevSelectedStepId) =>
-          prevSelectedStepId && transformedChapters.some((chapter) =>
+          prevSelectedStepId &&
+          transformedChapters.some((chapter) =>
             Array.isArray(chapter.steps)
               ? chapter.steps.some((step) => step.id === prevSelectedStepId)
               : false

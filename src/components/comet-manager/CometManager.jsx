@@ -666,7 +666,7 @@ export default function CometManager({
 
           {/* Preview Content */}
           <div className="flex-1 overflow-hidden p-2 sm:p-3 border-lg bg-primary-50">
-            <FromDoerToEnabler />
+            <FromDoerToEnabler selectedScreen={selectedScreen} />
           </div>
         </DrawerContent>
       </Drawer>
