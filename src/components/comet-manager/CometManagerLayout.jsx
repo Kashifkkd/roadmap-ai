@@ -26,7 +26,6 @@ export default function CometManagerLayout() {
     }
     // sample data for testing
     // else if (!storedSessionData && !sessionData) {
-     
     //   setSessionData(temp[0]);
     // }
   }, [sessionData]);
