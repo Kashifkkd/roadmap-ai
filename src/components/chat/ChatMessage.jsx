@@ -12,8 +12,8 @@ const ChatMessage = ({ role, text }) => {
         className={cn(
           "max-w-[90%] rounded-lg px-4 py-2 font-medium text-wrap font-sans",
           isUser
-            ? "bg-primary-50 text-primary-700 text-sm sm:text-xs"
-            : " text-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm sm:text-xs"
+            ? "bg-primary-50 text-primary-700 text-sm sm:text-xs text-right"
+            : " text-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm sm:text-xs text-left "
         )}
       >
         <p className="text-sm leading-relaxed whitespace-pre-wrap">{text}</p>

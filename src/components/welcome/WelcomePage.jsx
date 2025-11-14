@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { ArrowUp, Paperclip, Search, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
-import { graphqlClient } from "@/lib/graphql-client";
 import Stars from "@/components/icons/Stars";
+import ChatMessage from "@/components/chat/ChatMessage";
 
 const SUGGESTIONS = [
   "Create a go-to microlearning experience for new managers",
@@ -15,43 +15,148 @@ const SUGGESTIONS = [
   "Add reinforcement & application to a training",
 ];
 
+// Static questions that appear on the right side (bot questions)
+const QUESTIONS = [
+  "That sounds great! Let’s start shaping this into a learning experience .Can you tell me a bit more about your audience,what’s their role, experience level, and which department or function they belong to?",
+  "Perfect — that helps me understand the context.Now, why are you creating this Comet?You can include the organizational context, for example, is this part of a new sales transformation,or a follow-up to a recent training or workshop? Also, what outcomes do you want to achieve — both in learning and behavior change? ",
+  "Perfect. That’s everything I need for now.Let me generate your initial Comet setup — this will take just a moment.",
+];
+
 export default function WelcomePage() {
   const [inputText, setInputText] = useState("");
   const [isDisabled, setIsDisabled] = useState(false);
   const [isAttachActive, setIsAttachActive] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const textareaRef = useRef(null);
-  const isCollapsingRef = useRef(false);
   const router = useRouter();
+
+  // Simple state for question flow
+  const [questionIndex, setQuestionIndex] = useState(-1); // -1 = no question shown, 0-2 = question index
+  const [answers, setAnswers] = useState([]); // Store all question-answer pairs
+  const [initialInput, setInitialInput] = useState(""); // Store first user input separately
+  const [messages, setMessages] = useState([]); // Store chat messages for display
+  const [isLoading, setIsLoading] = useState(false); // Show loading message
+  const messagesEndRef = useRef(null); // Scroll to bottom of messages
 
   const handleSuggestionSelect = (suggestion) => {
     setInputText(suggestion);
   };
 
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  // Auto-expand when messages are present
+  useEffect(() => {
+    if (messages.length > 0 && !isExpanded) {
+      setIsExpanded(true);
+    }
+  }, [messages.length, isExpanded]);
+
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!inputText.trim() || isDisabled) return;
 
-    try {
-      setIsDisabled(true);
+    setIsDisabled(true);
+    const userInput = inputText.trim();
+    setInputText("");
 
-      // Check if sessionId already exists in localStorage
-      let sessionId = localStorage.getItem("sessionId");
+    // First time - user types anything
+    if (questionIndex === -1) {
+      setInitialInput(userInput); 
 
-      // If no sessionId exists, create a new session
-      if (!sessionId) {
-        const sessionResponse = await graphqlClient.createSession();
-        sessionId = sessionResponse.createSession.sessionId;
-        localStorage.setItem("sessionId", sessionId);
+      
+      setMessages([
+        { from: "user", content: userInput },
+        { from: "bot", content: QUESTIONS[0] },
+      ]);
+
+      setQuestionIndex(0); 
+      setIsExpanded(true); 
+      setIsDisabled(false);
+      return;
+    }
+
+    
+    const currentQuestionText = QUESTIONS[questionIndex];
+    const questionAnswer = { question: currentQuestionText, answer: userInput };
+    const allAnswers = [...answers, questionAnswer];
+    setAnswers(allAnswers);
+
+    
+    setMessages((prev) => [...prev, { from: "user", content: userInput }]);
+
+
+    if (questionIndex === QUESTIONS.length - 1) {
+      // Add confirmation message first
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            from: "bot",
+            content:
+              "Perfect. That's everything I need for now. Let me generate your initial Comet setup — this will take just a moment.",
+          },
+        ]);
+      }, 300);
+
+      // Show loading message after a short delay
+      setIsLoading(true);
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            from: "bot",
+            content:
+              "Analyzing source materials and preparing your Input Screen…",
+          },
+        ]);
+      }, 800);
+
+      const userQuestionsParam = encodeURIComponent(JSON.stringify(allAnswers));
+      const initialInputParam = encodeURIComponent(initialInput);
+
+      // Create session if needed
+      try {
+        const { graphqlClient } = await import("@/lib/graphql-client");
+        let sessionId = localStorage.getItem("sessionId");
+        if (!sessionId) {
+          const sessionResponse = await graphqlClient.createSession();
+          sessionId = sessionResponse.createSession.sessionId;
+          localStorage.setItem("sessionId", sessionId);
+        }
+      } catch (error) {
+        console.error("Error creating session:", error);
       }
 
-      router.push(`/dashboard?initialInput=${encodeURIComponent(inputText)}`);
-    } catch (error) {
-      console.error("Error creating session:", error);
-    } finally {
-      setIsDisabled(false);
+      // Small delay before redirect to show loading message
+      setTimeout(() => {
+        router.push(
+          `/dashboard?initialInput=${initialInputParam}&userQuestions=${userQuestionsParam}`
+        );
+      }, 1500);
+      return;
     }
+
+    const nextIndex = questionIndex + 1;
+    setQuestionIndex(nextIndex);
+
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          from: "bot",
+          content: QUESTIONS[nextIndex],
+        },
+      ]);
+    }, 300);
+
+    setIsDisabled(false);
   };
 
   const handleCreateNewComet = () => {
@@ -61,7 +166,17 @@ export default function WelcomePage() {
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      // Expand on Enter if not already expanded
+      if (!isExpanded && !inputText.trim()) {
+        setIsExpanded(true);
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+          }
+        }, 0);
+      } else {
+        handleSubmit(e);
+      }
     }
   };
 
@@ -77,55 +192,6 @@ export default function WelcomePage() {
         textareaRef.current.focus();
       }
     }, 0);
-  };
-
-  const handleToggleTextarea = (e) => {
-    e.stopPropagation();
-    if (isExpanded) {
-      setIsExpanded(false);
-      if (textareaRef.current) {
-        textareaRef.current.blur();
-      }
-    } else {
-      setIsExpanded(true);
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.focus();
-        }
-      }, 0);
-    }
-  };
-
-  const handleTextareaMouseDown = (e) => {
-    if (isExpanded && !inputText.trim()) {
-      isCollapsingRef.current = true;
-      e.preventDefault();
-    } else {
-      isCollapsingRef.current = false;
-    }
-  };
-
-  const handleTextareaClick = (e) => {
-    if (!inputText.trim()) {
-      if (isCollapsingRef.current) {
-        setIsExpanded(false);
-        setTimeout(() => {
-          isCollapsingRef.current = false;
-        }, 200);
-      } else if (!isExpanded) {
-        setIsExpanded(true);
-        setTimeout(() => {
-          if (textareaRef.current) {
-            textareaRef.current.focus();
-          }
-        }, 0);
-      }
-    } else {
-      // If has content, just ensure it's expanded
-      if (!isExpanded) {
-        handleExpandTextarea();
-      }
-    }
   };
 
   return (
@@ -157,85 +223,119 @@ export default function WelcomePage() {
             </div>
           </div>
 
-          {/* Input Section */}
-          <div className="space-y-8">
-            <div className="relative w-full max-w-3xl mx-auto">
+          {/* Input Section with Chat Messages Inside */}
+          <div className="space-y-8 ">
+            <div className="relative w-full max-w-3xl mx-auto rounded-xl border border-primary-300 shadow-sm  ">
               <div
-                className={`w-full p-2 flex flex-col items-center gap-2 rounded-xl min-h-28 relative transition-all duration-200 ${
-                  isExpanded ? "h-auto" : "h-40"
+                className={`w-full flex flex-col relative transition-all duration-200 rounded-xl bg-white ${
+                  isExpanded || messages.length > 0
+                    ? "min-h-[500px] max-h-[600px]"
+                    : ""
                 }`}
-                style={{
-                  background:
-                    "linear-gradient(278.54deg, #F8F7FE 6.44%, #E3E1FC 94.6%)",
-                }}
               >
-                <div className="relative w-full">
-                  <Search
-                    className="w-5 h-5 text-placeholder-gray-500 absolute left-4 top-4 z-10 cursor-pointer hover:text-primary-600 transition-colors"
-                    onClick={handleToggleTextarea}
-                  />
-                  <textarea
-                    ref={textareaRef}
-                    placeholder="I'll guide you step by step - just tell me what you want to create."
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    onMouseDown={handleTextareaMouseDown}
-                    onClick={handleTextareaClick}
-                    onFocus={() => {
-                      // Only auto-expand on focus if not intentionally collapsing
-                      if (!isCollapsingRef.current && !isExpanded) {
-                        setIsExpanded(true);
+                {/* Chat Messages Area - Show when messages exist */}
+                {messages.length > 0 && (
+                  <div className="flex-1 overflow-y-auto p-4 pb-2 space-y-3 min-h-0">
+                    {messages.map((msg, idx) => (
+                      <ChatMessage
+                        key={idx}
+                        role={msg.from === "user" ? "user" : "bot"}
+                        text={msg.content}
+                      />
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
+
+                {/* Input Area - Always at bottom */}
+                <div
+                  className={`relative w-full bg-white rounded-xl border border-primary-300 shadow-sm ${
+                    messages.length > 0 ? "mt-auto" : ""
+                  }`}
+                >
+                  {/* Input Field Section */}
+                  <div className="relative w-full">
+                    {messages.length === 0 && (
+                      <Search className="w-5 h-5 text-placeholder-gray-500 absolute left-4 top-4 z-10 pointer-events-none" />
+                    )}
+                    <textarea
+                      ref={textareaRef}
+                      placeholder={
+                        isLoading
+                          ? "Analyzing and preparing your Input Screen..."
+                          : questionIndex >= 0 || messages.length > 0
+                          ? "Type your answer here..."
+                          : "I'll guide you step by step - just tell me what you want to create."
                       }
-                    }}
-                    disabled={isDisabled}
-                    className="w-full pl-10 pr-3 pt-3 pb-3 text-lg shadow-none rounded-xl bg-background hover:bg-gray-50 border border-primary-300 hover:border-gray-50 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none cursor-pointer transition-all duration-200"
-                    rows={isExpanded ? 24 : 4}
-                  />
-                </div>
-                <div className="w-[95%] flex flex-row justify-between items-center gap-2 absolute bottom-4 border-t-2 border-gray-200 pt-2">
-                  <Button
-                    variant="default"
-                    className={`cursor-pointer ${
-                      isAttachActive
-                        ? "text-white bg-primary-600"
-                        : "text-placeholder-gray-500 bg-white  hover:text-placeholder-gray-100 hover:bg-primary-50"
-                    }`}
-                    onClick={handleAttach}
-                  >
-                    <Paperclip className="w-4 h-4" />
-                    <span>Attach</span>
-                  </Button>
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      disabled={isDisabled || isLoading}
+                      className={`w-full ${
+                        messages.length === 0 ? "pl-10" : "pl-3"
+                      } pr-3 ${
+                        messages.length > 0 ? "pt-2.5 pb-2.5" : "pt-3 pb-3"
+                      } text-lg shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text ${
+                        messages.length > 0 ? "overflow-hidden" : ""
+                      }`}
+                      rows={messages.length > 0 ? 1 : isExpanded ? 4 : 2}
+                      style={{
+                        maxHeight: messages.length > 0 ? "2.5rem" : "none",
+                      }}
+                    />
+                  </div>
 
-                  <button
-                    onClick={(e) => handleSubmit(e)}
-                    disabled={isDisabled || !inputText.trim()}
-                    className="p-2 bg-primary text-primary-foreground rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors flex items-center justify-center"
-                  >
-                    <ArrowUp className="w-4 h-4" />
-                  </button>
+                  {/* Separator Line */}
+                  <div className="w-full border-t border-gray-200"></div>
+
+                  {/* Action Bar */}
+                  <div className="w-full flex flex-row justify-between items-center gap-2 px-3 py-2">
+                    <Button
+                      variant="default"
+                      className={`cursor-pointer flex items-center gap-2 ${
+                        isAttachActive
+                          ? "text-white bg-primary-600"
+                          : "text-placeholder-gray-500 bg-transparent hover:text-placeholder-gray-700 hover:bg-transparent"
+                      }`}
+                      onClick={handleAttach}
+                      disabled={isLoading}
+                    >
+                      <Paperclip className="w-4 h-4" />
+                      <span>Attach</span>
+                    </Button>
+
+                    <button
+                      onClick={(e) => handleSubmit(e)}
+                      disabled={isDisabled || !inputText.trim() || isLoading}
+                      className="p-2 bg-primary text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors flex items-center justify-center w-8 h-8"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Suggestion Buttons */}
-            <div className="w-full max-w-4xl mx-auto">
-              <h3 className="text-primary-900 text-lg font-medium mb-4 text-start">
-                Pick an idea to to get started
-              </h3>
-              <div className="flex flex-wrap gap-3">
-                {SUGGESTIONS.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestionSelect(suggestion)}
-                    disabled={isDisabled}
-                    className="px-4 py-2 text-sm border rounded-md bg-white text-primary-600 font-medium transition-all duration-200 hover:bg-primary-50 hover:border-primary-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
+            {/* Suggestion Buttons - Only show if no question is shown */}
+            {questionIndex === -1 && (
+              <div className="w-full max-w-4xl mx-auto">
+                <h3 className="text-primary-900 text-lg font-medium mb-4 text-start">
+                  Pick an idea to to get started
+                </h3>
+                <div className="flex flex-wrap gap-3">
+                  {SUGGESTIONS.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionSelect(suggestion)}
+                      disabled={isDisabled}
+                      className="px-4 py-2 text-sm border rounded-md bg-white text-primary-600 font-medium transition-all duration-200 hover:bg-primary-50 hover:border-primary-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>

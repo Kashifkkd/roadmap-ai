@@ -12,6 +12,7 @@ export default function DashboardLayout() {
   const router = useRouter();
   const suggestion = searchParams.get("suggestion");
   const initialInput = searchParams.get("initialInput");
+  const userQuestionsParam = searchParams.get("userQuestions");
 
   // State for session data
   const [sessionData, setSessionData] = useState(null);
@@ -118,6 +119,7 @@ export default function DashboardLayout() {
         input_type: "outline_creation",
         // input_type: "comet_data_creation",
         comet_creation_data: formattedCometData,
+
         response_outline: {},
         response_path: {},
         chatbot_conversation: [{ user: messageText }],
@@ -161,6 +163,7 @@ export default function DashboardLayout() {
                 prefillData ? "comet_data_update" : "comet_data_creation"
               }
               initialInput={initialInput}
+              userQuestions={userQuestionsParam}
               onResponseReceived={setPrefillData}
               allMessages={allMessages}
               setAllMessages={setAllMessages}

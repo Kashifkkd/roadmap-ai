@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 
 export default function ChatWindow({
   initialInput = null,
+  userQuestions = null,
   inputType = "comet_data_update",
   onResponseReceived = null,
   allMessages = [],
@@ -112,6 +113,7 @@ export default function ChatWindow({
       if (typeof window !== "undefined") {
         const url = new URL(window.location.href);
         url.searchParams.delete("initialInput");
+        url.searchParams.delete("userQuestions");
         window.history.replaceState({}, "", url.pathname);
       }
     }
@@ -147,13 +149,28 @@ export default function ChatWindow({
       }
 
       setSessionId(currentSessionId);
+
+      // Get userQuestions from URL parameter (set by WelcomePage)
+      let parsedUserQuestions = [];
+      if (userQuestions) {
+        try {
+          parsedUserQuestions = JSON.parse(decodeURIComponent(userQuestions));
+        } catch (e) {
+          console.error("Error parsing userQuestions:", e);
+        }
+      }
+
+      // Use initialInput from URL parameter, or fallback to text
+      const initialUserInput = initialInput || text;
+
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: inputType,
         comet_creation_data: sessionData?.comet_creation_data || {},
+        user_questions: parsedUserQuestions, // All question-answer pairs from URL
         response_outline: sessionData?.response_outline || {},
         response_path: sessionData?.response_path || {},
-        chatbot_conversation: [{ user: text }],
+        chatbot_conversation: [{ user: initialUserInput }], // First user input from URL
         to_modify: {},
       });
 
