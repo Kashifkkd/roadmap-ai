@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import {
   Rocket,
   File,
@@ -80,6 +86,12 @@ export default function CometManagerSidebar({
   const [assetsError, setAssetsError] = useState(null);
   const [selectedAssetCategory, setSelectedAssetCategory] = useState(null);
 
+  // Store the callback in a ref to avoid infinite loops
+  const onAssetCategorySelectRef = useRef(onAssetCategorySelect);
+  useEffect(() => {
+    onAssetCategorySelectRef.current = onAssetCategorySelect;
+  }, [onAssetCategorySelect]);
+
   // Filter assets by selected category
   const filteredAssets = useMemo(() => {
     if (!selectedAssetCategory) return [];
@@ -87,15 +99,15 @@ export default function CometManagerSidebar({
   }, [assets, selectedAssetCategory]);
 
   useEffect(() => {
-    if (selectedAssetCategory && onAssetCategorySelect) {
+    if (selectedAssetCategory && onAssetCategorySelectRef.current) {
       const category = ASSET_CATEGORIES.find(
         (cat) => cat.id === selectedAssetCategory
       );
       if (category) {
-        onAssetCategorySelect(category, filteredAssets);
+        onAssetCategorySelectRef.current(category, filteredAssets);
       }
     }
-  }, [filteredAssets, selectedAssetCategory, onAssetCategorySelect]);
+  }, [selectedAssetCategory, filteredAssets]);
   useEffect(() => {
     if (!selectedStepId) {
       return;

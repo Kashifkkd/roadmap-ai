@@ -10,75 +10,85 @@ import { User, Lock, Eye, EyeOff } from "lucide-react";
 import { loginUser } from "@/api/login";
 
 export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState({ field: "", message: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const router = useRouter();
 
+  const validateForm = () => {
+    const email = formData.email.trim();
+    const password = formData.password.trim();
+
+    if (!email) return { field: "email", message: "Email is required" };
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email))
+      return { field: "email", message: "Enter a valid email address" };
+
+    if (!password)
+      return { field: "password", message: "Password is required" };
+
+    if (password.length < 6)
+      return {
+        field: "password",
+        message: "Password must be at least 6 characters",
+      };
+
+    return null;
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    if (error) setError("");
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setError({ field: "", message: "" });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.email || !formData.password) {
-      setError("Please fill in all fields");
+
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
     setIsLoading(true);
-    setError("");
+    setError({ field: "", message: "" });
 
     try {
       const result = await loginUser(formData);
 
       if (result.error) {
         throw new Error(
-          result.response?.message ||
-            "Login failed. Please check your credentials."
+          result.response?.message || "Invalid email or password"
         );
       }
 
       const data = result.response;
-      console.log("data", data);
 
       localStorage.setItem("user_name", data.full_name);
       localStorage.setItem("access_token", data.access_token);
       localStorage.setItem("token_type", data.token_type);
 
-      // Close dialog if controlled
-      if (onOpenChange) {
-        onOpenChange(false);
-      }
-
+      if (onOpenChange) onOpenChange(false);
       router.push("/");
-    } catch (error) {
-      setError(error.message || "Login failed. Please check your credentials.");
+    } catch (err) {
+      setError({ field: "api", message: err.message });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Reset form when dialog closes
   useEffect(() => {
     if (!open) {
       setFormData({ email: "", password: "" });
-      setError("");
+      setError({ field: "", message: "" });
       setIsLoading(false);
     }
   }, [open]);
 
-  // Calculate custom position if buttonPosition is provided
   const customStyle = buttonPosition
     ? {
         position: "fixed",
@@ -100,52 +110,51 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
         style={customStyle}
       >
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Email Field */}
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-bold text-black">
-              Username
-            </Label>
+            <Label className="text-sm font-bold text-black">Email</Label>
             <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <User className="h-5 w-5" />
-              </div>
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
               <Input
-                id="email"
                 name="email"
                 type="text"
-                placeholder="Enter Username"
+                placeholder="Enter Email"
                 value={formData.email}
                 onChange={handleInputChange}
-                required
-                className="w-full pl-10 pr-4 h-11 rounded-lg border border-gray-300 bg-white text-black placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 focus-visible:outline-none"
                 disabled={isLoading}
+                className={`w-full pl-10 pr-4 h-11 rounded-lg border ${
+                  error.field === "email" ? "border-red-500" : "border-gray-300"
+                }`}
               />
             </div>
+            {error.field === "email" && (
+              <p className="text-sm text-red-600">{error.message}</p>
+            )}
           </div>
 
+          {/* Password Field */}
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-bold text-black">
-              Password
-            </Label>
+            <Label className="text-sm font-bold text-black">Password</Label>
             <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <Lock className="h-5 w-5" />
-              </div>
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
               <Input
-                id="password"
                 name="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter Password"
                 value={formData.password}
                 onChange={handleInputChange}
-                required
-                className="w-full pl-10 pr-12 h-11 rounded-lg border border-gray-300 bg-white text-black placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 focus-visible:outline-none"
                 disabled={isLoading}
+                className={`w-full pl-10 pr-12 h-11 rounded-lg border ${
+                  error.field === "password"
+                    ? "border-red-500"
+                    : "border-gray-300"
+                }`}
               />
+
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                tabIndex={-1}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
                 {showPassword ? (
                   <EyeOff className="h-5 w-5" />
@@ -154,55 +163,22 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
                 )}
               </button>
             </div>
+            {error.field === "password" && (
+              <p className="text-sm text-red-600">{error.message}</p>
+            )}
           </div>
 
-          <div className="flex items-center justify-between pt-1">
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => setRememberMe(!rememberMe)}
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-                  rememberMe ? "bg-primary" : "bg-gray-300"
-                }`}
-                role="switch"
-                aria-checked={rememberMe}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
-                    rememberMe ? "translate-x-6" : "translate-x-1"
-                  }`}
-                />
-              </button>
-              <Label
-                htmlFor="remember-me"
-                className="text-sm text-black cursor-pointer select-none"
-                onClick={() => setRememberMe(!rememberMe)}
-              >
-                Remember me
-              </Label>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                // Handle forgot password
-                router.push("/forgot-password");
-              }}
-              className="text-sm  text-primary hover:underline focus:outline-none"
-            >
-              Forgot password?
-            </button>
-          </div>
-
-          {error && (
+          {/* Global / API Error */}
+          {error.field === "api" && (
             <div className="p-3 text-sm text-red-600 border border-red-200 rounded-md bg-red-50">
-              {error}
+              {error.message}
             </div>
           )}
 
           <Button
             type="submit"
-            className="w-full bg-primary text-white font-bold h-11 rounded-lg hover:bg-primary-700 disabled:opacity-50 shadow-none"
             disabled={isLoading}
+            className="w-full bg-primary text-white font-bold h-11 rounded-lg hover:bg-primary-700 disabled:opacity-50"
           >
             {isLoading ? "Signing in..." : "Log In"}
           </Button>

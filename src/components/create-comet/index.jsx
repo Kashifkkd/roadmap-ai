@@ -147,11 +147,54 @@ export default function CreateComet({
             }
 
             if (experienceDesign) {
-              if (experienceDesign["Length & Frequency"])
+              if (experienceDesign["Focus"]) {
+                const focusValue = experienceDesign["Focus"];
+                if (focusValue.toLowerCase().includes("learning new content")) {
+                  setValue("cometFocus", "learning_new_content");
+                } else if (
+                  focusValue.toLowerCase().includes("reinforcing") ||
+                  focusValue.toLowerCase().includes("applying")
+                ) {
+                  setValue("cometFocus", "reinforcing_applying");
+                } else {
+                  setValue("cometFocus", focusValue);
+                }
+              }
+
+              if (experienceDesign["Duration"]) {
+                setValue("lengthFrequency", experienceDesign["Duration"]);
+              } else if (experienceDesign["Length & Frequency"]) {
                 setValue(
                   "lengthFrequency",
                   experienceDesign["Length & Frequency"]
                 );
+              }
+
+              if (experienceDesign["Engagement Frequency"]) {
+                const engagementValue =
+                  experienceDesign["Engagement Frequency"];
+                if (engagementValue.toLowerCase().includes("weekly")) {
+                  setValue("engagementFrequency", "weekly");
+                } else if (engagementValue.toLowerCase().includes("daily")) {
+                  setValue("engagementFrequency", "daily");
+                } else {
+                  setValue("engagementFrequency", engagementValue);
+                }
+              }
+
+              if (experienceDesign["Source Alignment"]) {
+                const sourceValue = experienceDesign["Source Alignment"];
+                if (sourceValue.toLowerCase().includes("fidelity")) {
+                  setValue("sourceMaterialFidelity", "fidelity");
+                } else if (sourceValue.toLowerCase().includes("balanced")) {
+                  setValue("sourceMaterialFidelity", "balanced");
+                } else if (sourceValue.toLowerCase().includes("extension")) {
+                  setValue("sourceMaterialFidelity", "extension");
+                } else {
+                  setValue("sourceMaterialFidelity", sourceValue);
+                }
+              }
+
               if (experienceDesign["Experience Type"])
                 setValue("experienceType", experienceDesign["Experience Type"]);
               if (experienceDesign["Special Instructions"])
@@ -233,8 +276,56 @@ export default function CreateComet({
         }
 
         if (experienceDesign) {
-          if (experienceDesign["Length & Frequency"])
+          console.log("Experience Design data:", experienceDesign);
+          // Map Focus field to cometFocus
+          if (experienceDesign["Focus"]) {
+            // Map text values to form values
+            const focusValue = experienceDesign["Focus"];
+            if (focusValue.toLowerCase().includes("learning new content")) {
+              setValue("cometFocus", "learning_new_content");
+            } else if (
+              focusValue.toLowerCase().includes("reinforcing") ||
+              focusValue.toLowerCase().includes("applying")
+            ) {
+              setValue("cometFocus", "reinforcing_applying");
+            } else {
+              setValue("cometFocus", focusValue);
+            }
+          }
+
+          // Map Duration field to lengthFrequency
+          if (experienceDesign["Duration"]) {
+            setValue("lengthFrequency", experienceDesign["Duration"]);
+          } else if (experienceDesign["Length & Frequency"]) {
             setValue("lengthFrequency", experienceDesign["Length & Frequency"]);
+          }
+
+          // Map Engagement Frequency field
+          if (experienceDesign["Engagement Frequency"]) {
+            const engagementValue = experienceDesign["Engagement Frequency"];
+            if (engagementValue.toLowerCase().includes("weekly")) {
+              setValue("engagementFrequency", "weekly");
+            } else if (engagementValue.toLowerCase().includes("daily")) {
+              setValue("engagementFrequency", "daily");
+            } else {
+              setValue("engagementFrequency", engagementValue);
+            }
+          }
+
+          // Map Source Alignment field to sourceMaterialFidelity
+          if (experienceDesign["Source Alignment"]) {
+            const sourceValue = experienceDesign["Source Alignment"];
+            if (sourceValue.toLowerCase().includes("fidelity")) {
+              setValue("sourceMaterialFidelity", "fidelity");
+            } else if (sourceValue.toLowerCase().includes("balanced")) {
+              setValue("sourceMaterialFidelity", "balanced");
+            } else if (sourceValue.toLowerCase().includes("extension")) {
+              setValue("sourceMaterialFidelity", "extension");
+            } else {
+              setValue("sourceMaterialFidelity", sourceValue);
+            }
+          }
+
           if (experienceDesign["Experience Type"])
             setValue("experienceType", experienceDesign["Experience Type"]);
           if (experienceDesign["Special Instructions"])
@@ -275,13 +366,14 @@ export default function CreateComet({
         if (prefillData.engagementFrequency)
           setValue("engagementFrequency", prefillData.engagementFrequency);
         if (prefillData.lengthFrequency)
-          setValue("lengthFrequency", prefillData.lengthFrequency);
+          setValue("lengthFrequency", prefillData.duration);
         if (prefillData.clientOrg) setValue("clientOrg", prefillData.clientOrg);
         if (prefillData.clientWebsite)
           setValue("clientWebsite", prefillData.clientWebsite);
       }
     }
   }, [prefillData, setValue]);
+  console.log("prefillData>>>>>>>>>>>>", prefillData);
 
   const requiredFields = [
     "cometTitle",
@@ -358,7 +450,7 @@ export default function CreateComet({
           "Learning Objectives": formValues.learningObjectives || "",
         },
         "Experience Design": {
-          "Length & Frequency": formValues.lengthFrequency || "",
+          "Length & Frequency": formValues.D || "",
           "Experience Type": "",
           "Special Instructions": formValues.specialInstructions || "",
         },
@@ -636,7 +728,7 @@ export default function CreateComet({
                       </Label>
                       <Input
                         id="length-frequency"
-                        placeholder="e.g., 4 weeks - 2 microlearning steps per week"
+                        placeholder=" "
                         {...register("lengthFrequency", { required: true })}
                         className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
                       />
@@ -648,7 +740,7 @@ export default function CreateComet({
                       <Textarea
                         id="special-instructions"
                         rows={3}
-                        placeholder="Focus on practical scenarios for first-time managers. Include at least one interactive quiz and one downloadable tool template"
+                        // placeholder="Focus on practical scenarios for first-time managers. Include at least one interactive quiz and one downloadable tool template"
                         {...register("specialInstructions", { required: true })}
                         onSelect={(e) =>
                           handleTextSelection("specialInstructions", e)

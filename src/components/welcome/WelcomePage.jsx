@@ -56,7 +56,6 @@ export default function WelcomePage() {
     }
   }, [messages.length, isExpanded]);
 
-  
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -68,31 +67,27 @@ export default function WelcomePage() {
 
     // First time - user types anything
     if (questionIndex === -1) {
-      setInitialInput(userInput); 
+      setInitialInput(userInput);
 
-      
       setMessages([
         { from: "user", content: userInput },
         { from: "bot", content: QUESTIONS[0] },
       ]);
 
-      setQuestionIndex(0); 
-      setIsExpanded(true); 
+      setQuestionIndex(0);
+      setIsExpanded(true);
       setIsDisabled(false);
       return;
     }
 
-    
     const currentQuestionText = QUESTIONS[questionIndex];
     const questionAnswer = { question: currentQuestionText, answer: userInput };
     const allAnswers = [...answers, questionAnswer];
     setAnswers(allAnswers);
 
-    
     setMessages((prev) => [...prev, { from: "user", content: userInput }]);
 
-
-    if (questionIndex === QUESTIONS.length - 1) {
+    if (questionIndex === QUESTIONS.length - 2) {
       // Add confirmation message first
       setTimeout(() => {
         setMessages((prev) => [
@@ -103,7 +98,7 @@ export default function WelcomePage() {
               "Perfect. That's everything I need for now. Let me generate your initial Comet setup — this will take just a moment.",
           },
         ]);
-      }, 300);
+      }, 200);
 
       // Show loading message after a short delay
       setIsLoading(true);
@@ -116,7 +111,7 @@ export default function WelcomePage() {
               "Analyzing source materials and preparing your Input Screen…",
           },
         ]);
-      }, 800);
+      }, 300  );
 
       const userQuestionsParam = encodeURIComponent(JSON.stringify(allAnswers));
       const initialInputParam = encodeURIComponent(initialInput);

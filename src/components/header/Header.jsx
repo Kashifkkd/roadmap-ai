@@ -250,7 +250,8 @@ export default function Header() {
     setIsAuthenticated(false);
     setIsUserMenuOpen(false);
     tokenManager.removeToken();
-    localStorage.removeItem("user_name");
+    localStorage.clear();
+    // localStorage.clear();
     router.push("/");
   };
 
@@ -717,9 +718,7 @@ export default function Header() {
                             activeButton === "settings" ? "text-white" : ""
                           }`}
                         />
-                        <span className="text-base ">
-                          Clients Settings
-                        </span>
+                        <span className="text-base ">Clients Settings</span>
                       </button>
                     </div>
 

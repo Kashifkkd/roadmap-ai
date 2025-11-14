@@ -24,8 +24,9 @@ const DeviceIcon = ({ view, isActive, onClick }) => {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${isActive ? "bg-primary" : "bg-primary-200"
-        }`}
+      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${
+        isActive ? "bg-primary" : "bg-primary-200"
+      }`}
       aria-label={`Switch to ${view} view`}
     >
       {icons[view]}
@@ -58,41 +59,39 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
   const keyPointsSource =
     Array.isArray(content?.key_points) && content.key_points.length > 0
       ? content.key_points
-      : sections.find((section) => section.id === "content-key-points")
-        ?.list || [];
+      : sections.find((section) => section.id === "content-key-points")?.list ||
+        [];
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-sm"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "w-full max-w-2xl"
-        : "w-full max-w-5xl";
+      ? "w-full max-w-2xl"
+      : "w-full max-w-5xl";
 
   const imageAspectClass =
-    deviceView === DEVICE_VIEWS.mobile
-      ? "aspect-[3/2]"
-      : "aspect-[16/8]";
+    deviceView === DEVICE_VIEWS.mobile ? "aspect-[3/2]" : "aspect-[16/8]";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-lg"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "text-2xl"
-        : "text-3xl";
+      ? "text-2xl"
+      : "text-3xl";
 
   const descriptionSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-sm"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "text-base"
-        : "text-base";
+      ? "text-base"
+      : "text-base";
 
   const paddingClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "px-4 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "px-6 py-8"
-        : "px-8 py-10";
+      ? "px-6 py-8"
+      : "px-8 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto space-y-4`}>
@@ -115,10 +114,14 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/40" />
 
             {/* Content overlay at bottom half */}
-            <div className={`absolute inset-x-0 bottom-0 h-1/2 ${paddingClass} flex flex-col justify-end space-y-3`}>
+            <div
+              className={`absolute inset-x-0 bottom-0 h-1/2 ${paddingClass} flex flex-col justify-end space-y-3`}
+            >
               {/* Title box with backdrop blur */}
               <div className="backdrop-blur-md bg-gray-200/80 px-4 py-3 rounded-sm shadow-lg">
-                <h2 className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}>
+                <h2
+                  className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
+                >
                   {title}
                 </h2>
               </div>
@@ -126,7 +129,9 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
               {/* Description box with backdrop blur */}
               {description && (
                 <div className="backdrop-blur-md bg-gray-200/80 px-4 py-3 rounded-sm shadow-lg">
-                  <p className={`text-gray-800 ${descriptionSizeClass} leading-relaxed line-clamp-4`}>
+                  <p
+                    className={`text-gray-800 ${descriptionSizeClass} leading-relaxed line-clamp-4`}
+                  >
                     {description}
                   </p>
                 </div>
@@ -137,7 +142,9 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
           // Non-Blend Mode: Image on top, content below
           <>
             <div className="px-8 pt-4">
-              <div className={`relative w-full ${imageAspectClass} overflow-hidden rounded-sm`}>
+              <div
+                className={`relative w-full ${imageAspectClass} overflow-hidden rounded-sm`}
+              >
                 <Image
                   src={imageUrl}
                   alt={content?.media?.description || title}
@@ -154,7 +161,9 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
             <div className={`${paddingClass} space-y-3`}>
               {/* Title box */}
               <div className="bg-gray-200/90 border border-gray-300 px-4 py-3 rounded-sm shadow-sm">
-                <h2 className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}>
+                <h2
+                  className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
+                >
                   {title}
                 </h2>
               </div>
@@ -170,7 +179,9 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
               {/* Description box */}
               {description && (
                 <div className="bg-gray-200/90 border border-gray-300 px-4 py-3 rounded-sm shadow-sm">
-                  <p className={`text-gray-800 ${descriptionSizeClass} leading-relaxed`}>
+                  <p
+                    className={`text-gray-800 ${descriptionSizeClass} leading-relaxed`}
+                  >
                     {description}
                   </p>
                 </div>
@@ -196,7 +207,7 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
               key={`content-key-point-${index}`}
               className="rounded-xl bg-white border border-gray-200 px-4 py-3 text-sm text-gray-700 leading-relaxed shadow-sm"
             >
-              {point}
+              {typeof point === "object" ? point.text : point}
             </div>
           ))}
         </div>
@@ -215,48 +226,50 @@ const MCQScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-sm"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "w-full max-w-2xl"
-        : "w-full max-w-5xl";
+      ? "w-full max-w-2xl"
+      : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-lg"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "text-2xl"
-        : "text-3xl";
+      ? "text-2xl"
+      : "text-3xl";
 
   const questionSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-base"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "text-lg"
-        : "text-xl";
+      ? "text-lg"
+      : "text-xl";
 
   const optionSizeClass =
-    deviceView === DEVICE_VIEWS.mobile
-      ? "text-sm"
-      : "text-base";
+    deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
 
   const paddingClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "px-4 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "px-6 py-8"
-        : "px-8 py-10";
+      ? "px-6 py-8"
+      : "px-8 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
       <div className="bg-gray-100 overflow-hidden shadow-sm h-full">
         <div className={`${paddingClass} space-y-6`}>
           {/* Title */}
-          <h2 className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}>
+          <h2
+            className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
+          >
             {title}
           </h2>
 
           {/* Question */}
           {question && (
             <div className="space-y-4">
-              <p className={`text-gray-800 text-sm ${questionSizeClass} leading-relaxed font-medium`}>
+              <p
+                className={`text-gray-800 text-sm ${questionSizeClass} leading-relaxed font-medium`}
+              >
                 {question}
               </p>
 
@@ -267,8 +280,10 @@ const MCQScreenPreview = ({ deviceView, content }) => {
                     key={`mcq-option-${index}`}
                     className="bg-gray-200/90 text-sm border border-gray-300 px-4 py-2 rounded-sm shadow-sm hover:bg-gray-300/90 transition-colors cursor-pointer"
                   >
-                    <p className={`text-gray-800 ${optionSizeClass} leading-relaxed`}>
-                      {option}
+                    <p
+                      className={`text-gray-800 ${optionSizeClass} leading-relaxed`}
+                    >
+                      {typeof option === "object" ? option.text : option}
                     </p>
                   </div>
                 ))}
@@ -280,7 +295,8 @@ const MCQScreenPreview = ({ deviceView, content }) => {
           {keyLearning && (
             <div className="mt-6">
               <p className={`text-gray-700 ${optionSizeClass} leading-relaxed`}>
-                <span className="font-semibold">Key Learning:</span> {keyLearning}
+                <span className="font-semibold">Key Learning:</span>{" "}
+                {keyLearning}
               </p>
             </div>
           )}
@@ -298,43 +314,48 @@ const AssessmentScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-sm"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "w-full max-w-2xl"
-        : "w-full max-w-5xl";
+      ? "w-full max-w-2xl"
+      : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-lg"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "text-2xl"
-        : "text-3xl";
+      ? "text-2xl"
+      : "text-3xl";
 
   const questionSizeClass =
-    deviceView === DEVICE_VIEWS.mobile
-      ? "text-sm"
-      : "text-base";
+    deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
 
   const paddingClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "px-4 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "px-6 py-8"
-        : "px-8 py-10";
+      ? "px-6 py-8"
+      : "px-8 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
       <div className="bg-gray-100 overflow-hidden shadow-sm h-full">
         <div className={`${paddingClass} space-y-6`}>
           {/* Title */}
-          <h2 className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}>
+          <h2
+            className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
+          >
             {title}
           </h2>
 
           {/* Questions */}
           <div className="space-y-6">
             {questions.map((question, qIndex) => (
-              <div key={`assessment-question-${question.question_id || qIndex}`} className="space-y-3">
+              <div
+                key={`assessment-question-${question.question_id || qIndex}`}
+                className="space-y-3"
+              >
                 {/* Question Text */}
-                <p className={`text-gray-800 ${questionSizeClass} leading-relaxed font-medium`}>
+                <p
+                  className={`text-gray-800 ${questionSizeClass} leading-relaxed font-medium`}
+                >
                   {qIndex + 1}. {question.text || question.question}
                 </p>
 
@@ -345,7 +366,9 @@ const AssessmentScreenPreview = ({ deviceView, content }) => {
                       key={`assessment-option-${option.option_id || oIndex}`}
                       className="bg-gray-200/90 text-sm border border-gray-300 px-4 py-2 rounded-sm shadow-sm hover:bg-gray-300/90 transition-colors cursor-pointer"
                     >
-                      <p className={`text-gray-800 ${questionSizeClass} leading-relaxed`}>
+                      <p
+                        className={`text-gray-800 ${questionSizeClass} leading-relaxed`}
+                      >
                         {option.text || option}
                       </p>
                     </div>
@@ -371,34 +394,34 @@ const ForceRankScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-sm"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "w-full max-w-2xl"
-        : "w-full max-w-5xl";
+      ? "w-full max-w-2xl"
+      : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-lg"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "text-2xl"
-        : "text-3xl";
+      ? "text-2xl"
+      : "text-3xl";
 
   const questionSizeClass =
-    deviceView === DEVICE_VIEWS.mobile
-      ? "text-sm"
-      : "text-base";
+    deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
 
   const paddingClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "px-4 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "px-6 py-8"
-        : "px-8 py-10";
+      ? "px-6 py-8"
+      : "px-8 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
       <div className="bg-gray-100 overflow-hidden shadow-sm h-full">
         <div className={`${paddingClass} space-y-6`}>
           {/* Title */}
-          <h2 className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}>
+          <h2
+            className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
+          >
             {title}
           </h2>
 
@@ -413,8 +436,16 @@ const ForceRankScreenPreview = ({ deviceView, content }) => {
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-orange-600">
               <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
+                <svg
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <span className="font-semibold">{highLabel}</span>
@@ -429,12 +460,18 @@ const ForceRankScreenPreview = ({ deviceView, content }) => {
                 className="flex items-center gap-3 cursor-move"
               >
                 {/* Option Text */}
-                <p className={`text-gray-800 ${questionSizeClass} leading-relaxed flex-1`}>
-                  {option}
+                <p
+                  className={`text-gray-800 ${questionSizeClass} leading-relaxed flex-1`}
+                >
+                  {typeof option === "object" ? option.text : option}
                 </p>
                 {/* 6 Dots Drag Handle Icon */}
                 <div className="text-gray-500">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <circle cx="8" cy="6" r="1.5" />
                     <circle cx="8" cy="12" r="1.5" />
                     <circle cx="8" cy="18" r="1.5" />
@@ -451,7 +488,11 @@ const ForceRankScreenPreview = ({ deviceView, content }) => {
           <div className="flex items-center gap-2 text-sm text-orange-600">
             <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z"
+                  clipRule="evenodd"
+                />
               </svg>
             </div>
             <span className="font-semibold">{lowLabel}</span>
@@ -471,39 +512,37 @@ const HabitsScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-sm"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "w-full max-w-2xl"
-        : "w-full max-w-5xl";
+      ? "w-full max-w-2xl"
+      : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-2xl"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "text-3xl"
-        : "text-4xl";
+      ? "text-3xl"
+      : "text-4xl";
 
   const subtitleSizeClass =
-    deviceView === DEVICE_VIEWS.mobile
-      ? "text-sm"
-      : "text-base";
+    deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
 
   const textSizeClass =
-    deviceView === DEVICE_VIEWS.mobile
-      ? "text-sm"
-      : "text-base";
+    deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
 
   const paddingClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "px-6 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "px-8 py-8"
-        : "px-10 py-10";
+      ? "px-8 py-8"
+      : "px-10 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
       <div className="bg-white overflow-hidden shadow-sm h-full flex flex-col">
         <div className={`${paddingClass} space-y-2`}>
           {/* Title */}
-          <h2 className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}>
+          <h2
+            className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
+          >
             {title}
           </h2>
 
@@ -521,7 +560,9 @@ const HabitsScreenPreview = ({ deviceView, content }) => {
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center">
-                <span className="px-4 bg-white font-bold text-gray-900">Habit queue</span>
+                <span className="px-4 bg-white font-bold text-gray-900">
+                  Habit queue
+                </span>
               </div>
             </div>
           </div>
@@ -539,18 +580,26 @@ const HabitsScreenPreview = ({ deviceView, content }) => {
                   <div className="relative inline-flex items-center">
                     <div className="w-12 h-7 bg-orange-400 rounded-full flex items-center justify-start pl-1">
                       <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
-                        <span className="text-gray-900 font-bold text-xs">{index + 1}</span>
+                        <span className="text-gray-900 font-bold text-xs">
+                          {index + 1}
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
                 {/* Habit Text */}
-                <p className={`text-gray-900 ${textSizeClass} leading-relaxed flex-1`}>
-                  {habit}
+                <p
+                  className={`text-gray-900 ${textSizeClass} leading-relaxed flex-1`}
+                >
+                  {typeof habit === "object" ? habit.text : habit}
                 </p>
                 {/* Drag Handle */}
                 <div className="text-gray-400 flex-shrink-0">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <circle cx="8" cy="6" r="1.5" />
                     <circle cx="8" cy="12" r="1.5" />
                     <circle cx="8" cy="18" r="1.5" />
@@ -578,16 +627,28 @@ const HabitsScreenPreview = ({ deviceView, content }) => {
                   <div className="relative inline-flex items-center">
                     <div className="w-12 h-7 bg-gray-300 rounded-full flex items-center justify-start pl-1">
                       <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
-                        <svg className="w-3 h-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                        <svg
+                          className="w-3 h-3 text-gray-700"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2.5}
+                            d="M12 4v16m8-8H4"
+                          />
                         </svg>
                       </div>
                     </div>
                   </div>
                 </div>
                 {/* Habit Text */}
-                <p className={`text-gray-900 ${textSizeClass} leading-relaxed flex-1`}>
-                  {habit}
+                <p
+                  className={`text-gray-900 ${textSizeClass} leading-relaxed flex-1`}
+                >
+                  {typeof habit === "object" ? habit.text : habit}
                 </p>
               </div>
             ))}
@@ -606,34 +667,34 @@ const ReflectionScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-sm"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "w-full max-w-2xl"
-        : "w-full max-w-5xl";
+      ? "w-full max-w-2xl"
+      : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-lg"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "text-2xl"
-        : "text-3xl";
+      ? "text-2xl"
+      : "text-3xl";
 
   const textSizeClass =
-    deviceView === DEVICE_VIEWS.mobile
-      ? "text-sm"
-      : "text-base";
+    deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
 
   const paddingClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "px-4 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "px-6 py-8"
-        : "px-8 py-10";
+      ? "px-6 py-8"
+      : "px-8 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
       <div className="bg-gray-100 overflow-hidden shadow-sm h-full">
         <div className={`${paddingClass} space-y-6 h-full flex flex-col`}>
           {/* Title */}
-          <h2 className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}>
+          <h2
+            className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
+          >
             {title}
           </h2>
 
@@ -680,40 +741,44 @@ const LinearPollScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-sm"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "w-full max-w-2xl"
-        : "w-full max-w-5xl";
+      ? "w-full max-w-2xl"
+      : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-lg"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "text-2xl"
-        : "text-3xl";
+      ? "text-2xl"
+      : "text-3xl";
 
   const textSizeClass =
-    deviceView === DEVICE_VIEWS.mobile
-      ? "text-sm"
-      : "text-base";
+    deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
 
   const paddingClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "px-4 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "px-6 py-8"
-        : "px-8 py-10";
+      ? "px-6 py-8"
+      : "px-8 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
       <div className="bg-gray-100 overflow-hidden shadow-sm h-full">
-        <div className={`${paddingClass} space-y-8 flex flex-col justify-center h-full`}>
+        <div
+          className={`${paddingClass} space-y-8 flex flex-col justify-center h-full`}
+        >
           {/* Title */}
-          <h2 className={`font-bold text-gray-900 ${titleSizeClass} leading-tight text-center`}>
+          <h2
+            className={`font-bold text-gray-900 ${titleSizeClass} leading-tight text-center`}
+          >
             {title}
           </h2>
 
           {/* Question */}
           {question && (
-            <p className={`text-gray-800 ${textSizeClass} leading-relaxed text-center`}>
+            <p
+              className={`text-gray-800 ${textSizeClass} leading-relaxed text-center`}
+            >
               {question}
             </p>
           )}
@@ -737,7 +802,8 @@ const LinearPollScreenPreview = ({ deviceView, content }) => {
                 className="w-full h-3 bg-gray-300 rounded-lg appearance-none cursor-pointer slider"
                 disabled
                 style={{
-                  background: 'linear-gradient(to right, #1f2937 0%, #1f2937 30%, #d1d5db 30%, #d1d5db 100%)'
+                  background:
+                    "linear-gradient(to right, #1f2937 0%, #1f2937 30%, #d1d5db 30%, #d1d5db 100%)",
                 }}
               />
 
@@ -778,27 +844,25 @@ const ActionScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-sm"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "w-full max-w-2xl"
-        : "w-full max-w-5xl";
+      ? "w-full max-w-2xl"
+      : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-2xl"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "text-3xl"
-        : "text-4xl";
+      ? "text-3xl"
+      : "text-4xl";
 
   const textSizeClass =
-    deviceView === DEVICE_VIEWS.mobile
-      ? "text-sm"
-      : "text-base";
+    deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
 
   const paddingClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "px-6 py-8"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "px-8 py-10"
-        : "px-12 py-12";
+      ? "px-8 py-10"
+      : "px-12 py-12";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
@@ -815,7 +879,9 @@ const ActionScreenPreview = ({ deviceView, content }) => {
         {/* Content Section */}
         <div className={`${paddingClass} flex-1 flex flex-col space-y-6`}>
           {/* Title */}
-          <h2 className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}>
+          <h2
+            className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
+          >
             {title}
           </h2>
 
@@ -870,34 +936,34 @@ const SocialDiscussionScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-sm"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "w-full max-w-2xl"
-        : "w-full max-w-5xl";
+      ? "w-full max-w-2xl"
+      : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-xl"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "text-2xl"
-        : "text-3xl";
+      ? "text-2xl"
+      : "text-3xl";
 
   const textSizeClass =
-    deviceView === DEVICE_VIEWS.mobile
-      ? "text-sm"
-      : "text-base";
+    deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
 
   const paddingClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "px-4 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-        ? "px-6 py-8"
-        : "px-8 py-10";
+      ? "px-6 py-8"
+      : "px-8 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
       <div className="bg-gray-100 overflow-hidden shadow-sm h-full">
         <div className={`${paddingClass} space-y-6 h-full flex flex-col`}>
           {/* Title */}
-          <h2 className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}>
+          <h2
+            className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
+          >
             {title}
           </h2>
 
@@ -941,12 +1007,19 @@ const SocialDiscussionScreenPreview = ({ deviceView, content }) => {
           {posts.length > 0 && (
             <div className="space-y-4 max-h-40 overflow-y-auto">
               {posts.map((post, index) => (
-                <div key={`post-${index}`} className="bg-white border border-gray-200 rounded-lg p-4">
+                <div
+                  key={`post-${index}`}
+                  className="bg-white border border-gray-200 rounded-lg p-4"
+                >
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 bg-gray-300 rounded-full flex-shrink-0"></div>
                     <div className="flex-1">
-                      <p className={`text-gray-800 ${textSizeClass}`}>{post.text || post.content}</p>
-                      <p className="text-xs text-gray-500 mt-1">{post.author || "Anonymous"}</p>
+                      <p className={`text-gray-800 ${textSizeClass}`}>
+                        {post.text || post.content}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {post.author || "Anonymous"}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -964,20 +1037,22 @@ const ContentBlock = ({ reverse = false, deviceView, section }) => {
 
   return (
     <div
-      className={`flex gap-6 items-start ${deviceView === DEVICE_VIEWS.desktop
-        ? reverse
-          ? "flex-row-reverse"
-          : "flex-row"
-        : "flex-col"
-        }`}
+      className={`flex gap-6 items-start ${
+        deviceView === DEVICE_VIEWS.desktop
+          ? reverse
+            ? "flex-row-reverse"
+            : "flex-row"
+          : "flex-col"
+      }`}
     >
       <div
-        className={`shrink-0 ${deviceView === DEVICE_VIEWS.desktop
-          ? "w-1/2"
-          : deviceView === DEVICE_VIEWS.tablet
+        className={`shrink-0 ${
+          deviceView === DEVICE_VIEWS.desktop
+            ? "w-1/2"
+            : deviceView === DEVICE_VIEWS.tablet
             ? "w-full"
             : "w-full"
-          }`}
+        }`}
       >
         <div className="relative w-full aspect-[16/10] bg-gray-200 rounded-lg overflow-hidden">
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400">
@@ -997,27 +1072,30 @@ const ContentBlock = ({ reverse = false, deviceView, section }) => {
 
       {/* Text Content */}
       <div
-        className={`flex-1 ${deviceView === DEVICE_VIEWS.desktop ? "w-1/2" : "w-full"
-          }`}
+        className={`flex-1 ${
+          deviceView === DEVICE_VIEWS.desktop ? "w-1/2" : "w-full"
+        }`}
       >
         <h3
-          className={`font-bold text-gray-900 mb-3 font-sans ${deviceView === DEVICE_VIEWS.mobile
-            ? "text-lg"
-            : deviceView === DEVICE_VIEWS.tablet
+          className={`font-bold text-gray-900 mb-3 font-sans ${
+            deviceView === DEVICE_VIEWS.mobile
+              ? "text-lg"
+              : deviceView === DEVICE_VIEWS.tablet
               ? "text-xl"
               : "text-xl"
-            }`}
+          }`}
         >
           {section.title || "Details"}
         </h3>
         {section.description && (
           <p
-            className={`text-gray-900 leading-relaxed font-sans ${deviceView === DEVICE_VIEWS.mobile
-              ? "text-sm"
-              : deviceView === DEVICE_VIEWS.tablet
+            className={`text-gray-900 leading-relaxed font-sans ${
+              deviceView === DEVICE_VIEWS.mobile
+                ? "text-sm"
+                : deviceView === DEVICE_VIEWS.tablet
                 ? "text-base"
                 : "text-base"
-              }`}
+            }`}
           >
             {section.description}
           </p>
@@ -1036,7 +1114,7 @@ const ContentBlock = ({ reverse = false, deviceView, section }) => {
                 key={`${section.id || "section"}-item-${idx}`}
                 className="text-sm sm:text-base text-gray-900 bg-gray-100 rounded-lg px-3 py-2"
               >
-                {item}
+                {typeof item === "object" ? item.text : item}
               </div>
             ))}
           </div>
@@ -1158,29 +1236,29 @@ export default function FromDoerToEnabler({ selectedScreen }) {
           meta: [
             content.low_label || content.lowerscale !== undefined
               ? {
-                label: "Scale Start",
-                value: [
-                  content.low_label,
-                  content.lowerscale !== undefined
-                    ? `(${content.lowerscale})`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" "),
-              }
+                  label: "Scale Start",
+                  value: [
+                    content.low_label,
+                    content.lowerscale !== undefined
+                      ? `(${content.lowerscale})`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" "),
+                }
               : null,
             content.high_label || content.higherscale !== undefined
               ? {
-                label: "Scale End",
-                value: [
-                  content.high_label,
-                  content.higherscale !== undefined
-                    ? `(${content.higherscale})`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" "),
-              }
+                  label: "Scale End",
+                  value: [
+                    content.high_label,
+                    content.higherscale !== undefined
+                      ? `(${content.higherscale})`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" "),
+                }
               : null,
           ].filter(Boolean),
         });
@@ -1206,15 +1284,15 @@ export default function FromDoerToEnabler({ selectedScreen }) {
               : null,
             typeof content.can_complete_now === "boolean"
               ? {
-                label: "Complete Now",
-                value: content.can_complete_now ? "Yes" : "No",
-              }
+                  label: "Complete Now",
+                  value: content.can_complete_now ? "Yes" : "No",
+                }
               : null,
             typeof content.can_scheduled === "boolean"
               ? {
-                label: "Schedule",
-                value: content.can_scheduled ? "Available" : "Not available",
-              }
+                  label: "Schedule",
+                  value: content.can_scheduled ? "Available" : "Not available",
+                }
               : null,
           ].filter(Boolean),
         });
@@ -1228,9 +1306,9 @@ export default function FromDoerToEnabler({ selectedScreen }) {
           meta: [
             typeof content.is_mandatory === "boolean"
               ? {
-                label: "Mandatory",
-                value: content.is_mandatory ? "Yes" : "No",
-              }
+                  label: "Mandatory",
+                  value: content.is_mandatory ? "Yes" : "No",
+                }
               : null,
             content.votes_count !== undefined
               ? { label: "Votes", value: String(content.votes_count) }
@@ -1252,17 +1330,17 @@ export default function FromDoerToEnabler({ selectedScreen }) {
           description: content.description || content.text || "",
           list: Array.isArray(content.questions)
             ? content.questions.map((question, index) => {
-              if (typeof question === "string") {
-                return question;
-              }
-              if (question?.text) {
-                return question.text;
-              }
-              if (question?.question) {
-                return question.question;
-              }
-              return `Question ${index + 1}`;
-            })
+                if (typeof question === "string") {
+                  return question;
+                }
+                if (question?.text) {
+                  return question.text;
+                }
+                if (question?.question) {
+                  return question.question;
+                }
+                return `Question ${index + 1}`;
+              })
             : [],
         });
         break;
@@ -1305,12 +1383,13 @@ export default function FromDoerToEnabler({ selectedScreen }) {
       <div className="bg-gray-white flex-1 overflow-y-auto px-2 ">
         <div className="bg-gray-200 flex-1 overflow-y-auto px-2 py-4 rounded-sm">
           <div
-            className={`flex-1 overflow-y-auto rounded-sm  bg-white ${deviceView === DEVICE_VIEWS.mobile
-              ? "px-4 max-w-[50%] mx-auto"
-              : deviceView === DEVICE_VIEWS.tablet
+            className={`flex-1 overflow-y-auto rounded-sm  bg-white ${
+              deviceView === DEVICE_VIEWS.mobile
+                ? "px-4 max-w-[50%] mx-auto"
+                : deviceView === DEVICE_VIEWS.tablet
                 ? "px-8 max-w-[90%] mx-auto"
                 : "px-12 max-w-full"
-              } py-4`}
+            } py-4`}
           >
             {/* <h1
               className={`font-bold text-primary mb-4 ${deviceView === DEVICE_VIEWS.mobile
@@ -1343,10 +1422,7 @@ export default function FromDoerToEnabler({ selectedScreen }) {
                   sections={contentSections}
                 />
               ) : contentType === "mcq" ? (
-                <MCQScreenPreview
-                  deviceView={deviceView}
-                  content={content}
-                />
+                <MCQScreenPreview deviceView={deviceView} content={content} />
               ) : contentType === "assessment" ? (
                 <AssessmentScreenPreview
                   deviceView={deviceView}

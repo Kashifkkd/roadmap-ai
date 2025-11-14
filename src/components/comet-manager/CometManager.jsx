@@ -52,6 +52,7 @@ import AddScreenPopup from "./AddScreenPopup";
 import DevicePreview from "./DevicePreview";
 import FromDoerToEnabler from "./FromDoerToEnabler";
 import PDFPreview from "./PDFPreview";
+import ImagePreview from "./ImagePreview";
 import {
   Drawer,
   DrawerContent,
@@ -179,6 +180,7 @@ export default function CometManager({
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [selectedAssetCategory, setSelectedAssetCategory] = useState(null);
   const [selectedAssets, setSelectedAssets] = useState([]);
+  const [selectedImageAsset, setSelectedImageAsset] = useState(null);
   const selectedScreenRef = useRef(null);
 
   console.log("chapters", chapters);
@@ -363,6 +365,7 @@ export default function CometManager({
                     setSelectedScreen(null);
                     setSelectedAssetCategory(null);
                     setSelectedAssets([]);
+                    setSelectedImageAsset(null);
                   }
                 }}
                 onAssetCategorySelect={(category, assets) => {
@@ -371,6 +374,7 @@ export default function CometManager({
                   // Clear selected screen and material when assets are selected
                   setSelectedScreen(null);
                   setSelectedMaterial(null);
+                  setSelectedImageAsset(null);
                 }}
                 onChapterClick={(chapterId, chapter) => {
                   console.log("Chapter clicked", chapterId, chapter);
@@ -393,8 +397,16 @@ export default function CometManager({
             {/* Right section - main content */}
             <div className="flex flex-col w-full lg:w-2/3 xl:w-3/4 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl my-2 mr-2">
               <div className="flex flex-col  flex-1 overflow-hidden">
-                {/* Show Assets Grid if asset category is selected */}
-                {selectedAssetCategory && selectedAssets ? (
+                {/* Show Image Preview if image is selected (takes precedence) */}
+                {selectedImageAsset ? (
+                  <div className="flex-1 overflow-hidden p-4">
+                    <ImagePreview
+                      asset={selectedImageAsset}
+                      category={selectedAssetCategory}
+                      onClose={() => setSelectedImageAsset(null)}
+                    />
+                  </div>
+                ) : selectedAssetCategory && selectedAssets ? (
                   <div className="flex-1 overflow-hidden p-4">
                     <div className="flex flex-col h-full gap-4">
                       {/* Header */}
@@ -436,7 +448,12 @@ export default function CometManager({
                               return (
                                 <div
                                   key={asset.id}
-                                  className="flex flex-col overflow-hidden bg-white"
+                                  className="flex flex-col overflow-hidden bg-white cursor-pointer hover:shadow-lg transition-shadow"
+                                  onClick={() => {
+                                    if (isImage && assetUrl) {
+                                      setSelectedImageAsset(asset);
+                                    }
+                                  }}
                                 >
                                   <div className="relative h-50 w-full bg-primary-50">
                                     {isImage && assetUrl ? (
