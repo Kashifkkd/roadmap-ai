@@ -40,6 +40,8 @@ const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
 export default function ActionsForm({ formData, updateField }) {
   const uploadToolInputRef = useRef(null);
 
+  console.log(">>> FORM DATA", formData);
+
   const handleSelectToolBrowse = () => {
     // TODO: Implement tool library selection modal
     console.log("Browse tool library");

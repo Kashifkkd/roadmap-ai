@@ -222,7 +222,9 @@ export default function CometManager({
     if (currentScreen !== nextIndex) {
       setCurrentScreen(nextIndex);
     }
-  }, [screens, selectedScreen, currentScreen]);
+  }, [screens]);
+
+  console.log("SCREENS>>>", screens);
 
   // Ensure the selected screen is visible in the horizontal list
   useEffect(() => {
@@ -284,17 +286,376 @@ export default function CometManager({
   };
 
   const handleAddNewScreen = (screenType) => {
-    const newScreen = {
-      id: `screen-new-${Date.now()}`,
-      name: `Screen ${screens.length + 1}`,
-      title: `New ${screenType.name}`,
-      type: screenType.id,
-      chapterId: chapters[0]?.id || "chapter-0",
-      stepId: screens.length + 1,
-      easeCategories: [],
-      formData: {},
-      order: screens.length,
+    // Get current chapter and step
+    const targetChapter = currentChapter || chapters[0] || null;
+    const targetChapterId = targetChapter?.id || chapters[0]?.id || "#chapter_1";
+    
+    // Get step ID - use selectedStepId if available, otherwise get first step from chapter
+    let targetStepId = selectedStepId;
+    if (!targetStepId && targetChapter?.steps && targetChapter.steps.length > 0) {
+      targetStepId = targetChapter.steps[0].id;
+    }
+    if (!targetStepId) {
+      targetStepId = "#step_1";
+    }
+
+    // Generate screen ID - format like #screen_2_2
+    const chapterNum = targetChapter?.order !== undefined 
+      ? targetChapter.order + 1 
+      : chapters.findIndex(ch => String(ch.id) === String(targetChapterId)) + 1 || 1;
+    const stepNum = targetChapter?.steps?.findIndex(step => String(step.id) === String(targetStepId)) + 1 || 1;
+    const screenNum = screens.filter(s => String(s.chapterId) === String(targetChapterId) && String(s.stepId) === String(targetStepId)).length + 1;
+    const screenId = `#screen_${chapterNum}_${stepNum}_${screenNum}`;
+    const screenContentId = `#screen_content_${chapterNum}_${stepNum}_${screenNum}`;
+
+    // Get position - count screens in the same step
+    const position = screens.filter(s => String(s.stepId) === String(targetStepId)).length + 1;
+
+    // Map screenType.id to contentType
+    const contentTypeMap = {
+      content: "content",
+      multiple_choice: "mcq",
+      force_question: "force_rank",
+      linear_poll: "linear",
+      assessment: "assessment",
+      reflection: "reflection",
+      action: "action",
+      discussion: "social_discussion",
+      habits: "habits",
     };
+
+    const contentType = contentTypeMap[screenType.id] || screenType.id;
+
+    // Initialize screen based on type
+    let newScreen = {};
+
+    if (screenType.id === "action") {
+      // Action screen structure
+      const actionTitle = "";
+      const actionText = "";
+      
+      newScreen = {
+        id: screenId,
+        screenType: "action",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "action",
+          content: {
+            title: actionTitle,
+            text: actionText,
+            can_scheduled: true,
+            can_complete_now: true,
+            reply_count: 0,
+            votescount: 0,
+            tool_link: "",
+            image_url: "",
+            reflection_prompt: "",
+          },
+        },
+        assets: [],
+        image_status: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: actionTitle,
+        formData: {
+          actionTitle: actionTitle,
+          actionDescription: actionText,
+          actionCanSchedule: true,
+          actionCanCompleteImmediately: true,
+          actionHasReflectionQuestion: false,
+          actionToolLink: "",
+          actionToolPrompt: "",
+        },
+        assessment: null,
+        order: screens.length,
+      };
+    } else if (screenType.id === "content") {
+      // Content screen structure
+      const contentTitle = "";
+      newScreen = {
+        id: screenId,
+        screenType: "content",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "content",
+          content: {
+            heading: contentTitle,
+            body: "",
+            media: {
+              type: "",
+              url: "",
+              alt: "",
+            },
+          },
+        },
+        assets: [],
+        image_status: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: contentTitle,
+        formData: {
+          contentSimpleTitle: contentTitle,
+          contentSimpleDescription: "",
+          contentMediaLink: "",
+          contentFullBleed: false,
+        },
+        assessment: null,
+        order: screens.length,
+      };
+    } else if (screenType.id === "multiple_choice") {
+      // Multiple Choice/Survey screen structure
+      const mcqTitle = "";
+      newScreen = {
+        id: screenId,
+        screenType: "multiple_choice",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "mcq",
+          content: {
+            title: mcqTitle,
+            question: mcqTitle,
+            top_label: "",
+            bottom_label: "",
+            key_learning: "",
+            options: [],
+          },
+        },
+        assets: [],
+        image_status: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: mcqTitle,
+        formData: {
+          mcqTitle: mcqTitle,
+          question: mcqTitle,
+          mcqTopLabel: "",
+          mcqBottomLabel: "",
+          mcqKeyLearning: "",
+          mcqOptions: [],
+        },
+        assessment: null,
+        order: screens.length,
+      };
+    } else if (screenType.id === "force_question") {
+      // Force Rank screen structure
+      const forceRankTitle = "";
+      newScreen = {
+        id: screenId,
+        screenType: "force_question",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "force_rank",
+          content: {
+            title: forceRankTitle,
+            high_label: "",
+            low_label: "",
+            key_learning: "",
+            options: [],
+          },
+        },
+        assets: [],
+        image_status: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: forceRankTitle,
+        formData: {
+          pollTitle: forceRankTitle,
+          topLabel: "",
+          bottomLabel: "",
+          keyLearning: "",
+          mcqOptions: [],
+        },
+        assessment: null,
+        order: screens.length,
+      };
+    } else if (screenType.id === "linear_poll") {
+      // Linear Poll screen structure
+      const linearTitle = "";
+      newScreen = {
+        id: screenId,
+        screenType: "linear_poll",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "linear",
+          content: {
+            title: linearTitle,
+            high_label: "",
+            low_label: "",
+            key_learning: "",
+            lowerscale: 1,
+            higherscale: 10,
+          },
+        },
+        assets: [],
+        image_status: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: linearTitle,
+        formData: {
+          linearTitle: linearTitle,
+          linearTopLabel: "",
+          linearBottomLabel: "",
+          linearKeyLearning: "",
+          linearScaleMin: 1,
+          linearScaleMax: 10,
+        },
+        assessment: null,
+        order: screens.length,
+      };
+    } else if (screenType.id === "assessment") {
+      // Assessment screen structure
+      const assessmentTitle = "";
+      newScreen = {
+        id: screenId,
+        screenType: "assessment",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "assessment",
+          content: {
+            title: assessmentTitle,
+            questions: [],
+          },
+        },
+        assets: [],
+        image_status: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: assessmentTitle,
+        formData: {
+          assessmentTitle: assessmentTitle,
+          assessmentQuestions: [],
+        },
+        assessment: null,
+        order: screens.length,
+      };
+    } else if (screenType.id === "reflection") {
+      // Reflection screen structure
+      const reflectionTitle = "";
+      newScreen = {
+        id: screenId,
+        screenType: "reflection",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "reflection",
+          content: {
+            title: reflectionTitle,
+            prompt: "",
+          },
+        },
+        assets: [],
+        image_status: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: reflectionTitle,
+        formData: {
+          reflectionTitle: reflectionTitle,
+          reflectionPrompt: "",
+          reflectionDescription: "",
+        },
+        assessment: null,
+        order: screens.length,
+      };
+    } else if (screenType.id === "discussion") {
+      // Social Discussion screen structure
+      const discussionTitle = "";
+      newScreen = {
+        id: screenId,
+        screenType: "discussion",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "social_discussion",
+          content: {
+            title: discussionTitle,
+            question: "",
+            posts: [],
+          },
+        },
+        assets: [],
+        image_status: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: discussionTitle,
+        formData: {
+          socialTitle: discussionTitle,
+          discussionQuestion: "",
+        },
+        assessment: null,
+        order: screens.length,
+      };
+    } else if (screenType.id === "habits") {
+      // Habits screen structure
+      const habitsTitle = "";
+      newScreen = {
+        id: screenId,
+        screenType: "habits",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "habits",
+          content: {
+            title: habitsTitle,
+            habit_image: {
+              url: "",
+              description: "",
+            },
+            enabled: false,
+            habits: [],
+          },
+        },
+        assets: [],
+        image_status: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: habitsTitle,
+        formData: {
+          title: habitsTitle,
+          description: "",
+          url: "",
+          habitsIsMandatory: false,
+          habits: [],
+        },
+        assessment: null,
+        order: screens.length,
+      };
+    } else {
+      // Default structure for unknown screen types (fallback)
+      newScreen = {
+        id: screenId,
+        screenType: screenType.id,
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: contentType,
+          content: {},
+        },
+        assets: [],
+        image_status: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: "",
+        formData: {},
+        assessment: null,
+        order: screens.length,
+      };
+    }
 
     if (addAtIndex !== null) {
       insertScreenAt(newScreen, addAtIndex);

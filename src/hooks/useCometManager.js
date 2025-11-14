@@ -375,6 +375,37 @@ export function useCometManager(sessionData = null) {
 
   const insertScreenAt = (newScreen, index) => {
     setScreens((prevScreens) => {
+      // If we have a selected step, find the correct position in the full array
+      if (selectedStepId) {
+        // Filter screens by the same stepId to get the filtered list
+        const filteredScreens = prevScreens.filter(
+          (screen) => screen.stepId === selectedStepId
+        );
+        
+        // If index is within filtered screens, find the corresponding screen in full array
+        if (index >= 0 && index < filteredScreens.length) {
+          const targetScreen = filteredScreens[index];
+          const fullArrayIndex = prevScreens.findIndex(
+            (screen) => screen.id === targetScreen.id
+          );
+          // Insert at the found position (or at the end if not found)
+          const insertIndex = fullArrayIndex >= 0 ? fullArrayIndex : prevScreens.length;
+          const newScreens = [...prevScreens];
+          newScreens.splice(insertIndex, 0, newScreen);
+          return newScreens;
+        } else if (index === filteredScreens.length) {
+          // Insert at the end of filtered screens - find the last screen with same stepId
+          const lastFilteredScreen = filteredScreens[filteredScreens.length - 1];
+          const lastIndex = prevScreens.findIndex(
+            (screen) => screen.id === lastFilteredScreen.id
+          );
+          const newScreens = [...prevScreens];
+          newScreens.splice(lastIndex + 1, 0, newScreen);
+          return newScreens;
+        }
+      }
+      
+      // Fallback: insert at the given index (for when there's no filtering)
       const newScreens = [...prevScreens];
       newScreens.splice(index, 0, newScreen);
       return newScreens;

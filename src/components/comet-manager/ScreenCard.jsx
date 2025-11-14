@@ -178,7 +178,7 @@ export default function ScreenCard({
 
       {/* Add button that appears between cards */}
       
-      {showAddButton && <AddButton position="left" insertIndex={index + 1} />}
+      {showAddButton && <AddButton position="left" insertIndex={index} />}
       {showAddButton && <AddButton position="right" insertIndex={index + 1} />}
 
       {/* Full Screen Dialog */}
