@@ -1,426 +1,384 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-// import { temp2 } from "./temp2";
-// import { temp2 } from "./temp2";
 
 export function useCometManager(sessionData = null) {
   const [isLoading, setIsLoading] = useState(false);
-  const [screens, setScreens] = useState([]);
-  const [chapters, setChapters] = useState([]);
+  // Single state for the entire outline (response_path)
+  const [outline, setOutline] = useState(null);
   const [selectedStepId, setSelectedStepId] = useState(null);
 
   console.log(">>>session Data", sessionData);
-  // Transform temp data response_path to chapters and screens
+
+  // Initialize outline from sessionData
   useEffect(() => {
-    // if (temp2 && temp2.length > 0 && temp2[0].response_path) {
     if (sessionData && sessionData.response_path) {
-      const responsePath = sessionData.response_path;
-      // const responsePath = temp2[0].response_path;
-      const transformedChapters = [];
-      const transformedScreens = [];
-      let screenCounter = 0;
+      setOutline(sessionData.response_path);
 
-      // New structure: chapters contain steps directly
-      const pathChapters = responsePath.chapters || [];
-
-      pathChapters.forEach((chapter, chapterIndex) => {
-        const chapterId = chapter.id || `chapter-${chapterIndex}`;
-        const chapterName = chapter.name || `Chapter ${chapterIndex + 1}`;
-
-        // Transform steps for this chapter - steps are inside chapter.steps
-        const transformedSteps = [];
-        const chapterSteps = chapter.steps || [];
-
-        chapterSteps.forEach((stepItem, stepIndex) => {
-          const step = stepItem.step || {};
-          const stepId = step.id || `step-${chapterIndex}-${stepIndex}`;
-          const stepTitle = step.title || step.name || `Step ${stepIndex + 1}`;
-          const stepDescription = step.description || "";
-
-          // Transform screens for this step
-          const stepScreens = stepItem.screens || [];
-
-          // Collect content types from all screens in this step
-          const contentTypes = new Set();
-          stepScreens.forEach((screen) => {
-            // Get contentType from screenContents
-            if (screen.screenContents?.contentType) {
-              const contentType = screen.screenContents.contentType;
-              // For "content" type, check if it has an image
-              if (contentType === "content") {
-                const hasImage =
-                  screen.assets?.some(
-                    (asset) => asset.type === "image" || asset.url
-                  ) ||
-                  screen.screenContents.content?.media?.url ||
-                  screen.screenContents.content?.media?.type === "image";
-                if (hasImage) {
-                  contentTypes.add("content_image");
-                } else {
-                  contentTypes.add("content");
-                }
-              } else {
-                contentTypes.add(contentType);
-              }
-            } else if (screen.screenType) {
-              // Fallback to screenType if contentType is not available
-              contentTypes.add(screen.screenType);
-            }
-          });
-
-          transformedSteps.push({
-            id: stepId,
-            name: stepTitle,
-            description: stepDescription,
-            contentTypes: Array.from(contentTypes), // Array of unique content types
-          });
-
-          stepScreens.forEach((screen, screenIndex) => {
-            const screenId = screen.id || `screen-${screenCounter}`;
-
-            // Extract formData from screenContents - now it's an object, not array
-            let formData = {};
-            if (screen.screenContents) {
-              // screenContents is now an object: { id, contentType, content: {...} }
-              if (screen.screenContents.content) {
-                formData = screen.screenContents.content || {};
-              }
-            }
-
-            // Get first image asset for thumbnail
-            const screenAssets = screen.assets || [];
-            // Assets may have url directly or type property
-            const firstImageAsset = screenAssets.find(
-              (asset) => asset.type === "image" || asset.url
-            );
-            const thumbnail = firstImageAsset?.url || null;
-
-            // Get screen title for display
-            const screenTitle =
-              formData.heading ||
-              formData.title ||
-              formData.screen_title ||
-              screen.title ||
-              `${stepTitle} - Screen ${screenIndex + 1}`;
-
-            // Attach assessment from stepItem if it exists
-            const assessmentData = stepItem.assessment || null;
-
-            // Keep original structure, just add minimal transformed fields
-            transformedScreens.push({
-              ...screen, // Keep all original screen data
-              id: screenId,
-              chapterId: chapterId,
-              stepId: stepId,
-              thumbnail: thumbnail, // Only add thumbnail
-              title: screenTitle, // For display purposes
-              formData: formData, // Extracted content for easy access
-              assessment: assessmentData, // Attach assessment data from step
-              order: screenCounter,
-            });
-            screenCounter++;
-          });
-        });
-
-        transformedChapters.push({
-          id: chapterId,
-          name: chapterName,
-          order: chapter.position ? chapter.position - 1 : chapterIndex,
-          steps: transformedSteps,
-        });
-      });
-
-      setChapters(transformedChapters);
-      setScreens(transformedScreens);
-
-      const firstStepId = transformedChapters?.[0]?.steps?.[0]?.id ?? null;
-
+      // Set initial selected step
+      const pathChapters = sessionData.response_path.chapters || [];
+      const firstStepId = pathChapters?.[0]?.steps?.[0]?.step?.id ?? null;
       if (firstStepId) {
-        const stepExistsInChapters = (stepId) =>
-          transformedChapters.some((chapter) =>
-            Array.isArray(chapter.steps)
-              ? chapter.steps.some((step) => step.id === stepId)
-              : false
-          );
-
         setSelectedStepId((prevSelectedStepId) => {
-          if (prevSelectedStepId && stepExistsInChapters(prevSelectedStepId)) {
-            return prevSelectedStepId;
+          if (prevSelectedStepId) {
+            // Check if previous step still exists
+            const stepExists = pathChapters.some((chapter) =>
+              chapter.steps?.some(
+                (stepItem) => stepItem.step?.id === prevSelectedStepId
+              )
+            );
+            return stepExists ? prevSelectedStepId : firstStepId;
           }
           return firstStepId;
         });
-      } else {
-        setSelectedStepId((prevSelectedStepId) =>
-          prevSelectedStepId &&
-          transformedChapters.some((chapter) =>
-            Array.isArray(chapter.steps)
-              ? chapter.steps.some((step) => step.id === prevSelectedStepId)
-              : false
-          )
-            ? prevSelectedStepId
-            : null
-        );
       }
     }
   }, [sessionData]);
 
-  // Transform sessionData response_path to chapters and screens
-  // useEffect(() => {
-  //   if (sessionData && sessionData.response_path && sessionData.response_path.chapters) {
-  //     const responseChapters = sessionData.response_path.chapters;
-  //     const transformedChapters = [];
-  //     const transformedScreens = [];
-  //     let screenCounter = 0;
+  // Derive chapters from outline
+  const chapters = useMemo(() => {
+    if (!outline || !outline.chapters) return [];
 
-  //     responseChapters.forEach((chapter, chapterIndex) => {
-  //       const chapterId = chapter.id || `chapter-${chapterIndex}`;
-  //       const chapterName = chapter.chapter || chapter.name || `Chapter ${chapterIndex + 1}`;
+    const pathChapters = outline.chapters || [];
+    return pathChapters.map((chapter, chapterIndex) => {
+      const chapterId = chapter.id || `chapter-${chapterIndex}`;
+      const chapterName = chapter.name || `Chapter ${chapterIndex + 1}`;
 
-  //       // Transform steps
-  //       const transformedSteps = [];
+      // Transform steps for this chapter
+      const transformedSteps = [];
+      const chapterSteps = chapter.steps || [];
 
-  //       chapter.steps?.forEach((step, stepIndex) => {
-  //         const stepId = step.step?.id || `step-${chapterIndex}-${stepIndex}`;
-  //         const stepTitle = step.step?.title || step.step?.name || `Step ${stepIndex + 1}`;
-  //         const stepDescription = step.step?.description || "";
+      chapterSteps.forEach((stepItem, stepIndex) => {
+        const step = stepItem.step || {};
+        const stepId = step.id || `step-${chapterIndex}-${stepIndex}`;
+        const stepTitle = step.title || step.name || `Step ${stepIndex + 1}`;
+        const stepDescription = step.description || "";
 
-  //         transformedSteps.push({
-  //           id: stepId,
-  //           name: stepTitle,
-  //           description: stepDescription,
-  //         });
+        // Transform screens for this step
+        const stepScreens = stepItem.screens || [];
 
-  //         // Transform screens for this step
-  //         step.screens?.forEach((screen, screenIndex) => {
-  //           const screenId = screen.id || `screen-${screenCounter}`;
-  //           const screenType = screen.screenType?.toLowerCase() || "content";
+        // Collect content types from all screens in this step
+        const contentTypes = new Set();
+        stepScreens.forEach((screen) => {
+          if (screen.screenContents?.contentType) {
+            const contentType = screen.screenContents.contentType;
+            if (contentType === "content") {
+              const hasImage =
+                screen.assets?.some(
+                  (asset) => asset.type === "image" || asset.url
+                ) ||
+                screen.screenContents.content?.media?.url ||
+                screen.screenContents.content?.media?.type === "image";
+              if (hasImage) {
+                contentTypes.add("content_image");
+              } else {
+                contentTypes.add("content");
+              }
+            } else {
+              contentTypes.add(contentType);
+            }
+          } else if (screen.screenType) {
+            contentTypes.add(screen.screenType);
+          }
+        });
 
-  //           // Extract title from screen contents
-  //           // screenContents can be an object or an array
-  //           let screenTitle = "";
-  //           let formData = {};
+        transformedSteps.push({
+          id: stepId,
+          name: stepTitle,
+          description: stepDescription,
+          contentTypes: Array.from(contentTypes),
+        });
+      });
 
-  //           // Handle array format: screenContents: [{ content: {...} }]
-  //           if (Array.isArray(screen.screenContents) && screen.screenContents.length > 0) {
-  //             const firstContent = screen.screenContents[0];
-  //             formData = firstContent.content || {};
+      return {
+        id: chapterId,
+        name: chapterName,
+        order: chapter.position ? chapter.position - 1 : chapterIndex,
+        steps: transformedSteps,
+      };
+    });
+  }, [outline]);
 
-  //             if (firstContent.content?.heading) {
-  //               screenTitle = firstContent.content.heading;
-  //             } else if (firstContent.content?.screen_title) {
-  //               screenTitle = firstContent.content.screen_title;
-  //             } else if (firstContent.content?.contents?.title) {
-  //               screenTitle = firstContent.content.contents.title;
-  //             } else {
-  //               screenTitle = `${stepTitle} - Screen ${screenIndex + 1}`;
-  //             }
-  //           }
-  //           // Handle object format: screenContents: { content: {...} }
-  //           else if (screen.screenContents?.content) {
-  //             formData = screen.screenContents.content;
+  // Derive screens from outline
+  const allScreens = useMemo(() => {
+    if (!outline || !outline.chapters) return [];
 
-  //             if (screen.screenContents.content.heading) {
-  //               screenTitle = screen.screenContents.content.heading;
-  //             } else if (screen.screenContents.content.screen_title) {
-  //               screenTitle = screen.screenContents.content.screen_title;
-  //             } else if (screen.screenContents.content.contents?.title) {
-  //               screenTitle = screen.screenContents.content.contents.title;
-  //             } else {
-  //               screenTitle = `${stepTitle} - Screen ${screenIndex + 1}`;
-  //             }
-  //           } else {
-  //             screenTitle = `${stepTitle} - Screen ${screenIndex + 1}`;
-  //           }
+    const transformedScreens = [];
+    let screenCounter = 0;
+    const pathChapters = outline.chapters || [];
 
-  //           transformedScreens.push({
-  //             id: screenId,
-  //             name: screenTitle,
-  //             title: screenTitle,
-  //             type: screenType,
-  //             chapterId: chapterId,
-  //             stepId: stepId,
-  //             easeCategories: [],
-  //             formData: formData,
-  //             order: screenCounter,
-  //           });
-  //           screenCounter++;
-  //         });
-  //       });
+    pathChapters.forEach((chapter, chapterIndex) => {
+      const chapterId = chapter.id || `chapter-${chapterIndex}`;
+      const chapterSteps = chapter.steps || [];
 
-  //       transformedChapters.push({
-  //         id: chapterId,
-  //         name: chapterName,
-  //         order: chapterIndex,
-  //         steps: transformedSteps,
-  //       });
-  //     });
+      chapterSteps.forEach((stepItem, stepIndex) => {
+        const step = stepItem.step || {};
+        const stepId = step.id || `step-${chapterIndex}-${stepIndex}`;
+        const stepTitle = step.title || step.name || `Step ${stepIndex + 1}`;
+        const stepScreens = stepItem.screens || [];
 
-  //     setChapters(transformedChapters);
-  //     setScreens(transformedScreens);
-  //   } else {
-  //     // Fallback to sample data if no sessionData
-  //     // const sampleChapters = [
-  //     //   {
-  //     //     id: "chapter-0",
-  //     //     name: "Introduction to Web Development",
-  //     //     order: 0,
-  //     //     steps: [
-  //     //       { id: "step-1", name: "What is Web Development?" },
-  //     //       { id: "step-2", name: "Course Overview" },
-  //     //       { id: "step-3", name: "Getting Started" },
-  //     //     ],
-  //     //   },
-  //     //   {
-  //     //     id: "chapter-1",
-  //     //     name: "HTML Fundamentals",
-  //     //     order: 1,
-  //     //     steps: [
-  //     //       { id: "step-4", name: "HTML Basics" },
-  //     //       { id: "step-5", name: "HTML Structure" },
-  //     //       { id: "step-6", name: "Forms and Input" },
-  //     //     ],
-  //     //   },
-  //     //   {
-  //     //     id: "chapter-2",
-  //     //     name: "CSS Styling",
-  //     //     order: 2,
-  //     //     steps: [
-  //     //       { id: "step-7", name: "CSS Introduction" },
-  //     //       { id: "step-8", name: "Layout and Flexbox" },
-  //     //       { id: "step-9", name: "Responsive Design" },
-  //     //     ],
-  //     //   },
-  //     //   {
-  //     //     id: "chapter-3",
-  //     //     name: "JavaScript Essentials",
-  //     //     order: 3,
-  //     //     steps: [
-  //     //       { id: "step-10", name: "JavaScript Basics" },
-  //     //       { id: "step-11", name: "DOM Manipulation" },
-  //     //       { id: "step-12", name: "Event Handling" },
-  //     //     ],
-  //     //   },
-  //     //   {
-  //     //     id: "chapter-4",
-  //     //     name: "Advanced Topics",
-  //     //     order: 4,
-  //     //     steps: [
-  //     //       { id: "step-13", name: "APIs and Fetch" },
-  //     //       { id: "step-14", name: "Async/Await" },
-  //     //       { id: "step-15", name: "Project Building" },
-  //     //     ],
-  //     //   },
-  //     // ];
+        stepScreens.forEach((screen, screenIndex) => {
+          const screenId = screen.id || `screen-${screenCounter}`;
 
-  //     // const sampleScreens = [
-  //     //   {
-  //     //     id: "screen-1",
-  //     //     name: "Screen 1",
-  //     //     title: "Welcome to the Course",
-  //     //     type: "content",
-  //     //     chapterId: "chapter-0",
-  //     //     stepId: 1,
-  //     //     easeCategories: ["Engagement"],
-  //     //     formData: {
-  //     //       heading: "Welcome!",
-  //     //       bodyContent: "This is the introduction to our course.",
-  //     //       imageUrl: "",
-  //     //     },
-  //     //     order: 0,
-  //     //   },
-  //     //   {
-  //     //     id: "screen-2",
-  //     //     name: "Screen 2",
-  //     //     title: "Learning Objectives",
-  //     //     type: "content",
-  //     //     chapterId: "chapter-0",
-  //     //     stepId: 2,
-  //     //     easeCategories: ["Support"],
-  //     //     formData: {
-  //     //       heading: "What You'll Learn",
-  //     //       bodyContent: "By the end of this course, you will be able to...",
-  //     //       imageUrl: "",
-  //     //     },
-  //     //     order: 1,
-  //     //   },
-  //     // ];
+          // Extract formData from screenContents
+          let formData = {};
+          if (screen.screenContents?.content) {
+            formData = screen.screenContents.content || {};
+          }
 
-  //     // setChapters(sampleChapters);
-  //     // setScreens(sampleScreens);
-  //   }
-  // }, [sessionData]);
+          // Get first image asset for thumbnail
+          const screenAssets = screen.assets || [];
+          const firstImageAsset = screenAssets.find(
+            (asset) => asset.type === "image" || asset.url
+          );
+          const thumbnail = firstImageAsset?.url || null;
 
+          // Get screen title for display
+          const screenTitle =
+            formData.heading ||
+            formData.title ||
+            formData.screen_title ||
+            screen.title ||
+            `${stepTitle} - Screen ${screenIndex + 1}`;
+
+          // Attach assessment from stepItem if it exists
+          const assessmentData = stepItem.assessment || null;
+
+          transformedScreens.push({
+            ...screen, // Keep all original screen data
+            id: screenId,
+            chapterId: chapterId,
+            stepId: stepId,
+            thumbnail: thumbnail,
+            title: screenTitle,
+            formData: formData,
+            assessment: assessmentData,
+            order: screenCounter,
+          });
+          screenCounter++;
+        });
+      });
+    });
+
+    return transformedScreens;
+  }, [outline]);
+
+  // Filter screens based on selected step
+  const screens = useMemo(() => {
+    if (!selectedStepId) {
+      return [];
+    }
+    return allScreens.filter((screen) => screen.stepId === selectedStepId);
+  }, [allScreens, selectedStepId]);
+
+  // Update screen in outline
   const updateScreen = (screenId, updatedScreen) => {
-    setScreens((prevScreens) =>
-      prevScreens.map((screen) =>
-        screen.id === screenId ? updatedScreen : screen
-      )
-    );
-  };
+    setOutline((prevOutline) => {
+      if (!prevOutline || !prevOutline.chapters) return prevOutline;
 
-  const addScreen = (newScreen) => {
-    setScreens((prevScreens) => [...prevScreens, newScreen]);
-  };
+      const newOutline = JSON.parse(JSON.stringify(prevOutline));
+      const pathChapters = newOutline.chapters || [];
 
-  const deleteScreen = (screenId) => {
-    setScreens((prevScreens) =>
-      prevScreens.filter((screen) => screen.id !== screenId)
-    );
-  };
-
-  const reorderScreensList = (newOrder) => {
-    setScreens(newOrder);
-  };
-
-  const insertScreenAt = (newScreen, index) => {
-    setScreens((prevScreens) => {
-      // If we have a selected step, find the correct position in the full array
-      if (selectedStepId) {
-        // Filter screens by the same stepId to get the filtered list
-        const filteredScreens = prevScreens.filter(
-          (screen) => screen.stepId === selectedStepId
-        );
-
-        // If index is within filtered screens, find the corresponding screen in full array
-        if (index >= 0 && index < filteredScreens.length) {
-          const targetScreen = filteredScreens[index];
-          const fullArrayIndex = prevScreens.findIndex(
-            (screen) => screen.id === targetScreen.id
+      // Find and update the screen in the outline using latest state
+      for (const chapter of pathChapters) {
+        for (const stepItem of chapter.steps || []) {
+          const screenIndex = stepItem.screens?.findIndex(
+            (s) => s.id === screenId
           );
-          // Insert at the found position (or at the end if not found)
-          const insertIndex =
-            fullArrayIndex >= 0 ? fullArrayIndex : prevScreens.length;
-          const newScreens = [...prevScreens];
-          newScreens.splice(insertIndex, 0, newScreen);
-          return newScreens;
-        } else if (index === filteredScreens.length) {
-          // Insert at the end of filtered screens - find the last screen with same stepId
-          const lastFilteredScreen =
-            filteredScreens[filteredScreens.length - 1];
-          const lastIndex = prevScreens.findIndex(
-            (screen) => screen.id === lastFilteredScreen.id
-          );
-          const newScreens = [...prevScreens];
-          newScreens.splice(lastIndex + 1, 0, newScreen);
-          return newScreens;
+          if (screenIndex !== undefined && screenIndex >= 0) {
+            // Get the current screen from the latest state (prevOutline)
+            const currentScreen = stepItem.screens[screenIndex];
+
+            // Deep merge: preserve all existing fields and only update what changed
+            // This ensures that even if updatedScreen is missing fields, we preserve them from currentScreen
+            stepItem.screens[screenIndex] = {
+              ...currentScreen,
+              ...updatedScreen,
+              // Deep merge screenContents to preserve all nested fields
+              screenContents: {
+                ...currentScreen.screenContents,
+                ...updatedScreen.screenContents,
+                // Deep merge content object to preserve all fields
+                // Spread currentScreen content first, then updatedScreen content on top
+                // This ensures all existing fields are preserved, and only changed fields are updated
+                content: {
+                  ...(currentScreen.screenContents?.content || {}),
+                  ...(updatedScreen.screenContents?.content || {}),
+                },
+              },
+              // Preserve assets
+              assets: updatedScreen.assets || currentScreen.assets,
+            };
+
+            return newOutline;
+          }
         }
       }
-
-      // Fallback: insert at the given index (for when there's no filtering)
-      const newScreens = [...prevScreens];
-      newScreens.splice(index, 0, newScreen);
-      return newScreens;
+      return prevOutline;
     });
   };
 
-  // Filter screens based on selected step
-  const filteredScreens = useMemo(() => {
-    if (!selectedStepId) {
-      return []; // Return empty array if no step is selected
-    }
-    return screens.filter((screen) => screen.stepId === selectedStepId);
-  }, [screens, selectedStepId]);
+  // Add screen to outline
+  const addScreen = (newScreen) => {
+    setOutline((prevOutline) => {
+      if (!prevOutline || !prevOutline.chapters) return prevOutline;
+
+      const newOutline = JSON.parse(JSON.stringify(prevOutline));
+      const pathChapters = newOutline.chapters || [];
+
+      // Find the target step and add the screen
+      const targetChapterId = newScreen.chapterId;
+      const targetStepId = newScreen.stepId;
+
+      for (const chapter of pathChapters) {
+        if (chapter.id === targetChapterId) {
+          for (const stepItem of chapter.steps || []) {
+            if (stepItem.step?.id === targetStepId) {
+              if (!stepItem.screens) {
+                stepItem.screens = [];
+              }
+              // Remove computed fields before adding to outline
+              const {
+                chapterId,
+                stepId,
+                thumbnail,
+                title,
+                formData,
+                assessment,
+                order,
+                ...screenData
+              } = newScreen;
+              stepItem.screens.push(screenData);
+              return newOutline;
+            }
+          }
+        }
+      }
+      return prevOutline;
+    });
+  };
+
+  // Delete screen from outline
+  const deleteScreen = (screenId) => {
+    setOutline((prevOutline) => {
+      if (!prevOutline || !prevOutline.chapters) return prevOutline;
+
+      const newOutline = JSON.parse(JSON.stringify(prevOutline));
+      const pathChapters = newOutline.chapters || [];
+
+      for (const chapter of pathChapters) {
+        for (const stepItem of chapter.steps || []) {
+          if (stepItem.screens) {
+            stepItem.screens = stepItem.screens.filter(
+              (s) => s.id !== screenId
+            );
+          }
+        }
+      }
+      return newOutline;
+    });
+  };
+
+  // Reorder screens in outline
+  const reorderScreensList = (newOrder) => {
+    setOutline((prevOutline) => {
+      if (!prevOutline || !prevOutline.chapters) return prevOutline;
+
+      const newOutline = JSON.parse(JSON.stringify(prevOutline));
+      const pathChapters = newOutline.chapters || [];
+
+      // Group screens by stepId to maintain structure
+      const screensByStep = {};
+      newOrder.forEach((screen) => {
+        const stepId = screen.stepId;
+        if (!screensByStep[stepId]) {
+          screensByStep[stepId] = [];
+        }
+        // Remove computed fields
+        const {
+          chapterId,
+          stepId: _,
+          thumbnail,
+          title,
+          formData,
+          assessment,
+          order,
+          ...screenData
+        } = screen;
+        screensByStep[stepId].push(screenData);
+      });
+
+      // Update outline with reordered screens
+      for (const chapter of pathChapters) {
+        for (const stepItem of chapter.steps || []) {
+          const stepId = stepItem.step?.id;
+          if (stepId && screensByStep[stepId]) {
+            stepItem.screens = screensByStep[stepId];
+          }
+        }
+      }
+
+      return newOutline;
+    });
+  };
+
+  // Insert screen at specific index in outline
+  const insertScreenAt = (newScreen, index) => {
+    setOutline((prevOutline) => {
+      if (!prevOutline || !prevOutline.chapters) return prevOutline;
+
+      const newOutline = JSON.parse(JSON.stringify(prevOutline));
+      const pathChapters = newOutline.chapters || [];
+
+      const targetChapterId = newScreen.chapterId;
+      const targetStepId = newScreen.stepId;
+
+      // Find the target step
+      for (const chapter of pathChapters) {
+        if (chapter.id === targetChapterId) {
+          for (const stepItem of chapter.steps || []) {
+            if (stepItem.step?.id === targetStepId) {
+              if (!stepItem.screens) {
+                stepItem.screens = [];
+              }
+
+              // Insert at the specified index
+              if (index >= 0 && index < stepItem.screens.length) {
+                // Remove computed fields
+                const {
+                  chapterId,
+                  stepId: _,
+                  thumbnail,
+                  title,
+                  formData,
+                  assessment,
+                  order,
+                  ...screenData
+                } = newScreen;
+                stepItem.screens.splice(index, 0, screenData);
+              } else {
+                // Add at end
+                const {
+                  chapterId,
+                  stepId: _,
+                  thumbnail,
+                  title,
+                  formData,
+                  assessment,
+                  order,
+                  ...screenData
+                } = newScreen;
+                stepItem.screens.push(screenData);
+              }
+
+              return newOutline;
+            }
+          }
+        }
+      }
+      return prevOutline;
+    });
+  };
 
   const setSelectedStep = (stepId) => {
     setSelectedStepId(stepId);
@@ -428,9 +386,9 @@ export function useCometManager(sessionData = null) {
 
   return {
     isLoading,
-    screens: filteredScreens, // Return filtered screens instead of all screens
-    allScreens: screens, // Keep all screens available if needed
-    chapters,
+    screens, // Filtered screens based on selectedStepId
+    allScreens, // All screens from outline
+    chapters, // Derived from outline
     selectedStepId,
     setSelectedStep,
     updateScreen,
@@ -438,5 +396,7 @@ export function useCometManager(sessionData = null) {
     deleteScreen,
     reorderScreensList,
     insertScreenAt,
+    outline, // Expose outline for direct access if needed
+    setOutline, // Expose setter for outline updates
   };
 }

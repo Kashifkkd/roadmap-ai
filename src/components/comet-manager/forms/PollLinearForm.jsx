@@ -24,27 +24,22 @@ export default function PollLinearForm({ formData, updateField }) {
       <div className="bg-white rounded-lg p-2 align-center">
         <TextField
           label="Title"
-          value={formData.linearTitle}
-          onChange={(value) => updateField("linearTitle", value)}
+          value={formData.title || ""}
+          onChange={(value) => updateField("title", value)}
         />
         <TextField
           label="Top Label"
-          value={formData.linearTopLabel}
-          onChange={(value) => updateField("linearTopLabel", value)}
+          value={formData.high_label || ""}
+          onChange={(value) => updateField("high_label", value)}
         />
         <TextField
           label="Bottom Label"
-          value={formData.linearBottomLabel}
-          onChange={(value) => updateField("linearBottomLabel", value)}
+          value={formData.low_label || ""}
+          onChange={(value) => updateField("low_label", value)}
         />
-        {/* <TextArea
-        label="Key Learning"
-        value={formData.linearKeyLearning}
-        onChange={(value) => updateField("linearKeyLearning", value)}
-      /> */}
         <RichTextArea
           label="Question"
-          value={formData.question}
+          value={formData.question || ""}
           onChange={(value) => updateField("question", value)}
         />
         <div className="mb-4">
@@ -54,10 +49,10 @@ export default function PollLinearForm({ formData, updateField }) {
           <div className="flex items-center gap-3">
             <Input
               type="number"
-              value={formData.linearScaleMin ?? ""}
+              value={formData.lowerscale ?? ""}
               onChange={(e) =>
                 updateField(
-                  "linearScaleMin",
+                  "lowerscale",
                   e.target.value === "" ? "" : Number(e.target.value)
                 )
               }
@@ -67,10 +62,10 @@ export default function PollLinearForm({ formData, updateField }) {
             <span className="text-sm font-medium text-gray-700">To</span>
             <Input
               type="number"
-              value={formData.linearScaleMax ?? ""}
+              value={formData.higherscale ?? ""}
               onChange={(e) =>
                 updateField(
-                  "linearScaleMax",
+                  "higherscale",
                   e.target.value === "" ? "" : Number(e.target.value)
                 )
               }

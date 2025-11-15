@@ -25,27 +25,27 @@ export default function ContentForm({
         <div className="bg-white rounded-lg p-2 align-center">
           <TextField
             label="Title"
-            value={formData.contentSimpleTitle}
-            onChange={(value) => updateField("contentSimpleTitle", value)}
+            value={formData.heading || ""}
+            onChange={(value) => updateField("heading", value)}
             inputProps={{
               onSelect: (event) =>
                 onTextFieldSelect?.(
-                  "contentSimpleTitle",
+                  "heading",
                   event,
-                  formData.contentSimpleTitle
+                  formData.heading
                 ),
               onBlur: onFieldBlur,
             }}
           />
           <RichTextArea
             label="Description"
-            value={formData.contentSimpleDescription}
-            onChange={(value) => updateField("contentSimpleDescription", value)}
+            value={formData.body || ""}
+            onChange={(value) => updateField("body", value)}
             onSelectionChange={(selectionInfo) =>
               onRichTextSelection?.(
-                "contentSimpleDescription",
+                "body",
                 selectionInfo,
-                formData.contentSimpleDescription
+                formData.body
               )
             }
             onBlur={onRichTextBlur}
@@ -148,9 +148,9 @@ export default function ContentForm({
                 />
                 <Input
                   type="url"
-                  value={formData.contentMediaLink || ""}
+                  value={formData.mediaUrl || ""}
                   onChange={(e) =>
-                    updateField("contentMediaLink", e.target.value)
+                    updateField("mediaUrl", e.target.value)
                   }
                   placeholder="Or paste your link here"
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"

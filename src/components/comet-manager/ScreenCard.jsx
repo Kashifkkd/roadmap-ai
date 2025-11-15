@@ -101,9 +101,9 @@ export default function ScreenCard({
                       ? "text-black"
                       : "text-black"
                   }`}
-                  title={`${screen.title} ${index + 1}`}
+                  title={screen.title}
                 >
-                  {screen.title} {index + 1}
+                  {screen.title}
                 </div>
 
                 {/* Thumbnail */}

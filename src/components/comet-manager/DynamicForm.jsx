@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import ForceRankForm from "./forms/ForceRankForm";
 import PollMcqForm from "./forms/PollMcqForm";
 import PollLinearForm from "./forms/PollLinearForm";
@@ -13,110 +13,326 @@ import AssessmentForm from "./forms/AssessmentForm";
 import AskKyperPopup from "@/components/create-comet/AskKyperPopup";
 import { graphqlClient } from "@/lib/graphql-client";
 
-const getFormDataFromScreen = (screen) => {
+// Helper to extract plain text from Quill delta JSON
+// Always converts delta format to plain text to prevent crashes
+const extractPlainTextFromDelta = (value) => {
+  // Handle null/undefined
+  if (value == null) return "";
+
+  // If not a string, return as-is (for numbers, booleans, etc.)
+  if (typeof value !== "string") return value;
+
+  // Empty string
+  if (value.trim() === "") return value;
+
+  // Check if it's a JSON string that might be a Quill delta
+  if (value.trim().startsWith("{")) {
+    try {
+      const delta = JSON.parse(value);
+      if (delta && delta.ops && Array.isArray(delta.ops)) {
+        // Extract plain text from Quill delta ops
+        const plainText = delta.ops
+          .map((op) => {
+            if (typeof op.insert === "string") {
+              return op.insert;
+            } else if (op.insert && typeof op.insert === "object") {
+              // Handle embedded objects (like images, formulas, etc.)
+              return "";
+            }
+            return "";
+          })
+          .join("");
+        return plainText || value; // Return plain text, or original if empty
+      }
+    } catch (e) {
+      // If parsing fails, it's not valid JSON - return as-is (plain text)
+      console.log("🔵 Not a valid JSON delta, treating as plain text:", e.message);
+      return value;
+    }
+  }
+
+  // Not a delta format, return as plain text
+  return value;
+};
+
+// Helper to get form values directly from screen content (no local state)
+// Uses actual keys from the structure as defined in temp2.js
+const getFormValuesFromScreen = (screen) => {
   if (!screen) return {};
 
   const contentType = screen.screenContents?.contentType;
   const content = screen.screenContents?.content || {};
-  const initialData = {
-    easeCategories: screen.easeCategories || [],
-    title: screen.title || "",
-    ...(screen.formData || {}),
-  };
+
+  // Use actual keys from the structure (temp2.js)
+  const values = {};
 
   if (contentType === "content") {
-    initialData.contentSimpleTitle = content.heading;
-    initialData.contentSimpleDescription = content.body;
-    initialData.contentMediaLink = content.media?.url;
-    initialData.contentFullBleed = Boolean(initialData.contentFullBleed);
+    values.heading = content.heading || "";
+    values.body = content.body || "";
+    values.mediaUrl = content.media?.url || "";
+    values.media = content.media || {};
   }
 
   if (contentType === "mcq") {
-    initialData.mcqTitle = content.question;
-    initialData.mcqTopLabel = content.top_label || content.title;
-    initialData.mcqBottomLabel = content.bottom_label;
-    initialData.mcqKeyLearning = content.key_learning;
-    initialData.mcqOptions = content.options || [];
+    values.title = content.title || "";
+    values.question = content.question || "";
+    values.top_label = content.top_label || "";
+    values.bottom_label = content.bottom_label || "";
+    values.key_learning = content.key_learning || "";
+    values.options = content.options || [];
   }
 
   if (contentType === "force_rank") {
-    initialData.pollTitle = content.title;
-    initialData.topLabel = content.high_label;
-    initialData.bottomLabel = content.low_label;
-    initialData.keyLearning = content.key_learning;
-    initialData.mcqOptions = content.options || [];
+    values.title = content.title || "";
+    values.question = content.question || "";
+    values.high_label = content.high_label || "";
+    values.low_label = content.low_label || "";
+    values.key_learning = content.key_learning || "";
+    values.options = content.options || [];
   }
 
   if (contentType === "linear") {
-    initialData.linearTitle = content.title;
-    initialData.linearTopLabel = content.high_label;
-    initialData.linearBottomLabel = content.low_label;
-    initialData.linearKeyLearning = content.key_learning;
-    initialData.linearScaleMin = content.lowerscale;
-    initialData.linearScaleMax = content.higherscale;
+    values.title = content.title || "";
+    values.question = content.question || "";
+    values.high_label = content.high_label || "";
+    values.low_label = content.low_label || "";
+    values.key_learning = content.key_learning || "";
+    values.lowerscale = content.lowerscale;
+    values.higherscale = content.higherscale;
   }
 
   if (contentType === "reflection") {
-    initialData.reflectionTitle = content.title;
-    initialData.reflectionPrompt = content.prompt;
-    initialData.reflectionDescription = content.prompt;
+    values.title = content.title || "";
+    values.prompt = content.prompt || "";
   }
 
   if (contentType === "actions") {
-    initialData.actionTitle = content.title;
-    initialData.actionDescription = content.text;
-    initialData.actionCanSchedule = content.can_scheduled;
-    initialData.actionCanCompleteImmediately = content.can_complete_now;
-    initialData.actionHasReflectionQuestion = content.has_reflection_question;
-    initialData.actionToolLink = content.tool_link;
-    initialData.actionToolPrompt = content.reflection_prompt;
+    values.title = content.title || "";
+    values.text = content.text || "";
+    values.can_scheduled = content.can_scheduled ?? false;
+    values.can_complete_now = content.can_complete_now ?? false;
+    values.has_reflection_question = content.has_reflection_question ?? false;
+    values.tool_link = content.tool_link || "";
+    values.reflection_prompt = content.reflection_prompt || "";
+    values.reflection_question = content.reflection_question || "";
   }
 
   if (contentType === "habits") {
-    initialData.title = content.title;
-    initialData.description = content.habit_image?.description;
-    initialData.url = content.habit_image?.url;
-    initialData.habitsIsMandatory = content.enabled;
-    initialData.habits = content.habits;
+    values.title = content.title || "";
+    values.habit_image = content.habit_image || {};
+    values.enabled = content.enabled ?? false;
+    values.habits = content.habits || [];
   }
 
   if (contentType === "social_discussion") {
-    initialData.socialTitle = content.title;
-    initialData.discussionQuestion = content.question;
+    values.title = content.title || "";
+    values.question = content.question || "";
   }
 
   if (contentType === "assessment") {
-    initialData.assessmentTitle = content.title;
-    initialData.assessmentQuestions = content.questions || [];
+    values.title = content.title || "";
+    values.questions = content.questions || [];
   }
 
-  return initialData;
+  return values;
 };
 
 export default function DynamicForm({
   screen,
   sessionData,
   setAllMessages,
-  onUpdate,
+  setOutline,
   onClose,
   chapterNumber,
   stepNumber,
 }) {
-  const [formData, setFormData] = useState(getFormDataFromScreen(screen));
+  // No local state - derive form values directly from screen
+  const formData = useMemo(() => {
+    const values = getFormValuesFromScreen(screen);
+    console.log("🟢 FormData derived from screen:", {
+      heading: values.heading,
+      body: values.body?.substring(0, 50) + "...",
+      screenContent: screen?.screenContents?.content,
+    });
+    return values;
+  }, [screen]);
+
   const [focusedField, setFocusedField] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
   const [isAskingKyper, setIsAskingKyper] = useState(false);
   const [askContext, setAskContext] = useState(null);
   const [blurTimeout, setBlurTimeout] = useState(null);
 
-  // console.log(">>> CHAPTER NUMBER", chapterNumber);
-  // console.log(">>> STEP NUMBER", stepNumber);
-  // console.log(">>> SCREEN", screen);
-
+  // Update field directly in outline - use setOutline(prev => ...) to always work with latest state
   const updateField = (field, value) => {
-    const newFormData = { ...formData, [field]: value };
-    setFormData(newFormData);
-    onUpdate({ ...screen, formData: newFormData });
+    const screenId = screen?.id;
+    if (!screenId) return;
+
+    setOutline((prevOutline) => {
+      if (!prevOutline || !prevOutline.chapters) return prevOutline;
+
+      const newOutline = JSON.parse(JSON.stringify(prevOutline));
+      const pathChapters = newOutline.chapters || [];
+
+      // Find the screen in the outline using latest state from prev
+      for (const chapter of pathChapters) {
+        for (const stepItem of chapter.steps || []) {
+          const screenIndex = stepItem.screens?.findIndex(
+            (s) => s.id === screenId
+          );
+          if (screenIndex !== undefined && screenIndex >= 0) {
+            // Get current screen from latest state (prevOutline)
+            const currentScreen = stepItem.screens[screenIndex];
+            const contentType = currentScreen?.screenContents?.contentType || "";
+
+            // Ensure screenContents and content exist
+            if (!currentScreen.screenContents) {
+              currentScreen.screenContents = { contentType, content: {} };
+            }
+            if (!currentScreen.screenContents.content) {
+              currentScreen.screenContents.content = {};
+            }
+
+            // Map form fields to content structure using actual keys from temp2.js structure
+            // Update directly on currentScreen since we're working with the latest state from prev
+            if (contentType === "content") {
+              if (field === "heading") {
+                currentScreen.screenContents.content.heading = value;
+              } else if (field === "body") {
+                // RichTextArea stores Quill delta as JSON string - extract plain text
+                const bodyValue = extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.body = bodyValue;
+              } else if (field === "mediaUrl") {
+                if (!currentScreen.screenContents.content.media) {
+                  currentScreen.screenContents.content.media = {};
+                }
+                currentScreen.screenContents.content.media.url = value;
+              }
+            } else if (contentType === "actions") {
+              if (field === "title") {
+                currentScreen.screenContents.content.title = value;
+              } else if (field === "text") {
+                // RichTextArea - extract plain text from Quill delta
+                const textValue = extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.text = textValue;
+              } else if (field === "can_scheduled") {
+                currentScreen.screenContents.content.can_scheduled = value;
+              } else if (field === "can_complete_now") {
+                currentScreen.screenContents.content.can_complete_now = value;
+              } else if (field === "has_reflection_question") {
+                currentScreen.screenContents.content.has_reflection_question = value;
+              } else if (field === "tool_link") {
+                currentScreen.screenContents.content.tool_link = value;
+              } else if (field === "reflection_prompt") {
+                currentScreen.screenContents.content.reflection_prompt = value;
+              } else if (field === "reflection_question") {
+                currentScreen.screenContents.content.reflection_question = value;
+              }
+            } else if (contentType === "mcq") {
+              if (field === "title") currentScreen.screenContents.content.title = value;
+              else if (field === "question") {
+                currentScreen.screenContents.content.question = extractPlainTextFromDelta(value);
+              } else if (field === "top_label") currentScreen.screenContents.content.top_label = value;
+              else if (field === "bottom_label") currentScreen.screenContents.content.bottom_label = value;
+              else if (field === "key_learning") currentScreen.screenContents.content.key_learning = value;
+              else if (field === "options") currentScreen.screenContents.content.options = value;
+            } else if (contentType === "force_rank") {
+              if (field === "title") currentScreen.screenContents.content.title = value;
+              else if (field === "question") {
+                currentScreen.screenContents.content.question = extractPlainTextFromDelta(value);
+              } else if (field === "high_label") currentScreen.screenContents.content.high_label = value;
+              else if (field === "low_label") currentScreen.screenContents.content.low_label = value;
+              else if (field === "key_learning") currentScreen.screenContents.content.key_learning = value;
+              else if (field === "options") currentScreen.screenContents.content.options = value;
+            } else if (contentType === "linear") {
+              if (field === "title") currentScreen.screenContents.content.title = value;
+              else if (field === "question") {
+                currentScreen.screenContents.content.question = extractPlainTextFromDelta(value);
+              } else if (field === "high_label") currentScreen.screenContents.content.high_label = value;
+              else if (field === "low_label") currentScreen.screenContents.content.low_label = value;
+              else if (field === "key_learning") currentScreen.screenContents.content.key_learning = value;
+              else if (field === "lowerscale") currentScreen.screenContents.content.lowerscale = value;
+              else if (field === "higherscale") currentScreen.screenContents.content.higherscale = value;
+            } else if (contentType === "reflection") {
+              if (field === "title") currentScreen.screenContents.content.title = value;
+              else if (field === "prompt") {
+                currentScreen.screenContents.content.prompt = extractPlainTextFromDelta(value);
+              }
+            } else if (contentType === "social_discussion") {
+              if (field === "title") currentScreen.screenContents.content.title = value;
+              else if (field === "question") {
+                currentScreen.screenContents.content.question = extractPlainTextFromDelta(value);
+              }
+            } else if (contentType === "assessment") {
+              if (field === "title") currentScreen.screenContents.content.title = value;
+              else if (field === "questions") {
+                // Extract plain text from delta for nested question.text fields
+                if (Array.isArray(value)) {
+                  currentScreen.screenContents.content.questions = value.map((question) => {
+                    if (question && typeof question === "object" && question.text) {
+                      return {
+                        ...question,
+                        text: extractPlainTextFromDelta(question.text),
+                      };
+                    }
+                    return question;
+                  });
+                } else {
+                  currentScreen.screenContents.content.questions = value;
+                }
+              }
+            } else if (contentType === "habits") {
+              if (field === "title") currentScreen.screenContents.content.title = value;
+              else if (field === "habit_image") {
+                if (!currentScreen.screenContents.content.habit_image) {
+                  currentScreen.screenContents.content.habit_image = {};
+                }
+                // If value is an object with description, extract plain text from delta
+                if (value && typeof value === "object" && value.description) {
+                  currentScreen.screenContents.content.habit_image = {
+                    ...currentScreen.screenContents.content.habit_image,
+                    ...value,
+                    description: extractPlainTextFromDelta(value.description),
+                  };
+                } else {
+                  currentScreen.screenContents.content.habit_image = {
+                    ...currentScreen.screenContents.content.habit_image,
+                    ...value,
+                  };
+                }
+              } else if (field === "enabled") {
+                currentScreen.screenContents.content.enabled = value;
+              } else if (field === "habits") {
+                // Extract plain text from delta for nested habit.description fields
+                if (Array.isArray(value)) {
+                  currentScreen.screenContents.content.habits = value.map((habit) => {
+                    if (habit && typeof habit === "object" && habit.description) {
+                      return {
+                        ...habit,
+                        description: extractPlainTextFromDelta(habit.description),
+                      };
+                    }
+                    return habit;
+                  });
+                } else {
+                  currentScreen.screenContents.content.habits = value;
+                }
+              }
+            }
+
+            // Update title for display
+            if (currentScreen.screenContents.content.title) {
+              currentScreen.title = currentScreen.screenContents.content.title;
+            } else if (currentScreen.screenContents.content.heading) {
+              currentScreen.title = currentScreen.screenContents.content.heading;
+            }
+
+            return newOutline;
+          }
+        }
+      }
+      return prevOutline;
+    });
   };
 
   const addListItem = (listName) => {
@@ -264,34 +480,37 @@ export default function DynamicForm({
           : null);
 
       const fieldNameMap = {
-        contentSimpleTitle: "heading",
-        contentSimpleDescription: "body",
-        contentMediaLink: "media_link",
-        contentFullBleed: "full_bleed",
-        mcqTitle: "question",
+        contentHeading: "heading",
+        contentBody: "body",
+        contentMediaUrl: "media.url",
+        mcqQuestion: "question",
         mcqTopLabel: "top_label",
         mcqBottomLabel: "bottom_label",
         mcqKeyLearning: "key_learning",
         mcqOptions: "options",
-        pollTitle: "title",
-        topLabel: "high_label",
-        bottomLabel: "low_label",
-        keyLearning: "key_learning",
+        forceRankTitle: "title",
+        forceRankHighLabel: "high_label",
+        forceRankLowLabel: "low_label",
+        forceRankKeyLearning: "key_learning",
+        forceRankOptions: "options",
         linearTitle: "title",
-        linearTopLabel: "high_label",
-        linearBottomLabel: "low_label",
+        linearHighLabel: "high_label",
+        linearLowLabel: "low_label",
         linearKeyLearning: "key_learning",
-        linearScaleMin: "lowerscale",
-        linearScaleMax: "higherscale",
+        linearLowerScale: "lowerscale",
+        linearHigherScale: "higherscale",
         reflectionTitle: "title",
         reflectionPrompt: "prompt",
         actionTitle: "title",
-        actionDescription: "text",
-        actionToolPrompt: "reflection_prompt",
+        actionText: "text",
+        actionReflectionPrompt: "reflection_prompt",
         socialTitle: "title",
-        discussionQuestion: "question",
+        socialQuestion: "question",
         assessmentTitle: "title",
         assessmentQuestions: "questions",
+        habitsTitle: "title",
+        habitsDescription: "habit_image.description",
+        habitsUrl: "habit_image.url",
       };
 
       const mappedField =
@@ -301,8 +520,8 @@ export default function DynamicForm({
         typeof screen?.position === "number"
           ? screen.position
           : typeof screen?.order === "number"
-          ? screen.order + 1
-          : 1;
+            ? screen.order + 1
+            : 1;
 
       const conversationMessage = `{ 'path': 'chapter-${chapterNumber}-step-${stepNumber}-screen-${screenNumber}', 'field': '${mappedField}', 'value': '${askContext.selectedText}', 'instruction': '${query}' }`;
 

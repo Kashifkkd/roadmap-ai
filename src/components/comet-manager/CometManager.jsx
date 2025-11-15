@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   File,
   Eye,
@@ -155,6 +155,7 @@ export default function CometManager({
   const {
     isLoading,
     screens,
+    allScreens,
     chapters,
     selectedStepId,
     setSelectedStep,
@@ -163,6 +164,7 @@ export default function CometManager({
     deleteScreen: deleteScreenData,
     reorderScreensList,
     insertScreenAt,
+    setOutline,
   } = useCometManager(sessionData);
 
   // Extract session_id from sessionData or temp
@@ -172,7 +174,7 @@ export default function CometManager({
     null;
 
   const [currentScreen, setCurrentScreen] = useState(0);
-  const [selectedScreen, setSelectedScreen] = useState(null);
+  const [selectedScreenId, setSelectedScreenId] = useState(null); // Store ID instead of object
   const [showAddPopup, setShowAddPopup] = useState(false);
   const [addAtIndex, setAddAtIndex] = useState(null);
   const [draggedIndex, setDraggedIndex] = useState(null);
@@ -183,43 +185,49 @@ export default function CometManager({
   const [selectedImageAsset, setSelectedImageAsset] = useState(null);
   const selectedScreenRef = useRef(null);
 
-  // Update local screens when data changes
+  // Derive selectedScreen from screens array using selectedScreenId - always has latest data
+  const selectedScreen = useMemo(() => {
+    if (!selectedScreenId || !screens || screens.length === 0) return null;
+    return screens.find((screen) => screen.id === selectedScreenId) || null;
+  }, [selectedScreenId, screens]);
+
+  // Select first screen by default when screens are first loaded
   useEffect(() => {
-    if (!screens || screens.length === 0) {
-      if (selectedScreen !== null) {
-        setSelectedScreen(null);
+    if (!screens || screens.length === 0) return;
+    
+    // If no screen is selected, select the first one
+    if (!selectedScreenId) {
+      const firstScreen = screens[0];
+      if (firstScreen && firstScreen.id) {
+        setSelectedScreenId(firstScreen.id);
       }
+      return;
+    }
+    
+    // If selected screen is no longer in the screens array, select the first one
+    const selectedScreenExists = screens.some(screen => screen.id === selectedScreenId);
+    if (!selectedScreenExists) {
+      const firstScreen = screens[0];
+      if (firstScreen && firstScreen.id) {
+        setSelectedScreenId(firstScreen.id);
+      }
+    }
+  }, [screens, selectedScreenId]);
+
+  // Update currentScreen index when selectedScreenId changes
+  useEffect(() => {
+    if (!selectedScreenId || !screens || screens.length === 0) {
       if (currentScreen !== 0) {
         setCurrentScreen(0);
       }
       return;
     }
 
-    const existingIndex = selectedScreen
-      ? screens.findIndex((screen) => screen.id === selectedScreen.id)
-      : -1;
-
-    const nextIndex = existingIndex >= 0 ? existingIndex : 0;
-    const nextScreen = screens[nextIndex] || null;
-
-    if (!nextScreen) {
-      if (selectedScreen !== null) {
-        setSelectedScreen(null);
-      }
-      if (currentScreen !== 0) {
-        setCurrentScreen(0);
-      }
-      return;
+    const screenIndex = screens.findIndex((screen) => screen.id === selectedScreenId);
+    if (screenIndex >= 0 && currentScreen !== screenIndex) {
+      setCurrentScreen(screenIndex);
     }
-
-    if (selectedScreen?.id !== nextScreen.id) {
-      setSelectedScreen(nextScreen);
-    }
-
-    if (currentScreen !== nextIndex) {
-      setCurrentScreen(nextIndex);
-    }
-  }, [screens]);
+  }, [selectedScreenId, screens]);
 
   // Ensure the selected screen is visible in the horizontal list
   useEffect(() => {
@@ -270,7 +278,7 @@ export default function CometManager({
     // Clear selected material when screen is clicked
     setSelectedAssetCategory(null);
     setSelectedAssets([]);
-    setSelectedScreen(screen);
+    setSelectedScreenId(screen.id);
     const screenIndex = screens.findIndex((s) => s.id === screen.id);
     setCurrentScreen(screenIndex);
   };
@@ -311,7 +319,7 @@ export default function CometManager({
         (step) => String(step.id) === String(targetStepId)
       ) + 1 || 1;
     const screenNum =
-      screens.filter(
+      allScreens.filter(
         (s) =>
           String(s.chapterId) === String(targetChapterId) &&
           String(s.stepId) === String(targetStepId)
@@ -321,7 +329,7 @@ export default function CometManager({
 
     // Get position - count screens in the same step
     const position =
-      screens.filter((s) => String(s.stepId) === String(targetStepId)).length +
+      allScreens.filter((s) => String(s.stepId) === String(targetStepId)).length +
       1;
 
     // Map screenType.id to contentType
@@ -382,7 +390,7 @@ export default function CometManager({
           actionToolPrompt: "",
         },
         assessment: null,
-        order: screens.length,
+        order: allScreens.length,
       };
     } else if (screenType.id === "content") {
       // Content screen structure
@@ -417,7 +425,7 @@ export default function CometManager({
           contentFullBleed: false,
         },
         assessment: null,
-        order: screens.length,
+        order: allScreens.length,
       };
     } else if (screenType.id === "multiple_choice") {
       // Multiple Choice/Survey screen structure
@@ -453,7 +461,7 @@ export default function CometManager({
           mcqOptions: [],
         },
         assessment: null,
-        order: screens.length,
+        order: allScreens.length,
       };
     } else if (screenType.id === "force_question") {
       // Force Rank screen structure
@@ -487,7 +495,7 @@ export default function CometManager({
           mcqOptions: [],
         },
         assessment: null,
-        order: screens.length,
+        order: allScreens.length,
       };
     } else if (screenType.id === "linear_poll") {
       // Linear Poll screen structure
@@ -523,7 +531,7 @@ export default function CometManager({
           linearScaleMax: 10,
         },
         assessment: null,
-        order: screens.length,
+        order: allScreens.length,
       };
     } else if (screenType.id === "assessment") {
       // Assessment screen structure
@@ -551,7 +559,7 @@ export default function CometManager({
           assessmentQuestions: [],
         },
         assessment: null,
-        order: screens.length,
+        order: allScreens.length,
       };
     } else if (screenType.id === "reflection") {
       // Reflection screen structure
@@ -580,7 +588,7 @@ export default function CometManager({
           reflectionDescription: "",
         },
         assessment: null,
-        order: screens.length,
+        order: allScreens.length,
       };
     } else if (screenType.id === "discussion") {
       // Social Discussion screen structure
@@ -609,7 +617,7 @@ export default function CometManager({
           discussionQuestion: "",
         },
         assessment: null,
-        order: screens.length,
+        order: allScreens.length,
       };
     } else if (screenType.id === "habits") {
       // Habits screen structure
@@ -645,7 +653,7 @@ export default function CometManager({
           habits: [],
         },
         assessment: null,
-        order: screens.length,
+        order: allScreens.length,
       };
     } else {
       // Default structure for unknown screen types (fallback)
@@ -666,7 +674,7 @@ export default function CometManager({
         title: "",
         formData: {},
         assessment: null,
-        order: screens.length,
+        order: allScreens.length,
       };
     }
 
@@ -678,25 +686,24 @@ export default function CometManager({
 
     setShowAddPopup(false);
     setAddAtIndex(null);
-    setSelectedScreen(newScreen);
+    setSelectedScreenId(newScreen.id);
     setCurrentScreen(addAtIndex !== null ? addAtIndex : screens.length);
   };
 
-  const handleUpdateScreen = (updatedScreen) => {
-    // Update through the hook to persist changes
-    updateScreenData(updatedScreen.id, updatedScreen);
-    setSelectedScreen(updatedScreen);
-  };
 
   const navigateScreen = (direction) => {
     if (direction === "prev" && currentScreen > 0) {
       const newIndex = currentScreen - 1;
       setCurrentScreen(newIndex);
-      setSelectedScreen(screens[newIndex]);
+      if (screens[newIndex]) {
+        setSelectedScreenId(screens[newIndex].id);
+      }
     } else if (direction === "next" && currentScreen < screens.length - 1) {
       const newIndex = currentScreen + 1;
       setCurrentScreen(newIndex);
-      setSelectedScreen(screens[newIndex]);
+      if (screens[newIndex]) {
+        setSelectedScreenId(screens[newIndex].id);
+      }
     }
   };
 
@@ -734,7 +741,7 @@ export default function CometManager({
                   setSelectedMaterial(material);
                   // Clear selected screen and assets when material is selected
                   if (material) {
-                    setSelectedScreen(null);
+                    setSelectedScreenId(null);
                     setSelectedAssetCategory(null);
                     setSelectedAssets([]);
                     setSelectedImageAsset(null);
@@ -744,7 +751,7 @@ export default function CometManager({
                   setSelectedAssetCategory(category);
                   setSelectedAssets(assets || []);
                   // Clear selected screen and material when assets are selected
-                  setSelectedScreen(null);
+                  setSelectedScreenId(null);
                   setSelectedMaterial(null);
                   setSelectedImageAsset(null);
                 }}
@@ -753,13 +760,25 @@ export default function CometManager({
                   setSelectedMaterial(null);
                   setSelectedAssetCategory(null);
                   setSelectedAssets([]);
-                  // Filter screens for this chapter
-                  const chapterScreens = screens.filter(
+                  // Filter screens for this chapter (use allScreens to get screens from all steps)
+                  const chapterScreens = allScreens.filter(
                     (s) => s.chapterId === chapterId
                   );
                   if (chapterScreens.length > 0) {
-                    setSelectedScreen(chapterScreens[0]);
-                    setCurrentScreen(screens.indexOf(chapterScreens[0]));
+                    // Find the first screen's index in the filtered screens array
+                    const firstScreen = chapterScreens[0];
+                    const screenIndex = screens.findIndex((s) => s.id === firstScreen.id);
+                    if (screenIndex >= 0) {
+                      setSelectedScreenId(firstScreen.id);
+                      setCurrentScreen(screenIndex);
+                    } else {
+                      // If screen is not in current filtered screens, select the first step of the chapter
+                      const firstStep = chapter.steps?.[0];
+                      if (firstStep) {
+                        setSelectedStep(firstStep.id);
+                        // The screens will update via useEffect, then we can select the first screen
+                      }
+                    }
                   }
                 }}
               />
@@ -981,8 +1000,8 @@ export default function CometManager({
                             screen={selectedScreen}
                             sessionData={sessionData}
                             setAllMessages={setAllMessages}
-                            onUpdate={handleUpdateScreen}
-                            onClose={() => setSelectedScreen(null)}
+                            setOutline={setOutline}
+                            onClose={() => setSelectedScreenId(null)}
                             chapterNumber={chapterNumber}
                             stepNumber={stepNumber}
                           />

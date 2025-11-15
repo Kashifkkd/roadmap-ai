@@ -21,37 +21,32 @@ export default function ForceRankForm({
       <div className="bg-white rounded-lg p-2 align-center">
         <TextField
           label="Title"
-          value={formData.pollTitle}
-          onChange={(value) => updateField("pollTitle", value)}
+          value={formData.title || ""}
+          onChange={(value) => updateField("title", value)}
         />
         <TextField
           label="Top Label"
-          value={formData.topLabel}
-          onChange={(value) => updateField("topLabel", value)}
+          value={formData.high_label || ""}
+          onChange={(value) => updateField("high_label", value)}
         />
         <TextField
           label="Bottom Label"
-          value={formData.bottomLabel}
-          onChange={(value) => updateField("bottomLabel", value)}
+          value={formData.low_label || ""}
+          onChange={(value) => updateField("low_label", value)}
         />
-        {/* <TextArea
-        label="Key Learning"
-        value={formData.keyLearning}
-        onChange={(value) => updateField("keyLearning", value)}
-      /> */}
         <RichTextArea
-          label="Question "
-          value={formData.question}
+          label="Question"
+          value={formData.question || ""}
           onChange={(value) => updateField("question", value)}
         />
         <ListField
           label="Options"
-          items={formData.mcqOptions || []}
-          onAdd={() => addListItem("mcqOptions")}
+          items={formData.options || []}
+          onAdd={() => addListItem("options")}
           onUpdate={(index, value) =>
-            updateListItem("mcqOptions", index, value)
+            updateListItem("options", index, value)
           }
-          onRemove={(index) => removeListItem("mcqOptions", index)}
+          onRemove={(index) => removeListItem("options", index)}
           buttonText="Add Option"
         />
       </div>

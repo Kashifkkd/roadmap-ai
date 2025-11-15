@@ -10,14 +10,14 @@ export default function SocialDiscussionForm({ formData, updateField }) {
       <div className="bg-white rounded-lg p-2 align-center">
         <TextField
           label="Title"
-          value={formData.socialTitle}
-          onChange={(value) => updateField("socialTitle", value)}
+          value={formData.title || ""}
+          onChange={(value) => updateField("title", value)}
         />
         <RichTextArea
           label="Question"
-          value={formData.question}
-          onChange={(value) => updateField("socialQuestion", value)}
-          field="socialQuestion"
+          value={formData.question || ""}
+          onChange={(value) => updateField("question", value)}
+          field="question"
         />
       </div>
     </div>

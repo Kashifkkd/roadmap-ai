@@ -46,23 +46,23 @@ export default function HabitOptInForm({ formData, updateField }) {
             />
             <Input
               type="text"
-              value={formData.habitsTitleOf || ""}
-              onChange={(e) => updateField("habitsTitleOf", e.target.value)}
+              value={formData.title || ""}
+              onChange={(e) => updateField("title", e.target.value)}
               placeholder="Enter name"
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
-
-        {/* <TextArea
-        label="Description"
-        value={formData.habitsDescription}
-        onChange={(value) => updateField("habitsDescription", value)}
-      /> */}
         <RichTextArea
           label="Description"
-          value={formData.habitsDescription}
-          onChange={(value) => updateField("habitsDescription", value)}
+          value={formData.habit_image?.description || ""}
+          onChange={(value) => {
+            const habit_image = {
+              ...formData.habit_image,
+              description: value
+            };
+            updateField("habit_image", habit_image);
+          }}
         />
 
         <div className="mb-6">
