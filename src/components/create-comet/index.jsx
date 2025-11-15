@@ -213,10 +213,6 @@ export default function CreateComet({
                   "specialInstructions",
                   experienceDesign["Special Instructions"]
                 );
-              if(experienceDesign["Habit"])
-                setValue("habit", experienceDesign["Habit"]);
-              if(experienceDesign["Personalization"])
-                setValue("personalization", experienceDesign["Personalization"]);
             }
 
             setIsAskingKyper(false);
@@ -348,10 +344,6 @@ export default function CreateComet({
               "specialInstructions",
               experienceDesign["Special Instructions"]
             );
-          if(experienceDesign["Habit"])
-            setValue("habit", experienceDesign["Habit"]);
-          if(experienceDesign["Personalization"])
-            setValue("personalization", experienceDesign["Personalization"]);
         }
 
         if (prefillData.comet_creation_data["Source Materials"]) {
@@ -385,9 +377,6 @@ export default function CreateComet({
         if (prefillData.clientOrg) setValue("clientOrg", prefillData.clientOrg);
         if (prefillData.clientWebsite)
           setValue("clientWebsite", prefillData.clientWebsite);
-        if (prefillData.habit) setValue("habit", prefillData.habit);
-        if (prefillData.personalization)
-          setValue("personalization", prefillData.personalization);
       }
     }
   }, [prefillData, setValue]);
@@ -402,7 +391,6 @@ export default function CreateComet({
     "engagementFrequency",
     "lengthFrequency",
     "specialInstructions",
-    "habit",
   ];
 
   const handleFormSubmit = async (data) => {
@@ -469,7 +457,6 @@ export default function CreateComet({
           "Length & Frequency": formValues.D || "",
           "Experience Type": "",
           "Special Instructions": formValues.specialInstructions || "",
-          "habit": formValues.habit || "",
         },
       };
 
