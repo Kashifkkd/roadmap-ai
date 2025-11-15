@@ -109,9 +109,9 @@ export default function DynamicForm({
   const [askContext, setAskContext] = useState(null);
   const [blurTimeout, setBlurTimeout] = useState(null);
 
-  console.log(">>> CHAPTER NUMBER", chapterNumber);
-  console.log(">>> STEP NUMBER", stepNumber);
-  console.log(">>> SCREEN", screen);
+  // console.log(">>> CHAPTER NUMBER", chapterNumber);
+  // console.log(">>> STEP NUMBER", stepNumber);
+  // console.log(">>> SCREEN", screen);
 
   const updateField = (field, value) => {
     const newFormData = { ...formData, [field]: value };
@@ -243,7 +243,7 @@ export default function DynamicForm({
     });
   };
 
-  console.log(">>> sessionData", sessionData);
+  // console.log(">>> sessionData", sessionData);
 
   const handleAskKyper = async (query) => {
     if (!askContext || !query?.trim()) return;

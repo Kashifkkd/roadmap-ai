@@ -1,8 +1,8 @@
-import { createClient } from 'graphql-ws';
+import { createClient } from "graphql-ws";
 
 class WebSocketGraphQLClient {
   constructor() {
-    this.wsUrl = 'https://kyper-stage.1st90.com/graphql';
+    this.wsUrl = "https://kyper-stage.1st90.com/graphql";
     this.client = null;
     this.subscriptions = new Map();
   }
@@ -30,7 +30,7 @@ class WebSocketGraphQLClient {
 
     const token = this.getToken();
     if (!token) {
-      throw new Error('No authentication token found');
+      throw new Error("No authentication token found");
     }
 
     this.client = createClient({
@@ -40,13 +40,13 @@ class WebSocketGraphQLClient {
       },
       on: {
         connected: () => {
-          console.log('WebSocket GraphQL client connected');
+          console.log("WebSocket GraphQL client connected");
         },
         closed: () => {
-          console.log('WebSocket GraphQL client disconnected');
+          console.log("WebSocket GraphQL client disconnected");
         },
         error: (error) => {
-          console.error('WebSocket GraphQL client error:', error);
+          console.error("WebSocket GraphQL client error:", error);
         },
       },
     });
@@ -56,7 +56,7 @@ class WebSocketGraphQLClient {
 
   subscribeToSessionUpdates(sessionId, onUpdate, onError) {
     const client = this.initializeClient();
-    
+
     const subscription = `
       subscription {
         sessionUpdates(sessionId: "${sessionId}")
@@ -69,23 +69,23 @@ class WebSocketGraphQLClient {
       },
       {
         next: (data) => {
-          console.log('WebSocket subscription data received:', data);
+          console.log("WebSocket subscription data received:", data);
           if (data.data && data.data.sessionUpdates) {
             try {
               const sessionData = JSON.parse(data.data.sessionUpdates);
               onUpdate(sessionData);
             } catch (error) {
-              console.error('Error parsing session data:', error);
+              console.error("Error parsing session data:", error);
               onError(error);
             }
           }
         },
         error: (error) => {
-          console.error('WebSocket subscription error:', error);
+          console.error("WebSocket subscription error:", error);
           onError(error);
         },
         complete: () => {
-          console.log('WebSocket subscription completed');
+          console.log("WebSocket subscription completed");
         },
       }
     );
@@ -106,13 +106,13 @@ class WebSocketGraphQLClient {
       unsubscribe();
     });
     this.subscriptions.clear();
-    
+
     if (this.client) {
       this.client.dispose();
       this.client = null;
     }
   }
-  
+
   close() {
     this.cleanup();
   }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 // import { temp2 } from "./temp2";
-import { temp2 } from "./temp2";
+// import { temp2 } from "./temp2";
 
 export function useCometManager(sessionData = null) {
   const [isLoading, setIsLoading] = useState(false);
@@ -10,13 +10,13 @@ export function useCometManager(sessionData = null) {
   const [chapters, setChapters] = useState([]);
   const [selectedStepId, setSelectedStepId] = useState(null);
 
-  console.log(">>>", sessionData);
+  console.log(">>>session Data", sessionData);
   // Transform temp data response_path to chapters and screens
   useEffect(() => {
-    if (temp2 && temp2.length > 0 && temp2[0].response_path) {
-      // if (sessionData && sessionData.response_path) {
-      // const responsePath = sessionData.response_path;
-      const responsePath = temp2[0].response_path;
+    // if (temp2 && temp2.length > 0 && temp2[0].response_path) {
+    if (sessionData && sessionData.response_path) {
+      const responsePath = sessionData.response_path;
+      // const responsePath = temp2[0].response_path;
       const transformedChapters = [];
       const transformedScreens = [];
       let screenCounter = 0;
@@ -381,7 +381,7 @@ export function useCometManager(sessionData = null) {
         const filteredScreens = prevScreens.filter(
           (screen) => screen.stepId === selectedStepId
         );
-        
+
         // If index is within filtered screens, find the corresponding screen in full array
         if (index >= 0 && index < filteredScreens.length) {
           const targetScreen = filteredScreens[index];
@@ -389,13 +389,15 @@ export function useCometManager(sessionData = null) {
             (screen) => screen.id === targetScreen.id
           );
           // Insert at the found position (or at the end if not found)
-          const insertIndex = fullArrayIndex >= 0 ? fullArrayIndex : prevScreens.length;
+          const insertIndex =
+            fullArrayIndex >= 0 ? fullArrayIndex : prevScreens.length;
           const newScreens = [...prevScreens];
           newScreens.splice(insertIndex, 0, newScreen);
           return newScreens;
         } else if (index === filteredScreens.length) {
           // Insert at the end of filtered screens - find the last screen with same stepId
-          const lastFilteredScreen = filteredScreens[filteredScreens.length - 1];
+          const lastFilteredScreen =
+            filteredScreens[filteredScreens.length - 1];
           const lastIndex = prevScreens.findIndex(
             (screen) => screen.id === lastFilteredScreen.id
           );
@@ -404,7 +406,7 @@ export function useCometManager(sessionData = null) {
           return newScreens;
         }
       }
-      
+
       // Fallback: insert at the given index (for when there's no filtering)
       const newScreens = [...prevScreens];
       newScreens.splice(index, 0, newScreen);

@@ -58,7 +58,7 @@ export default function CometManagerLayout() {
   }, [sessionData]);
 
   return (
-    <div className="flex h-full w-full bg-primary-50">
+    <div className="flex h-full w-full bg-primary-50 overflow-y-auto">
       <div className="flex flex-1 lg:flex-row flex-col gap-2 p-2 overflow-y-auto">
         <div className="lg:block w-full lg:w-[360px] h-full">
           <ChatWindow

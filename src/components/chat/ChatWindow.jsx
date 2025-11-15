@@ -124,14 +124,14 @@ export default function ChatWindow({
     setInputValue(suggestionText);
   };
 
-  console.log(">>MESSAGES", allMessages);
+  
 
   const handleInputChange = (value) => {
     setInputValue(value);
   };
 
   const handleSubmit = async (text) => {
-    console.log("Message submitted:", text);
+   
 
     try {
       setIsLoading(true);
@@ -150,7 +150,7 @@ export default function ChatWindow({
 
       setSessionId(currentSessionId);
 
-      // Get userQuestions from URL parameter (set by WelcomePage)
+      //userQuestions from URL parameter 
       let parsedUserQuestions = [];
       if (userQuestions) {
         try {
@@ -160,17 +160,17 @@ export default function ChatWindow({
         }
       }
 
-      // Use initialInput from URL parameter, or fallback to text
+      // Use initialInput 
       const initialUserInput = initialInput || text;
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: inputType,
         comet_creation_data: sessionData?.comet_creation_data || {},
-        user_questions: parsedUserQuestions, // All question-answer pairs from URL
+        user_questions: parsedUserQuestions, 
         response_outline: sessionData?.response_outline || {},
         response_path: sessionData?.response_path || {},
-        chatbot_conversation: [{ user: initialUserInput }], // First user input from URL
+        chatbot_conversation: [{ user: initialUserInput }], 
         to_modify: {},
       });
 

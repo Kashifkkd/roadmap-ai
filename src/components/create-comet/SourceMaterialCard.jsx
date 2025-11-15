@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 
@@ -10,7 +10,13 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 export default function SourceMaterialCard({ files, setFiles }) {
-  const sessionId = localStorage.getItem("sessionId");
+  const [sessionId, setSessionId] = useState(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setSessionId(localStorage.getItem("sessionId"));
+    }
+  }, []);
 
   const uploadFile = useCallback(
     async (file) => {
@@ -40,17 +46,22 @@ export default function SourceMaterialCard({ files, setFiles }) {
     [sessionId]
   );
 
-  const handleDrop = (acceptedFiles, fileRejections, event) => {
-    if (acceptedFiles && Array.isArray(acceptedFiles)) {
-      setFiles(acceptedFiles);
-    }
-  };
-
   const handleFileSelect = (event) => {
     const selectedFiles = Array.from(event.target.files);
-    console.log("Files selected:", selectedFiles.length);
-    console.log("Session ID:", sessionId);
-    setFiles(selectedFiles);
+
+    // Append new files to existing ones, avoiding duplicates
+    setFiles((prevFiles) => {
+      const existingFileNames = new Set(
+        prevFiles.map((f) => `${f.name}-${f.size}`)
+      );
+      const newFiles = selectedFiles.filter(
+        (file) => !existingFileNames.has(`${file.name}-${file.size}`)
+      );
+      return [...prevFiles, ...newFiles];
+    });
+
+    // Reset the input so the same file can be selected again if needed
+    event.target.value = "";
   };
 
   useEffect(() => {
@@ -58,9 +69,7 @@ export default function SourceMaterialCard({ files, setFiles }) {
       window.uploadAllFiles = async () => {
         if (files && files.length > 0 && sessionId) {
           console.log("Uploading all files on submit...");
-          for (const file of files) {
-            await uploadFile(file);
-          }
+          await Promise.all(files.map((file) => uploadFile(file)));
         } else if (files.length === 0) {
           console.log("No files to upload");
         } else {
@@ -85,7 +94,7 @@ export default function SourceMaterialCard({ files, setFiles }) {
 
       <CardContent>
         <div className="flex flex-col w-full border-2 border-gray-200 rounded-xl bg-gray-100 p-2 sm:p-2">
-          <div className="border-2 border-dashed border-gray-300 bg-white rounded-lg p-6 text-center">
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center transition-colors bg-white">
             <input
               type="file"
               multiple
@@ -101,9 +110,7 @@ export default function SourceMaterialCard({ files, setFiles }) {
               <div className="flex size-[42px] items-center justify-center rounded-md bg-muted text-muted-foreground">
                 <Image src="/upload.svg" alt="Icon" width={42} height={42} />
               </div>
-              <span className="text-sm font-medium">
-                Drag files here or click to upload
-              </span>
+              <span className="text-sm font-medium">Click to upload</span>
               <Button
                 type="button"
                 variant="outline"

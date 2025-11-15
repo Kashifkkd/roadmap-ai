@@ -53,14 +53,14 @@ export default function ScreenCard({
         onDragOver={onDragOver}
         onDrop={(e) => onDrop(e, index)}
         onClick={() => onClick(screen)}
-        className={`rounded-lg p-1.5 sm:p-2 flex flex-col justify-between items-center gap-1 sm:gap-2 text-xs
+        className={`rounded-lg p-1.5 sm:p-2 flex flex-col justify-between items-center gap-1 sm:gap-1 text-xs
           shrink-0 shadow-sm hover:shadow-md cursor-pointer 
           border border-transparent hover:border-primary-600
           transition-all duration-300 ease-in-out
           ${
             selectedScreen?.id === screen.id
-              ? "bg-primary-700 hover:bg-primary-600 min-w-[140px] sm:min-w-[190px] max-w-[190px] sm:max-w-[240px]"
-              : "bg-gray-100 hover:bg-primary-100 min-w-[110px] sm:min-w-[154px] max-w-[154px] sm:max-w-[198px]"
+              ? "bg-primary-700 hover:bg-primary-600 min-w-[140px] sm:min-w-[150px] max-w-[150px] sm:max-w-[180px]"
+              : "bg-gray-100 hover:bg-primary-100 min-w-[110px] sm:min-w-[150px] max-w-[150px] sm:max-w-[150px]"
           }
         `}
       >
@@ -90,16 +90,16 @@ export default function ScreenCard({
   transition-all duration-300  shadow-sm overflow-hidden
   ${
     selectedScreen?.id === screen.id
-      ? "h-[240px] w-[175px]" // active screen size
-      : "h-[200px] w-[135px]" // normal screen size
+      ? "h-[210px] w-[145px]" // active screen size
+      : "h-[170px] w-[135px]" // normal screen size
   }`}
               >
                 {/* Title */}
                 <div
-                  className={`flex items-start gap-2 text-sm font-medium w-full transition-colors duration-300 mb-1 truncate ${
+                  className={`flex items-start gap-2 text-sm font-medium w-full transition-colors duration-300 mb-1 text-wrap ${
                     selectedScreen?.id === screen.id
                       ? "text-black"
-                      : "text-gray-700"
+                      : "text-black"
                   }`}
                   title={`${screen.title} ${index + 1}`}
                 >
@@ -131,7 +131,6 @@ export default function ScreenCard({
                   Key Learning
                 </div>
 
-                
                 <div
                   className={`w-full text-xs font-medium overflow-hidden text-ellipsis line-clamp-3 transition-colors duration-300 ${
                     selectedScreen?.id === screen.id
@@ -177,7 +176,7 @@ export default function ScreenCard({
       </div>
 
       {/* Add button that appears between cards */}
-      
+
       {showAddButton && <AddButton position="left" insertIndex={index} />}
       {showAddButton && <AddButton position="right" insertIndex={index + 1} />}
 

@@ -10,10 +10,12 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
 import { CardContent } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import MultipleChoiceField from "./MultipleChoiceField";
 import SliderField from "./SliderField";
 import AskKyperPopup from "./AskKyperPopup";
 import { graphqlClient } from "@/lib/graphql-client";
+import { Info } from "lucide-react";
 
 export default function CreateComet({
   initialData = null,
@@ -34,9 +36,16 @@ export default function CreateComet({
   const [blurTimeout, setBlurTimeout] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
   const [isAskingKyper, setIsAskingKyper] = useState(false);
+  const [habitEnabled, setHabitEnabled] = useState(true);
+  const [personalizationEnabled, setPersonalizationEnabled] = useState(true);
   const subscriptionCleanupRef = useRef(null);
+  const [sessionId, setSessionId] = useState(null);
 
-  const sessionId = localStorage.getItem("sessionId");
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setSessionId(localStorage.getItem("sessionId"));
+    }
+  }, []);
 
   const {
     register,
@@ -60,6 +69,8 @@ export default function CreateComet({
       lengthFrequency: "",
       experienceType: "",
       specialInstructions: "",
+      habit: "",
+      personalization: "",
     },
   });
 
@@ -81,8 +92,8 @@ export default function CreateComet({
 
   // Listen for socket response when asking Kyper
   useEffect(() => {
-    console.log("sessionId", sessionId);
-    console.log("isAskingKyper", isAskingKyper);
+    // console.log("sessionId", sessionId);
+    // console.log("isAskingKyper", isAskingKyper);
     if (!isAskingKyper || !sessionId) return;
 
     let cleanup;
@@ -90,14 +101,14 @@ export default function CreateComet({
       cleanup = await graphqlClient.subscribeToSessionUpdates(
         sessionId,
         (sessionData) => {
-          console.log("AI response received:", sessionData);
+          // console.log("AI response received:", sessionData);
 
           // Update entire form with comet_creation_data like prefill
           if (sessionData.comet_creation_data) {
-            console.log(
-              "Updating entire form with comet_creation_data:",
-              sessionData.comet_creation_data
-            );
+            // console.log(
+            //   "Updating entire form with comet_creation_data:",
+            //   sessionData.comet_creation_data
+            // );
 
             const basicInfo =
               sessionData.comet_creation_data["Basic Information"];
@@ -202,6 +213,10 @@ export default function CreateComet({
                   "specialInstructions",
                   experienceDesign["Special Instructions"]
                 );
+              if(experienceDesign["Habit"])
+                setValue("habit", experienceDesign["Habit"]);
+              if(experienceDesign["Personalization"])
+                setValue("personalization", experienceDesign["Personalization"]);
             }
 
             setIsAskingKyper(false);
@@ -247,7 +262,7 @@ export default function CreateComet({
 
   useEffect(() => {
     if (prefillData) {
-      console.log("Prefilling form with data:", prefillData);
+      // console.log("Prefilling form with data:", prefillData);
 
       if (prefillData.comet_creation_data) {
         const basicInfo = prefillData.comet_creation_data["Basic Information"];
@@ -276,7 +291,7 @@ export default function CreateComet({
         }
 
         if (experienceDesign) {
-          console.log("Experience Design data:", experienceDesign);
+          // console.log("Experience Design data:", experienceDesign);
           // Map Focus field to cometFocus
           if (experienceDesign["Focus"]) {
             // Map text values to form values
@@ -333,13 +348,13 @@ export default function CreateComet({
               "specialInstructions",
               experienceDesign["Special Instructions"]
             );
+          if(experienceDesign["Habit"])
+            setValue("habit", experienceDesign["Habit"]);
+          if(experienceDesign["Personalization"])
+            setValue("personalization", experienceDesign["Personalization"]);
         }
 
         if (prefillData.comet_creation_data["Source Materials"]) {
-          console.log(
-            "Source Materials:",
-            prefillData.comet_creation_data["Source Materials"]
-          );
         }
       } else {
         if (prefillData.cometTitle)
@@ -370,10 +385,12 @@ export default function CreateComet({
         if (prefillData.clientOrg) setValue("clientOrg", prefillData.clientOrg);
         if (prefillData.clientWebsite)
           setValue("clientWebsite", prefillData.clientWebsite);
+        if (prefillData.habit) setValue("habit", prefillData.habit);
+        if (prefillData.personalization)
+          setValue("personalization", prefillData.personalization);
       }
     }
   }, [prefillData, setValue]);
-  console.log("prefillData>>>>>>>>>>>>", prefillData);
 
   const requiredFields = [
     "cometTitle",
@@ -385,12 +402,10 @@ export default function CreateComet({
     "engagementFrequency",
     "lengthFrequency",
     "specialInstructions",
+    "habit",
   ];
 
   const handleFormSubmit = async (data) => {
-    console.log("Form submitted:", data);
-    console.log("Form validation state:", { isValid, errors });
-
     try {
       if (typeof window !== "undefined" && window.uploadAllFiles) {
         console.log("Uploading files before creating outline...");
@@ -430,14 +445,15 @@ export default function CreateComet({
   }, [watch, onProgressChange]);
 
   const handleAskKyper = async (query) => {
-    console.log("Ask Kyper clicked for field:", focusedField);
-    console.log("Query:", query);
-
     try {
       setIsAskingKyper(true);
 
       const formValues = watch();
-      let currentSessionId = localStorage.getItem("sessionId");
+      let currentSessionId =
+        sessionId ||
+        (typeof window !== "undefined"
+          ? localStorage.getItem("sessionId")
+          : null);
 
       const formattedCometData = {
         "Basic Information": {
@@ -453,6 +469,7 @@ export default function CreateComet({
           "Length & Frequency": formValues.D || "",
           "Experience Type": "",
           "Special Instructions": formValues.specialInstructions || "",
+          "habit": formValues.habit || "",
         },
       };
 
@@ -552,6 +569,42 @@ export default function CreateComet({
       clearTimeout(blurTimeout);
       setBlurTimeout(null);
     }
+  };
+
+  // Toggle Switch Component
+  const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
+    <div className="flex items-center justify-between py-2">
+      <div className="flex items-center gap-2">
+        <Label className="text-sm font-medium text-gray-800">{label}</Label>
+        {showInfo && (
+          <Info
+            size={16}
+            className="text-gray-500 cursor-help"
+            title="Information about this field"
+          />
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+          checked ? "bg-primary" : "bg-gray-300"
+        }`}
+        role="switch"
+        aria-checked={checked}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
+            checked ? "translate-x-6" : "translate-x-1"
+          }`}
+        />
+      </button>
+    </div>
+  );
+
+  const handleGenerateHabit = () => {
+    // TODO: Implement habit generation logic
+    console.log("Generate Habit clicked");
   };
 
   return (
@@ -746,6 +799,54 @@ export default function CreateComet({
                           handleTextSelection("specialInstructions", e)
                         }
                         className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
+                      />
+                    </div>
+
+                    {/* Separator */}
+                    <div className="border-t border-gray-300 my-4"></div>
+
+                    {/* Habit Section */}
+                    <div className="space-y-3">
+                      <ToggleSwitch
+                        checked={habitEnabled}
+                        onChange={setHabitEnabled}
+                        label="Habit"
+                        showInfo={true}
+                      />
+
+                      <div className="relative bg-gray-100 p-1 rounded-lg">
+                        <Textarea
+                          id="habit"
+                          rows={4}
+                          placeholder="Enter habit details..."
+                          {...register("habit")}
+                          onSelect={(e) => handleTextSelection("habit", e)}
+                          className="border border-gray-200 rounded-lg outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300 resize-none"
+                        />
+                        <div className="flex justify-end p-2">
+                          <Button
+                            size="sm"
+                            type="button"
+                            onClick={handleGenerateHabit}
+                            variant="outline"
+                            className="border-primary text-primary hover:bg-primary hover:text-white bg-transparent"
+                          >
+                            Generate Habit
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Separator */}
+                    <div className="border-t border-gray-300 my-4"></div>
+
+                    {/* Personalization Section */}
+                    <div className="space-y-3">
+                      <ToggleSwitch
+                        checked={personalizationEnabled}
+                        onChange={setPersonalizationEnabled}
+                        label="Personalization"
+                        showInfo={false}
                       />
                     </div>
                   </CardContent>

@@ -112,12 +112,12 @@ export default function Header() {
   ];
   const userName =
     typeof window !== "undefined" ? localStorage.getItem("user_name") : null;
-  console.log("userName", userName);
+ 
 
   useEffect(() => {
     // Check authentication status
     const isAuth = tokenManager.isAuthenticated();
-    console.log("isAuth", isAuth);
+   
     setIsAuthenticated(isAuth);
   }, [pathname]);
 
@@ -265,7 +265,7 @@ export default function Header() {
 
   const handleClientSelect = (client) => {
     setSelectedClient(client);
-    console.log("Selected client:", client);
+    
   };
 
   const handleInviteClick = () => {
@@ -309,7 +309,7 @@ export default function Header() {
         toast.success(`Comet shared with ${inviteEmail}`);
         handleInviteClose();
       } else {
-        console.log(">>>>>", response);
+        
         // Check for error details in response
         const errorMessage =
           response?.response?.data?.detail ||
@@ -328,8 +328,7 @@ export default function Header() {
       setIsInviting(false);
     }
   };
-  console.log("clients", clients);
-  console.log("selectedClient", selectedClient);
+  
 
   const handlePublish = async () => {
     setIsPublishing(true);

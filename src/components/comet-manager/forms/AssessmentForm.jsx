@@ -112,115 +112,123 @@ export default function AssessmentForm({
   };
 
   return (
-    <>
-      <SectionHeader title="Self Assessment" />
-      <div className="space-y-6">
-        {questions.map((questionData, questionIndex) => (
-          <div
-            key={questionIndex}
-            className=" border-primary rounded-lg p-4 bg-white"
-          >
-            {/* Title Field */}
-            <div className="mb-4">
-              <Label className="block text-sm font-medium text-primary mb-2">
-                Title
-              </Label>
-              <Input
-                type="text"
-                value={questionData.title || ""}
-                onChange={(e) =>
-                  updateQuestionField(questionIndex, "title", e.target.value)
-                }
-                placeholder="Enter title"
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
+    <div className="bg-gray-100 rounded-lg p-2">
+      <div className="p-2">
+        <SectionHeader title="Self Assessment" />
+      </div>
+      <div className="bg-white rounded-lg p-2 align-center">
+        <div className="space-y-6">
+          {questions.map((questionData, questionIndex) => (
+            <div
+              key={questionIndex}
+              className=" border-primary rounded-lg p-4 bg-white"
+            >
+              {/* Title Field */}
+              <div className="mb-4">
+                <Label className="block text-sm font-medium text-primary mb-2">
+                  Title
+                </Label>
+                <Input
+                  type="text"
+                  value={questionData.title || ""}
+                  onChange={(e) =>
+                    updateQuestionField(questionIndex, "title", e.target.value)
+                  }
+                  placeholder="Enter title"
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
 
-            {/* Question Field with Rich Text Editor */}
-            {/* <AssessmentRichTextArea
+              {/* Question Field with Rich Text Editor */}
+              {/* <AssessmentRichTextArea
               label="Question"
               value={questionData.text || ""}
               onChange={(value) =>
                 updateQuestionField(questionIndex, "question", value)
               }
             /> */}
-            <RichTextArea
-              label="Question"
-              value={questionData.question || ""}
-              onChange={(value) =>
-                updateQuestionField(questionIndex, "question", value)
-              }
-            />
+              <RichTextArea
+                label="Question"
+                value={questionData.question || ""}
+                onChange={(value) =>
+                  updateQuestionField(questionIndex, "question", value)
+                }
+              />
 
-            {/* Options Section */}
-            <div className="mb-4">
-              <Label className="block text-sm font-medium text-primary mb-2">
-                Options
-              </Label>
-              <div className="space-y-2">
-                {(questionData.options || []).map((option, optionIndex) => (
-                  <div
-                    key={option?.option_id}
-                    className="flex items-center gap-2"
-                  >
-                    {/* Drag Handle */}
-                    <div className="cursor-move text-gray-400 hover:text-gray-600">
-                      <GripVertical size={20} />
-                    </div>
-
-                    {/* Numbered Box */}
-                    <div className="flex items-center justify-center w-8 h-8 bg-gray-100 border border-gray-300 rounded text-sm font-medium text-gray-700">
-                      {optionIndex + 1}
-                    </div>
-
-                    {/* Option Input */}
-                    <Input
-                      type="text"
-                      value={option?.text || ""}
-                      onChange={(e) =>
-                        updateOption(questionIndex, optionIndex, e.target.value)
-                      }
-                      placeholder={`Option ${optionIndex + 1}`}
-                      className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-
-                    {/* Delete Button */}
-                    <Button
-                      type="button"
-                      onClick={() => removeOption(questionIndex, optionIndex)}
-                      className="px-2 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center"
+              {/* Options Section */}
+              <div className="mb-4">
+                <Label className="block text-sm font-medium text-primary mb-2">
+                  Options
+                </Label>
+                <div className="space-y-2">
+                  {(questionData.options || []).map((option, optionIndex) => (
+                    <div
+                      key={option?.option_id}
+                      className="flex items-center gap-2"
                     >
-                      <Trash2 size={16} />
-                    </Button>
-                  </div>
-                ))}
+                      {/* Drag Handle */}
+                      <div className="cursor-move text-gray-400 hover:text-gray-600">
+                        <GripVertical size={20} />
+                      </div>
+
+                      {/* Numbered Box */}
+                      <div className="flex items-center justify-center w-8 h-8 bg-gray-100 border border-gray-300 rounded text-sm font-medium text-gray-700">
+                        {optionIndex + 1}
+                      </div>
+
+                      {/* Option Input */}
+                      <Input
+                        type="text"
+                        value={option?.text || ""}
+                        onChange={(e) =>
+                          updateOption(
+                            questionIndex,
+                            optionIndex,
+                            e.target.value
+                          )
+                        }
+                        placeholder={`Option ${optionIndex + 1}`}
+                        className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+
+                      {/* Delete Button */}
+                      <Button
+                        type="button"
+                        onClick={() => removeOption(questionIndex, optionIndex)}
+                        className="px-2 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add Option Button */}
+                <Button
+                  type="button"
+                  onClick={() => addOption(questionIndex)}
+                  className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 bg-primary-50 text-primary hover:bg-primary-100 rounded-lg font-medium"
+                >
+                  <Plus size={16} />
+                  Add Option
+                </Button>
               </div>
 
-              {/* Add Option Button */}
-              <Button
-                type="button"
-                onClick={() => addOption(questionIndex)}
-                className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 bg-primary-50 text-primary hover:bg-primary-100 rounded-lg font-medium"
-              >
-                <Plus size={16} />
-                Add Option
-              </Button>
+              {/* Add Question Button - only show on last question */}
+              {questionIndex === questions.length - 1 && (
+                <Button
+                  type="button"
+                  onClick={addQuestion}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-primary-50 text-primary hover:bg-primary-100 rounded-lg font-medium"
+                >
+                  <Plus size={16} />
+                  Add Question
+                </Button>
+              )}
             </div>
-
-            {/* Add Question Button - only show on last question */}
-            {questionIndex === questions.length - 1 && (
-              <Button
-                type="button"
-                onClick={addQuestion}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-primary-50 text-primary hover:bg-primary-100 rounded-lg font-medium"
-              >
-                <Plus size={16} />
-                Add Question
-              </Button>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </>
+    </div>
   );
 }

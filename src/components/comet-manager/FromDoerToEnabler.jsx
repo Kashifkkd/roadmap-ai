@@ -1380,10 +1380,10 @@ export default function FromDoerToEnabler({ selectedScreen }) {
           />
         </div>
       </div>
-      <div className="bg-gray-white flex-1 overflow-y-auto px-2 ">
-        <div className="bg-gray-200 flex-1 overflow-y-auto px-2 py-4 rounded-sm">
+      <div className="bg-gray-white flex-1 overflow-y-auto px-2 min-h-0 flex flex-col">
+        <div className="bg-gray-200 flex-1 overflow-y-auto px-2 py-4 rounded-sm min-h-0 flex flex-col">
           <div
-            className={`flex-1 overflow-y-auto rounded-sm  bg-white ${
+            className={`overflow-y-auto rounded-sm bg-white ${
               deviceView === DEVICE_VIEWS.mobile
                 ? "px-4 max-w-[50%] mx-auto"
                 : deviceView === DEVICE_VIEWS.tablet

@@ -12,7 +12,7 @@ import "quill/dist/quill.snow.css";
 
 export const SectionHeader = ({ title }) => (
   <div className="w-full mb-4">
-    <h3 className="text-sm font-semibold text-primary">{title}</h3>
+    <h3 className="text-md font-semibold text-primary">{title}</h3>
   </div>
 );
 
@@ -244,12 +244,12 @@ export const RichTextArea = ({
   }, []);
 
   return (
-    <div className="mb-4 rounded-lg p-2">
+    <div className="mb-4">
       <Label className="block text-sm font-medium text-gray-700 mb-2">
         {label}
       </Label>
       {/*Editor Area */}
-      <div className="bg-gray-200 rounded-lg p-0.5">
+      <div className="bg-gray-100 rounded-lg p-0.5">
         <div ref={editorRef} className="h-96 border rounded-lg bg-white p-2" />
 
         {/* Custom toolbar container */}

@@ -7,7 +7,7 @@ const ProgressbarLoader = () => {
   const estimatedTimeRemaining = 4;
   return (
     <>
-      <div className=" w-screen h-full flex flex-col  rounded-2xl p-2 bg-white">
+      <div className="w-full h-full flex flex-col rounded-2xl p-2 bg-white">
         {/* <Header /> */}
         {/* second part */}
         {/* <div className="flex flex-col w-full rounded-2xl p-2 bg-white"> */}

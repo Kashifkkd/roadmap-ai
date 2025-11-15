@@ -183,9 +183,6 @@ export default function CometManager({
   const [selectedImageAsset, setSelectedImageAsset] = useState(null);
   const selectedScreenRef = useRef(null);
 
-  console.log("chapters", chapters);
-  console.log("selectedScreen", selectedScreen);
-
   // Update local screens when data changes
   useEffect(() => {
     if (!screens || screens.length === 0) {
@@ -223,8 +220,6 @@ export default function CometManager({
       setCurrentScreen(nextIndex);
     }
   }, [screens]);
-
-  console.log("SCREENS>>>", screens);
 
   // Ensure the selected screen is visible in the horizontal list
   useEffect(() => {
@@ -288,11 +283,16 @@ export default function CometManager({
   const handleAddNewScreen = (screenType) => {
     // Get current chapter and step
     const targetChapter = currentChapter || chapters[0] || null;
-    const targetChapterId = targetChapter?.id || chapters[0]?.id || "#chapter_1";
-    
+    const targetChapterId =
+      targetChapter?.id || chapters[0]?.id || "#chapter_1";
+
     // Get step ID - use selectedStepId if available, otherwise get first step from chapter
     let targetStepId = selectedStepId;
-    if (!targetStepId && targetChapter?.steps && targetChapter.steps.length > 0) {
+    if (
+      !targetStepId &&
+      targetChapter?.steps &&
+      targetChapter.steps.length > 0
+    ) {
       targetStepId = targetChapter.steps[0].id;
     }
     if (!targetStepId) {
@@ -300,16 +300,29 @@ export default function CometManager({
     }
 
     // Generate screen ID - format like #screen_2_2
-    const chapterNum = targetChapter?.order !== undefined 
-      ? targetChapter.order + 1 
-      : chapters.findIndex(ch => String(ch.id) === String(targetChapterId)) + 1 || 1;
-    const stepNum = targetChapter?.steps?.findIndex(step => String(step.id) === String(targetStepId)) + 1 || 1;
-    const screenNum = screens.filter(s => String(s.chapterId) === String(targetChapterId) && String(s.stepId) === String(targetStepId)).length + 1;
+    const chapterNum =
+      targetChapter?.order !== undefined
+        ? targetChapter.order + 1
+        : chapters.findIndex(
+            (ch) => String(ch.id) === String(targetChapterId)
+          ) + 1 || 1;
+    const stepNum =
+      targetChapter?.steps?.findIndex(
+        (step) => String(step.id) === String(targetStepId)
+      ) + 1 || 1;
+    const screenNum =
+      screens.filter(
+        (s) =>
+          String(s.chapterId) === String(targetChapterId) &&
+          String(s.stepId) === String(targetStepId)
+      ).length + 1;
     const screenId = `#screen_${chapterNum}_${stepNum}_${screenNum}`;
     const screenContentId = `#screen_content_${chapterNum}_${stepNum}_${screenNum}`;
 
     // Get position - count screens in the same step
-    const position = screens.filter(s => String(s.stepId) === String(targetStepId)).length + 1;
+    const position =
+      screens.filter((s) => String(s.stepId) === String(targetStepId)).length +
+      1;
 
     // Map screenType.id to contentType
     const contentTypeMap = {
@@ -333,7 +346,7 @@ export default function CometManager({
       // Action screen structure
       const actionTitle = "";
       const actionText = "";
-      
+
       newScreen = {
         id: screenId,
         screenType: "action",
@@ -669,8 +682,6 @@ export default function CometManager({
     setCurrentScreen(addAtIndex !== null ? addAtIndex : screens.length);
   };
 
-  console.log("currentChapter>>>", currentChapter);
-
   const handleUpdateScreen = (updatedScreen) => {
     // Update through the hook to persist changes
     updateScreenData(updatedScreen.id, updatedScreen);
@@ -710,7 +721,7 @@ export default function CometManager({
         </div>
       ) : (
         <>
-          <div className="flex flex-col lg:flex-row overflow-hidden h-full gap-2 p-2 lg:p-0">
+          <div className="flex flex-col lg:flex-row overflow-hidden rounded-xl h-full gap-2 p-2 lg:p-2">
             <div className="bg-background rounded-xl w-full lg:w-1/3 xl:w-1/4 h-auto lg:h-full overflow-hidden shrink-0">
               <CometManagerSidebar
                 selectedScreen={selectedScreen}
@@ -738,7 +749,6 @@ export default function CometManager({
                   setSelectedImageAsset(null);
                 }}
                 onChapterClick={(chapterId, chapter) => {
-                  console.log("Chapter clicked", chapterId, chapter);
                   // Clear selected material and assets when chapter is clicked
                   setSelectedMaterial(null);
                   setSelectedAssetCategory(null);
@@ -756,7 +766,7 @@ export default function CometManager({
             </div>
 
             {/* Right section - main content */}
-            <div className="flex flex-col w-full lg:w-2/3 xl:w-3/4 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl my-2 mr-2">
+            <div className="flex flex-col w-full lg:w-2/3 xl:w-3/4 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl ">
               <div className="flex flex-col  flex-1 overflow-hidden">
                 {/* Show Image Preview if image is selected (takes precedence) */}
                 {selectedImageAsset ? (
@@ -884,11 +894,17 @@ export default function CometManager({
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <img
-                            src={selectedScreen.thumbnail || "/error-img.png"}
-                            alt={selectedScreen.title || "Untitled Chapter"}
-                            className="w-10 h-10 rounded-lg"
-                          />
+                          {selectedScreen.thumbnail ? (
+                            <img
+                              src={selectedScreen.thumbnail}
+                              alt={selectedScreen.title || "Untitled Chapter"}
+                              className="w-10 h-10 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center">
+                              {/* <FileImage className="w-5 h-5 text-muted-foreground" /> */}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -899,7 +915,7 @@ export default function CometManager({
                       <div className="bg-background rounded-md p-2 sm:p-3 shrink-0">
                         <div className="flex flex-col gap-3 w-full">
                           <div className="flex items-start gap-2 w-full h-fit overflow-x-auto no-scrollbar -mx-2 px-2">
-                            <div className="flex items-start gap-2 sm:gap-4 px-1">
+                            <div className="flex items-start gap-2 sm:gap-2 px-1">
                               {screens.map((screen, index) => (
                                 <div
                                   key={screen.id}

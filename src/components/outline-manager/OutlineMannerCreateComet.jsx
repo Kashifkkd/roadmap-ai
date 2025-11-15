@@ -49,7 +49,7 @@ export default function OutlineMannerCreateComet({
   const [selectedChapterNumber, setSelectedChapterNumber] = useState(null);
   const [selectedStep, setSelectedStep] = useState(null);
   const [showChapterTextarea, setShowChapterTextarea] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  // const [isGenerating, setIsGenerating] = useState(false);
 
   const selectedChapterNameRef = useRef(null);
   const selectedStepTitleRef = useRef(null);
@@ -126,13 +126,13 @@ export default function OutlineMannerCreateComet({
     setSelectedStep(step);
   };
 
-  if (isGenerating) {
-    return (
-      <div className="fixed  left-0 right-0 h-full">
-        <ProgressbarLoader />
-      </div>
-    );
-  }
+  // if (isGenerating) {
+  //   return (
+  //     <div className="fixed  left-0 right-0 h-full">
+  //       <ProgressbarLoader />
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="flex flex-col flex-1 w-full h-full bg-background rounded-xl overflow-hidden ">
@@ -360,8 +360,8 @@ export default function OutlineMannerCreateComet({
       {/* Footer */}
       <div className="shrink-0">
         <OutlineMannerFooter
-          isGenerating={isGenerating}
-          setIsGenerating={setIsGenerating}
+          // isGenerating={isGenerating}
+          // setIsGenerating={setIsGenerating}
         />
       </div>
     </div>

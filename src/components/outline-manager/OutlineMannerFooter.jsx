@@ -6,10 +6,11 @@ import Stars from "@/components/icons/Stars";
 import ProgressbarLoader from "@/components/loader";
 import { graphqlClient } from "@/lib/graphql-client";
 
-export default function OutlineMannerFooter({ isGenerating, setIsGenerating }) {
+export default function OutlineMannerFooter() {
   const router = useRouter();
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     if (!isGenerating || !sessionId) return;
@@ -101,9 +102,15 @@ export default function OutlineMannerFooter({ isGenerating, setIsGenerating }) {
     }
   };
 
-  // if (isGenerating) {
-  //   return <ProgressbarLoader />;
-  // }
+  if (isGenerating) {
+    return (
+      <div className="fixed inset-x-0 top-[64px] bottom-0 z-50 bg-primary-50">
+        <div className="w-full h-full flex items-center justify-center p-2 overflow-auto">
+          <ProgressbarLoader />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

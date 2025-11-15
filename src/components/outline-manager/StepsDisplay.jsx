@@ -132,7 +132,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
     }
   };
 
-  console.log(">>", chapterNumber, selectedStepInfo)
+
   const handleAskKyper = async (query) => {
 
     try {
@@ -167,13 +167,13 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
       });
 
 
-      console.log("Payload Object:", payloadObject);
+      
 
       const messageResponse = await graphqlClient.sendMessage(
         payloadObject
       );
 
-      console.log("Message sent, AI response:", messageResponse.sendMessage);
+   ;
 
       setAllMessages((prev) => [
         ...prev,
@@ -209,19 +209,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
       selectedChapter?.step ||
       "Unknown";
 
-    console.log("=== Edit Step Context ===");
-    console.log("Chapter Number:", currentChapterNumber);
-    console.log(
-      "Selected Chapter:",
-      selectedChapter?.chapter || "Untitled Chapter"
-    );
-    console.log("Step Number:", stepIndex + 1);
-    console.log(
-      "Step Title:",
-      selectedChapter?.steps[stepIndex]?.title || "Untitled Step"
-    );
-    console.log("Field Type:", fieldType);
-    console.log("Current Value:", currentValue);
+   
 
     setEditingField(`${stepIndex}-${fieldType}`);
     setEditValue(currentValue);
@@ -237,13 +225,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
       selectedChapter?.step ||
       "Unknown";
 
-    console.log("=== Save Edit ===");
-    console.log("Chapter Number:", currentChapterNumber);
-    console.log("Chapter:", selectedChapter?.chapter);
-    console.log("Step:", stepIndex + 1);
-    console.log("Field:", fieldType);
-    console.log("New Value:", editValue);
-
+   
     // TODO: Implement actual save logic here
     // await graphqlClient.updateStepContent(...)
 

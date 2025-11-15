@@ -45,22 +45,24 @@ export default function ReflectionForm({ formData, updateField }) {
   };
 
   return (
-    <>
-      <SectionHeader title="Reflection" />
-
-      <div className="mb-4">
-        <Label className="block text-sm font-medium text-gray-700 mb-2">
-          Title
-        </Label>
-        <Input
-          type="text"
-          value={formData.reflectionTitle || ""}
-          onChange={(e) => updateField("reflectionTitle", e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary"
-        />
+    <div className="bg-gray-100 rounded-lg p-2">
+      <div className="p-2">
+        <SectionHeader title="Reflection" />
       </div>
+      <div className="bg-white rounded-lg p-2 align-center">
+        <div className="mb-4">
+          <Label className="block text-sm font-medium text-gray-700 mb-2">
+            Title
+          </Label>
+          <Input
+            type="text"
+            value={formData.reflectionTitle || ""}
+            onChange={(e) => updateField("reflectionTitle", e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
 
-      {/* <Textarea
+        {/* <Textarea
             value={formData.reflectionDescription || ""}
             onChange={(e) =>
               updateField("reflectionDescription", e.target.value)
@@ -68,74 +70,75 @@ export default function ReflectionForm({ formData, updateField }) {
             rows={6}
             className="w-full px-3 py-2 border-0 bg-white focus:outline-none focus:ring-0 resize-y"
           /> */}
-      <RichTextArea
-        label="Description"
-        value={formData.reflectionDescription}
-        onChange={(value) => updateField("reflectionDescription", value)}
-      />
+        <RichTextArea
+          label="Description"
+          value={formData.reflectionDescription}
+          onChange={(value) => updateField("reflectionDescription", value)}
+        />
 
-      <div className="mb-4">
-        <Label className="block text-sm font-medium text-gray-700 mb-3">
-          Upload Image
-        </Label>
+        <div className="mb-4">
+          <Label className="block text-sm font-medium text-gray-700 mb-3">
+            Upload Image
+          </Label>
 
-        <div className="space-y-3 bg-gray-100 rounded-lg p-4 flex flex-1 gap-2 justify-between">
-          <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white p-2 justify-center items-center">
-            <div className="flex flex-col items-center justify-center h-full">
-              <span className="text-xs text-gray-700 mb-2">
-                Upload from Computer
-              </span>
-              <input
-                id={fileInputId}
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <Button
-                type="button"
-                onClick={handleBrowseClick}
-                className="bg-primary text-white hover:bg-primary-700 px-3 py-1.5 text-sm"
-              >
-                <Plus size={14} className="mr-1" />
-                Browse
-              </Button>
+          <div className="space-y-3 bg-gray-100 rounded-lg p-4 flex flex-1 gap-2 justify-between">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white p-2 justify-center items-center">
+              <div className="flex flex-col items-center justify-center h-full">
+                <span className="text-xs text-gray-700 mb-2">
+                  Upload from Computer
+                </span>
+                <input
+                  id={fileInputId}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  onClick={handleBrowseClick}
+                  className="bg-primary text-white hover:bg-primary-700 px-3 py-1.5 text-sm"
+                >
+                  <Plus size={14} className="mr-1" />
+                  Browse
+                </Button>
+              </div>
             </div>
-          </div>
 
-          <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white p-2 justify-center items-center">
-            <div className="flex flex-col items-center justify-center h-full">
-              <span className="text-xs text-gray-700 mb-2">
-                Select from Assets
-              </span>
-              <Button
-                type="button"
-                onClick={handleSelectAssets}
-                className="bg-primary text-white hover:bg-primary-700 px-3 py-1.5 text-sm"
-              >
-                <Plus size={14} className="mr-1" />
-                Select
-              </Button>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white p-2 justify-center items-center">
+              <div className="flex flex-col items-center justify-center h-full">
+                <span className="text-xs text-gray-700 mb-2">
+                  Select from Assets
+                </span>
+                <Button
+                  type="button"
+                  onClick={handleSelectAssets}
+                  className="bg-primary text-white hover:bg-primary-700 px-3 py-1.5 text-sm"
+                >
+                  <Plus size={14} className="mr-1" />
+                  Select
+                </Button>
+              </div>
             </div>
-          </div>
 
-          <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white p-2 justify-center items-center">
-            <div className="flex flex-col items-center justify-center h-full">
-              <span className="text-xs text-gray-700 mb-2">
-                AI-Generate Image
-              </span>
-              <Button
-                type="button"
-                onClick={handleAIGenerate}
-                className="bg-primary text-white hover:bg-primary-700 px-3 py-1.5 text-sm"
-              >
-                <Plus size={14} className="mr-1" />
-                Create
-              </Button>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white p-2 justify-center items-center">
+              <div className="flex flex-col items-center justify-center h-full">
+                <span className="text-xs text-gray-700 mb-2">
+                  AI-Generate Image
+                </span>
+                <Button
+                  type="button"
+                  onClick={handleAIGenerate}
+                  className="bg-primary text-white hover:bg-primary-700 px-3 py-1.5 text-sm"
+                >
+                  <Plus size={14} className="mr-1" />
+                  Create
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

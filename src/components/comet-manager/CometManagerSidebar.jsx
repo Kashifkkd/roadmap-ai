@@ -236,7 +236,7 @@ export default function CometManagerSidebar({
           ? response.response
           : [];
         setSourceMaterials(materials);
-        // console.log(">>> materials", materials);
+        console.log(">>> materials", materials);
       } else {
         setSourceMaterials([]);
       }
@@ -374,16 +374,16 @@ export default function CometManagerSidebar({
   ];
 
   return (
-    <div className="flex flex-col w-full p-2 gap-2 h-full overflow-hidden">
+    <div className="flex flex-col w-full  gap-2 h-full overflow-hidden">
       {/* Tabs */}
-      <div className="flex justify-between w-full rounded-xl shrink-0">
+      <div className="flex justify-between w-full  rounded-xl shrink-0">
         <Stack
           direction="row"
-          className="bg-background rounded-xl w-full justify-between"
+          className="bg-white rounded-xl w-full justify-between"
         >
           {buttons.map((button, index) => (
             <Button
-              size="sm"
+              size="md"
               variant="default"
               key={index}
               onClick={button.onClick}
@@ -415,7 +415,7 @@ export default function CometManagerSidebar({
                   <div
                     key={chapterId}
                     className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
-                      isSelected && isExpanded ? "bg-primary-100" : "bg-white"
+                      isExpanded ? "bg-primary-100" : "bg-white"
                     }`}
                   >
                     {/* Chapter Header */}
@@ -455,7 +455,7 @@ export default function CometManagerSidebar({
                         </p>
                         <p
                           className={`text-sm sm:text-sm font-medium ${
-                            isSelected ? "text-gray-900" : "text-primary"
+                            isSelected ? "text-gray-900 " : "text-primary"
                           }`}
                         >
                           {chapter.chapter ||
@@ -487,7 +487,7 @@ export default function CometManagerSidebar({
                                     ? "bg-primary-700"
                                     : isStepSelected
                                     ? "bg-primary-700"
-                                    : "bg-gray-100"
+                                    : "bg-white"
                                 }`}
                               >
                                 {/* Step Header */}

@@ -129,7 +129,7 @@ export default function DashboardLayout() {
       const messageResponse = await graphqlClient.sendMessage(
         cometJsonForMessage
       );
-      console.log("Message sent:", messageResponse.sendMessage);
+      
 
       // Step 3: Show loading - useEffect will handle the subscription
       setIsGeneratingOutline(true);

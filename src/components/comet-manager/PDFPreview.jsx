@@ -8,13 +8,15 @@ import Image from "next/image";
 export default function PDFPreview({ material, onClose }) {
   if (!material) return null;
 
-  console.log(">>>>>", material);
+  // console.log(">>>>>", material);
   const pdfUrl = material.output_presigned_url || null;
+  console.log(pdfUrl);
 
-  const fallbackPdfUrl = "/Get_Started_with_Smallpdf.pdf";
+  // const fallbackPdfUrl = "/Get_Started_with_Smallpdf.pdf";
 
-  const finalPdfUrl =
-    pdfUrl && pdfUrl.toLowerCase().endsWith(".pdf") ? pdfUrl : fallbackPdfUrl;
+  // const finalPdfUrl =
+  //   pdfUrl && pdfUrl.toLowerCase().endsWith(".pdf") ? pdfUrl : fallbackPdfUrl;
+  // console.log("finapdfUrl", finalPdfUrl);
 
   const fileName = material.source_name || material.name || "Document";
   const fileSize = material.file_size || material.size;
@@ -96,9 +98,9 @@ export default function PDFPreview({ material, onClose }) {
 
       {/* PDF Viewer */}
       <div className="flex-1 overflow-hidden bg-gray-100">
-        {finalPdfUrl ? (
+        {pdfUrl ? (
           <iframe
-            src={`${finalPdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+            src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
             title={fileName}
             className="w-full h-[600px] border-none bg-white"
           />
