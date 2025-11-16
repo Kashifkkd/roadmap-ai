@@ -4,73 +4,73 @@ import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Plus, Trash2, GripVertical } from "lucide-react";
-import Quill from "quill";
-import "quill/dist/quill.snow.css";
+// import Quill from "quill";
+// import "quill/dist/quill.snow.css";
 
 // Custom RichTextArea for Assessment Form with specific toolbar
-const AssessmentRichTextArea = ({ label, value, onChange }) => {
-  const quillEditorRef = useRef(null);
-  const editorRef = useRef(null);
-  const toolbarRef = useRef(null);
+// const AssessmentRichTextArea = ({ label, value, onChange }) => {
+//   const quillEditorRef = useRef(null);
+//   const editorRef = useRef(null);
+//   const toolbarRef = useRef(null);
 
-  useEffect(() => {
-    if (quillEditorRef.current || !editorRef.current || !toolbarRef.current)
-      return;
+//   useEffect(() => {
+//     if (quillEditorRef.current || !editorRef.current || !toolbarRef.current)
+//       return;
 
-    const editor = new Quill(editorRef.current, {
-      theme: "snow",
-      modules: {
-        toolbar: toolbarRef.current,
-      },
-    });
+//     const editor = new Quill(editorRef.current, {
+//       theme: "snow",
+//       modules: {
+//         toolbar: toolbarRef.current,
+//       },
+//     });
 
-    if (value) {
-      try {
-        editor.setContents(JSON.parse(value));
-      } catch {
-        editor.setText(value);
-      }
-    }
+//     if (value) {
+//       try {
+//         editor.setContents(JSON.parse(value));
+//       } catch {
+//         editor.setText(value);
+//       }
+//     }
 
-    editor.on("text-change", () => {
-      onChange(JSON.stringify(editor.getContents()));
-    });
+//     editor.on("text-change", () => {
+//       onChange(JSON.stringify(editor.getContents()));
+//     });
 
-    quillEditorRef.current = editor;
+//     quillEditorRef.current = editor;
 
-    return () => {
-      quillEditorRef.current = null;
-      if (editorRef.current) editorRef.current.innerHTML = "";
-      if (toolbarRef.current) toolbarRef.current.innerHTML = "";
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+//     return () => {
+//       quillEditorRef.current = null;
+//       if (editorRef.current) editorRef.current.innerHTML = "";
+//       if (toolbarRef.current) toolbarRef.current.innerHTML = "";
+//     };
+//     // eslint-disable-next-line react-hooks/exhaustive-deps
+//   }, []);
 
-  return (
-    <div className="mb-4">
-      <Label className="block text-sm font-medium text-primary mb-2">
-        {label}
-      </Label>
-      {/* Custom toolbar container */}
-      <div ref={toolbarRef} className="mb-2 border rounded p-1 flex gap-1">
-        <button className="ql-bold" title="Bold" />
-        <button className="ql-italic" title="Italic" />
-        <button className="ql-underline" title="Underline" />
-        <button className="ql-strike" title="Strikethrough" />
-        <button className="ql-list" value="bullet" title="Bullet List" />
-        <button className="ql-list" value="ordered" title="Numbered List" />
-        <button className="ql-link" title="Link" />
-        <button className="ql-image" title="Image" />
-        <button className="ql-code-block" title="Code Block" />
-      </div>
-      {/* Editor Area */}
-      <div
-        ref={editorRef}
-        className="min-h-[120px] border rounded p-2 bg-gray-50"
-      />
-    </div>
-  );
-};
+//   return (
+//     <div className="mb-4">
+//       <Label className="block text-sm font-medium text-primary mb-2">
+//         {label}
+//       </Label>
+//       {/* Custom toolbar container */}
+//       <div ref={toolbarRef} className="mb-2 border rounded p-1 flex gap-1">
+//         <button className="ql-bold" title="Bold" />
+//         <button className="ql-italic" title="Italic" />
+//         <button className="ql-underline" title="Underline" />
+//         <button className="ql-strike" title="Strikethrough" />
+//         <button className="ql-list" value="bullet" title="Bullet List" />
+//         <button className="ql-list" value="ordered" title="Numbered List" />
+//         <button className="ql-link" title="Link" />
+//         <button className="ql-image" title="Image" />
+//         <button className="ql-code-block" title="Code Block" />
+//       </div>
+//       {/* Editor Area */}
+//       <div
+//         ref={editorRef}
+//         className="min-h-[120px] border rounded p-2 bg-gray-50"
+//       />
+//     </div>
+//   );
+// };
 
 export default function AssessmentForm({
   formData,

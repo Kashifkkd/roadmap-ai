@@ -194,7 +194,7 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
 
         <div className="text-center pt-2">
           <p className="text-sm text-gray-600">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <button
               type="button"
               onClick={() => {

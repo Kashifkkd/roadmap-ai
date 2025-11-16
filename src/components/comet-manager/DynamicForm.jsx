@@ -46,7 +46,10 @@ const extractPlainTextFromDelta = (value) => {
       }
     } catch (e) {
       // If parsing fails, it's not valid JSON - return as-is (plain text)
-      console.log("🔵 Not a valid JSON delta, treating as plain text:", e.message);
+      console.log(
+        "🔵 Not a valid JSON delta, treating as plain text:",
+        e.message
+      );
       return value;
     }
   }
@@ -183,7 +186,8 @@ export default function DynamicForm({
           if (screenIndex !== undefined && screenIndex >= 0) {
             // Get current screen from latest state (prevOutline)
             const currentScreen = stepItem.screens[screenIndex];
-            const contentType = currentScreen?.screenContents?.contentType || "";
+            const contentType =
+              currentScreen?.screenContents?.contentType || "";
 
             // Ensure screenContents and content exist
             if (!currentScreen.screenContents) {
@@ -220,69 +224,102 @@ export default function DynamicForm({
               } else if (field === "can_complete_now") {
                 currentScreen.screenContents.content.can_complete_now = value;
               } else if (field === "has_reflection_question") {
-                currentScreen.screenContents.content.has_reflection_question = value;
+                currentScreen.screenContents.content.has_reflection_question =
+                  value;
               } else if (field === "tool_link") {
                 currentScreen.screenContents.content.tool_link = value;
               } else if (field === "reflection_prompt") {
                 currentScreen.screenContents.content.reflection_prompt = value;
               } else if (field === "reflection_question") {
-                currentScreen.screenContents.content.reflection_question = value;
+                currentScreen.screenContents.content.reflection_question =
+                  value;
               }
             } else if (contentType === "mcq") {
-              if (field === "title") currentScreen.screenContents.content.title = value;
+              if (field === "title")
+                currentScreen.screenContents.content.title = value;
               else if (field === "question") {
-                currentScreen.screenContents.content.question = extractPlainTextFromDelta(value);
-              } else if (field === "top_label") currentScreen.screenContents.content.top_label = value;
-              else if (field === "bottom_label") currentScreen.screenContents.content.bottom_label = value;
-              else if (field === "key_learning") currentScreen.screenContents.content.key_learning = value;
-              else if (field === "options") currentScreen.screenContents.content.options = value;
+                currentScreen.screenContents.content.question =
+                  extractPlainTextFromDelta(value);
+              } else if (field === "top_label")
+                currentScreen.screenContents.content.top_label = value;
+              else if (field === "bottom_label")
+                currentScreen.screenContents.content.bottom_label = value;
+              else if (field === "key_learning")
+                currentScreen.screenContents.content.key_learning = value;
+              else if (field === "options")
+                currentScreen.screenContents.content.options = value;
             } else if (contentType === "force_rank") {
-              if (field === "title") currentScreen.screenContents.content.title = value;
+              if (field === "title")
+                currentScreen.screenContents.content.title = value;
               else if (field === "question") {
-                currentScreen.screenContents.content.question = extractPlainTextFromDelta(value);
-              } else if (field === "high_label") currentScreen.screenContents.content.high_label = value;
-              else if (field === "low_label") currentScreen.screenContents.content.low_label = value;
-              else if (field === "key_learning") currentScreen.screenContents.content.key_learning = value;
-              else if (field === "options") currentScreen.screenContents.content.options = value;
+                currentScreen.screenContents.content.question =
+                  extractPlainTextFromDelta(value);
+              } else if (field === "high_label")
+                currentScreen.screenContents.content.high_label = value;
+              else if (field === "low_label")
+                currentScreen.screenContents.content.low_label = value;
+              else if (field === "key_learning")
+                currentScreen.screenContents.content.key_learning = value;
+              else if (field === "options")
+                currentScreen.screenContents.content.options = value;
             } else if (contentType === "linear") {
-              if (field === "title") currentScreen.screenContents.content.title = value;
+              if (field === "title")
+                currentScreen.screenContents.content.title = value;
               else if (field === "question") {
-                currentScreen.screenContents.content.question = extractPlainTextFromDelta(value);
-              } else if (field === "high_label") currentScreen.screenContents.content.high_label = value;
-              else if (field === "low_label") currentScreen.screenContents.content.low_label = value;
-              else if (field === "key_learning") currentScreen.screenContents.content.key_learning = value;
-              else if (field === "lowerscale") currentScreen.screenContents.content.lowerscale = value;
-              else if (field === "higherscale") currentScreen.screenContents.content.higherscale = value;
+                currentScreen.screenContents.content.question =
+                  extractPlainTextFromDelta(value);
+              } else if (field === "high_label")
+                currentScreen.screenContents.content.high_label = value;
+              else if (field === "low_label")
+                currentScreen.screenContents.content.low_label = value;
+              else if (field === "key_learning")
+                currentScreen.screenContents.content.key_learning = value;
+              else if (field === "lowerscale")
+                currentScreen.screenContents.content.lowerscale = value;
+              else if (field === "higherscale")
+                currentScreen.screenContents.content.higherscale = value;
             } else if (contentType === "reflection") {
-              if (field === "title") currentScreen.screenContents.content.title = value;
+              if (field === "title")
+                currentScreen.screenContents.content.title = value;
               else if (field === "prompt") {
-                currentScreen.screenContents.content.prompt = extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.prompt =
+                  extractPlainTextFromDelta(value);
               }
             } else if (contentType === "social_discussion") {
-              if (field === "title") currentScreen.screenContents.content.title = value;
+              if (field === "title")
+                currentScreen.screenContents.content.title = value;
               else if (field === "question") {
-                currentScreen.screenContents.content.question = extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.question =
+                  extractPlainTextFromDelta(value);
               }
             } else if (contentType === "assessment") {
-              if (field === "title") currentScreen.screenContents.content.title = value;
+              if (field === "title")
+                currentScreen.screenContents.content.title = value;
               else if (field === "questions") {
                 // Extract plain text from delta for nested question.text fields
                 if (Array.isArray(value)) {
-                  currentScreen.screenContents.content.questions = value.map((question) => {
-                    if (question && typeof question === "object" && question.text) {
-                      return {
-                        ...question,
-                        text: extractPlainTextFromDelta(question.text),
-                      };
+                  currentScreen.screenContents.content.questions = value.map(
+                    (question) => {
+                      if (
+                        question &&
+                        typeof question === "object" &&
+                        question.text
+                      ) {
+                        return {
+                          ...question,
+                          text: extractPlainTextFromDelta(question.text),
+                        };
+                      }
+                      return question;
                     }
-                    return question;
-                  });
+                  );
                 } else {
                   currentScreen.screenContents.content.questions = value;
                 }
               }
             } else if (contentType === "habits") {
-              if (field === "title") currentScreen.screenContents.content.title = value;
+              if (field === "title")
+                currentScreen.screenContents.content.title = value;
               else if (field === "habit_image") {
                 if (!currentScreen.screenContents.content.habit_image) {
                   currentScreen.screenContents.content.habit_image = {};
@@ -305,15 +342,23 @@ export default function DynamicForm({
               } else if (field === "habits") {
                 // Extract plain text from delta for nested habit.description fields
                 if (Array.isArray(value)) {
-                  currentScreen.screenContents.content.habits = value.map((habit) => {
-                    if (habit && typeof habit === "object" && habit.description) {
-                      return {
-                        ...habit,
-                        description: extractPlainTextFromDelta(habit.description),
-                      };
+                  currentScreen.screenContents.content.habits = value.map(
+                    (habit) => {
+                      if (
+                        habit &&
+                        typeof habit === "object" &&
+                        habit.description
+                      ) {
+                        return {
+                          ...habit,
+                          description: extractPlainTextFromDelta(
+                            habit.description
+                          ),
+                        };
+                      }
+                      return habit;
                     }
-                    return habit;
-                  });
+                  );
                 } else {
                   currentScreen.screenContents.content.habits = value;
                 }
@@ -324,7 +369,8 @@ export default function DynamicForm({
             if (currentScreen.screenContents.content.title) {
               currentScreen.title = currentScreen.screenContents.content.title;
             } else if (currentScreen.screenContents.content.heading) {
-              currentScreen.title = currentScreen.screenContents.content.heading;
+              currentScreen.title =
+                currentScreen.screenContents.content.heading;
             }
 
             return newOutline;
@@ -520,8 +566,8 @@ export default function DynamicForm({
         typeof screen?.position === "number"
           ? screen.position
           : typeof screen?.order === "number"
-            ? screen.order + 1
-            : 1;
+          ? screen.order + 1
+          : 1;
 
       const conversationMessage = `{ 'path': 'chapter-${chapterNumber}-step-${stepNumber}-screen-${screenNumber}', 'field': '${mappedField}', 'value': '${askContext.selectedText}', 'instruction': '${query}' }`;
 
@@ -557,12 +603,26 @@ export default function DynamicForm({
       screen?.screenContents?.contentType || ""
     ).toLowerCase();
 
+    // Extract IDs for asset upload
+    const sessionId =
+      sessionData?.session_id ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("sessionId")
+        : null);
+    const screenId = screen?.id || "";
+    const chapterId = screen?.chapterId || "";
+    const stepId = screen?.stepId || "";
+
     const formProps = {
       formData,
       updateField,
       addListItem,
       updateListItem,
       removeListItem,
+      sessionId,
+      chapterId,
+      stepId,
+      screenId,
     };
 
     //1-Content
