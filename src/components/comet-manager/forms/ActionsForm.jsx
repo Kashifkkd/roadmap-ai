@@ -36,7 +36,18 @@ const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
   </div>
 );
 
-export default function ActionsForm({ formData, updateField }) {
+export default function ActionsForm({
+  formData,
+  updateField,
+  askKyperHandlers = {},
+}) {
+  const {
+    onTextFieldSelect,
+    onFieldBlur,
+    onRichTextSelection,
+    onRichTextBlur,
+  } = askKyperHandlers;
+
   return (
     <div className="bg-gray-100 rounded-lg p-2">
       <div className="p-2">
@@ -49,12 +60,21 @@ export default function ActionsForm({ formData, updateField }) {
             label="Title"
             value={formData.title || ""}
             onChange={(value) => updateField("title", value)}
+            inputProps={{
+              onSelect: (event) =>
+                onTextFieldSelect?.("actionTitle", event, formData.title),
+              onBlur: onFieldBlur,
+            }}
           />
 
           <RichTextArea
             label="Description"
             value={formData.text || ""}
             onChange={(value) => updateField("text", value)}
+            onSelectionChange={(selectionInfo) =>
+              onRichTextSelection?.("actionText", selectionInfo, formData.text)
+            }
+            onBlur={onRichTextBlur}
           />
         </div>
 
@@ -69,6 +89,14 @@ export default function ActionsForm({ formData, updateField }) {
             onChange={(e) => updateField("tool_link", e.target.value)}
             placeholder="Enter tool URL or link"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+            onSelect={(event) =>
+              onTextFieldSelect?.(
+                "actionToolLink",
+                event,
+                formData.tool_link
+              )
+            }
+            onBlur={onFieldBlur}
           />
         </div>
 
@@ -83,6 +111,14 @@ export default function ActionsForm({ formData, updateField }) {
             rows={4}
             placeholder="Enter prompt for tool creation..."
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white resize-none"
+            onSelect={(event) =>
+              onTextFieldSelect?.(
+                "actionReflectionPrompt",
+                event,
+                formData.reflection_prompt
+              )
+            }
+            onBlur={onFieldBlur}
           />
         </div>
 

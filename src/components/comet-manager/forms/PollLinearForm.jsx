@@ -15,7 +15,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function PollLinearForm({ formData, updateField }) {
+export default function PollLinearForm({
+  formData,
+  updateField,
+  askKyperHandlers = {},
+}) {
+  const {
+    onTextFieldSelect,
+    onFieldBlur,
+    onRichTextSelection,
+    onRichTextBlur,
+  } = askKyperHandlers;
   return (
     <div className="bg-gray-100 rounded-lg p-2">
       <div className="p-2">
@@ -26,21 +36,44 @@ export default function PollLinearForm({ formData, updateField }) {
           label="Title"
           value={formData.title || ""}
           onChange={(value) => updateField("title", value)}
+          inputProps={{
+            onSelect: (event) =>
+              onTextFieldSelect?.("linearTitle", event, formData.title),
+            onBlur: onFieldBlur,
+          }}
         />
         <TextField
           label="Top Label"
           value={formData.high_label || ""}
           onChange={(value) => updateField("high_label", value)}
+          inputProps={{
+            onSelect: (event) =>
+              onTextFieldSelect?.("linearHighLabel", event, formData.high_label),
+            onBlur: onFieldBlur,
+          }}
         />
         <TextField
           label="Bottom Label"
           value={formData.low_label || ""}
           onChange={(value) => updateField("low_label", value)}
+          inputProps={{
+            onSelect: (event) =>
+              onTextFieldSelect?.("linearLowLabel", event, formData.low_label),
+            onBlur: onFieldBlur,
+          }}
         />
         <RichTextArea
           label="Question"
           value={formData.question || ""}
           onChange={(value) => updateField("question", value)}
+          onSelectionChange={(selectionInfo) =>
+            onRichTextSelection?.(
+              "linearQuestion",
+              selectionInfo,
+              formData.question
+            )
+          }
+          onBlur={onRichTextBlur}
         />
         <div className="mb-4">
           <Label className="block text-sm font-medium text-gray-700 mb-2">

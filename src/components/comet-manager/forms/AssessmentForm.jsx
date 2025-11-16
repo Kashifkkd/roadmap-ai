@@ -78,7 +78,14 @@ export default function AssessmentForm({
   addListItem,
   updateListItem,
   removeListItem,
+  askKyperHandlers = {},
 }) {
+  const {
+    onTextFieldSelect,
+    onFieldBlur,
+    onRichTextSelection,
+    onRichTextBlur,
+  } = askKyperHandlers;
   const questions = formData.assessmentQuestions || [
     {
       title: "",
@@ -136,6 +143,14 @@ export default function AssessmentForm({
                   }
                   placeholder="Enter title"
                   className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  onSelect={(event) =>
+                    onTextFieldSelect?.(
+                      "assessmentTitle",
+                      event,
+                      questionData.title
+                    )
+                  }
+                  onBlur={onFieldBlur}
                 />
               </div>
 
@@ -153,6 +168,14 @@ export default function AssessmentForm({
                 onChange={(value) =>
                   updateQuestionField(questionIndex, "question", value)
                 }
+                onSelectionChange={(selectionInfo) =>
+                  onRichTextSelection?.(
+                    "assessmentQuestions",
+                    selectionInfo,
+                    questionData.question
+                  )
+                }
+                onBlur={onRichTextBlur}
               />
 
               {/* Options Section */}

@@ -529,6 +529,7 @@ export default function DynamicForm({
         contentHeading: "heading",
         contentBody: "body",
         contentMediaUrl: "media.url",
+        mcqTitle: "title",
         mcqQuestion: "question",
         mcqTopLabel: "top_label",
         mcqBottomLabel: "bottom_label",
@@ -537,11 +538,13 @@ export default function DynamicForm({
         forceRankTitle: "title",
         forceRankHighLabel: "high_label",
         forceRankLowLabel: "low_label",
+        forceRankQuestion: "question",
         forceRankKeyLearning: "key_learning",
         forceRankOptions: "options",
         linearTitle: "title",
         linearHighLabel: "high_label",
         linearLowLabel: "low_label",
+        linearQuestion: "question",
         linearKeyLearning: "key_learning",
         linearLowerScale: "lowerscale",
         linearHigherScale: "higherscale",
@@ -549,6 +552,7 @@ export default function DynamicForm({
         reflectionPrompt: "prompt",
         actionTitle: "title",
         actionText: "text",
+        actionToolLink: "tool_link",
         actionReflectionPrompt: "reflection_prompt",
         socialTitle: "title",
         socialQuestion: "question",
@@ -645,31 +649,114 @@ export default function DynamicForm({
       screenType === "poll" ||
       ["mcq", "linear", "force_rank"].includes(contentType)
     ) {
-      if (contentType === "mcq") return <PollMcqForm {...formProps} />;
-      if (contentType === "linear") return <PollLinearForm {...formProps} />;
-      if (contentType === "force_rank") return <ForceRankForm {...formProps} />;
+      if (contentType === "mcq")
+        return (
+          <PollMcqForm
+            {...formProps}
+            askKyperHandlers={{
+              onTextFieldSelect: handleTextFieldSelect,
+              onFieldBlur: handleFieldBlur,
+              onRichTextSelection: handleRichTextSelection,
+              onRichTextBlur: handleFieldBlur,
+            }}
+          />
+        );
+      if (contentType === "linear")
+        return (
+          <PollLinearForm
+            {...formProps}
+            askKyperHandlers={{
+              onTextFieldSelect: handleTextFieldSelect,
+              onFieldBlur: handleFieldBlur,
+              onRichTextSelection: handleRichTextSelection,
+              onRichTextBlur: handleFieldBlur,
+            }}
+          />
+        );
+      if (contentType === "force_rank")
+        return (
+          <ForceRankForm
+            {...formProps}
+            askKyperHandlers={{
+              onTextFieldSelect: handleTextFieldSelect,
+              onFieldBlur: handleFieldBlur,
+              onRichTextSelection: handleRichTextSelection,
+              onRichTextBlur: handleFieldBlur,
+            }}
+          />
+        );
     }
 
     //3-Habits
     if (screenType === "habits" || contentType === "habits") {
-      return <HabitOptInForm {...formProps} />;
+      return (
+        <HabitOptInForm
+          {...formProps}
+          askKyperHandlers={{
+            onTextFieldSelect: handleTextFieldSelect,
+            onFieldBlur: handleFieldBlur,
+            onRichTextSelection: handleRichTextSelection,
+            onRichTextBlur: handleFieldBlur,
+          }}
+        />
+      );
     }
 
     //4-Reflection
     if (screenType === "reflection" || contentType === "reflection") {
-      return <ReflectionForm {...formProps} />;
+      return (
+        <ReflectionForm
+          {...formProps}
+          askKyperHandlers={{
+            onTextFieldSelect: handleTextFieldSelect,
+            onFieldBlur: handleFieldBlur,
+            onRichTextSelection: handleRichTextSelection,
+            onRichTextBlur: handleFieldBlur,
+          }}
+        />
+      );
     }
     //5-Actions
     if (screenType === "action" || contentType === "actions") {
-      return <ActionsForm {...formProps} />;
+      return (
+        <ActionsForm
+          {...formProps}
+          askKyperHandlers={{
+            onTextFieldSelect: handleTextFieldSelect,
+            onFieldBlur: handleFieldBlur,
+            onRichTextSelection: handleRichTextSelection,
+            onRichTextBlur: handleFieldBlur,
+          }}
+        />
+      );
     }
     //6-Social Discussion
     if (screenType === "social" || contentType === "social_discussion") {
-      return <SocialDiscussionForm {...formProps} />;
+      return (
+        <SocialDiscussionForm
+          {...formProps}
+          askKyperHandlers={{
+            onTextFieldSelect: handleTextFieldSelect,
+            onFieldBlur: handleFieldBlur,
+            onRichTextSelection: handleRichTextSelection,
+            onRichTextBlur: handleFieldBlur,
+          }}
+        />
+      );
     }
 
     if (screenType === "assessment" || contentType === "assessment") {
-      return <AssessmentForm {...formProps} />;
+      return (
+        <AssessmentForm
+          {...formProps}
+          askKyperHandlers={{
+            onTextFieldSelect: handleTextFieldSelect,
+            onFieldBlur: handleFieldBlur,
+            onRichTextSelection: handleRichTextSelection,
+            onRichTextBlur: handleFieldBlur,
+          }}
+        />
+      );
     }
 
     return (
