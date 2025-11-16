@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { SectionHeader, RichTextArea } from "./FormFields";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
@@ -13,16 +13,52 @@ import {
   Link,
   Image as ImageIcon,
   Code,
+  Check,
+  X,
+  Loader2,
 } from "lucide-react";
+import { uploadAssetFile } from "@/api/uploadAssets";
 
-export default function ReflectionForm({ formData, updateField }) {
+export default function ReflectionForm({
+  formData,
+  updateField,
+  sessionId = "",
+  chapterId = "",
+  stepId = "",
+  screenId = "",
+}) {
   const fileInputId = "reflection-image-upload";
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
 
-  const handleFileUpload = (e) => {
-    updateField(
-      "reflectionImage",
-      e.target.files && e.target.files[0] ? e.target.files[0] : null
-    );
+  const handleFileUpload = async (e) => {
+    const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+    if (file) {
+      setIsUploading(true);
+      setUploadError(null);
+      // Update form field
+      updateField("reflectionImage", file);
+      
+      // Upload asset with all necessary fields
+      try {
+        await uploadAssetFile(
+          file,
+          "image",
+          sessionId || "",
+          chapterId || "",
+          stepId || "",
+          screenId || ""
+        );
+        setUploadedImage(file.name);
+        console.log("Reflection image uploaded successfully");
+      } catch (error) {
+        setUploadError("Upload failed. Please try again.");
+        console.error("Error uploading reflection image:", error);
+      } finally {
+        setIsUploading(false);
+      }
+    }
   };
 
   const handleBrowseClick = () => {
@@ -128,6 +164,29 @@ export default function ReflectionForm({ formData, updateField }) {
               </div>
             </div>
           </div>
+          
+          {/* File name display */}
+          {(uploadedImage || isUploading || uploadError) && (
+            <div className="mt-2 p-2 bg-white rounded-lg border border-gray-200">
+              {isUploading ? (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Uploading...</span>
+                </div>
+              ) : uploadError ? (
+                <div className="flex items-center gap-2 text-sm text-red-600">
+                  <X className="h-4 w-4" />
+                  <span>{uploadError}</span>
+                </div>
+              ) : uploadedImage ? (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <Check className="h-4 w-4" />
+                  <span className="font-medium">Uploaded:</span>
+                  <span className="text-gray-700">{uploadedImage}</span>
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
       </div>
     </div>

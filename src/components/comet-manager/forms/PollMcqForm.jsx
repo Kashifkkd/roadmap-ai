@@ -35,21 +35,31 @@ export default function PollMcqForm({
         <ListField
           label="Poll Options"
           items={formData.options || []}
-          onAdd={() => addListItem("options")}
-          onUpdate={(index, value) =>
-            updateListItem("options", index, value)
-          }
+          // onAdd={() => addListItem("options")}
+          onUpdate={(index, value) => updateListItem("options", index, value)}
           onRemove={(index) => removeListItem("options", index)}
-          buttonText="Add Option"
+          // buttonText="Add Option"
+          showCorrectAnswer={true}
         />
-        <Button
-          type="button"
-          onClick={() => addListItem("options")}
-          className="flex items-center gap-2 px-3 py-2 text-background rounded-lg w-full"
-        >
-          <Plus size={16} />
-          Add Question
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button
+            type="button"
+            onClick={() => addListItem("options")}
+            className="flex items-center gap-2 px-3 py-2 text-background rounded-lg w-full"
+          >
+            <Plus size={16} />
+            Add Option
+          </Button>
+
+          <Button
+            type="button"
+            onClick={() => addListItem("question")}
+            className="flex items-center gap-2 px-3 py-2 text-background rounded-lg w-full"
+          >
+            <Plus size={16} />
+            Add Question
+          </Button>
+        </div>
       </div>
     </div>
   );

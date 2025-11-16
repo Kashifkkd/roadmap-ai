@@ -49,6 +49,24 @@ export default function ForceRankForm({
           onRemove={(index) => removeListItem("options", index)}
           buttonText="Add Option"
         />
+        <div className="flex flex-col gap-2">
+          <Button
+            type="button"
+            onClick={() => addListItem("options")}
+            className="flex items-center gap-2 px-3 py-2 text-background rounded-lg w-full"
+          >
+            <Plus size={16} />
+            Add Option
+          </Button>
+          <Button
+            type="button"
+            onClick={() => addListItem("question")}
+            className="flex items-center gap-2 px-3 py-2 text-background rounded-lg w-full"
+          >
+            <Plus size={16} />
+            Add Question
+          </Button>
+        </div>
       </div>
     </div>
   );

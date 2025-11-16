@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, GripVertical, CircleCheck, CircleX } from "lucide-react";
 import "quill/dist/quill.snow.css";
 
 // Form field components for comet manager forms
@@ -83,6 +83,7 @@ export const ListField = ({
   onUpdate,
   onRemove,
   buttonText,
+  showCorrectAnswer = false,
 }) => (
   <div className="mb-4">
     <Label className="block text-sm font-medium text-gray-700 mb-2">
@@ -91,28 +92,49 @@ export const ListField = ({
     <div className="space-y-2">
       {(items || []).map((item, index) => (
         <div key={index} className="flex gap-2">
+          <div className="cursor-move text-gray-400 h-10 w-10 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center">
+            <GripVertical size={18} />
+          </div>
+          <span className="text-xs font-medium w-14 h-10 bg-gray-100 border  rounded-lg flex items-center justify-center text-gray-700">
+            {index + 1}
+          </span>
+          {showCorrectAnswer && (
+            <div className="flex items-center justify-center gap-x-1">
+              <div className="cursor-pointer h-10 w-10 flex items-center justify-center bg-green-100 rounded-lg">
+                <CircleCheck size={18} className="text-green-500" />
+              </div>
+              <div className="cursor-pointer h-10 w-10 rounded-lg flex items-center justify-center bg-red-100">
+                <CircleX size={18} className="text-red-500" />
+              </div>
+            </div>
+          )}
           <Input
             type="text"
-            value={item}
+            value={
+              typeof item === "object" && item !== null
+                ? item.text || item.label || ""
+                : item || ""
+            }
             onChange={(e) => onUpdate(index, e.target.value)}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <Button
+            variant="default"
             type="button"
             onClick={() => onRemove(index)}
-            className="px-2 py-2 text-red-500 hover:bg-red-50 rounded-lg"
+            className="px-2 py-2 text-white  rounded-lg  bg-[#F04438]"
           >
             <Trash2 size={16} />
           </Button>
         </div>
       ))}
-      <Button
+      {/* <Button
         onClick={onAdd}
         className="flex items-center gap-2 px-3 py-2 text-background rounded-lg"
       >
         <Plus size={16} />
         {buttonText}
-      </Button>
+      </Button> */}
     </div>
   </div>
 );

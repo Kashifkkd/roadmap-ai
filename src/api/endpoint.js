@@ -5,6 +5,7 @@ export const endpoints = {
   getSourceMaterials: "api/n8n/source_materials",
   getAssets: "api/n8n/assets",
   getClients: "api/clients/v1/",
+  uploadAssets: "api/n8n/upload_asset_file",
   shareComet: (sessionId) => `api/comet/share_comets/${sessionId}`,
   publishComet: (sessionId) => `api/comet/publish_comet/${sessionId}`,
 };

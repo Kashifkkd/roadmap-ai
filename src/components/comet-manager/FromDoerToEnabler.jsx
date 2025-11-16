@@ -70,7 +70,7 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
       : "w-full max-w-5xl";
 
   const imageAspectClass =
-    deviceView === DEVICE_VIEWS.mobile ? "aspect-[3/2]" : "aspect-[16/8]";
+    deviceView === DEVICE_VIEWS.mobile ? "aspect-[2/3]" : "aspect-[16/8]";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
@@ -88,7 +88,7 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
 
   const paddingClass =
     deviceView === DEVICE_VIEWS.mobile
-      ? "px-4 py-6"
+      ? "px-4 py-2"
       : deviceView === DEVICE_VIEWS.tablet
       ? "px-6 py-8"
       : "px-8 py-10";
@@ -143,7 +143,7 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
           <>
             <div className="px-8 pt-4">
               <div
-                className={`relative w-full ${imageAspectClass} overflow-hidden rounded-sm`}
+                className={`relative w-3/4 max-w-md mx-auto ${imageAspectClass} overflow-hidden rounded-md`}
               >
                 <Image
                   src={imageUrl}
@@ -151,16 +151,16 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
                   fill
                   priority={deviceView === DEVICE_VIEWS.mobile}
                   className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
+                  sizes="(max-width: 768px) 60vw, 40vw"
                   unoptimized
                 />
               </div>
             </div>
 
             {/* Content section below image */}
-            <div className={`${paddingClass} space-y-3`}>
+            <div className={`${paddingClass} space-y-1`}>
               {/* Title box */}
-              <div className="bg-gray-200/90 border border-gray-300 px-4 py-3 rounded-sm shadow-sm">
+              <div className="bg-gray-200/30 backdrop-blur-lg border-2 border-white/50 px-4 py-3 rounded-sm shadow-sm">
                 <h2
                   className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
                 >
@@ -178,7 +178,7 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
 
               {/* Description box */}
               {description && (
-                <div className="bg-gray-200/90 border border-gray-300 px-4 py-3 rounded-sm shadow-sm">
+                <div className="bg-gray-200/40 backdrop-blur-lg border-2 border-white/50 px-4 py-3 rounded-sm shadow-sm">
                   <p
                     className={`text-gray-800 ${descriptionSizeClass} leading-relaxed`}
                   >
@@ -255,8 +255,8 @@ const MCQScreenPreview = ({ deviceView, content }) => {
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
-      <div className="bg-gray-100 overflow-hidden shadow-sm h-full">
-        <div className={`${paddingClass} space-y-6`}>
+      <div className="bg-gray-100 overflow-y-auto shadow-sm h-full">
+        <div className={`${paddingClass} space-y-6 overflow-y-auto`}>
           {/* Title */}
           <h2
             className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
@@ -268,7 +268,7 @@ const MCQScreenPreview = ({ deviceView, content }) => {
           {question && (
             <div className="space-y-4">
               <p
-                className={`text-gray-800 text-sm ${questionSizeClass} leading-relaxed font-medium`}
+                className={`text-gray-800 text-sm ${questionSizeClass} leading-relaxed font-medium text-center`}
               >
                 {question}
               </p>
@@ -278,7 +278,7 @@ const MCQScreenPreview = ({ deviceView, content }) => {
                 {options.map((option, index) => (
                   <div
                     key={`mcq-option-${index}`}
-                    className="bg-gray-200/90 text-sm border border-gray-300 px-4 py-2 rounded-sm shadow-sm hover:bg-gray-300/90 transition-colors cursor-pointer"
+                    className="bg-gray-200/30 backdrop-blur-lg text-sm border border-gray-300 px-4 py-2 rounded-sm shadow-sm hover:bg-gray-300/90 transition-colors cursor-pointer"
                   >
                     <p
                       className={`text-gray-800 ${optionSizeClass} leading-relaxed`}
