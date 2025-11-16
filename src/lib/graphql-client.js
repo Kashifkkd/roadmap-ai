@@ -82,6 +82,20 @@ class GraphQLClient {
     return await this.request(query);
   }
 
+  async autoSaveComet(cometJson) {
+    const query = `
+      mutation {
+        autoSaveComet(
+          cometJson: """
+          ${cometJson}
+          """
+        )
+      }
+    `;
+
+    return await this.request(query);
+  }
+
   async subscribeToSessionUpdates(sessionId, onUpdate, onError) {
     return wsGraphQLClient.subscribeToSessionUpdates(
       sessionId,

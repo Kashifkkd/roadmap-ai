@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import ChatWindow from "@/components/chat/ChatWindow";
 import CometManager from "./CometManager";
 import { usePreviewMode } from "@/contexts/PreviewModeContext";
+import { graphqlClient } from "@/lib/graphql-client";
 // import { sampleSessionData } from "@/hooks/sampleSessionData";
 import { temp } from "@/hooks/temp";
 
@@ -13,10 +14,33 @@ export default function CometManagerLayout() {
   const [allMessages, setAllMessages] = useState([]);
   const [prefillData, setPrefillData] = useState(null);
 
+  const [outline, setOutline] = useState(null);
+  const [prevOutline, setPrevOutline] = useState(null);
+  const autoSaveTimerRef = useRef(null);
+  const isSavingRef = useRef(false);
+  const outlineRef = useRef(null); 
+  const initializedSessionIdRef = useRef(null); 
+
   console.log("sessionData", sessionData);
 
   useEffect(() => {
-    // Access localStorage only on the client
+    const currentSessionId = sessionData?.session_id;
+    
+    if (currentSessionId && initializedSessionIdRef.current !== currentSessionId) {
+      initializedSessionIdRef.current = null;
+      setPrevOutline(null);
+    }
+    
+    if (sessionData?.response_path && initializedSessionIdRef.current !== currentSessionId) {
+      const currentOutline = sessionData.response_path;
+      setOutline(currentOutline);
+      setPrevOutline(currentOutline);
+      outlineRef.current = currentOutline;
+      initializedSessionIdRef.current = currentSessionId;
+    }
+  }, [sessionData?.response_path, sessionData?.session_id]);
+
+  useEffect(() => {
     const storedSessionData =
       typeof window !== "undefined"
         ? localStorage.getItem("sessionData")
@@ -57,6 +81,105 @@ export default function CometManagerLayout() {
     }
   }, [sessionData]);
 
+  const handleOutlineChange = (newOutline) => {
+    if (newOutline !== null) {
+      const outlineChanged = JSON.stringify(newOutline) !== JSON.stringify(outlineRef.current);
+      
+      if (outlineChanged) {
+        outlineRef.current = newOutline;
+        setOutline(newOutline);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (autoSaveTimerRef.current) {
+      clearInterval(autoSaveTimerRef.current);
+    }
+    if (!sessionData || !sessionData.session_id) {
+      return;
+    }
+
+    // Auto-save functionality - check every 30 seconds if data changed
+    autoSaveTimerRef.current = setInterval(async () => {
+      if (isSavingRef.current) {
+        return;
+      }
+
+      const currentOutline = outlineRef.current || outline;
+      
+      const outlineChanged = JSON.stringify(currentOutline) !== JSON.stringify(prevOutline);
+      
+      if (outlineChanged && currentOutline !== null) {
+        try {
+          isSavingRef.current = true;
+          
+          const sessionId = sessionData?.session_id || 
+            (typeof window !== "undefined" && localStorage.getItem("sessionId")) ||
+            null;
+
+          if (!sessionId) {
+            console.warn("No session ID available for auto-save");
+            return;
+          }
+
+          const cometJsonForSave = JSON.stringify({
+            session_id: sessionId,
+            input_type: "source_material_based_outliner",
+            comet_creation_data: sessionData?.comet_creation_data || {},
+            response_outline: sessionData?.response_outline || {},
+            response_path: currentOutline || sessionData?.response_path || {},
+            chatbot_conversation: sessionData?.chatbot_conversation || [],
+            to_modify: sessionData?.to_modify || {},
+          });
+
+          const response = await graphqlClient.autoSaveComet(cometJsonForSave);
+          if (response && response.autoSaveComet) {
+            try {
+              let savedData;
+              if (typeof response.autoSaveComet === 'string') {
+                savedData = JSON.parse(response.autoSaveComet);
+              } else {
+                savedData = {
+                  ...sessionData,
+                  response_path: currentOutline,
+                };
+              }
+              
+              localStorage.setItem("sessionData", JSON.stringify(savedData));
+              
+              setPrevOutline(currentOutline);
+              
+            } catch (parseError) {
+              console.error("Error parsing auto-save response:", parseError);
+              const updatedSessionData = {
+                ...sessionData,
+                response_path: currentOutline,
+              };
+              localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
+              setPrevOutline(currentOutline);
+            }
+          }
+        } catch (error) {
+          console.error("Error during auto-save:", error);
+        } finally {
+          isSavingRef.current = false;
+        }
+      }
+    }, 5000);
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearInterval(autoSaveTimerRef.current);
+      }
+    };
+  }, [sessionData, outline, prevOutline]);
+
+  useEffect(() => {
+    if (outline !== null) {
+      outlineRef.current = outline;
+    }
+  }, [outline]);
+
   return (
     <div className="flex h-full w-full bg-primary-50 overflow-y-auto">
       <div className="flex flex-1 lg:flex-row flex-col gap-2 p-2 overflow-y-auto">
@@ -77,6 +200,7 @@ export default function CometManagerLayout() {
             setAllMessages={setAllMessages}
             isPreviewMode={isPreviewMode}
             setIsPreviewMode={setIsPreviewMode}
+            onOutlineChange={handleOutlineChange}
           />
         </div>
       </div>
