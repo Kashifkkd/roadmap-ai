@@ -75,11 +75,11 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
 
       if (onOpenChange) onOpenChange(false);
       
-      // Check for redirect parameter, default to /comet-manager
+      // Check for redirect parameter, default to home
       const redirectPath = searchParams.get("redirect");
       const destination = redirectPath 
         ? decodeURIComponent(redirectPath) 
-        : "/comet-manager";
+        : "/";
       
       router.push(destination);
     } catch (err) {

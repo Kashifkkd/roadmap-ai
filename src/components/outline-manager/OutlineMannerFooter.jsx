@@ -1,16 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft } from "lucide-react";
 import Stars from "@/components/icons/Stars";
 import ProgressbarLoader from "@/components/loader";
 import { graphqlClient } from "@/lib/graphql-client";
+import { tokenManager } from "@/lib/api-client";
 
 export default function OutlineMannerFooter() {
   const router = useRouter();
+  const pathname = usePathname();
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);  // Check authentication status
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const auth = tokenManager.isAuthenticated();
+      setIsAuthenticated(auth);
+    };
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     if (!isGenerating || !sessionId) return;
@@ -42,6 +53,14 @@ export default function OutlineMannerFooter() {
   }, [isGenerating, sessionId, router]);
 
   const handleSubmit = async () => {
+    // Check if user is authenticated
+    if (!tokenManager.isAuthenticated()) {
+      // Redirect to login with current page as redirect parameter
+      const redirectPath = encodeURIComponent(pathname || "/outline-manager");
+      router.push(`/login?redirect=${redirectPath}`);
+      return;
+    }
+
     try {
       setError(null);
       setIsGenerating(true);
@@ -120,7 +139,7 @@ export default function OutlineMannerFooter() {
             <ArrowLeft size={16} />
             <span>Back</span>
           </Button>
-          <Button
+          {isAuthenticated ? <Button
             variant="default"
             className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
             onClick={handleSubmit}
@@ -128,7 +147,14 @@ export default function OutlineMannerFooter() {
           >
             <Stars />
             <span>Create Comet</span>
-          </Button>
+          </Button> : <Button
+            variant="default"
+            className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
+            onClick={handleSubmit}
+          >
+            <Stars />
+            <span>Login to Create Comet</span>
+          </Button>}
         </div>
       </div>
     </>

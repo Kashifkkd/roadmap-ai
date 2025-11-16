@@ -11,14 +11,12 @@ export function ProtectedRoute({ children }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check authentication status
     const checkAuth = () => {
       const auth = tokenManager.isAuthenticated();
       setIsAuthenticated(auth);
       setIsLoading(false);
 
       if (!auth) {
-        // Redirect to login with the current path as redirect parameter
         const redirectPath = encodeURIComponent(pathname);
         router.push(`/login?redirect=${redirectPath}`);
       }
@@ -26,8 +24,6 @@ export function ProtectedRoute({ children }) {
 
     checkAuth();
   }, [router, pathname]);
-
-  // Show loading state while checking authentication
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -38,8 +34,6 @@ export function ProtectedRoute({ children }) {
       </div>
     );
   }
-
-  // Only render children if authenticated
   if (!isAuthenticated) {
     return null;
   }
