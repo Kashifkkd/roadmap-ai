@@ -150,6 +150,7 @@ export default function CometManager({
   setAllMessages,
   isPreviewMode,
   setIsPreviewMode,
+  onOutlineChange,
 }) {
   // Use comet manager hook to get actual data
   const {
@@ -164,8 +165,15 @@ export default function CometManager({
     deleteScreen: deleteScreenData,
     reorderScreensList,
     insertScreenAt,
+    outline,
     setOutline,
   } = useCometManager(sessionData);
+
+  useEffect(() => {
+    if (onOutlineChange && outline !== null) {
+      onOutlineChange(outline);
+    }
+  }, [outline, onOutlineChange]);
 
   // Extract session_id from sessionData or temp
   const sessionId =
