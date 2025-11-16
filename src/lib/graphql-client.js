@@ -19,11 +19,11 @@ class GraphQLClient {
       }
     }
 
-    console.log("token", localStorage.getItem("auth_token"));
-    if (!token) {
-      throw new Error("No authentication token found");
-    }
-
+    // console.log("token", localStorage.getItem("auth_token"));
+    // if (!token) {
+    //   throw new Error("No authentication token found");
+    // }
+    
     const response = await fetch(this.baseURL, {
       method: "POST",
       headers: {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -16,6 +16,7 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const validateForm = () => {
     const email = formData.email.trim();
@@ -73,7 +74,14 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
       localStorage.setItem("token_type", data.token_type);
 
       if (onOpenChange) onOpenChange(false);
-      router.push("/");
+      
+      // Check for redirect parameter, default to /comet-manager
+      const redirectPath = searchParams.get("redirect");
+      const destination = redirectPath 
+        ? decodeURIComponent(redirectPath) 
+        : "/comet-manager";
+      
+      router.push(destination);
     } catch (err) {
       setError({ field: "api", message: err.message });
     } finally {

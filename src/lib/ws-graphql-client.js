@@ -29,9 +29,9 @@ class WebSocketGraphQLClient {
     }
 
     const token = this.getToken();
-    if (!token) {
-      throw new Error("No authentication token found");
-    }
+    // if (!token) {
+    //   throw new Error("No authentication token found");
+    // }
 
     this.client = createClient({
       url: this.wsUrl,
