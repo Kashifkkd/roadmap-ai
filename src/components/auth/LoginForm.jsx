@@ -74,13 +74,26 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
       localStorage.setItem("token_type", data.token_type);
 
       if (onOpenChange) onOpenChange(false);
-      
-      // Check for redirect parameter, default to home
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("auth-changed"));
+      }
+
+      // Check for redirect parameter, fallback to stored redirect, default to home
       const redirectPath = searchParams.get("redirect");
-      const destination = redirectPath 
-        ? decodeURIComponent(redirectPath) 
-        : "/";
-      
+      let destination = "/";
+
+      if (redirectPath) {
+        destination = decodeURIComponent(redirectPath);
+      } else if (typeof window !== "undefined") {
+        const storedRedirect =
+          window.sessionStorage.getItem("postLoginRedirect");
+        if (storedRedirect) {
+          destination = storedRedirect;
+          window.sessionStorage.removeItem("postLoginRedirect");
+        }
+      }
+
       router.push(destination);
     } catch (err) {
       setError({ field: "api", message: err.message });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft } from "lucide-react";
@@ -10,6 +10,7 @@ import { tokenManager } from "@/lib/api-client";
 export default function OutlineMannerFooter() {
   const router = useRouter();
   const pathname = usePathname();
+  const loginButtonRef = useRef(null);
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -21,6 +22,13 @@ export default function OutlineMannerFooter() {
       setIsAuthenticated(auth);
     };
     checkAuth();
+
+    if (typeof window === "undefined") return;
+
+    window.addEventListener("auth-changed", checkAuth);
+    return () => {
+      window.removeEventListener("auth-changed", checkAuth);
+    };
   }, []);
 
   useEffect(() => {
@@ -55,9 +63,47 @@ export default function OutlineMannerFooter() {
   const handleSubmit = async () => {
     // Check if user is authenticated
     if (!tokenManager.isAuthenticated()) {
-      // Redirect to login with current page as redirect parameter
-      const redirectPath = encodeURIComponent(pathname || "/outline-manager");
-      router.push(`/login?redirect=${redirectPath}`);
+      if (typeof window !== "undefined") {
+        try {
+          window.sessionStorage.setItem(
+            "postLoginRedirect",
+            pathname || "/outline-manager"
+          );
+        } catch {}
+
+        const buttonRect = loginButtonRef.current?.getBoundingClientRect();
+        let buttonPosition = null;
+
+        if (buttonRect) {
+          const dialogWidth = 350;
+          let top = 70;
+          let left = buttonRect.left + window.scrollX;
+
+          if (left + dialogWidth > window.innerWidth + window.scrollX) {
+            left = window.innerWidth + window.scrollX - dialogWidth - 16;
+          }
+
+          if (left < window.scrollX) {
+            left = window.scrollX + 16;
+          }
+
+          buttonPosition = {
+            top,
+            left,
+            width: buttonRect.width,
+          };
+        }
+
+        window.dispatchEvent(
+          new CustomEvent("open-login-dialog", {
+            detail: {
+              buttonPosition,
+              source: "outline-footer",
+              redirectPath: pathname || "/outline-manager",
+            },
+          })
+        );
+      }
       return;
     }
 
@@ -139,22 +185,28 @@ export default function OutlineMannerFooter() {
             <ArrowLeft size={16} />
             <span>Back</span>
           </Button>
-          {isAuthenticated ? <Button
-            variant="default"
-            className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
-            onClick={handleSubmit}
-            disabled={isGenerating}
-          >
-            <Stars />
-            <span>Create Comet</span>
-          </Button> : <Button
-            variant="default"
-            className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
-            onClick={handleSubmit}
-          >
-            <Stars />
-            <span>Login to Create Comet</span>
-          </Button>}
+          {isAuthenticated ? (
+            <Button
+              variant="default"
+              className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
+              onClick={handleSubmit}
+              disabled={isGenerating}
+              ref={loginButtonRef}
+            >
+              <Stars />
+              <span>Create Comet</span>
+            </Button>
+          ) : (
+            <Button
+              variant="default"
+              className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
+              onClick={handleSubmit}
+              ref={loginButtonRef}
+            >
+              <Stars />
+              <span>Login to Create Comet</span>
+            </Button>
+          )}
         </div>
       </div>
     </>

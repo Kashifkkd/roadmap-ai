@@ -121,6 +121,29 @@ export default function Header() {
     setIsAuthenticated(isAuth);
   }, [pathname]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleGlobalLoginOpen = (event) => {
+      const buttonPositionFromEvent = event?.detail?.buttonPosition ?? null;
+      const redirectPath = event?.detail?.redirectPath;
+
+      if (redirectPath) {
+        try {
+          window.sessionStorage.setItem("postLoginRedirect", redirectPath);
+        } catch {}
+      }
+
+      setLoginButtonPosition(buttonPositionFromEvent);
+      setIsLoginDialogOpen(true);
+    };
+
+    window.addEventListener("open-login-dialog", handleGlobalLoginOpen);
+    return () => {
+      window.removeEventListener("open-login-dialog", handleGlobalLoginOpen);
+    };
+  }, []);
+
   // Re-check authentication when login dialog closes (in case user successfully logged in)
   useEffect(() => {
     if (!isLoginDialogOpen) {
@@ -209,6 +232,15 @@ export default function Header() {
     setIsDownloadActive(!isDownloadActive);
   };
   const handleLoginClick = () => {
+    if (typeof window !== "undefined") {
+      try {
+        window.sessionStorage.setItem(
+          "postLoginRedirect",
+          pathname || window.location?.pathname || "/"
+        );
+      } catch {}
+    }
+
     if (loginButtonRef.current) {
       const rect = loginButtonRef.current.getBoundingClientRect();
       const dialogWidth = 350; // Approximate dialog width
@@ -251,6 +283,12 @@ export default function Header() {
     setIsUserMenuOpen(false);
     tokenManager.removeToken();
     localStorage.clear();
+    if (typeof window !== "undefined") {
+      try {
+        window.sessionStorage.removeItem("postLoginRedirect");
+      } catch {}
+      window.dispatchEvent(new Event("auth-changed"));
+    }
     // localStorage.clear();
     router.push("/");
   };
