@@ -14,7 +14,14 @@ export default function PollMcqForm({
   addListItem,
   updateListItem,
   removeListItem,
+  askKyperHandlers = {},
 }) {
+  const {
+    onTextFieldSelect,
+    onFieldBlur,
+    onRichTextSelection,
+    onRichTextBlur,
+  } = askKyperHandlers;
   return (
     <div className="bg-gray-100 rounded-lg p-2">
       <div className="p-2">
@@ -26,11 +33,24 @@ export default function PollMcqForm({
           label="Title"
           value={formData.title || ""}
           onChange={(value) => updateField("title", value)}
+          inputProps={{
+            onSelect: (event) =>
+              onTextFieldSelect?.("mcqTitle", event, formData.title),
+            onBlur: onFieldBlur,
+          }}
         />
         <RichTextArea
           label="Question"
           value={formData.question || ""}
           onChange={(value) => updateField("question", value)}
+          onSelectionChange={(selectionInfo) =>
+            onRichTextSelection?.(
+              "mcqQuestion",
+              selectionInfo,
+              formData.question
+            )
+          }
+          onBlur={onRichTextBlur}
         />
         <ListField
           label="Poll Options"

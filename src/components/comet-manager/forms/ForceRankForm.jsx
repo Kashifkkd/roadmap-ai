@@ -5,8 +5,8 @@ import {
   RichTextArea,
   ListField,
 } from "./FormFields";
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Plus } from "lucide-react";
 
 export default function ForceRankForm({
   formData,
@@ -14,7 +14,14 @@ export default function ForceRankForm({
   addListItem,
   updateListItem,
   removeListItem,
+  askKyperHandlers = {},
 }) {
+  const {
+    onTextFieldSelect,
+    onFieldBlur,
+    onRichTextSelection,
+    onRichTextBlur,
+  } = askKyperHandlers;
   return (
     <div className="bg-gray-100 rounded-lg p-2">
       <div className="p-2">
@@ -25,21 +32,52 @@ export default function ForceRankForm({
           label="Title"
           value={formData.title || ""}
           onChange={(value) => updateField("title", value)}
+          inputProps={{
+            onSelect: (event) =>
+              onTextFieldSelect?.("forceRankTitle", event, formData.title),
+            onBlur: onFieldBlur,
+          }}
         />
         <TextField
           label="Top Label"
           value={formData.high_label || ""}
           onChange={(value) => updateField("high_label", value)}
+          inputProps={{
+            onSelect: (event) =>
+              onTextFieldSelect?.(
+                "forceRankHighLabel",
+                event,
+                formData.high_label
+              ),
+            onBlur: onFieldBlur,
+          }}
         />
         <TextField
           label="Bottom Label"
           value={formData.low_label || ""}
           onChange={(value) => updateField("low_label", value)}
+          inputProps={{
+            onSelect: (event) =>
+              onTextFieldSelect?.(
+                "forceRankLowLabel",
+                event,
+                formData.low_label
+              ),
+            onBlur: onFieldBlur,
+          }}
         />
         <RichTextArea
           label="Question"
           value={formData.question || ""}
           onChange={(value) => updateField("question", value)}
+          onSelectionChange={(selectionInfo) =>
+            onRichTextSelection?.(
+              "forceRankQuestion",
+              selectionInfo,
+              formData.question
+            )
+          }
+          onBlur={onRichTextBlur}
         />
         <ListField
           label="Options"

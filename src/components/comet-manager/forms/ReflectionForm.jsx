@@ -26,7 +26,14 @@ export default function ReflectionForm({
   chapterId = "",
   stepId = "",
   screenId = "",
+  askKyperHandlers = {},
 }) {
+  const {
+    onTextFieldSelect,
+    onFieldBlur,
+    onRichTextSelection,
+    onRichTextBlur,
+  } = askKyperHandlers;
   const fileInputId = "reflection-image-upload";
   const [uploadedImage, setUploadedImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -95,12 +102,24 @@ export default function ReflectionForm({
             value={formData.title || ""}
             onChange={(e) => updateField("title", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+            onSelect={(event) =>
+              onTextFieldSelect?.("reflectionTitle", event, formData.title)
+            }
+            onBlur={onFieldBlur}
           />
         </div>
         <RichTextArea
           label="Prompt"
           value={formData.prompt || ""}
           onChange={(value) => updateField("prompt", value)}
+          onSelectionChange={(selectionInfo) =>
+            onRichTextSelection?.(
+              "reflectionPrompt",
+              selectionInfo,
+              formData.prompt
+            )
+          }
+          onBlur={onRichTextBlur}
         />
 
         <div className="mb-4">

@@ -31,14 +31,23 @@ export default function CometManagerLayout() {
       setPrevOutline(null);
     }
     
-    if (sessionData?.response_path && initializedSessionIdRef.current !== currentSessionId) {
+    // Update outline when response_path changes (either new session or updated path)
+    if (sessionData?.response_path) {
       const currentOutline = sessionData.response_path;
-      setOutline(currentOutline);
-      setPrevOutline(currentOutline);
-      outlineRef.current = currentOutline;
-      initializedSessionIdRef.current = currentSessionId;
+      const outlineChanged = JSON.stringify(currentOutline) !== JSON.stringify(outlineRef.current);
+      
+      // Update if it's a new session OR if the outline has actually changed
+      if (initializedSessionIdRef.current !== currentSessionId || outlineChanged) {
+        setOutline(currentOutline);
+        
+        setPrevOutline(currentOutline);
+        outlineRef.current = currentOutline;
+        initializedSessionIdRef.current = currentSessionId;
+      }
     }
   }, [sessionData?.response_path, sessionData?.session_id]);
+
+  console.log("allMessages", allMessages);
 
   useEffect(() => {
     const storedSessionData =
@@ -186,7 +195,12 @@ export default function CometManagerLayout() {
         <div className="lg:block w-full lg:w-[360px] h-full">
           <ChatWindow
             inputType="path_updation"
-            onResponseReceived={setPrefillData}
+            onResponseReceived={(updatedSessionData) => {
+              // Update sessionData state when socket response comes in
+              setSessionData(updatedSessionData);
+              // Also set prefillData for backward compatibility if needed
+              setPrefillData(updatedSessionData);
+            }}
             allMessages={allMessages}
             setAllMessages={setAllMessages}
             sessionData={sessionData}

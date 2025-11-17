@@ -14,7 +14,14 @@ export default function HabitOptInForm({
   chapterId = "",
   stepId = "",
   screenId = "",
+  askKyperHandlers = {},
 }) {
+  const {
+    onTextFieldSelect,
+    onFieldBlur,
+    onRichTextSelection,
+    onRichTextBlur,
+  } = askKyperHandlers;
   const habits = formData.habits || [];
   const [uploadedImage, setUploadedImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -61,6 +68,10 @@ export default function HabitOptInForm({
               onChange={(e) => updateField("title", e.target.value)}
               placeholder="Enter name"
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onSelect={(event) =>
+                onTextFieldSelect?.("habitsTitle", event, formData.title)
+              }
+              onBlur={onFieldBlur}
             />
           </div>
         </div>
@@ -70,10 +81,18 @@ export default function HabitOptInForm({
           onChange={(value) => {
             const habit_image = {
               ...formData.habit_image,
-              description: value
+              description: value,
             };
             updateField("habit_image", habit_image);
           }}
+          onSelectionChange={(selectionInfo) =>
+            onRichTextSelection?.(
+              "habitsDescription",
+              selectionInfo,
+              formData.habit_image?.description
+            )
+          }
+          onBlur={onRichTextBlur}
         />
 
         <div className="mb-6">
