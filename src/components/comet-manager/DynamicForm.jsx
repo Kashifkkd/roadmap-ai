@@ -73,6 +73,7 @@ const getFormValuesFromScreen = (screen) => {
     values.heading = content.heading || "";
     values.body = content.body || "";
     values.mediaUrl = content.media?.url || "";
+    values.contentFullBleed = content.blend_mode ?? false;
     values.media = content.media || {};
   }
 
@@ -109,7 +110,7 @@ const getFormValuesFromScreen = (screen) => {
     values.prompt = content.prompt || "";
   }
 
-  if (contentType === "actions") {
+  if (contentType === "action" || contentType === "actions") {
     values.title = content.title || "";
     values.text = content.text || "";
     values.can_scheduled = content.can_scheduled ?? false;
@@ -211,8 +212,10 @@ export default function DynamicForm({
                   currentScreen.screenContents.content.media = {};
                 }
                 currentScreen.screenContents.content.media.url = value;
+              } else if (field === "contentFullBleed") {
+                currentScreen.screenContents.content.blend_mode = value;
               }
-            } else if (contentType === "actions") {
+            } else if (contentType === "action" || contentType === "actions") {
               if (field === "title") {
                 currentScreen.screenContents.content.title = value;
               } else if (field === "text") {
@@ -234,6 +237,9 @@ export default function DynamicForm({
                 currentScreen.screenContents.content.reflection_question =
                   value;
               }
+              
+              // Update the screen in the array
+              stepItem.screens[screenIndex] = currentScreen;
             } else if (contentType === "mcq") {
               if (field === "title")
                 currentScreen.screenContents.content.title = value;

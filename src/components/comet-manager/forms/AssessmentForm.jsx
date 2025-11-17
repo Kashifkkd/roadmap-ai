@@ -1,9 +1,14 @@
-import React, { useRef, useEffect } from "react";
+import React, { useEffect } from "react";
 import { SectionHeader, TextField, RichTextArea } from "./FormFields";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Plus, Trash2, GripVertical } from "lucide-react";
+
+// Helper to generate unique IDs
+export const generateId = (prefix) => {
+  return `${prefix}_${new Date().getTime()}`;
+};
 // import Quill from "quill";
 // import "quill/dist/quill.snow.css";
 
@@ -86,36 +91,147 @@ export default function AssessmentForm({
     onRichTextSelection,
     onRichTextBlur,
   } = askKyperHandlers;
-  const questions = formData.assessmentQuestions || [
-    {
-      title: "",
-      questions: [],
-      options: [],
-    },
-  ];
+  // Get questions from formData - it's stored as 'questions' in content
+  const questions = formData.questions || [];
+  const assessmentTitle = formData.title || "";
 
-  const updateQuestionField = () => {
-    console.log("updateQuestionField");
+  // If questions array is empty, initialize with one default question with one default option
+  useEffect(() => {
+    if (!questions || questions.length === 0) {
+      const defaultQuestion = {
+        question_id: generateId("q"),
+        text: "",
+        options: [
+          {
+            option_id: generateId("o"),
+            text: "",
+          },
+        ],
+      };
+      updateField("questions", [defaultQuestion]);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Update assessment title
+  const updateTitle = (value) => {
+    updateField("title", value);
   };
 
+  // Update question text
+  const updateQuestionField = (questionIndex, field, value) => {
+    if (!addListItem || !updateListItem) return;
+
+    const currentQuestions = [...questions];
+    if (!currentQuestions[questionIndex]) {
+      // Create new question if it doesn't exist
+      currentQuestions[questionIndex] = {
+        question_id: generateId("q"),
+        text: "",
+        options: [],
+      };
+    }
+
+    const updatedQuestion = {
+      ...currentQuestions[questionIndex],
+      [field]: value,
+    };
+
+    currentQuestions[questionIndex] = updatedQuestion;
+    updateField("questions", currentQuestions);
+  };
+
+  // Add a new question with one default option
   const addQuestion = () => {
-    console.log("addQuestion");
+    if (!addListItem) return;
+    const newQuestion = {
+      question_id: generateId("q"),
+      text: "",
+      options: [
+        {
+          option_id: generateId("o"),
+          text: "",
+        },
+      ],
+    };
+    const updatedQuestions = [...questions, newQuestion];
+    updateField("questions", updatedQuestions);
   };
 
-  const removeQuestion = () => {
-    console.log("removeQuestion");
+  // Remove a question
+  const removeQuestion = (questionIndex) => {
+    if (!removeListItem) return;
+    const updatedQuestions = questions.filter((_, index) => index !== questionIndex);
+    updateField("questions", updatedQuestions);
   };
 
+  // Add an option to a question
   const addOption = (questionIndex) => {
-    console.log("addOption");
+    if (!addListItem) return;
+    const currentQuestions = [...questions];
+    if (!currentQuestions[questionIndex]) {
+      currentQuestions[questionIndex] = {
+        question_id: generateId("q"),
+        text: "",
+        options: [],
+      };
+    }
+
+    const currentOptions = currentQuestions[questionIndex].options || [];
+    const newOption = {
+      option_id: generateId("o"),
+      text: "",
+    };
+
+    currentQuestions[questionIndex] = {
+      ...currentQuestions[questionIndex],
+      options: [...currentOptions, newOption],
+    };
+
+    updateField("questions", currentQuestions);
   };
 
-  const updateOption = () => {
-    console.log("updateOption");
+  // Update an option text
+  const updateOption = (questionIndex, optionIndex, value) => {
+    if (!updateListItem) return;
+    const currentQuestions = [...questions];
+    if (!currentQuestions[questionIndex]) return;
+
+    const currentOptions = [...(currentQuestions[questionIndex].options || [])];
+    if (!currentOptions[optionIndex]) {
+      currentOptions[optionIndex] = {
+        option_id: generateId("o"),
+        text: "",
+      };
+    }
+
+    currentOptions[optionIndex] = {
+      ...currentOptions[optionIndex],
+      text: value,
+    };
+
+    currentQuestions[questionIndex] = {
+      ...currentQuestions[questionIndex],
+      options: currentOptions,
+    };
+
+    updateField("questions", currentQuestions);
   };
 
-  const removeOption = () => {
-    console.log("removeOption");
+  // Remove an option
+  const removeOption = (questionIndex, optionIndex) => {
+    if (!removeListItem) return;
+    const currentQuestions = [...questions];
+    if (!currentQuestions[questionIndex]) return;
+
+    const currentOptions = currentQuestions[questionIndex].options || [];
+    const updatedOptions = currentOptions.filter((_, index) => index !== optionIndex);
+
+    currentQuestions[questionIndex] = {
+      ...currentQuestions[questionIndex],
+      options: updatedOptions,
+    };
+
+    updateField("questions", currentQuestions);
   };
 
   return (
@@ -123,134 +239,139 @@ export default function AssessmentForm({
       <div className="p-2">
         <SectionHeader title="Self Assessment" />
       </div>
-      <div className="bg-white rounded-lg p-2 align-center">
-        <div className="space-y-6">
-          {questions.map((questionData, questionIndex) => (
-            <div
-              key={questionIndex}
-              className=" border-primary rounded-lg p-4 bg-white"
-            >
-              {/* Title Field */}
-              <div className="mb-4">
-                <Label className="block text-sm font-medium text-primary mb-2">
-                  Title
-                </Label>
-                <Input
-                  type="text"
-                  value={questionData.title || ""}
-                  onChange={(e) =>
-                    updateQuestionField(questionIndex, "title", e.target.value)
-                  }
-                  placeholder="Enter title"
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  onSelect={(event) =>
-                    onTextFieldSelect?.(
-                      "assessmentTitle",
-                      event,
-                      questionData.title
-                    )
-                  }
-                  onBlur={onFieldBlur}
-                />
-              </div>
+      {/* Assessment Title */}
+      <div className="bg-white rounded-lg p-3 align-center mb-2">
+        <Label className="block text-sm font-medium text-primary mb-2">
+          Title
+        </Label>
 
-              {/* Question Field with Rich Text Editor */}
-              {/* <AssessmentRichTextArea
+        <Input
+          type="text"
+          value={assessmentTitle}
+          onChange={(e) => updateTitle(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          onSelect={(event) =>
+            onTextFieldSelect?.("assessmentTitle", event, assessmentTitle)
+          }
+          onBlur={onFieldBlur}
+        />
+      </div>
+
+      <div className="space-y-6 bg-white rounded-lg mb-2">
+        {questions.map((questionData, questionIndex) => (
+          <div
+            key={questionData.question_id || questionData.questionId || questionIndex}
+            className=" border-primary rounded-lg p-4 bg-white"
+          >
+            {/* Question Field with Rich Text Editor */}
+            {/* <AssessmentRichTextArea
               label="Question"
               value={questionData.text || ""}
               onChange={(value) =>
                 updateQuestionField(questionIndex, "question", value)
               }
             /> */}
-              <RichTextArea
-                label="Question"
-                value={questionData.question || ""}
-                onChange={(value) =>
-                  updateQuestionField(questionIndex, "question", value)
-                }
-                onSelectionChange={(selectionInfo) =>
-                  onRichTextSelection?.(
-                    "assessmentQuestions",
-                    selectionInfo,
-                    questionData.question
-                  )
-                }
-                onBlur={onRichTextBlur}
-              />
+            <RichTextArea
+              label="Question"
+              value={questionData.text || questionData.question || ""}
+              onChange={(value) =>
+                updateQuestionField(questionIndex, "text", value)
+              }
+              onSelectionChange={(selectionInfo) =>
+                onRichTextSelection?.(
+                  "assessmentQuestions",
+                  selectionInfo,
+                  questionData.text || questionData.question
+                )
+              }
+              onBlur={onRichTextBlur}
+            />
 
-              {/* Options Section */}
-              <div className="mb-4">
-                <Label className="block text-sm font-medium text-primary mb-2">
-                  Options
-                </Label>
-                <div className="space-y-2">
-                  {(questionData.options || []).map((option, optionIndex) => (
-                    <div
-                      key={option?.option_id}
-                      className="flex items-center gap-2"
-                    >
-                      {/* Drag Handle */}
-                      <div className="cursor-move text-gray-400 hover:text-gray-600">
-                        <GripVertical size={20} />
-                      </div>
-
-                      {/* Numbered Box */}
-                      <div className="flex items-center justify-center w-8 h-8 bg-gray-100 border border-gray-300 rounded text-sm font-medium text-gray-700">
-                        {optionIndex + 1}
-                      </div>
-
-                      {/* Option Input */}
-                      <Input
-                        type="text"
-                        value={option?.text || ""}
-                        onChange={(e) =>
-                          updateOption(
-                            questionIndex,
-                            optionIndex,
-                            e.target.value
-                          )
-                        }
-                        placeholder={`Option ${optionIndex + 1}`}
-                        className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-
-                      {/* Delete Button */}
-                      <Button
-                        type="button"
-                        onClick={() => removeOption(questionIndex, optionIndex)}
-                        className="px-2 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center"
-                      >
-                        <Trash2 size={16} />
-                      </Button>
+            {/* Options Section */}
+            <div className="mb-4">
+              <Label className="block text-sm font-medium text-primary mb-2">
+                Options
+              </Label>
+              <div className="space-y-2">
+                {(questionData.options || []).map((option, optionIndex) => (
+                  <div
+                    key={option?.option_id || option?.optionId || optionIndex}
+                    className="flex items-center gap-2"
+                  >
+                    {/* Drag Handle */}
+                    <div className="cursor-move text-gray-400 hover:text-gray-600">
+                      <GripVertical size={20} />
                     </div>
-                  ))}
-                </div>
 
-                {/* Add Option Button */}
-                <Button
-                  type="button"
-                  onClick={() => addOption(questionIndex)}
-                  className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 bg-primary-50 text-primary hover:bg-primary-100 rounded-lg font-medium"
-                >
-                  <Plus size={16} />
-                  Add Option
-                </Button>
+                    {/* Numbered Box */}
+                    <div className="flex items-center justify-center w-8 h-8 bg-gray-100 border border-gray-300 rounded text-sm font-medium text-gray-700">
+                      {optionIndex + 1}
+                    </div>
+
+                    {/* Option Input */}
+                    <Input
+                      type="text"
+                      value={option?.text || ""}
+                      onChange={(e) =>
+                        updateOption(
+                          questionIndex,
+                          optionIndex,
+                          e.target.value
+                        )
+                      }
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+
+                    {/* Delete Button */}
+                    <Button
+                      type="button"
+                      onClick={() => removeOption(questionIndex, optionIndex)}
+                      className="px-2 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                ))}
               </div>
 
-              {/* Add Question Button - only show on last question */}
-              {questionIndex === questions.length - 1 && (
-                <Button
-                  type="button"
-                  onClick={addQuestion}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-primary-50 text-primary hover:bg-primary-100 rounded-lg font-medium"
-                >
-                  <Plus size={16} />
-                  Add Question
-                </Button>
-              )}
+              {/* Add Option Button */}
+              <Button
+                type="button"
+                onClick={() => addOption(questionIndex)}
+                className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 bg-white border border-primary text-primary hover:bg-primary-50 rounded-lg font-medium"
+              >
+                <Plus size={16} />
+                Add Option
+              </Button>
             </div>
-          ))}
-        </div>
+
+            {/* Remove Question Button */}
+            {questions.length > 1 && (
+              <Button
+                type="button"
+                onClick={() => removeQuestion(questionIndex)}
+                className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 bg-red-50/60 text-red-600 hover:bg-red-100 rounded-lg font-medium"
+              >
+                <Trash2 size={16} />
+                Remove Question
+              </Button>
+            )}
+          </div>
+        ))}
+
+        {/* Add Question Button - always visible at the bottom */}
+      </div>
+
+      <div className="p-3 bg-white rounded-lg">
+
+        <Button
+          type="button"
+          onClick={addQuestion}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white border border-primary text-primary hover:bg-primary-50 rounded-lg font-medium"
+        >
+          <Plus size={16} />
+          Add Question
+        </Button>
       </div>
     </div>
   );

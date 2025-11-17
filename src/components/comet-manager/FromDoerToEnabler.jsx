@@ -325,6 +325,8 @@ const AssessmentScreenPreview = ({ deviceView, content }) => {
   const title = content?.title || "";
   const questions = content?.questions || [];
 
+  console.log(">>>", content)
+
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-sm"
@@ -376,18 +378,25 @@ const AssessmentScreenPreview = ({ deviceView, content }) => {
 
                 {/* Options */}
                 <div className="space-y-2 pl-4">
-                  {question.options?.map((option, oIndex) => (
-                    <div
-                      key={`assessment-option-${option.option_id || oIndex}`}
-                      className="bg-gray-200/90 text-sm border border-gray-300 px-4 py-2 rounded-sm shadow-sm hover:bg-gray-300/90 transition-colors cursor-pointer"
-                    >
-                      <p
-                        className={`text-gray-800 ${questionSizeClass} leading-relaxed`}
+                  {question.options?.map((option, oIndex) => {
+                    // Handle both object format {option_id, text} and string format
+                    const optionText = typeof option === "string" 
+                      ? option 
+                      : (option?.text || `Option ${oIndex + 1}`);
+                    
+                    return (
+                      <div
+                        key={`assessment-option-${option?.option_id || option?.optionId || oIndex}`}
+                        className="bg-gray-200/90 text-sm border border-gray-300 px-4 py-2 rounded-sm shadow-sm hover:bg-gray-300/90 transition-colors cursor-pointer"
                       >
-                        {option.text || option}
-                      </p>
-                    </div>
-                  ))}
+                        <p
+                          className={`text-gray-800 ${questionSizeClass} leading-relaxed`}
+                        >
+                          {optionText}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
