@@ -8,4 +8,5 @@ export const endpoints = {
   uploadAssets: "api/n8n/upload_asset_file",
   shareComet: (sessionId) => `api/comet/share_comets/${sessionId}`,
   publishComet: (sessionId) => `api/comet/publish_comet/${sessionId}`,
+  generateDalleImage: "api/generative-ai/v1/generate-dalle-image",
 };

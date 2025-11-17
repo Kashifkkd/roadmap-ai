@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { Smartphone, Tablet, Monitor } from "lucide-react";
 import Image from "next/image";
+import AssetsCarousel from "@/components/common/AssetsCarousel";
 
 const DEVICE_VIEWS = {
   mobile: "mobile",
@@ -34,7 +35,7 @@ const DeviceIcon = ({ view, isActive, onClick }) => {
   );
 };
 
-const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
+const ScreenContentTypePreview = ({ deviceView, content, sections = [], assets = [] }) => {
   const imageUrl =
     content?.media?.url ||
     content?.media?.imageUrl ||
@@ -100,15 +101,22 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
         {isBlendMode ? (
           // Blend Mode: Full height image with overlaid content boxes
           <div className="relative h-[70vh] w-full">
-            <Image
-              src={imageUrl}
-              alt={content?.media?.description || title}
-              fill
-              priority={deviceView === DEVICE_VIEWS.mobile}
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 50vw"
-              unoptimized
-            />
+            {/* Show carousel if assets exist, otherwise show single image */}
+            {assets && assets.length > 0 ? (
+              <div className="absolute inset-0">
+                <AssetsCarousel assets={assets} />
+              </div>
+            ) : (
+              <Image
+                src={imageUrl}
+                alt={content?.media?.description || title}
+                fill
+                priority={deviceView === DEVICE_VIEWS.mobile}
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                unoptimized
+              />
+            )}
 
             {/* Gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/40" />
@@ -142,19 +150,26 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [] }) => {
           // Non-Blend Mode: Image on top, content below
           <>
             <div className="px-8 pt-4">
-              <div
-                className={`relative w-3/4 max-w-md mx-auto ${imageAspectClass} overflow-hidden rounded-md`}
-              >
-                <Image
-                  src={imageUrl}
-                  alt={content?.media?.description || title}
-                  fill
-                  priority={deviceView === DEVICE_VIEWS.mobile}
-                  className="object-cover"
-                  sizes="(max-width: 768px) 60vw, 40vw"
-                  unoptimized
-                />
-              </div>
+              {/* Show carousel if assets exist, otherwise show single image */}
+              {assets && assets.length > 0 ? (
+                <div className="w-3/4 max-w-md mx-auto">
+                  <AssetsCarousel assets={assets} />
+                </div>
+              ) : (
+                <div
+                  className={`relative w-3/4 max-w-md mx-auto ${imageAspectClass} overflow-hidden rounded-md`}
+                >
+                  <Image
+                    src={imageUrl}
+                    alt={content?.media?.description || title}
+                    fill
+                    priority={deviceView === DEVICE_VIEWS.mobile}
+                    className="object-cover"
+                    sizes="(max-width: 768px) 60vw, 40vw"
+                    unoptimized
+                  />
+                </div>
+              )}
             </div>
 
             {/* Content section below image */}
@@ -1421,6 +1436,7 @@ export default function FromDoerToEnabler({ selectedScreen }) {
                   deviceView={deviceView}
                   content={content}
                   sections={contentSections}
+                  assets={selectedScreen?.assets || []}
                 />
               ) : contentType === "mcq" ? (
                 <MCQScreenPreview deviceView={deviceView} content={content} />

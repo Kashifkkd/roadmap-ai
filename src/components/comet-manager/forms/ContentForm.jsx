@@ -3,11 +3,15 @@ import { SectionHeader, TextField, RichTextArea } from "./FormFields";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
 import { Link as LinkIcon, Check, X, Loader2 } from "lucide-react";
+import ImageUpload from "@/components/common/ImageUpload";
 import { uploadAssetFile } from "@/api/uploadAssets";
 
 export default function ContentForm({
   formData,
   updateField,
+  updateScreenAssets,
+  removeScreenAsset,
+  screen,
   askKyperHandlers = {},
   sessionId = "",
   chapterId = "",
@@ -21,12 +25,18 @@ export default function ContentForm({
     onRichTextBlur,
   } = askKyperHandlers;
 
-  const [uploadedImage, setUploadedImage] = useState(null);
   const [uploadedMedia, setUploadedMedia] = useState(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
-  const [uploadErrorImage, setUploadErrorImage] = useState(null);
   const [uploadErrorMedia, setUploadErrorMedia] = useState(null);
+
+  // Get existing assets from screen
+  const existingAssets = screen?.assets || [];
+
+  const handleRemoveAsset = (index) => {
+    if (removeScreenAsset) {
+      removeScreenAsset(index);
+    }
+  };
 
   return (
     <>
@@ -57,10 +67,8 @@ export default function ContentForm({
 
           {/* Upload Image/Icon Section */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <Label className="block text-sm font-medium text-gray-700">
-                Upload Image/Icon
-              </Label>
+            <div className="flex items-center justify-between mb-4">
+              <div></div>
               <div className="flex items-center gap-2">
                 <Label className="text-sm font-medium text-gray-700">
                   Full Bleed Image
@@ -84,76 +92,32 @@ export default function ContentForm({
               </div>
             </div>
 
-            <div className="relative  rounded-lg p-2 bg-gray-100 hover:border-primary transition-colors">
-              <div className="border-2 border-dashed p-8 rounded-lg border-gray-300 bg-white">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file =
-                      e.target.files && e.target.files[0]
-                        ? e.target.files[0]
-                        : null;
-                    if (file) {
-                      setIsUploadingImage(true);
-                      setUploadErrorImage(null);
-                      // Update form field
-                      updateField("contentImageIcon", file);
-
-                      // Upload asset with all necessary fields
-                      try {
-                        await uploadAssetFile(
-                          file,
-                          "image",
-                          sessionId || "",
-                          chapterId || "",
-                          stepId || "",
-                          screenId || ""
-                        );
-                        setUploadedImage(file.name);
-                        console.log("Image uploaded successfully");
-                      } catch (error) {
-                        setUploadErrorImage("Upload failed. Please try again.");
-                        console.error("Error uploading image:", error);
-                      } finally {
-                        setIsUploadingImage(false);
-                      }
-                    }
-                  }}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-                <div className="flex flex-col items-center justify-center text-center pointer-events-none">
-                  <p className="text-sm text-gray-600 mb-4">
-                    Upload Image/Icon
-                  </p>
-                  <span className="bg-primary text-white hover:bg-primary-700 px-4 py-2 text-sm rounded-lg inline-flex items-center gap-2 pointer-events-auto">
-                    + Browse
-                  </span>
-                </div>
-              </div>
-              {/* File name display */}
-              {(uploadedImage || isUploadingImage || uploadErrorImage) && (
-                <div className="mt-2 p-2 bg-white rounded-lg border border-gray-200">
-                  {isUploadingImage ? (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Uploading...</span>
-                    </div>
-                  ) : uploadErrorImage ? (
-                    <div className="flex items-center gap-2 text-sm text-red-600">
-                      <X className="h-4 w-4" />
-                      <span>{uploadErrorImage}</span>
-                    </div>
-                  ) : uploadedImage ? (
-                    <div className="flex items-center gap-2 text-sm text-green-600">
-                      <Check className="h-4 w-4" />
-                      <span className="font-medium">Uploaded:</span>
-                      <span className="text-gray-700">{uploadedImage}</span>
-                    </div>
-                  ) : null}
-                </div>
-              )}
-            </div>
+            <ImageUpload
+              label="Upload Image/Icon"
+              sessionId={sessionId}
+              chapterId={chapterId}
+              stepId={stepId}
+              screenId={screenId}
+              onUploadSuccess={(assetData) => {
+                if (updateScreenAssets) {
+                  updateScreenAssets([assetData]);
+                }
+                if (assetData.image_url) {
+                  updateField("contentImageIcon", assetData.image_url);
+                }
+              }}
+              onAIGenerateSuccess={(assetData) => {
+                if (updateScreenAssets) {
+                  updateScreenAssets([assetData]);
+                }
+                if (assetData.image_url) {
+                  updateField("contentImageIcon", assetData.image_url);
+                }
+              }}
+              existingAssets={existingAssets}
+              onRemoveAsset={handleRemoveAsset}
+              showSavedImages={true}
+            />
           </div>
 
           {/* Upload Media Section */}
@@ -257,6 +221,7 @@ export default function ContentForm({
           </div>
         </div>
       </div>
+
     </>
   );
 }

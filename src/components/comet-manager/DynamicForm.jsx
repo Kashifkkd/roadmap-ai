@@ -617,12 +617,83 @@ export default function DynamicForm({
     const chapterId = screen?.chapterId || "";
     const stepId = screen?.stepId || "";
 
+    // Function to update screen assets
+    const updateScreenAssets = (assets) => {
+      const screenId = screen?.id;
+      if (!screenId) return;
+
+      setOutline((prevOutline) => {
+        if (!prevOutline || !prevOutline.chapters) return prevOutline;
+
+        const newOutline = JSON.parse(JSON.stringify(prevOutline));
+        const pathChapters = newOutline.chapters || [];
+
+        // Find the screen in the outline and update assets
+        for (const chapter of pathChapters) {
+          for (const stepItem of chapter.steps || []) {
+            const screenIndex = stepItem.screens?.findIndex(
+              (s) => s.id === screenId
+            );
+            if (screenIndex !== undefined && screenIndex >= 0) {
+              const currentScreen = stepItem.screens[screenIndex];
+              // Update assets array - merge with existing assets
+              const existingAssets = currentScreen.assets || [];
+              stepItem.screens[screenIndex] = {
+                ...currentScreen,
+                assets: Array.isArray(assets) 
+                  ? [...existingAssets, ...assets]
+                  : [...existingAssets, assets],
+              };
+              return newOutline;
+            }
+          }
+        }
+        return prevOutline;
+      });
+    };
+
+    // Function to remove asset from screen
+    const removeScreenAsset = (assetIndex) => {
+      const screenId = screen?.id;
+      if (!screenId) return;
+
+      setOutline((prevOutline) => {
+        if (!prevOutline || !prevOutline.chapters) return prevOutline;
+
+        const newOutline = JSON.parse(JSON.stringify(prevOutline));
+        const pathChapters = newOutline.chapters || [];
+
+        // Find the screen in the outline and remove asset
+        for (const chapter of pathChapters) {
+          for (const stepItem of chapter.steps || []) {
+            const screenIndex = stepItem.screens?.findIndex(
+              (s) => s.id === screenId
+            );
+            if (screenIndex !== undefined && screenIndex >= 0) {
+              const currentScreen = stepItem.screens[screenIndex];
+              const existingAssets = currentScreen.assets || [];
+              existingAssets.splice(assetIndex, 1);
+              stepItem.screens[screenIndex] = {
+                ...currentScreen,
+                assets: existingAssets,
+              };
+              return newOutline;
+            }
+          }
+        }
+        return prevOutline;
+      });
+    };
+
     const formProps = {
       formData,
       updateField,
       addListItem,
       updateListItem,
       removeListItem,
+      updateScreenAssets,
+      removeScreenAsset,
+      screen,
       sessionId,
       chapterId,
       stepId,

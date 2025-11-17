@@ -1,15 +1,17 @@
-import React, { useState } from "react";
+import React from "react";
 import { SectionHeader, RichTextArea } from "./FormFields";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
-import { Plus, Trash2, Check, X, Loader2 } from "lucide-react";
-import { uploadAssetFile } from "@/api/uploadAssets";
+import { Plus, Trash2 } from "lucide-react";
+import ImageUpload from "@/components/common/ImageUpload";
 
 export default function HabitOptInForm({
   formData,
   updateField,
+  updateScreenAssets,
+  removeScreenAsset,
+  screen,
   sessionId = "",
   chapterId = "",
   stepId = "",
@@ -23,9 +25,15 @@ export default function HabitOptInForm({
     onRichTextBlur,
   } = askKyperHandlers;
   const habits = formData.habits || [];
-  const [uploadedImage, setUploadedImage] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState(null);
+
+  // Get existing assets from screen
+  const existingAssets = screen?.assets || [];
+
+  const handleRemoveAsset = (index) => {
+    if (removeScreenAsset) {
+      removeScreenAsset(index);
+    }
+  };
 
   const addHabit = () => {
     const next = [...habits, { title: "", description: "", repsPerWeek: "" }];
@@ -95,66 +103,32 @@ export default function HabitOptInForm({
           onBlur={onRichTextBlur}
         />
 
-        <div className="mb-6">
-          <Label className="block text-sm font-medium text-gray-700 mb-2">
-            Habit Image
-          </Label>
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={async (e) => {
-              const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
-              if (file) {
-                setIsUploading(true);
-                setUploadError(null);
-                // Update form field
-                updateField("habitsImage", file);
-                
-                // Upload asset with all necessary fields
-                try {
-                  await uploadAssetFile(
-                    file,
-                    "image",
-                    sessionId || "",
-                    chapterId || "",
-                    stepId || "",
-                    screenId || ""
-                  );
-                  setUploadedImage(file.name);
-                  console.log("Habit image uploaded successfully");
-                } catch (error) {
-                  setUploadError("Upload failed. Please try again.");
-                  console.error("Error uploading habit image:", error);
-                } finally {
-                  setIsUploading(false);
-                }
-              }
-            }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          {/* File name display */}
-          {(uploadedImage || isUploading || uploadError) && (
-            <div className="mt-2 p-2 bg-white rounded-lg border border-gray-200">
-              {isUploading ? (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Uploading...</span>
-                </div>
-              ) : uploadError ? (
-                <div className="flex items-center gap-2 text-sm text-red-600">
-                  <X className="h-4 w-4" />
-                  <span>{uploadError}</span>
-                </div>
-              ) : uploadedImage ? (
-                <div className="flex items-center gap-2 text-sm text-green-600">
-                  <Check className="h-4 w-4" />
-                  <span className="font-medium">Uploaded:</span>
-                  <span className="text-gray-700">{uploadedImage}</span>
-                </div>
-              ) : null}
-            </div>
-          )}
-        </div>
+        <ImageUpload
+          label="Habit Image"
+          sessionId={sessionId}
+          chapterId={chapterId}
+          stepId={stepId}
+          screenId={screenId}
+          onUploadSuccess={(assetData) => {
+            if (updateScreenAssets) {
+              updateScreenAssets([assetData]);
+            }
+            if (assetData.image_url) {
+              updateField("habitsImage", assetData.image_url);
+            }
+          }}
+          onAIGenerateSuccess={(assetData) => {
+            if (updateScreenAssets) {
+              updateScreenAssets([assetData]);
+            }
+            if (assetData.image_url) {
+              updateField("habitsImage", assetData.image_url);
+            }
+          }}
+          existingAssets={existingAssets}
+          onRemoveAsset={handleRemoveAsset}
+          showSavedImages={true}
+        />
 
         <div className="rounded-lg border border-gray-200 p-4">
           <h4 className="text-sm font-semibold text-gray-800 mb-3">Habits</h4>
