@@ -11,7 +11,7 @@ import { Plus, GripVertical, Zap, ChevronDown } from "lucide-react";
 import SelectIcon from "@/components/icons/SelectIcon";
 import ChapterTextarea from "./ChapterTextarea";
 import ProgressbarLoader from "@/components/loader";
-// import { temp } from "../../hooks/temp";
+import { temp2 } from "../../hooks/temp2";
 
 export default function OutlineMannerCreateComet({
   sessionData,
@@ -25,11 +25,11 @@ export default function OutlineMannerCreateComet({
   const sourceOutline = useMemo(() => {
     if (isArrayWithValues(prefillData?.response_outline))
       return prefillData.response_outline;
-    if (isArrayWithValues(sessionData?.response_outline))
-      return sessionData.response_outline;
+    // if (isArrayWithValues(sessionData?.response_outline))
+    //   return sessionData.response_outline;
     // sample data for testing
-    // if (isArrayWithValues(temp[0]?.response_outline))
-    //   return temp[0].response_outline;
+    if (isArrayWithValues(temp2[0]?.response_outline))
+      return temp2[0].response_outline;
     return [];
   }, [prefillData, sessionData]);
 
@@ -360,8 +360,8 @@ export default function OutlineMannerCreateComet({
       {/* Footer */}
       <div className="shrink-0">
         <OutlineMannerFooter
-          // isGenerating={isGenerating}
-          // setIsGenerating={setIsGenerating}
+        // isGenerating={isGenerating}
+        // setIsGenerating={setIsGenerating}
         />
       </div>
     </div>

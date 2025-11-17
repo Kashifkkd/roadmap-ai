@@ -443,7 +443,7 @@ const ForceRankScreenPreview = ({ deviceView, content }) => {
                 >
                   <path
                     fillRule="evenodd"
-                    d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z"
+                    d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
                     clipRule="evenodd"
                   />
                 </svg>
@@ -716,10 +716,10 @@ const ReflectionScreenPreview = ({ deviceView, content }) => {
 
           {/* Action Buttons */}
           <div className="flex gap-3 justify-end">
-            <button className="px-8 py-3 bg-orange-400 text-white font-semibold rounded-lg hover:bg-orange-500 transition-colors">
+            <button className="flex-1 px-10 py-2   bg-orange-400 text-white font-semibold rounded-sm hover:bg-orange-500 transition-colors">
               Save
             </button>
-            <button className="px-8 py-3 bg-white border-2 border-orange-400 text-gray-600 font-semibold rounded-lg hover:bg-gray-50 transition-colors">
+            <button className="flex-1 px-3 py-2 bg-white border-2 border-orange-400 text-gray-600 font-semibold rounded-sm hover:bg-gray-50 transition-colors">
               Cancel
             </button>
           </div>
@@ -866,15 +866,15 @@ const ActionScreenPreview = ({ deviceView, content }) => {
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
-      <div className="bg-gray-100 overflow-hidden shadow-sm h-full flex flex-col">
-        {/* Image Section */}
+      <div className="bg-gray-50 overflow-hidden shadow-sm h-full flex flex-col">
+        {/* Image Section
         <div className="relative w-full h-64 overflow-hidden">
           <img
             src={imageUrl}
             alt={title}
             className="w-full h-full object-cover"
           />
-        </div>
+        </div> */}
 
         {/* Content Section */}
         <div className={`${paddingClass} flex-1 flex flex-col space-y-6`}>
@@ -887,7 +887,7 @@ const ActionScreenPreview = ({ deviceView, content }) => {
 
           {/* Description */}
           {text && (
-            <div className="bg-gray-200/90 border border-gray-300 px-6 py-4 rounded-sm shadow-sm">
+            <div className="px-6 py-4 rounded-sm ">
               <p className={`text-gray-800 ${textSizeClass} leading-relaxed`}>
                 {text}
               </p>
@@ -904,12 +904,12 @@ const ActionScreenPreview = ({ deviceView, content }) => {
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-4 mt-auto">
-            <button className="flex-1 py-4 bg-orange-500 text-white font-bold text-base rounded-lg hover:bg-orange-600 transition-colors">
+          <div className="flex gap-2 mt-auto">
+            <button className="px-10 py-2 bg-orange-500 text-white font-bold text-base rounded-[4px] hover:bg-orange-600 transition-colors">
               Commit
             </button>
             {toolLink && (
-              <button className="flex-1 py-4 bg-white border-2 border-orange-500 text-gray-700 font-bold text-base rounded-lg hover:bg-gray-50 transition-colors">
+              <button className=" px-3 py-2 bg-white border-2 border-orange-500 rounded-[4px] text-gray-700 font-bold text-base  hover:bg-gray-50 transition-colors">
                 Open Tool
               </button>
             )}
@@ -917,7 +917,7 @@ const ActionScreenPreview = ({ deviceView, content }) => {
 
           {/* Completed Link */}
           <div className="text-center">
-            <button className="text-gray-700 font-semibold text-base hover:text-gray-900 underline">
+            <button className="text-gray-700 font-semibold text-base hover:text-gray-900">
               I completed this
             </button>
           </div>
@@ -995,10 +995,10 @@ const SocialDiscussionScreenPreview = ({ deviceView, content }) => {
 
           {/* Action Buttons */}
           <div className="flex gap-4">
-            <button className="flex-1 py-4 bg-orange-500 text-white font-bold text-base rounded-lg hover:bg-orange-600 transition-colors">
+            <button className="flex-1 py-2 px-10 bg-orange-500 text-white font-bold text-base rounded-sm hover:bg-orange-600 transition-colors">
               Save
             </button>
-            <button className="flex-1 py-4 bg-white border-2 border-orange-500 text-gray-700 font-bold text-base rounded-lg hover:bg-gray-50 transition-colors">
+            <button className="flex-1 py-2 bg-white border-2 border-orange-500 text-gray-700 font-bold text-base rounded-sm hover:bg-gray-50 transition-colors">
               Cancel
             </button>
           </div>
@@ -1146,6 +1146,7 @@ export default function FromDoerToEnabler({ selectedScreen }) {
   const screenContents = selectedScreen?.screenContents ?? null;
   const content = screenContents?.content ?? null;
   const contentType = screenContents?.contentType;
+  console.log("contentType>>>>>>>>>>>>.", contentType);
 
   const contentSections = useMemo(() => {
     if (!contentType || !content) {
@@ -1448,12 +1449,12 @@ export default function FromDoerToEnabler({ selectedScreen }) {
                   deviceView={deviceView}
                   content={content}
                 />
-              ) : contentType === "action" ? (
+              ) : contentType === "actions" ? (
                 <ActionScreenPreview
                   deviceView={deviceView}
                   content={content}
                 />
-              ) : contentType === "social" ? (
+              ) : contentType === "social_discussion" ? (
                 <SocialDiscussionScreenPreview
                   deviceView={deviceView}
                   content={content}

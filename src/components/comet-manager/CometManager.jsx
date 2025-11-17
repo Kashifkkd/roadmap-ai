@@ -202,7 +202,7 @@ export default function CometManager({
   // Select first screen by default when screens are first loaded
   useEffect(() => {
     if (!screens || screens.length === 0) return;
-    
+
     // If no screen is selected, select the first one
     if (!selectedScreenId) {
       const firstScreen = screens[0];
@@ -211,9 +211,11 @@ export default function CometManager({
       }
       return;
     }
-    
+
     // If selected screen is no longer in the screens array, select the first one
-    const selectedScreenExists = screens.some(screen => screen.id === selectedScreenId);
+    const selectedScreenExists = screens.some(
+      (screen) => screen.id === selectedScreenId
+    );
     if (!selectedScreenExists) {
       const firstScreen = screens[0];
       if (firstScreen && firstScreen.id) {
@@ -231,7 +233,9 @@ export default function CometManager({
       return;
     }
 
-    const screenIndex = screens.findIndex((screen) => screen.id === selectedScreenId);
+    const screenIndex = screens.findIndex(
+      (screen) => screen.id === selectedScreenId
+    );
     if (screenIndex >= 0 && currentScreen !== screenIndex) {
       setCurrentScreen(screenIndex);
     }
@@ -337,8 +341,8 @@ export default function CometManager({
 
     // Get position - count screens in the same step
     const position =
-      allScreens.filter((s) => String(s.stepId) === String(targetStepId)).length +
-      1;
+      allScreens.filter((s) => String(s.stepId) === String(targetStepId))
+        .length + 1;
 
     // Map screenType.id to contentType
     const contentTypeMap = {
@@ -698,7 +702,6 @@ export default function CometManager({
     setCurrentScreen(addAtIndex !== null ? addAtIndex : screens.length);
   };
 
-
   const navigateScreen = (direction) => {
     if (direction === "prev" && currentScreen > 0) {
       const newIndex = currentScreen - 1;
@@ -775,7 +778,9 @@ export default function CometManager({
                   if (chapterScreens.length > 0) {
                     // Find the first screen's index in the filtered screens array
                     const firstScreen = chapterScreens[0];
-                    const screenIndex = screens.findIndex((s) => s.id === firstScreen.id);
+                    const screenIndex = screens.findIndex(
+                      (s) => s.id === firstScreen.id
+                    );
                     if (screenIndex >= 0) {
                       setSelectedScreenId(firstScreen.id);
                       setCurrentScreen(screenIndex);

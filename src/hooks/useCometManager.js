@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { temp2 } from "./temp2";
 
 export function useCometManager(sessionData = null) {
   const [isLoading, setIsLoading] = useState(false);
@@ -14,6 +15,7 @@ export function useCometManager(sessionData = null) {
   useEffect(() => {
     if (sessionData && sessionData.response_path) {
       setOutline(sessionData.response_path);
+      
 
       // Set initial selected step
       const pathChapters = sessionData.response_path.chapters || [];

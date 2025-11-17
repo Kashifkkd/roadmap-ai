@@ -5,6 +5,8 @@ import {
   RichTextArea,
   ListField,
 } from "./FormFields";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 export default function ForceRankForm({
   formData,
@@ -43,9 +45,7 @@ export default function ForceRankForm({
           label="Options"
           items={formData.options || []}
           onAdd={() => addListItem("options")}
-          onUpdate={(index, value) =>
-            updateListItem("options", index, value)
-          }
+          onUpdate={(index, value) => updateListItem("options", index, value)}
           onRemove={(index) => removeListItem("options", index)}
           buttonText="Add Option"
         />
