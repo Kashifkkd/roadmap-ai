@@ -394,6 +394,17 @@ export default function DynamicForm({
     updateField(listName, newList);
   };
 
+  const reorderListItem = (listName, draggedIndex, dropIndex) => {
+    const currentList = formData[listName] || [];
+    if (draggedIndex === dropIndex || draggedIndex < 0 || dropIndex < 0) return;
+    
+    const newList = [...currentList];
+    const draggedItem = newList[draggedIndex];
+    newList.splice(draggedIndex, 1);
+    newList.splice(dropIndex, 0, draggedItem);
+    updateField(listName, newList);
+  };
+
   const clearBlurTimeout = () => {
     if (blurTimeout) {
       clearTimeout(blurTimeout);
@@ -694,6 +705,7 @@ export default function DynamicForm({
       addListItem,
       updateListItem,
       removeListItem,
+      reorderListItem,
       updateScreenAssets,
       removeScreenAsset,
       screen,

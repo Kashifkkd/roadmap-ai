@@ -82,62 +82,154 @@ export const ListField = ({
   onAdd,
   onUpdate,
   onRemove,
+  onReorder,
+  onToggleCorrect,
   buttonText,
   showCorrectAnswer = false,
-}) => (
-  <div className="mb-4">
-    <Label className="block text-sm font-medium text-gray-700 mb-2">
-      {label}
-    </Label>
-    <div className="space-y-2">
-      {(items || []).map((item, index) => (
-        <div key={index} className="flex gap-2">
-          <div className="cursor-move text-gray-400 h-10 w-10 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center">
-            <GripVertical size={18} />
-          </div>
-          <span className="text-xs font-medium w-14 h-10 bg-gray-100 border  rounded-lg flex items-center justify-center text-gray-700">
-            {index + 1}
-          </span>
-          {showCorrectAnswer && (
-            <div className="flex items-center justify-center gap-x-1">
-              <div className="cursor-pointer h-10 w-10 flex items-center justify-center bg-green-100 rounded-lg">
-                <CircleCheck size={18} className="text-green-500" />
+}) => {
+  const [draggedIndex, setDraggedIndex] = React.useState(null);
+
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/html", e.target.outerHTML);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+
+    if (onReorder) {
+      onReorder(draggedIndex, dropIndex);
+    }
+    setDraggedIndex(null);
+  };
+
+  const getItemValue = (item) => {
+    if (typeof item === "object" && item !== null) {
+      return item.text || item.label || "";
+    }
+    return item || "";
+  };
+
+  const getItemIsCorrect = (item) => {
+    if (typeof item === "object" && item !== null) {
+      // Support both is_correct (snake_case) and isCorrect (camelCase)
+      return item.is_correct === true || item.isCorrect === true;
+    }
+    return false;
+  };
+
+  const handleToggleCorrect = (index, isCorrect) => {
+    if (onToggleCorrect) {
+      onToggleCorrect(index, isCorrect);
+    }
+  };
+
+  return (
+    <div className="mb-4">
+      <Label className="block text-sm font-medium text-gray-700 mb-2">
+        {label}
+      </Label>
+      <div className="space-y-2">
+        {(items || []).map((item, index) => {
+          const isCorrect = getItemIsCorrect(item);
+          return (
+            <div
+              key={index}
+              draggable={!!onReorder}
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, index)}
+              className={`flex gap-2 ${
+                draggedIndex === index ? "opacity-50" : ""
+              }`}
+            >
+              <div
+                className={`${
+                  onReorder ? "cursor-move" : "cursor-default"
+                } text-gray-400 h-10 w-10 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center`}
+              >
+                <GripVertical size={18} />
               </div>
-              <div className="cursor-pointer h-10 w-10 rounded-lg flex items-center justify-center bg-red-100">
-                <CircleX size={18} className="text-red-500" />
-              </div>
+              <span className="text-xs font-medium w-14 h-10 bg-gray-100 border  rounded-lg flex items-center justify-center text-gray-700">
+                {index + 1}
+              </span>
+              {showCorrectAnswer && (
+                <div className="flex items-center justify-center gap-x-1">
+                  <div
+                    onClick={() => handleToggleCorrect(index, true)}
+                    className={`cursor-pointer h-10 w-10 flex items-center justify-center rounded-lg transition-all ${
+                      isCorrect
+                        ? "bg-green-500"
+                        : "bg-green-100 hover:bg-green-200"
+                    }`}
+                  >
+                    <CircleCheck
+                      size={18}
+                      className={isCorrect ? "text-white" : "text-green-500"}
+                    />
+                  </div>
+                  <div
+                    onClick={() => handleToggleCorrect(index, false)}
+                    className={`cursor-pointer h-10 w-10 rounded-lg flex items-center justify-center transition-all ${
+                      !isCorrect && isCorrect !== undefined
+                        ? "bg-red-500"
+                        : "bg-red-100 hover:bg-red-200"
+                    }`}
+                  >
+                    <CircleX
+                      size={18}
+                      className={
+                        !isCorrect && isCorrect !== undefined
+                          ? "text-white"
+                          : "text-red-500"
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+              <Input
+                type="text"
+                value={getItemValue(item)}
+                onChange={(e) => onUpdate(index, e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <Button
+                variant="default"
+                type="button"
+                onClick={() => onRemove(index)}
+                className="px-2 py-2 text-white  rounded-lg  bg-[#F04438]"
+              >
+                <Trash2 size={16} />
+              </Button>
             </div>
-          )}
-          <Input
-            type="text"
-            value={
-              typeof item === "object" && item !== null
-                ? item.text || item.label || ""
-                : item || ""
-            }
-            onChange={(e) => onUpdate(index, e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <Button
-            variant="default"
-            type="button"
-            onClick={() => onRemove(index)}
-            className="px-2 py-2 text-white  rounded-lg  bg-[#F04438]"
-          >
-            <Trash2 size={16} />
-          </Button>
-        </div>
-      ))}
-      {/* <Button
+          );
+        })}
+        {/* <Button
         onClick={onAdd}
         className="flex items-center gap-2 px-3 py-2 text-background rounded-lg"
       >
         <Plus size={16} />
         {buttonText}
       </Button> */}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const RichTextArea = ({
   label,
@@ -188,9 +280,33 @@ export const RichTextArea = ({
       // Set initial content
       if (value) {
         try {
-          editor.setContents(JSON.parse(value));
+          // Try to parse as Quill delta
+          const parsed = JSON.parse(value);
+          if (parsed && parsed.ops && Array.isArray(parsed.ops)) {
+            editor.setContents(parsed);
+          } else {
+            // Not a valid delta, treat as plain text
+            const textValue = typeof value === "string" ? value : String(value || "");
+            if (textValue.trim() !== "") {
+              editor.setText(textValue);
+            }
+          }
         } catch {
-          editor.setText(value);
+          // Not JSON, treat as plain text
+          const textValue = typeof value === "string" ? value : String(value || "");
+          if (textValue.trim() !== "") {
+            try {
+              editor.setText(textValue);
+            } catch (error) {
+              // If setText fails, try setting HTML content
+              console.warn("Failed to set text in Quill editor:", error);
+              try {
+                editor.root.innerHTML = textValue;
+              } catch (htmlError) {
+                console.error("Failed to set HTML in Quill editor:", htmlError);
+              }
+            }
+          }
         }
       }
 

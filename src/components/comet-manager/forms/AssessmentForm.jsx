@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { SectionHeader, TextField, RichTextArea } from "./FormFields";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
@@ -8,6 +8,90 @@ import { Plus, Trash2, GripVertical } from "lucide-react";
 // Helper to generate unique IDs
 export const generateId = (prefix) => {
   return `${prefix}_${new Date().getTime()}`;
+};
+
+// OptionList component with drag and drop functionality
+const OptionList = ({
+  questionIndex,
+  options,
+  updateOption,
+  removeOption,
+  reorderOptions,
+}) => {
+  const [draggedIndex, setDraggedIndex] = useState(null);
+
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/html", e.target.outerHTML);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+
+    reorderOptions(questionIndex, draggedIndex, dropIndex);
+    setDraggedIndex(null);
+  };
+
+  return (
+    <div className="space-y-2">
+      {options.map((option, optionIndex) => (
+        <div
+          key={option?.option_id || option?.optionId || optionIndex}
+          draggable
+          onDragStart={(e) => handleDragStart(e, optionIndex)}
+          onDragEnd={handleDragEnd}
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, optionIndex)}
+          className={`flex items-center gap-2 ${
+            draggedIndex === optionIndex ? "opacity-50" : ""
+          }`}
+        >
+          {/* Drag Handle */}
+          <div className="cursor-move text-gray-400 hover:text-gray-600 h-10 w-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-all">
+            <GripVertical size={20} />
+          </div>
+
+          {/* Numbered Box */}
+          <div className="flex items-center justify-center w-8 h-8 bg-gray-100 border border-gray-300 rounded text-sm font-medium text-gray-700">
+            {optionIndex + 1}
+          </div>
+
+          {/* Option Input */}
+          <Input
+            type="text"
+            value={option?.text || ""}
+            onChange={(e) =>
+              updateOption(questionIndex, optionIndex, e.target.value)
+            }
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+
+          {/* Delete Button */}
+          <Button
+            type="button"
+            onClick={() => removeOption(questionIndex, optionIndex)}
+            className="px-2 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center"
+          >
+            <Trash2 size={16} />
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
 };
 // import Quill from "quill";
 // import "quill/dist/quill.snow.css";
@@ -234,6 +318,26 @@ export default function AssessmentForm({
     updateField("questions", currentQuestions);
   };
 
+  // Reorder options within a question
+  const reorderOptions = (questionIndex, draggedIndex, dropIndex) => {
+    const currentQuestions = [...questions];
+    if (!currentQuestions[questionIndex]) return;
+
+    const currentOptions = [...(currentQuestions[questionIndex].options || [])];
+    if (draggedIndex === dropIndex || draggedIndex < 0 || dropIndex < 0) return;
+
+    const draggedOption = currentOptions[draggedIndex];
+    currentOptions.splice(draggedIndex, 1);
+    currentOptions.splice(dropIndex, 0, draggedOption);
+
+    currentQuestions[questionIndex] = {
+      ...currentQuestions[questionIndex],
+      options: currentOptions,
+    };
+
+    updateField("questions", currentQuestions);
+  };
+
   return (
     <div className="bg-gray-100 rounded-lg p-2">
       <div className="p-2">
@@ -292,47 +396,13 @@ export default function AssessmentForm({
               <Label className="block text-sm font-medium text-primary mb-2">
                 Options
               </Label>
-              <div className="space-y-2">
-                {(questionData.options || []).map((option, optionIndex) => (
-                  <div
-                    key={option?.option_id || option?.optionId || optionIndex}
-                    className="flex items-center gap-2"
-                  >
-                    {/* Drag Handle */}
-                    <div className="cursor-move text-gray-400 hover:text-gray-600">
-                      <GripVertical size={20} />
-                    </div>
-
-                    {/* Numbered Box */}
-                    <div className="flex items-center justify-center w-8 h-8 bg-gray-100 border border-gray-300 rounded text-sm font-medium text-gray-700">
-                      {optionIndex + 1}
-                    </div>
-
-                    {/* Option Input */}
-                    <Input
-                      type="text"
-                      value={option?.text || ""}
-                      onChange={(e) =>
-                        updateOption(
-                          questionIndex,
-                          optionIndex,
-                          e.target.value
-                        )
-                      }
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-
-                    {/* Delete Button */}
-                    <Button
-                      type="button"
-                      onClick={() => removeOption(questionIndex, optionIndex)}
-                      className="px-2 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center"
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+              <OptionList
+                questionIndex={questionIndex}
+                options={questionData.options || []}
+                updateOption={updateOption}
+                removeOption={removeOption}
+                reorderOptions={reorderOptions}
+              />
 
               {/* Add Option Button */}
               <Button

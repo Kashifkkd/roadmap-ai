@@ -14,6 +14,7 @@ export default function ForceRankForm({
   addListItem,
   updateListItem,
   removeListItem,
+  reorderListItem,
   askKyperHandlers = {},
 }) {
   const {
@@ -22,6 +23,14 @@ export default function ForceRankForm({
     onRichTextSelection,
     onRichTextBlur,
   } = askKyperHandlers;
+
+  // Handler for reordering options
+  const handleReorderOptions = (draggedIndex, dropIndex) => {
+    if (reorderListItem) {
+      reorderListItem("options", draggedIndex, dropIndex);
+    }
+  };
+
   return (
     <div className="bg-gray-100 rounded-lg p-2">
       <div className="p-2">
@@ -85,6 +94,7 @@ export default function ForceRankForm({
           onAdd={() => addListItem("options")}
           onUpdate={(index, value) => updateListItem("options", index, value)}
           onRemove={(index) => removeListItem("options", index)}
+          onReorder={handleReorderOptions}
           buttonText="Add Option"
         />
         <div className="flex flex-col gap-2">
