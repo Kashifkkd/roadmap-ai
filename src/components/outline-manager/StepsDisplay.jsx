@@ -377,16 +377,13 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
         selectedChapter?.chapter ||
         (chapterNumber ? `Chapter ${chapterNumber}` : "current chapter");
 
-      const conversationMessage = `
-          add a step in chapter 3,  description: Add a new step in chapter 3 about qa bots
-       `;
       const payloadObject = JSON.stringify({
         session_id: sessionId,
         input_type: "outline_updation",
         comet_creation_data: snapshot?.comet_creation_data || {},
         response_outline: snapshot?.response_outline || {},
         response_path: snapshot?.response_path || {},
-        chatbot_conversation: [{ user: conversationMessage }],
+        chatbot_conversation: [{ user:  `add a step in chapter: '${chapterLabel}', description: ${userInstruction}`}],
         to_modify: {},
       });
 
