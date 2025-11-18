@@ -36,7 +36,7 @@ export default function HabitOptInForm({
   };
 
   const addHabit = () => {
-    const next = [...habits, { title: "", description: "", repsPerWeek: "" }];
+    const next = [...habits, { title: "", text: "", reps: "" }];
     updateField("habits", next);
   };
 
@@ -63,45 +63,18 @@ export default function HabitOptInForm({
           <Label className="block text-sm font-medium text-gray-700 mb-2">
             Title
           </Label>
-          <div className="flex gap-3">
-            <Input
-              type="text"
-              value="The Habits of"
-              disabled
-              className="w-48 bg-gray-50 text-gray-500"
-            />
-            <Input
-              type="text"
-              value={formData.title || ""}
-              onChange={(e) => updateField("title", e.target.value)}
-              placeholder="Enter name"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onSelect={(event) =>
-                onTextFieldSelect?.("habitsTitle", event, formData.title)
-              }
-              onBlur={onFieldBlur}
-            />
-          </div>
+          <Input
+            type="text"
+            value={formData.title || ""}
+            onChange={(e) => updateField("title", e.target.value)}
+            placeholder="Enter habit group title"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onSelect={(event) =>
+              onTextFieldSelect?.("habitsTitle", event, formData.title)
+            }
+            onBlur={onFieldBlur}
+          />
         </div>
-        <RichTextArea
-          label="Description"
-          value={formData.habit_image?.description || ""}
-          onChange={(value) => {
-            const habit_image = {
-              ...formData.habit_image,
-              description: value,
-            };
-            updateField("habit_image", habit_image);
-          }}
-          onSelectionChange={(selectionInfo) =>
-            onRichTextSelection?.(
-              "habitsDescription",
-              selectionInfo,
-              formData.habit_image?.description
-            )
-          }
-          onBlur={onRichTextBlur}
-        />
 
         <ImageUpload
           label="Habit Image"
@@ -114,7 +87,7 @@ export default function HabitOptInForm({
               updateScreenAssets([assetData]);
             }
             if (assetData.image_url) {
-              updateField("habitsImage", assetData.image_url);
+              updateField("habit_image", assetData.image_url);
             }
           }}
           onAIGenerateSuccess={(assetData) => {
@@ -122,7 +95,7 @@ export default function HabitOptInForm({
               updateScreenAssets([assetData]);
             }
             if (assetData.image_url) {
-              updateField("habitsImage", assetData.image_url);
+              updateField("habit_image", assetData.image_url);
             }
           }}
           existingAssets={existingAssets}
@@ -162,38 +135,38 @@ export default function HabitOptInForm({
                 </div>
 
                 <div>
-                  {/* <Textarea
-                  value={habit.description}
-                  onChange={(e) =>
-                    updateHabitField(index, "description", e.target.value)
-                  }
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                /> */}
                   <RichTextArea
-                    label="Description"
-                    value={habit.description}
+                    label="Text"
+                    value={habit.text || ""}
                     onChange={(value) =>
-                      updateHabitField(index, "description", value)
+                      updateHabitField(index, "text", value)
                     }
+                    onSelectionChange={(selectionInfo) =>
+                      onRichTextSelection?.(
+                        "habitsText",
+                        selectionInfo,
+                        habit.text
+                      )
+                    }
+                    onBlur={onRichTextBlur}
                   />
                 </div>
 
                 <div>
                   <Label className="block text-sm font-medium text-gray-700 mb-2">
-                    No. of Reps per week
+                    Reps per week
                   </Label>
                   <Input
                     type="number"
-                    value={habit.repsPerWeek ?? ""}
+                    value={habit.reps ?? ""}
                     onChange={(e) =>
                       updateHabitField(
                         index,
-                        "repsPerWeek",
+                        "reps",
                         e.target.value === "" ? "" : Number(e.target.value)
                       )
                     }
-                    placeholder="e.g. 3"
+                    placeholder="e.g. 7"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

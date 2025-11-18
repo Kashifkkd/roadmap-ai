@@ -123,7 +123,10 @@ const getFormValuesFromScreen = (screen) => {
 
   if (contentType === "habits") {
     values.title = content.title || "";
-    values.habit_image = content.habit_image || {};
+    // habit_image is a string URL, not an object
+    values.habit_image = typeof content.habit_image === "string"
+      ? content.habit_image
+      : content.habit_image?.url || content.habit_image?.image_url || "";
     values.enabled = content.enabled ?? false;
     values.habits = content.habits || [];
   }
@@ -160,6 +163,8 @@ export default function DynamicForm({
     });
     return values;
   }, [screen]);
+
+  console.log("screen>>", screen)
 
   const [focusedField, setFocusedField] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
@@ -237,7 +242,7 @@ export default function DynamicForm({
                 currentScreen.screenContents.content.reflection_question =
                   value;
               }
-              
+
               // Update the screen in the array
               stepItem.screens[screenIndex] = currentScreen;
             } else if (contentType === "mcq") {
@@ -327,39 +332,23 @@ export default function DynamicForm({
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
               else if (field === "habit_image") {
-                if (!currentScreen.screenContents.content.habit_image) {
-                  currentScreen.screenContents.content.habit_image = {};
-                }
-                // If value is an object with description, extract plain text from delta
-                if (value && typeof value === "object" && value.description) {
-                  currentScreen.screenContents.content.habit_image = {
-                    ...currentScreen.screenContents.content.habit_image,
-                    ...value,
-                    description: extractPlainTextFromDelta(value.description),
-                  };
-                } else {
-                  currentScreen.screenContents.content.habit_image = {
-                    ...currentScreen.screenContents.content.habit_image,
-                    ...value,
-                  };
-                }
+                // habit_image is stored as a string URL
+                currentScreen.screenContents.content.habit_image = value;
               } else if (field === "enabled") {
                 currentScreen.screenContents.content.enabled = value;
               } else if (field === "habits") {
-                // Extract plain text from delta for nested habit.description fields
+                // Extract plain text from delta for nested habit.text fields
                 if (Array.isArray(value)) {
                   currentScreen.screenContents.content.habits = value.map(
                     (habit) => {
                       if (
                         habit &&
                         typeof habit === "object" &&
-                        habit.description
+                        habit.text
                       ) {
                         return {
                           ...habit,
-                          description: extractPlainTextFromDelta(
-                            habit.description
-                          ),
+                          text: extractPlainTextFromDelta(habit.text),
                         };
                       }
                       return habit;
@@ -565,8 +554,7 @@ export default function DynamicForm({
         assessmentTitle: "title",
         assessmentQuestions: "questions",
         habitsTitle: "title",
-        habitsDescription: "habit_image.description",
-        habitsUrl: "habit_image.url",
+        habitsText: "habits[].text",
       };
 
       const mappedField =
@@ -576,8 +564,8 @@ export default function DynamicForm({
         typeof screen?.position === "number"
           ? screen.position
           : typeof screen?.order === "number"
-          ? screen.order + 1
-          : 1;
+            ? screen.order + 1
+            : 1;
 
       const conversationMessage = `{ 'path': 'chapter-${chapterNumber}-step-${stepNumber}-screen-${screenNumber}', 'field': '${mappedField}', 'value': '${askContext.selectedText}', 'instruction': '${query}' }`;
 
@@ -612,7 +600,7 @@ export default function DynamicForm({
     const contentType = (
       screen?.screenContents?.contentType || ""
     ).toLowerCase();
-
+    console.log("contentType>>", contentType)
     // Extract IDs for asset upload
     const sessionId =
       sessionData?.session_id ||
@@ -644,11 +632,20 @@ export default function DynamicForm({
               const currentScreen = stepItem.screens[screenIndex];
               // Update assets array - merge with existing assets
               const existingAssets = currentScreen.assets || [];
+              const newAssets = Array.isArray(assets)
+                ? [...existingAssets, ...assets]
+                : [...existingAssets, assets];
+
+              console.log("updateScreenAssets - saving assets:", {
+                screenId,
+                existingCount: existingAssets.length,
+                newCount: newAssets.length,
+                assets: newAssets,
+              });
+
               stepItem.screens[screenIndex] = {
                 ...currentScreen,
-                assets: Array.isArray(assets) 
-                  ? [...existingAssets, ...assets]
-                  : [...existingAssets, assets],
+                assets: newAssets,
               };
               return newOutline;
             }
@@ -793,8 +790,11 @@ export default function DynamicForm({
         />
       );
     }
+
+    console.log("ACTIONSSSS", screenType, contentType)
     //5-Actions
-    if (screenType === "action" || contentType === "actions") {
+    if (screenType === "action" || screenType === "actions" || contentType === "action" || contentType === "actions") {
+      console.log("🔵 Rendering ActionsForm - screenType:", screenType, "contentType:", contentType, "formData:", formData);
       return (
         <ActionsForm
           {...formProps}
@@ -807,6 +807,7 @@ export default function DynamicForm({
         />
       );
     }
+    console.log("AFTERRRRRR")
     //6-Social Discussion
     if (screenType === "social" || contentType === "social_discussion") {
       return (

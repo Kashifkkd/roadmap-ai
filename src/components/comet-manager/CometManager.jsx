@@ -243,16 +243,16 @@ export default function CometManager({
   }, [selectedScreenId, screens]);
 
   // Ensure the selected screen is visible in the horizontal list
-  useEffect(() => {
-    const target = selectedScreenRef.current;
-    if (target && typeof target.scrollIntoView === "function") {
-      target.scrollIntoView({
-        behavior: "smooth",
-        inline: "center",
-        block: "nearest",
-      });
-    }
-  }, [currentScreen, selectedScreen]);
+  // useEffect(() => {
+  //   const target = selectedScreenRef.current;
+  //   if (target && typeof target.scrollIntoView === "function") {
+  //     target.scrollIntoView({
+  //       behavior: "smooth",
+  //       inline: "center",
+  //       block: "nearest",
+  //     });
+  //   }
+  // }, [currentScreen, selectedScreen]);
 
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);

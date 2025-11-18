@@ -41,6 +41,9 @@ const ScreenContentTypePreview = ({
   sections = [],
   assets = [],
 }) => {
+  // Debug: Log assets to see what we're receiving
+  console.log("ScreenContentTypePreview assets:", assets);
+  
   const imageUrl =
     content?.media?.url ||
     content?.media?.imageUrl ||
@@ -1192,6 +1195,7 @@ export default function FromDoerToEnabler({
   const content = screenContents?.content ?? null;
   const contentType = screenContents?.contentType;
   console.log("contentType>>>>>>>>>>>>.", contentType);
+  console.log("FromDoerToEnabler selectedScreen assets:", selectedScreen?.assets);
 
   const contentSections = useMemo(() => {
     if (!contentType || !content) {
@@ -1504,7 +1508,7 @@ export default function FromDoerToEnabler({
                   deviceView={deviceView}
                   content={content}
                 />
-              ) : contentType === "action" ? (
+              ) : contentType === "action" || contentType === "actions" ? (
                 <ActionScreenPreview
                   deviceView={deviceView}
                   content={content}

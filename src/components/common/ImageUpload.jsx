@@ -78,17 +78,19 @@ export default function ImageUpload({
         screenId || ""
       );
 
-      if (uploadResponse?.response) {
-        const assetData = {
-          status: "success",
-          image_url: uploadResponse.response.s3_url,
-          asset_id: uploadResponse.response.id,
-        };
-        if (onUploadSuccess) {
-          onUploadSuccess(assetData);
-        }
-        setUploadedImage(file.name);
-      }
+      console.log(uploadResponse, "uploadResponse")
+              if (uploadResponse?.response) {
+                // Normalize asset data to always have image_url
+                const assetData = {
+                  status: "success",
+                  image_url: uploadResponse.response.s3_url || uploadResponse.response.url || uploadResponse.response.image_url,
+                  asset_id: uploadResponse.response.id || uploadResponse.response.asset_id,
+                };
+                if (onUploadSuccess) {
+                  onUploadSuccess(assetData);
+                }
+                setUploadedImage(file.name);
+              }
     } catch (error) {
       setUploadErrorImage("Upload failed. Please try again.");
       console.error("Error uploading image:", error);
@@ -128,12 +130,15 @@ export default function ImageUpload({
       }
 
       if (response) {
+        // Normalize asset data to always have image_url
         const assetToSave = {
           status: response.status || "success",
-          image_url: response.image_url,
-          asset_id: response.asset_id,
+          image_url: response.image_url || response.url,
+          asset_id: response.asset_id || response.id,
           style: response.style,
           prompt_used: response.prompt_used,
+          type: response.type || "image",
+          generated_by: response.generated_by || "generative_ai",
         };
 
         if (onAIGenerateSuccess) {
@@ -150,6 +155,8 @@ export default function ImageUpload({
       setIsGeneratingImage(false);
     }
   };
+
+  console.log(">>existingAssets", existingAssets)
 
   return (
     <>
