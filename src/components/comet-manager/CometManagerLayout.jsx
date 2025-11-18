@@ -61,13 +61,14 @@ export default function CometManagerLayout() {
       typeof window !== "undefined"
         ? localStorage.getItem("sessionData")
         : null;
+
     if (storedSessionData && !sessionData) {
       setSessionData(JSON.parse(storedSessionData));
     }
     // sample data for testing
-    if (!storedSessionData && !sessionData) {
-      setSessionData(temp2[0]);
-    }
+    // if (!storedSessionData && !sessionData) {
+    //   setSessionData(temp2[0]);
+    // }
   }, [sessionData]);
 
   useEffect(() => {
