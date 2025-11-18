@@ -198,6 +198,7 @@ export default function CometManager({
     if (!selectedScreenId || !screens || screens.length === 0) return null;
     return screens.find((screen) => screen.id === selectedScreenId) || null;
   }, [selectedScreenId, screens]);
+  console.log("selectedScreen", selectedScreen);
 
   // Select first screen by default when screens are first loaded
   useEffect(() => {
@@ -1060,9 +1061,9 @@ export default function CometManager({
         <DrawerContent
           className={`${
             isMaximized
-              ? "w-screen"
-              : "w-full sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
-          } max-w-none! h-screen bg-primary-50 p-0`}
+              ? "w-screen! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
+              : "w-screen! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
+          } max-w-none! h-screen! bg-primary-50 p-0`}
         >
           {/* Preview Header */}
           <div className="bg-primary-50 border-b border-gray-200 py-3 px-3 sm:px-4 flex items-center justify-between">
@@ -1091,8 +1092,15 @@ export default function CometManager({
           </div>
 
           {/* Preview Content */}
-          <div className="flex-1 overflow-hidden p-2 sm:p-3 border-lg bg-primary-50">
-            <FromDoerToEnabler selectedScreen={selectedScreen} />
+          <div
+            className={`flex-1 overflow-hidden border-lg bg-primary-50 ${
+              isMaximized ? "p-0 sm:p-2 md:p-3" : "p-0 sm:p-2 md:p-3"
+            }`}
+          >
+            <FromDoerToEnabler
+              selectedScreen={selectedScreen}
+              isMaximized={isMaximized}
+            />
           </div>
         </DrawerContent>
       </Drawer>

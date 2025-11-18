@@ -6,7 +6,7 @@ import CometManager from "./CometManager";
 import { usePreviewMode } from "@/contexts/PreviewModeContext";
 import { graphqlClient } from "@/lib/graphql-client";
 // import { sampleSessionData } from "@/hooks/sampleSessionData";
-import { temp } from "@/hooks/temp";
+import { temp2 } from "@/hooks/temp2";
 
 export default function CometManagerLayout() {
   const { isPreviewMode, setIsPreviewMode } = usePreviewMode();
@@ -18,28 +18,35 @@ export default function CometManagerLayout() {
   const [prevOutline, setPrevOutline] = useState(null);
   const autoSaveTimerRef = useRef(null);
   const isSavingRef = useRef(false);
-  const outlineRef = useRef(null); 
-  const initializedSessionIdRef = useRef(null); 
+  const outlineRef = useRef(null);
+  const initializedSessionIdRef = useRef(null);
 
   console.log("sessionData", sessionData);
 
   useEffect(() => {
     const currentSessionId = sessionData?.session_id;
-    
-    if (currentSessionId && initializedSessionIdRef.current !== currentSessionId) {
+
+    if (
+      currentSessionId &&
+      initializedSessionIdRef.current !== currentSessionId
+    ) {
       initializedSessionIdRef.current = null;
       setPrevOutline(null);
     }
-    
+
     // Update outline when response_path changes (either new session or updated path)
     if (sessionData?.response_path) {
       const currentOutline = sessionData.response_path;
-      const outlineChanged = JSON.stringify(currentOutline) !== JSON.stringify(outlineRef.current);
-      
+      const outlineChanged =
+        JSON.stringify(currentOutline) !== JSON.stringify(outlineRef.current);
+
       // Update if it's a new session OR if the outline has actually changed
-      if (initializedSessionIdRef.current !== currentSessionId || outlineChanged) {
+      if (
+        initializedSessionIdRef.current !== currentSessionId ||
+        outlineChanged
+      ) {
         setOutline(currentOutline);
-        
+
         setPrevOutline(currentOutline);
         outlineRef.current = currentOutline;
         initializedSessionIdRef.current = currentSessionId;
@@ -58,8 +65,8 @@ export default function CometManagerLayout() {
       setSessionData(JSON.parse(storedSessionData));
     }
     // sample data for testing
-    // else if (!storedSessionData && !sessionData) {
-    //   setSessionData(temp[0]);
+    // if (!storedSessionData && !sessionData) {
+    //   setSessionData(temp2[0]);
     // }
   }, [sessionData]);
 
@@ -92,8 +99,9 @@ export default function CometManagerLayout() {
 
   const handleOutlineChange = (newOutline) => {
     if (newOutline !== null) {
-      const outlineChanged = JSON.stringify(newOutline) !== JSON.stringify(outlineRef.current);
-      
+      const outlineChanged =
+        JSON.stringify(newOutline) !== JSON.stringify(outlineRef.current);
+
       if (outlineChanged) {
         outlineRef.current = newOutline;
         setOutline(newOutline);
@@ -116,15 +124,18 @@ export default function CometManagerLayout() {
       }
 
       const currentOutline = outlineRef.current || outline;
-      
-      const outlineChanged = JSON.stringify(currentOutline) !== JSON.stringify(prevOutline);
-      
+
+      const outlineChanged =
+        JSON.stringify(currentOutline) !== JSON.stringify(prevOutline);
+
       if (outlineChanged && currentOutline !== null) {
         try {
           isSavingRef.current = true;
-          
-          const sessionId = sessionData?.session_id || 
-            (typeof window !== "undefined" && localStorage.getItem("sessionId")) ||
+
+          const sessionId =
+            sessionData?.session_id ||
+            (typeof window !== "undefined" &&
+              localStorage.getItem("sessionId")) ||
             null;
 
           if (!sessionId) {
@@ -146,7 +157,7 @@ export default function CometManagerLayout() {
           if (response && response.autoSaveComet) {
             try {
               let savedData;
-              if (typeof response.autoSaveComet === 'string') {
+              if (typeof response.autoSaveComet === "string") {
                 savedData = JSON.parse(response.autoSaveComet);
               } else {
                 savedData = {
@@ -154,18 +165,20 @@ export default function CometManagerLayout() {
                   response_path: currentOutline,
                 };
               }
-              
+
               localStorage.setItem("sessionData", JSON.stringify(savedData));
-              
+
               setPrevOutline(currentOutline);
-              
             } catch (parseError) {
               console.error("Error parsing auto-save response:", parseError);
               const updatedSessionData = {
                 ...sessionData,
                 response_path: currentOutline,
               };
-              localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
+              localStorage.setItem(
+                "sessionData",
+                JSON.stringify(updatedSessionData)
+              );
               setPrevOutline(currentOutline);
             }
           }

@@ -6,7 +6,12 @@ export const endpoints = {
   getAssets: "api/n8n/assets",
   getClients: "api/clients/v1/",
   uploadAssets: "api/n8n/upload_asset_file",
+  getUser: "api/auth/v1/users/me",
+  uploadProfilePicture: "api/auth/v1/upload-profile-picture",
+  updateUser: "api/auth/v1/profile/upsert",
   shareComet: (sessionId) => `api/comet/share_comets/${sessionId}`,
   publishComet: (sessionId) => `api/comet/publish_comet/${sessionId}`,
   generateDalleImage: "api/generative-ai/v1/generate-dalle-image",
+  getClientDetails: (clientId) => `api/clients/v1/client_details/?client_id=${clientId}`,
+  updateClient: "api/clients/v1/upsert/client/",
 };

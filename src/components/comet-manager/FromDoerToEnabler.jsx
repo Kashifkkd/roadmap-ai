@@ -35,7 +35,12 @@ const DeviceIcon = ({ view, isActive, onClick }) => {
   );
 };
 
-const ScreenContentTypePreview = ({ deviceView, content, sections = [], assets = [] }) => {
+const ScreenContentTypePreview = ({
+  deviceView,
+  content,
+  sections = [],
+  assets = [],
+}) => {
   const imageUrl =
     content?.media?.url ||
     content?.media?.imageUrl ||
@@ -65,7 +70,7 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [], assets =
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
-      ? "w-full max-w-sm"
+      ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
       ? "w-full max-w-2xl"
       : "w-full max-w-5xl";
@@ -95,12 +100,19 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [], assets =
       : "px-8 py-10";
 
   return (
-    <div className={`w-full ${containerWidth} mx-auto space-y-4`}>
+    <div
+      className={`w-full ${containerWidth} mx-auto h-[72vh] flex flex-col overflow-y-auto`}
+    >
       {/* Main Content Card */}
-      <div className="bg-gray-100 overflow-hidden shadow-sm">
+      <div
+        className={`bg-gray-100 overflow-hidden shadow-sm ${
+          keyPointsSource.length > 0 ? "shrink-0" : "flex-1"
+        }`}
+        style={{ minHeight: "70vh" }}
+      >
         {isBlendMode ? (
           // Blend Mode: Full height image with overlaid content boxes
-          <div className="relative h-[70vh] w-full">
+          <div className="relative h-full w-full">
             {/* Show carousel if assets exist, otherwise show single image */}
             {assets && assets.length > 0 ? (
               <div className="absolute inset-0">
@@ -148,8 +160,8 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [], assets =
           </div>
         ) : (
           // Non-Blend Mode: Image on top, content below
-          <>
-            <div className="px-8 pt-4">
+          <div className="h-full flex flex-col overflow-y-auto">
+            <div className="px-8 pt-2 flex-shrink-0">
               {/* Show carousel if assets exist, otherwise show single image */}
               {assets && assets.length > 0 ? (
                 <div className="w-3/4 max-w-md mx-auto">
@@ -157,14 +169,14 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [], assets =
                 </div>
               ) : (
                 <div
-                  className={`relative w-3/4 max-w-md mx-auto ${imageAspectClass} overflow-hidden rounded-md`}
+                  className={`relative w-3/4 max-w-md mx-auto ${imageAspectClass} overflow-hidden  rounded-lg`}
                 >
                   <Image
                     src={imageUrl}
                     alt={content?.media?.description || title}
                     fill
                     priority={deviceView === DEVICE_VIEWS.mobile}
-                    className="object-cover"
+                    className="object-cover "
                     sizes="(max-width: 768px) 60vw, 40vw"
                     unoptimized
                   />
@@ -173,7 +185,7 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [], assets =
             </div>
 
             {/* Content section below image */}
-            <div className={`${paddingClass} space-y-1`}>
+            <div className={`${paddingClass} space-y-1 flex-1`}>
               {/* Title box */}
               <div className="bg-gray-200/30 backdrop-blur-lg border-2 border-white/50 px-4 py-3 rounded-sm shadow-sm">
                 <h2
@@ -210,7 +222,7 @@ const ScreenContentTypePreview = ({ deviceView, content, sections = [], assets =
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
       </div>
 
@@ -239,7 +251,7 @@ const MCQScreenPreview = ({ deviceView, content }) => {
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
-      ? "w-full max-w-sm"
+      ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
       ? "w-full max-w-2xl"
       : "w-full max-w-5xl";
@@ -269,9 +281,9 @@ const MCQScreenPreview = ({ deviceView, content }) => {
       : "px-8 py-10";
 
   return (
-    <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
+    <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
       <div className="bg-gray-100 overflow-y-auto shadow-sm h-full">
-        <div className={`${paddingClass} space-y-6 overflow-y-auto`}>
+        <div className={`${paddingClass} space-y-2 overflow-y-auto`}>
           {/* Title */}
           <h2
             className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
@@ -325,11 +337,11 @@ const AssessmentScreenPreview = ({ deviceView, content }) => {
   const title = content?.title || "";
   const questions = content?.questions || [];
 
-  console.log(">>>", content)
+  console.log(">>>", content);
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
-      ? "w-full max-w-sm"
+      ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
       ? "w-full max-w-2xl"
       : "w-full max-w-5xl";
@@ -352,7 +364,7 @@ const AssessmentScreenPreview = ({ deviceView, content }) => {
       : "px-8 py-10";
 
   return (
-    <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
+    <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
       <div className="bg-gray-100 overflow-hidden shadow-sm h-full">
         <div className={`${paddingClass} space-y-6`}>
           {/* Title */}
@@ -380,13 +392,16 @@ const AssessmentScreenPreview = ({ deviceView, content }) => {
                 <div className="space-y-2 pl-4">
                   {question.options?.map((option, oIndex) => {
                     // Handle both object format {option_id, text} and string format
-                    const optionText = typeof option === "string" 
-                      ? option 
-                      : (option?.text || `Option ${oIndex + 1}`);
-                    
+                    const optionText =
+                      typeof option === "string"
+                        ? option
+                        : option?.text || `Option ${oIndex + 1}`;
+
                     return (
                       <div
-                        key={`assessment-option-${option?.option_id || option?.optionId || oIndex}`}
+                        key={`assessment-option-${
+                          option?.option_id || option?.optionId || oIndex
+                        }`}
                         className="bg-gray-200/90 text-sm border border-gray-300 px-4 py-2 rounded-sm shadow-sm hover:bg-gray-300/90 transition-colors cursor-pointer"
                       >
                         <p
@@ -416,7 +431,7 @@ const ForceRankScreenPreview = ({ deviceView, content }) => {
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
-      ? "w-full max-w-sm"
+      ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
       ? "w-full max-w-2xl"
       : "w-full max-w-5xl";
@@ -439,7 +454,7 @@ const ForceRankScreenPreview = ({ deviceView, content }) => {
       : "px-8 py-10";
 
   return (
-    <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
+    <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
       <div className="bg-gray-100 overflow-hidden shadow-sm h-full">
         <div className={`${paddingClass} space-y-6`}>
           {/* Title */}
@@ -531,10 +546,11 @@ const HabitsScreenPreview = ({ deviceView, content }) => {
   const title = content?.title || "";
   const subtitle = content?.subtitle || content?.description || "";
   const habits = content?.habits || [];
+  console.log(">>>content>>>>>>>>", content);
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
-      ? "w-full max-w-sm"
+      ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
       ? "w-full max-w-2xl"
       : "w-full max-w-5xl";
@@ -560,7 +576,7 @@ const HabitsScreenPreview = ({ deviceView, content }) => {
       : "px-10 py-10";
 
   return (
-    <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
+    <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
       <div className="bg-white overflow-hidden shadow-sm h-full flex flex-col">
         <div className={`${paddingClass} space-y-2`}>
           {/* Title */}
@@ -615,7 +631,7 @@ const HabitsScreenPreview = ({ deviceView, content }) => {
                 <p
                   className={`text-gray-900 ${textSizeClass} leading-relaxed flex-1`}
                 >
-                  {typeof habit === "object" ? habit.text : habit}
+                  {typeof habit === "object" ? habit.title : habit}
                 </p>
                 {/* Drag Handle */}
                 <div className="text-gray-400 flex-shrink-0">
@@ -689,7 +705,7 @@ const ReflectionScreenPreview = ({ deviceView, content }) => {
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
-      ? "w-full max-w-sm"
+      ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
       ? "w-full max-w-2xl"
       : "w-full max-w-5xl";
@@ -712,7 +728,7 @@ const ReflectionScreenPreview = ({ deviceView, content }) => {
       : "px-8 py-10";
 
   return (
-    <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
+    <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
       <div className="bg-gray-100 overflow-hidden shadow-sm h-full">
         <div className={`${paddingClass} space-y-6 h-full flex flex-col`}>
           {/* Title */}
@@ -740,10 +756,10 @@ const ReflectionScreenPreview = ({ deviceView, content }) => {
 
           {/* Action Buttons */}
           <div className="flex gap-3 justify-end">
-            <button className="flex-1 px-10 py-2   bg-orange-400 text-white font-semibold rounded-sm hover:bg-orange-500 transition-colors">
+            <button className="flex-1 px-10 py-2   bg-[#fe5f23] text-white font-semibold rounded-sm hover:bg-orange-500 transition-colors">
               Save
             </button>
-            <button className="flex-1 px-3 py-2 bg-white border-2 border-orange-400 text-gray-600 font-semibold rounded-sm hover:bg-gray-50 transition-colors">
+            <button className="flex-1 px-3 py-2 bg-white border-2 border-[#fe5f23] text-gray-600 font-semibold rounded-sm hover:bg-gray-50 transition-colors">
               Cancel
             </button>
           </div>
@@ -763,7 +779,7 @@ const LinearPollScreenPreview = ({ deviceView, content }) => {
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
-      ? "w-full max-w-sm"
+      ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
       ? "w-full max-w-2xl"
       : "w-full max-w-5xl";
@@ -786,7 +802,7 @@ const LinearPollScreenPreview = ({ deviceView, content }) => {
       : "px-8 py-10";
 
   return (
-    <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
+    <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
       <div className="bg-gray-100 overflow-hidden shadow-sm h-full">
         <div
           className={`${paddingClass} space-y-8 flex flex-col justify-center h-full`}
@@ -811,7 +827,7 @@ const LinearPollScreenPreview = ({ deviceView, content }) => {
           <div className="space-y-6">
             {/* Current Value Display */}
             <div className="flex justify-center">
-              <div className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center">
+              <div className="w-15 h-15 bg-orange-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-3xl">4</span>
               </div>
             </div>
@@ -847,7 +863,7 @@ const LinearPollScreenPreview = ({ deviceView, content }) => {
 
           {/* Finalize Button */}
           <div className="pt-4">
-            <button className="w-full py-4 bg-orange-500 text-white font-bold text-lg rounded-lg hover:bg-orange-600 transition-colors">
+            <button className="w-full py-2 bg-orange-500 text-white font-bold text-lg rounded-lg hover:bg-orange-600 transition-colors">
               Finalize
             </button>
           </div>
@@ -866,7 +882,7 @@ const ActionScreenPreview = ({ deviceView, content }) => {
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
-      ? "w-full max-w-sm"
+      ? "w-full max-w-[300px] "
       : deviceView === DEVICE_VIEWS.tablet
       ? "w-full max-w-2xl"
       : "w-full max-w-5xl";
@@ -889,8 +905,10 @@ const ActionScreenPreview = ({ deviceView, content }) => {
       : "px-12 py-12";
 
   return (
-    <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
-      <div className="bg-gray-50 overflow-hidden shadow-sm h-full flex flex-col">
+    <div
+      className={`w-full ${containerWidth} mx-auto h-[72vh] overflow-y-auto`}
+    >
+      <div className="bg-gray-50 overflow-hidden shadow-sm h-full flex flex-col overflow-y-auto">
         {/* Image Section
         <div className="relative w-full h-64 overflow-hidden">
           <img
@@ -920,20 +938,20 @@ const ActionScreenPreview = ({ deviceView, content }) => {
 
           {/* Reflection Prompt */}
           {reflectionPrompt && (
-            <div className="bg-gray-200/90 border border-gray-300 px-6 py-4 rounded-sm shadow-sm">
-              <p className={`text-gray-800 ${textSizeClass} leading-relaxed`}>
+            <div className="bg-gray-200/90 border border-gray-300 px-6 py-4 rounded-sm shadow-sm text-left">
+              <p className={`text-gray-800 ${textSizeClass} leading-relaxed `}>
                 {reflectionPrompt}
               </p>
             </div>
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-2 mt-auto">
-            <button className="px-10 py-2 bg-orange-500 text-white font-bold text-base rounded-[4px] hover:bg-orange-600 transition-colors">
+          <div className="flex gap-2 justify-end">
+            <button className="flex-1 px-10 py-2   bg-[#fe5f23] text-white font-medium rounded-sm hover:bg-orange-500 transition-colors">
               Commit
             </button>
             {toolLink && (
-              <button className=" px-3 py-2 bg-white border-2 border-orange-500 rounded-[4px] text-gray-700 font-bold text-base  hover:bg-gray-50 transition-colors">
+              <button className="flex-1 py-2 bg-white border-2 border-[#fe5f23] text-gray-600 font-medium rounded-sm hover:bg-gray-50 transition-colors">
                 Open Tool
               </button>
             )}
@@ -958,7 +976,7 @@ const SocialDiscussionScreenPreview = ({ deviceView, content }) => {
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
-      ? "w-full max-w-sm"
+      ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
       ? "w-full max-w-2xl"
       : "w-full max-w-5xl";
@@ -981,7 +999,7 @@ const SocialDiscussionScreenPreview = ({ deviceView, content }) => {
       : "px-8 py-10";
 
   return (
-    <div className={`w-full ${containerWidth} mx-auto h-[70vh]`}>
+    <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
       <div className="bg-gray-100 overflow-hidden shadow-sm h-full">
         <div className={`${paddingClass} space-y-6 h-full flex flex-col`}>
           {/* Title */}
@@ -1164,7 +1182,10 @@ const ContentBlock = ({ reverse = false, deviceView, section }) => {
   );
 };
 
-export default function FromDoerToEnabler({ selectedScreen }) {
+export default function FromDoerToEnabler({
+  selectedScreen,
+  isMaximized = false,
+}) {
   const [deviceView, setDeviceView] = useState(DEVICE_VIEWS.mobile);
 
   const screenContents = selectedScreen?.screenContents ?? null;
@@ -1295,7 +1316,6 @@ export default function FromDoerToEnabler({ selectedScreen }) {
           description: content.prompt || content.question || content.text || "",
         });
         break;
-      case "actions":
       case "action":
         addSection({
           id: "action",
@@ -1385,8 +1405,8 @@ export default function FromDoerToEnabler({ selectedScreen }) {
   }
 
   return (
-    <div className="flex flex-col h-full rounded-lg w-full bg-white">
-      <div className="w-full py-3 px-4 flex items-center justify-center">
+    <div className="flex flex-col h-full rounded-lg w-full">
+      <div className="w-full py-3 px-4 flex items-center justify-center  ">
         <div className="flex items-center justify-center bg-primary-100 rounded-xl p-1">
           <DeviceIcon
             view={DEVICE_VIEWS.mobile}
@@ -1405,16 +1425,26 @@ export default function FromDoerToEnabler({ selectedScreen }) {
           />
         </div>
       </div>
-      <div className="bg-gray-white flex-1 overflow-y-auto px-2 min-h-0 flex flex-col">
-        <div className="bg-gray-200 flex-1 overflow-y-auto px-2 py-4 rounded-sm min-h-0 flex flex-col">
+      <div
+        className={`bg-gray-white flex-1 overflow-y-auto min-h-0 flex flex-col ${
+          isMaximized ? "px-0 sm:px-2" : "px-2"
+        }`}
+      >
+        <div
+          className={`bg-gray-200 flex-1 overflow-y-auto rounded-sm min-h-0 flex flex-col ${
+            isMaximized ? "px-0 py-0 sm:px-2 sm:py-2" : "px-2 py-2"
+          }`}
+        >
           <div
             className={`overflow-y-auto rounded-sm bg-white ${
               deviceView === DEVICE_VIEWS.mobile
-                ? "px-4 max-w-[50%] mx-auto"
+                ? isMaximized
+                  ? "px-4 w-full h-full sm:w-[375px] sm:h-[680px] sm:mx-auto"
+                  : "px-4 w-[375px] h-[680px] mx-auto"
                 : deviceView === DEVICE_VIEWS.tablet
                 ? "px-8 max-w-[90%] mx-auto"
                 : "px-12 max-w-full"
-            } py-4`}
+            } py-2`}
           >
             {/* <h1
               className={`font-bold text-primary mb-4 ${deviceView === DEVICE_VIEWS.mobile
@@ -1439,7 +1469,7 @@ export default function FromDoerToEnabler({ selectedScreen }) {
                 }`}
             ></h2> */}
 
-            <div className="space-y-8">
+            <div className="">
               {contentType === "content" || contentType === "content_image" ? (
                 <ScreenContentTypePreview
                   deviceView={deviceView}
@@ -1474,7 +1504,7 @@ export default function FromDoerToEnabler({ selectedScreen }) {
                   deviceView={deviceView}
                   content={content}
                 />
-              ) : contentType === "actions" ? (
+              ) : contentType === "action" ? (
                 <ActionScreenPreview
                   deviceView={deviceView}
                   content={content}

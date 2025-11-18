@@ -36,7 +36,8 @@ import { toast } from "sonner";
 import LoginForm from "@/components/auth/LoginForm";
 import MyAccountDialog from "@/components/header/MyAccountDialog";
 import ClientSettingsDialog from "@/components/header/ClientSettingsDialog";
-
+import { getUser } from "@/api/User/getUser";
+// import Image from "next/image";
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
@@ -45,6 +46,7 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  console.log("selectedClient>>>>>>>", selectedClient);
   const [clients, setClients] = useState([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [clientsError, setClientsError] = useState(false);
@@ -67,6 +69,7 @@ export default function Header() {
   const loginButtonRef = useRef(null);
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
+  const [user, setUser] = useState(null);
 
   // Check if user is super admin
   const isSuperAdmin = () => {
@@ -74,7 +77,6 @@ export default function Header() {
     if (!client) return false;
     return client.role === "Super Admin";
   };
-
   // Mock client data - replace with actual data fetching
   const mockClients = [
     {
@@ -117,6 +119,18 @@ export default function Header() {
   ];
   const userName =
     typeof window !== "undefined" ? localStorage.getItem("user_name") : null;
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchUser = async () => {
+        const response = await getUser();
+        if (response.response) {
+          setUser(response.response);
+        }
+      };
+      fetchUser();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     // Check authentication status
@@ -179,6 +193,7 @@ export default function Header() {
     if (isAuthenticated) load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
+  console.log("clients>>>>>>>", clients);
 
   // Update selectedClient if clients change (e.g., after fetch)
   useEffect(() => {
@@ -471,6 +486,7 @@ export default function Header() {
         width={18}
         height={18}
         className="sm:w-5 sm:h-5 h"
+        style={{ width: "auto", height: "auto" }}
       />
 
       {!compact && (
@@ -713,7 +729,7 @@ export default function Header() {
                       alt="Kyper Logo"
                       width={112}
                       height={52}
-                      // className="w-10 h-10"
+                      style={{ width: "auto", height: "auto" }}
                     />
                   </div>
                   <button
@@ -935,12 +951,29 @@ export default function Header() {
                       </div>
 
                       <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
-                        {userName?.charAt(0).toUpperCase()}
+                        {user?.image_url ? (
+                          <Image
+                            src={user?.image_url}
+                            alt="User"
+                            width={28}
+                            height={28}
+                            className="w-full h-full rounded-full object-cover"
+                            style={{ width: "auto", height: "auto" }}
+                          />
+                        ) : (
+                          <span className="text-sm font-semibold text-primary-700">
+                            {user?.first_name?.charAt(0)?.toUpperCase() ||
+                              user?.last_name?.charAt(0)?.toUpperCase() ||
+                              "U"}
+                          </span>
+                        )}
                       </div>
 
                       <div className="hidden sm:flex flex-col justify-start">
                         <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
-                          {userName?.split(" ")[0]}
+                          {/* {userName?.split(" ")[0]}
+                           */}
+                          {user?.first_name || user?.last_name || "User"}
                         </span>
                         {isSuperAdmin() && (
                           <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
@@ -1033,12 +1066,29 @@ export default function Header() {
                   <div className="relative">
                     <div className="flex items-center gap-1.5 sm:gap-2">
                       <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
-                        {userName?.charAt(0).toUpperCase()}
+                        {/* {userName?.charAt(0).toUpperCase()}
+                         */}
+                        {user?.image_url ? (
+                          <Image
+                            src={user?.image_url}
+                            alt="User"
+                            width={28}
+                            height={28}
+                            className="rounded-full object-cover w-full h-full"
+                            style={{ width: "auto", height: "auto" }}
+                          />
+                        ) : (
+                          <span className="text-sm font-semibold text-primary-700">
+                            {user?.first_name?.charAt(0)?.toUpperCase() ||
+                              user?.last_name?.charAt(0)?.toUpperCase() ||
+                              "U"}
+                          </span>
+                        )}
                       </div>
 
                       <div className="hidden sm:flex flex-col justify-start">
                         <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
-                          {userName?.split(" ")[0]}
+                          {user?.first_name || user?.last_name || "User"}
                         </span>
                         {isSuperAdmin() && (
                           <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
@@ -1077,12 +1127,27 @@ export default function Header() {
                   <div className="relative">
                     <div className="flex items-center gap-1.5 sm:gap-2">
                       <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
-                        {userName?.charAt(0).toUpperCase()}
+                        {user?.image_url ? (
+                          <Image
+                            src={user?.image_url}
+                            alt="User"
+                            width={28}
+                            height={28}
+                            className="rounded-full object-cover w-full h-full"
+                            style={{ width: "auto", height: "auto" }}
+                          />
+                        ) : (
+                          <span className="text-sm font-semibold text-primary-700">
+                            {user?.first_name?.charAt(0)?.toUpperCase() ||
+                              user?.last_name?.charAt(0)?.toUpperCase() ||
+                              "U"}
+                          </span>
+                        )}
                       </div>
 
                       <div className="hidden sm:flex flex-col justify-start">
                         <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
-                          {userName?.split(" ")[0]}
+                          {user?.first_name || user?.last_name || "User"}
                         </span>
                         {isSuperAdmin() && (
                           <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
@@ -1231,6 +1296,7 @@ export default function Header() {
       <ClientSettingsDialog
         open={isClientSettingsDialogOpen}
         onOpenChange={setIsClientSettingsDialogOpen}
+        selectedClient={selectedClient}
       />
     </>
   );

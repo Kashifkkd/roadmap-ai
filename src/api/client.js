@@ -14,4 +14,24 @@ export async function getClients({ skip = 0, limit = 5, enabledOnly = true } = {
   return res;
 }
 
+export async function getClientDetails(clientId) {
+  const res = await apiService({
+    endpoint: endpoints.getClientDetails(clientId),
+    method: "GET",
+  });
+  return res;
+}
+
+export async function updateClientDetails(clientData) {
+  const res = await apiService({
+    endpoint: endpoints.updateClient,
+    method: "POST",
+    data: clientData,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  return res;
+}
+
 

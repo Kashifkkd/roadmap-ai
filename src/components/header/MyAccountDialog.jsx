@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Camera, Eye, EyeOff, ShieldCheck, Trash2 } from "lucide-react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
+import { Camera, Eye, EyeOff, CircleX, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,9 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { getUser } from "@/api/User/getUser";
+import { uploadProfile } from "@/api/User/uploadProfile";
+import { updateProfile } from "@/api/User/updateProfile";
 
 const defaultAvatar = "/profile.png";
 
@@ -22,64 +25,167 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
 
+  const [userData, setUserData] = useState(null);
+  const [profileUrl, setProfileUrl] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
+  const fileInputRef = useRef(null);
+
   useEffect(() => {
     if (!open) return;
-    setFirstName("");
-    setLastName("");
-    setPassword("");
-    setConfirmPassword("");
+
+    const fetchUser = async () => {
+      const response = await getUser();
+      if (response.response) {
+        setUserData(response.response);
+      }
+    };
+
+    fetchUser();
   }, [open]);
 
-  const avatar = user?.avatar || defaultAvatar;
+  const handleFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  const initials =
-    firstName?.charAt(0) + lastName?.charAt(0) || "A".toUpperCase();
+    try {
+      // First upload the file to get the URL
+      const uploadResponse = await uploadProfile(file);
+      if (uploadResponse.response) {
+        const url = uploadResponse.response.image_url;
+        if (url) {
+          setImageUrl(url);
+          setProfileUrl(url);
+        }
+      }
+    } catch (error) {
+      console.error("Error uploading profile picture:", error);
+    }
+  };
+
+  const handleChangeClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleDeletePicture = () => {
+    setProfileUrl(null);
+    setImageUrl(null);
+  };
+
+  const updateProfileData = async (data) => {
+    const payload = {
+      email: data.email || userData?.email || "",
+      first_name: data.first_name || firstName,
+      last_name: data.last_name || lastName,
+      image_url: data.image_url || imageUrl || profileUrl || "",
+      timezone: data.timezone || userData?.timezone || "",
+      ...(password && confirmPassword && password === confirmPassword
+        ? {
+            current_password: "",
+            new_password: password,
+            new_password_confirm: confirmPassword,
+          }
+        : {}),
+    };
+
+    const response = await updateProfile(payload);
+    if (response.response) {
+      setUserData(response.response);
+      // Refresh user data
+      const refreshResponse = await getUser();
+      if (refreshResponse.response) {
+        setUserData(refreshResponse.response);
+      }
+    }
+  };
+
+  const handleSave = async () => {
+    console.log("imageUrl", imageUrl);
+    const response = await updateProfileData({
+      email: userData?.email || "",
+      first_name: firstName,
+      last_name: lastName,
+      image_url: imageUrl || "",
+      timezone: userData?.timezone || "",
+    });
+    onOpenChange(false);
+  };
+
+  const avatar = imageUrl || userData?.image_url || defaultAvatar;
+
+  useEffect(() => {
+    if (!open) return;
+    if (userData) {
+      setFirstName(userData.first_name || "");
+      setLastName(userData.last_name || "");
+      if (userData.avatar || userData.profile_picture) {
+        setProfileUrl(userData.avatar || userData.profile_picture);
+      }
+    }
+    setPassword("");
+    setConfirmPassword("");
+  }, [open, userData]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[572px] max-h-[485px] border-0 bg-transparent p-0 shadow-none">
+      <DialogContent className="max-w-[572px] max-h-[485px] border-0 bg-transparent p-0 shadow-none [&>button]:hidden">
         <div className="rounded-[32px] bg-white">
           <div className="rounded-[28px]  bg-white px-4 py-2 sm:px-4 sm:py-2">
-            <DialogHeader className="mb-6">
-              <DialogTitle className="text-2xl font-semibold text-gray-900">
-                My Account
-              </DialogTitle>
+            <DialogHeader className="py-6">
+              <div className="flex items-center justify-between">
+                <DialogTitle className="text-xl font-semibold text-gray-900">
+                  My Account
+                </DialogTitle>
+                <CircleX
+                  className="w-5 h-5 text-gray-600"
+                  onClick={() => onOpenChange(false)}
+                />
+              </div>
             </DialogHeader>
 
             <div className=" p-2 bg-gray-100 rounded-2xl">
               <form
                 onSubmit={(event) => event.preventDefault()}
-                className="flex flex-col gap-6 md:flex-row bg-white rounded-2xl p-2"
+                className="flex flex-col gap-6 md:flex-row bg-white rounded-t-2xl p-2"
               >
-                <section className="flex flex-col  gap-4 rounded-2xl bg-[#F1F0FE] p-6 md:w-1/3">
+                <section className="flex flex-col  gap-4 rounded-2xl bg-[#F1F0FE] p-4 md:w-1/3">
                   <span className="text-sm font-medium text-center text-gray-900">
                     Profile Picture
                   </span>
                   <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-gray-100 p-1">
                     <div className="relative h-full w-full overflow-hidden rounded-full bg-white">
-                      {avatar === defaultAvatar ? (
+                      {!(imageUrl || userData?.image_url) ? (
                         <div className="flex h-full w-full items-center justify-center bg-gray-100 text-4xl font-semibold">
-                          {initials}
+                          {avatar?.charAt(0)?.toUpperCase() ||
+                            "A".toUpperCase()}
                         </div>
                       ) : (
                         <img
-                          src={avatar}
+                          src={imageUrl || userData?.image_url || defaultAvatar}
                           alt="Profile preview"
-                          className="h-full w-full object-cover"
+                          className="rounded-full h-full w-full object-cover"
                         />
                       )}
                     </div>
                     <button
                       type="button"
+                      onClick={handleChangeClick}
                       className="absolute bottom-3 right-3 flex size-10 items-center justify-center rounded-full bg-white text-[#6B5AE0] shadow-lg transition"
                     >
                       <Camera className="size-5" />
                     </button>
                   </div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    className="hidden"
+                  />
                   <div className="flex flex-1 justify-between gap-2">
                     <Button
                       type="button"
                       variant="outline"
+                      onClick={handleChangeClick}
                       className=" border-[#D0C7FF] text-[#6B5AE0] hover:bg-white py-4"
                     >
                       Change
@@ -87,6 +193,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                     <Button
                       type="button"
                       variant="ghost"
+                      onClick={handleDeletePicture}
                       className=" text-sm bg-gray-100 text-gray-500 hover:text-red-500"
                     >
                       <Trash2 className="size-4" />
@@ -175,29 +282,17 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                       </button>
                     </div>
                   </div>
-
-                  {/* <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-[#F9F7FF] p-4 text-sm text-gray-500">
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-800">
-                      Password requirements
-                    </p>
-                    <p>Use 8+ characters with numbers, letters & symbols.</p>
-                  </div>
-                  <div className="flex size-12 items-center justify-center rounded-full bg-white text-[#6B5AE0]">
-                    <ShieldCheck className="size-5" />
-                  </div>
-                </div> */}
-
-                  <div className="flex justify-end">
-                    <Button
-                      type="button"
-                      className="min-w-[120px] rounded-xl bg-[#6B5AE0] px-6 py-2 text-base font-semibold shadow-lg shadow-[#6B5AE0]/30 hover:bg-[#5a48d1]"
-                    >
-                      Save
-                    </Button>
-                  </div>
                 </section>
               </form>
+              <div className="flex justify-end bg-white rounded-b-2xl p-2 mt-1">
+                <Button
+                  type="button"
+                  onClick={handleSave}
+                  className="min-w-[120px] rounded-md bg-[#6B5AE0] px-6 py-2 text-base font-semibold shadow-lg shadow-[#6B5AE0]/30 hover:bg-[#5a48d1]"
+                >
+                  Save
+                </Button>
+              </div>
             </div>
           </div>
         </div>

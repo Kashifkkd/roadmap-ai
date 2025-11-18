@@ -168,18 +168,18 @@ export default function ContentForm({
                   }}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
-                <div className="flex flex-col items-center justify-center text-center pointer-events-none">
+                <div className="flex flex-col items-center justify-center text-center cursor-pointer">
                   <p className="text-sm text-gray-600 mb-4">
                     Upload Video/Audio
                   </p>
-                  <span className="bg-primary text-white hover:bg-primary-700 px-4 py-2 text-sm rounded-lg inline-flex items-center gap-2 pointer-events-auto">
+                  <span className="bg-primary text-white hover:bg-primary-700 px-4 py-2 text-sm rounded-lg inline-flex items-center gap-2 cursor-pointer">
                     + Browse
                   </span>
                 </div>
               </div>
               {/* File name display */}
               {(uploadedMedia || isUploadingMedia || uploadErrorMedia) && (
-                <div className="mb-2 p-2 bg-white rounded-lg border border-gray-200">
+                <div className="mb-2 p-2 bg-white rounded-lg border border-gray-200 ">
                   {isUploadingMedia ? (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -221,7 +221,6 @@ export default function ContentForm({
           </div>
         </div>
       </div>
-
     </>
   );
 }
