@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Lightbulb,
   Target,
@@ -9,6 +9,7 @@ import {
   Pencil,
   Check,
   X,
+  Paperclip,
 } from "lucide-react";
 import { Label } from "@/components/ui/Label";
 import { Button } from "@/components/ui/Button";
@@ -28,67 +29,193 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
   const [isAskingKyper, setIsAskingKyper] = useState(false);
   const selectionRef = useRef(null);
   const inputRef = useRef(null);
+  const [chapterSteps, setChapterSteps] = useState(selectedChapter?.steps || []);
+  const [isAddStepModalOpen, setIsAddStepModalOpen] = useState(false);
+  const [stepPrompt, setStepPrompt] = useState("");
+  const [includeSourceMaterial, setIncludeSourceMaterial] = useState(false);
+  const [sourceMaterialNotes, setSourceMaterialNotes] = useState("");
+  const [isSubmittingStep, setIsSubmittingStep] = useState(false);
+  const [addStepError, setAddStepError] = useState(null);
+  const [storedSessionId, setStoredSessionId] = useState(null);
+  const subscriptionCleanupRef = useRef(null);
+  const targetChapterRef = useRef(null);
+  const targetChapterIndexRef = useRef(null);
+
+  useEffect(() => {
+    setChapterSteps(selectedChapter?.steps || []);
+  }, [selectedChapter]);
+
+  useEffect(() => {
+    if (storedSessionId) return;
+    if (typeof window === "undefined") return;
+    try {
+      const existing = localStorage.getItem("sessionId");
+      if (existing) {
+        setStoredSessionId(existing);
+      }
+    } catch {}
+  }, [storedSessionId]);
+
+  useEffect(() => {
+    return () => {
+      if (subscriptionCleanupRef.current) {
+        subscriptionCleanupRef.current();
+        subscriptionCleanupRef.current = null;
+      }
+    };
+  }, []);
+
+  const getLatestSessionSnapshot = useCallback(() => {
+    if (sessionData) return sessionData;
+    if (typeof window === "undefined") return sessionData;
+    try {
+      const raw = localStorage.getItem("sessionData");
+      if (raw) {
+        return JSON.parse(raw);
+      }
+    } catch {}
+    return null;
+  }, [sessionData]);
+
+  const cleanupSubscription = useCallback(() => {
+    if (subscriptionCleanupRef.current) {
+      try {
+        subscriptionCleanupRef.current();
+      } catch (error) {
+        console.error("Error cleaning up subscription:", error);
+      }
+      subscriptionCleanupRef.current = null;
+    }
+  }, []);
+
+  const ensureSessionContext = useCallback(async () => {
+    let currentSessionId = storedSessionId;
+
+    if (!currentSessionId && typeof window !== "undefined") {
+      try {
+        currentSessionId = localStorage.getItem("sessionId");
+      } catch {}
+    }
+
+    if (!currentSessionId) {
+      const sessionResponse = await graphqlClient.createSession();
+      currentSessionId = sessionResponse?.createSession?.sessionId;
+      const cometJson = sessionResponse?.createSession?.cometJson;
+
+      if (currentSessionId && typeof window !== "undefined") {
+        try {
+          localStorage.setItem("sessionId", currentSessionId);
+        } catch {}
+      }
+
+      if (cometJson && typeof window !== "undefined") {
+        try {
+          localStorage.setItem(
+            "sessionData",
+            JSON.stringify(JSON.parse(cometJson))
+          );
+        } catch {}
+      }
+
+      setStoredSessionId(currentSessionId);
+    } else if (!storedSessionId) {
+      setStoredSessionId(currentSessionId);
+    }
+
+    return {
+      sessionId: currentSessionId,
+      snapshot: getLatestSessionSnapshot(),
+    };
+  }, [storedSessionId, getLatestSessionSnapshot]);
+
+  const findUpdatedChapterFromSession = useCallback((sessionPayload) => {
+    if (!isArrayWithValues(sessionPayload?.response_outline)) return null;
+
+    const targetName = targetChapterRef.current;
+    let updatedChapter = null;
+
+    if (targetName) {
+      updatedChapter = sessionPayload.response_outline.find(
+        (chapter) => chapter?.chapter === targetName
+      );
+    }
+
+    if (!updatedChapter) {
+      const chapterIndex = targetChapterIndexRef.current;
+      if (
+        typeof chapterIndex === "number" &&
+        chapterIndex >= 0 &&
+        chapterIndex < sessionPayload.response_outline.length
+      ) {
+        updatedChapter = sessionPayload.response_outline[chapterIndex];
+      }
+    }
+
+    return updatedChapter;
+  }, []);
 
   const handleSelectStart = () => {
     setIsSelecting(true);
   };
 
-  const handleMouseUp = (e) => {
-    if (!isSelecting) return;
+  const handleMouseUp = useCallback(
+    (e) => {
+      if (!isSelecting) return;
 
-    setTimeout(() => {
-      const selection = window.getSelection();
-      const text = selection?.toString().trim();
+      setTimeout(() => {
+        const selection = window.getSelection();
+        const text = selection?.toString().trim();
 
-      if (text && text.length > 0) {
-        const target = e.target;
-        const stepElement = target.closest("[data-step-index]");
+        if (text && text.length > 0) {
+          const target = e.target;
+          const stepElement = target.closest("[data-step-index]");
 
-        if (!stepElement) {
-          setIsSelecting(false);
-          return;
-        }
+          if (!stepElement) {
+            setIsSelecting(false);
+            return;
+          }
 
-        const stepIndex = stepElement?.getAttribute("data-step-index");
-        const fieldType = stepElement?.getAttribute("data-field-type");
+          const stepIndex = stepElement?.getAttribute("data-step-index");
+          const fieldType = stepElement?.getAttribute("data-field-type");
 
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
+          const range = selection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
 
-        selectionRef.current = {
-          text: text,
-          range: range.cloneRange(),
-        };
+          selectionRef.current = {
+            text: text,
+            range: range.cloneRange(),
+          };
 
-        setSelectedText(text);
-        setFocusedField("stepContent");
-        setFieldPosition({
-          top: rect.bottom + window.scrollY + 10,
-          left: rect.left + window.scrollX,
-        });
-
-        if (stepIndex !== null) {
-          const stepIndexNum = parseInt(stepIndex);
-          setSelectedStepInfo({
-            stepIndex: stepIndexNum,
-            stepNumber: stepIndexNum + 1,
-            stepTitle:
-              selectedChapter?.steps[stepIndexNum]?.title || "Untitled Step",
-            fieldType: fieldType || "unknown",
-            chapterName: selectedChapter?.chapter || "Untitled Chapter",
-            chapterNumber:
-              chapterNumber ||
-              selectedChapter?.chapterNumber ||
-              selectedChapter?.step ||
-              "Unknown",
+          setSelectedText(text);
+          setFocusedField("stepContent");
+          setFieldPosition({
+            top: rect.bottom + window.scrollY + 10,
+            left: rect.left + window.scrollX,
           });
+
+          if (stepIndex !== null) {
+            const stepIndexNum = parseInt(stepIndex);
+            setSelectedStepInfo({
+              stepIndex: stepIndexNum,
+              stepNumber: stepIndexNum + 1,
+              stepTitle: chapterSteps[stepIndexNum]?.title || "Untitled Step",
+              fieldType: fieldType || "unknown",
+              chapterName: selectedChapter?.chapter || "Untitled Chapter",
+              chapterNumber:
+                chapterNumber ||
+                selectedChapter?.chapterNumber ||
+                selectedChapter?.step ||
+                "Unknown",
+            });
+          }
+        } else {
+          handleClosePopup();
         }
-      } else {
-        handleClosePopup();
-      }
-      setIsSelecting(false);
-    }, 10);
-  };
+        setIsSelecting(false);
+      }, 10);
+    },
+    [chapterSteps, chapterNumber, isSelecting, selectedChapter]
+  );
 
   useEffect(() => {
     if (focusedField && selectionRef.current) {
@@ -116,7 +243,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
       document.removeEventListener("selectstart", handleSelectStart);
       document.removeEventListener("mouseup", handleDocumentMouseUp);
     };
-  }, [isSelecting, selectedChapter]);
+  }, [handleMouseUp, isSelecting]);
 
   useEffect(() => {
     if (editingField && inputRef.current) {
@@ -129,6 +256,154 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
       const selection = window.getSelection();
       selection.removeAllRanges();
       selection.addRange(selectionRef.current.range);
+    }
+  };
+
+  const handleOpenAddStepModal = () => {
+    if (!selectedChapter) return;
+    targetChapterRef.current = selectedChapter?.chapter || null;
+    const numericChapter = Number(chapterNumber);
+    targetChapterIndexRef.current = Number.isFinite(numericChapter)
+      ? numericChapter - 1
+      : null;
+    setStepPrompt("");
+    setSourceMaterialNotes("");
+    setIncludeSourceMaterial(false);
+    setAddStepError(null);
+    setIsAddStepModalOpen(true);
+  };
+
+  const handleCloseAddStepModal = () => {
+    if (isSubmittingStep) return;
+    cleanupSubscription();
+    setIsAddStepModalOpen(false);
+    setStepPrompt("");
+    setSourceMaterialNotes("");
+    setIncludeSourceMaterial(false);
+    setAddStepError(null);
+  };
+
+  const handleToggleSourceMaterial = () => {
+    setIncludeSourceMaterial((prev) => {
+      const nextValue = !prev;
+      if (!nextValue) {
+        setSourceMaterialNotes("");
+      }
+      return nextValue;
+    });
+  };
+
+  const handleAddStepSubmit = async () => {
+    if (!selectedChapter) {
+      setAddStepError("Select a chapter before adding a step.");
+      return;
+    }
+
+    if (!stepPrompt.trim()) {
+      setAddStepError("Please describe the new step.");
+      return;
+    }
+
+    try {
+      setIsSubmittingStep(true);
+      setAddStepError(null);
+      setIsAddStepModalOpen(false);
+
+      const { sessionId, snapshot } = await ensureSessionContext();
+
+      if (!sessionId) {
+        throw new Error("Unable to establish a Kyper session.");
+      }
+
+      targetChapterRef.current = selectedChapter?.chapter || null;
+      const numericChapter = Number(chapterNumber);
+      targetChapterIndexRef.current = Number.isFinite(numericChapter)
+        ? numericChapter - 1
+        : null;
+
+      cleanupSubscription();
+
+      let handledUpdate = false;
+
+      const cleanup = await graphqlClient.subscribeToSessionUpdates(
+        sessionId,
+        (sessionPayload) => {
+          if (handledUpdate) return;
+
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(
+                "sessionData",
+                JSON.stringify(sessionPayload)
+              );
+            } catch {}
+          }
+
+          const updatedChapter = findUpdatedChapterFromSession(sessionPayload);
+          if (!updatedChapter) {
+            return;
+          }
+
+          handledUpdate = true;
+          setChapterSteps(updatedChapter?.steps || []);
+          setIsSubmittingStep(false);
+          setIsAddStepModalOpen(false);
+          setStepPrompt("");
+          setSourceMaterialNotes("");
+          setIncludeSourceMaterial(false);
+          setAddStepError(null);
+          cleanupSubscription();
+        },
+        (error) => {
+          console.error("Subscription error while adding step:", error);
+          if (handledUpdate) return;
+          handledUpdate = true;
+          setAddStepError("Unable to receive update from Kyper.");
+          setIsSubmittingStep(false);
+          cleanupSubscription();
+        }
+      );
+
+      subscriptionCleanupRef.current = cleanup;
+
+      const baseInstruction = stepPrompt.trim();
+      const supplementalNotes =
+        includeSourceMaterial && sourceMaterialNotes.trim().length
+          ? `\n\nSource Material:\n${sourceMaterialNotes.trim()}`
+          : "";
+
+      const userInstruction = `${baseInstruction}${supplementalNotes}`;
+      const chapterLabel =
+        selectedChapter?.chapter ||
+        (chapterNumber ? `Chapter ${chapterNumber}` : "current chapter");
+
+      const conversationMessage = `
+          add a step in chapter 3,  description: Add a new step in chapter 3 about qa bots
+       `;
+      const payloadObject = JSON.stringify({
+        session_id: sessionId,
+        input_type: "outline_updation",
+        comet_creation_data: snapshot?.comet_creation_data || {},
+        response_outline: snapshot?.response_outline || {},
+        response_path: snapshot?.response_path || {},
+        chatbot_conversation: [{ user: conversationMessage }],
+        to_modify: {},
+      });
+
+      const messageResponse = await graphqlClient.sendMessage(payloadObject);
+
+      if (typeof setAllMessages === "function") {
+        setAllMessages((prev) => [
+          ...prev,
+          { from: "user", content: userInstruction },
+          { from: "bot", content: messageResponse?.sendMessage || "" },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error adding step:", error);
+      setAddStepError(error?.message || "Unable to add step right now.");
+      setIsSubmittingStep(false);
+      cleanupSubscription();
     }
   };
 
@@ -266,6 +541,8 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
             <Button
               variant="outline"
               className="text-primary border-2 border-primary"
+              onClick={handleOpenAddStepModal}
+              disabled={isSubmittingStep}
             >
               <Plus size={16} />
               Add Step
@@ -279,8 +556,8 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
         {/* Steps List */}
         <div className="flex-1 overflow-y-auto py-2 no-scrollbar">
           <div className="space-y-4 bg-primary-50 px-2 py-4 rounded">
-            {isArrayWithValues(selectedChapter?.steps) ? (
-              selectedChapter.steps.map((step, index) => (
+            {isArrayWithValues(chapterSteps) ? (
+              chapterSteps.map((step, index) => (
                 <div key={index} className="border-b border-primary-300 pb-4">
                   {/* Step Header */}
                   <div className="mb-4 ml-4">
@@ -301,7 +578,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
                         data-step-index={index}
                         data-field-type="aha"
                       >
-                        <div className="flex-shrink-0 mt-1">
+                        <div className="shrink-0 mt-1">
                           {/* <Lightbulb className="w-5 h-5 text-yellow-500" /> */}
                           <Image
                             src="/bulb.svg"
@@ -365,7 +642,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
                         data-step-index={index}
                         data-field-type="action"
                       >
-                        <div className="flex-shrink-0 mt-1">
+                        <div className="shrink-0 mt-1">
                           <Image
                             src="/markup.svg"
                             alt="Action"
@@ -432,7 +709,7 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
                         data-step-index={index}
                         data-field-type="tool"
                       >
-                        <div className="flex-shrink-0 mt-1">
+                        <div className="shrink-0 mt-1">
                           <Image
                             src="/tool.svg"
                             alt="Tool"
@@ -498,6 +775,20 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
         </div>
       </div>
 
+      <AddStepModal
+        isOpen={isAddStepModalOpen}
+        onClose={handleCloseAddStepModal}
+        promptValue={stepPrompt}
+        onPromptChange={setStepPrompt}
+        onSubmit={handleAddStepSubmit}
+        isSubmitting={isSubmittingStep}
+        error={addStepError}
+        includeSourceMaterial={includeSourceMaterial}
+        onToggleSourceMaterial={handleToggleSourceMaterial}
+        sourceMaterialValue={sourceMaterialNotes}
+        onSourceMaterialChange={setSourceMaterialNotes}
+      />
+
       {focusedField && fieldPosition && (
         <AskOutlineKyper
           focusedField={focusedField}
@@ -511,6 +802,95 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
         />
       )}
     </>
+  );
+};
+
+const AddStepModal = ({
+  isOpen,
+  onClose,
+  promptValue,
+  onPromptChange,
+  onSubmit,
+  isSubmitting,
+  error,
+  includeSourceMaterial,
+  onToggleSourceMaterial,
+  sourceMaterialValue,
+  onSourceMaterialChange,
+}) => {
+  if (!isOpen) return null;
+
+  const trimmedPrompt = promptValue?.trim() || "";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm">
+      <div className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
+        <button
+          type="button"
+          onClick={isSubmitting ? undefined : onClose}
+          disabled={isSubmitting}
+          className="absolute right-4 top-4 rounded-full p-1.5 text-gray-500 transition-colors hover:bg-gray-100 disabled:pointer-events-none"
+          aria-label="Close add step modal"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <h3 className="text-lg font-semibold text-gray-900">Add New Step</h3>
+
+        <div className="mt-4 space-y-4">
+          <textarea
+            value={promptValue}
+            onChange={(e) => onPromptChange(e.target.value)}
+            className="w-full rounded-2xl border border-gray-200 bg-gray-50/60 p-4 text-sm text-gray-900 shadow-inner focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+            rows={5}
+            placeholder="Describe the new step you'd like Kyper to create..."
+            disabled={isSubmitting}
+          />
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={onToggleSourceMaterial}
+              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                includeSourceMaterial
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-gray-200 text-gray-600 hover:border-gray-300"
+              }`}
+              disabled={isSubmitting}
+            >
+              <Paperclip className="h-4 w-4" />
+              Add Source Material
+            </button>
+            {isSubmitting && (
+              <p className="text-xs font-medium text-primary">Sending...</p>
+            )}
+          </div>
+
+          {includeSourceMaterial ? (
+            <textarea
+              value={sourceMaterialValue}
+              onChange={(e) => onSourceMaterialChange(e.target.value)}
+              className="w-full rounded-2xl border border-dashed border-gray-300 bg-white/70 p-3 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+              rows={3}
+              placeholder="Paste supporting content for this step..."
+              disabled={isSubmitting}
+            />
+          ) : null}
+
+          {error ? <p className="text-sm text-red-500">{error}</p> : null}
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <Button
+            onClick={onSubmit}
+            disabled={isSubmitting || !trimmedPrompt}
+            className="min-w-[96px]"
+          >
+            {isSubmitting ? "Sending..." : "Send"}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 };
 
