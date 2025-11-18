@@ -112,11 +112,11 @@ export default function PollLinearForm({
             Benchmark Type
           </Label>
           <Select
-            value={formData.linearBenchmarkType || ""}
+            value={formData.linearBenchmarkType || formData.benchmark_type || ""}
             onValueChange={(value) => updateField("linearBenchmarkType", value)}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select Value" />
+              <SelectValue placeholder="Select Benchmark Type" />
             </SelectTrigger>
             <SelectContent className="w-full overflow-auto">
               <SelectItem value="none">None</SelectItem>

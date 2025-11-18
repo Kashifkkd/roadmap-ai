@@ -103,6 +103,7 @@ const getFormValuesFromScreen = (screen) => {
     values.key_learning = content.key_learning || "";
     values.lowerscale = content.lowerscale;
     values.higherscale = content.higherscale;
+    values.linearBenchmarkType = content.benchmark_type || content.benchmarkType || "";
   }
 
   if (contentType === "reflection") {
@@ -289,6 +290,8 @@ export default function DynamicForm({
                 currentScreen.screenContents.content.lowerscale = value;
               else if (field === "higherscale")
                 currentScreen.screenContents.content.higherscale = value;
+              else if (field === "linearBenchmarkType")
+                currentScreen.screenContents.content.benchmark_type = value;
             } else if (contentType === "reflection") {
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
