@@ -122,6 +122,13 @@ export default function DashboardLayout() {
 
         response_outline: {},
         response_path: {},
+        // Comet setting data
+        //         additional_data: {
+        //   "personalization_enabled": true,
+        //   "habit_enabled": true,
+        //   "habit_description": "description if habit enabled".
+        // },
+
         chatbot_conversation: [{ user: messageText }],
         to_modify: {},
       });
@@ -129,7 +136,6 @@ export default function DashboardLayout() {
       const messageResponse = await graphqlClient.sendMessage(
         cometJsonForMessage
       );
-      
 
       // Step 3: Show loading - useEffect will handle the subscription
       setIsGeneratingOutline(true);
@@ -145,6 +151,11 @@ export default function DashboardLayout() {
   if (isGeneratingOutline) {
     return <ProgressbarLoader />;
   }
+  const welcomeMessage = [
+    "Raghib Manager Review the Basic Information and Audience & Objectives sections, based on what you've shared so far.",
+    "Add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",
+    "Configure your Comet in the Experience Design section.",
+  ];
 
   return (
     <>
@@ -162,6 +173,7 @@ export default function DashboardLayout() {
               inputType={
                 prefillData ? "comet_data_update" : "comet_data_creation"
               }
+              welcomeMessage={welcomeMessage}
               initialInput={initialInput}
               userQuestions={userQuestionsParam}
               onResponseReceived={setPrefillData}

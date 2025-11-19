@@ -14,4 +14,5 @@ export const endpoints = {
   generateDalleImage: "api/generative-ai/v1/generate-dalle-image",
   getClientDetails: (clientId) => `api/clients/v1/client_details/?client_id=${clientId}`,
   updateClient: "api/clients/v1/upsert/client/",
+  downloadDocument: (documentId) => `api/documents/download/${documentId}`,
 };

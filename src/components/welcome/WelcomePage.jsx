@@ -111,7 +111,7 @@ export default function WelcomePage() {
               "Analyzing source materials and preparing your Input Screen…",
           },
         ]);
-      }, 300  );
+      }, 300);
 
       const userQuestionsParam = encodeURIComponent(JSON.stringify(allAnswers));
       const initialInputParam = encodeURIComponent(initialInput);
@@ -231,6 +231,7 @@ export default function WelcomePage() {
                 {/* Chat Messages Area - Show when messages exist */}
                 {messages.length > 0 && (
                   <div className="flex-1 overflow-y-auto p-4 pb-2 space-y-3 min-h-0">
+                    
                     {messages.map((msg, idx) => (
                       <ChatMessage
                         key={idx}

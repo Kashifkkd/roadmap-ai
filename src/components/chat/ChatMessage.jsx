@@ -16,7 +16,9 @@ const ChatMessage = ({ role, text }) => {
             : " text-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm sm:text-xs text-left "
         )}
       >
-        <p className="text-sm leading-relaxed whitespace-pre-wrap">{text}</p>
+        <div className="text-sm leading-relaxed whitespace-pre-wrap">
+          {text}
+        </div>
       </div>
     </div>
   );

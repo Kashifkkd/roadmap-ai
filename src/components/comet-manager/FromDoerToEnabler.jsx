@@ -43,7 +43,7 @@ const ScreenContentTypePreview = ({
 }) => {
   // Debug: Log assets to see what we're receiving
   console.log("ScreenContentTypePreview assets:", assets);
-  
+
   const imageUrl =
     content?.media?.url ||
     content?.media?.imageUrl ||
@@ -1408,9 +1408,61 @@ export default function FromDoerToEnabler({
     );
   }
 
+  // Shared inner preview body (what appears on the "screen")
+  const renderPreviewBody = () => (
+    <div className="w-full h-full">
+      <div className="">
+        {contentType === "content" || contentType === "content_image" ? (
+          <ScreenContentTypePreview
+            deviceView={deviceView}
+            content={content}
+            sections={contentSections}
+            assets={selectedScreen?.assets || []}
+          />
+        ) : contentType === "mcq" ? (
+          <MCQScreenPreview deviceView={deviceView} content={content} />
+        ) : contentType === "assessment" ? (
+          <AssessmentScreenPreview deviceView={deviceView} content={content} />
+        ) : contentType === "force_rank" ? (
+          <ForceRankScreenPreview deviceView={deviceView} content={content} />
+        ) : contentType === "habits" ? (
+          <HabitsScreenPreview deviceView={deviceView} content={content} />
+        ) : contentType === "reflection" ? (
+          <ReflectionScreenPreview deviceView={deviceView} content={content} />
+        ) : contentType === "linear" ? (
+          <LinearPollScreenPreview deviceView={deviceView} content={content} />
+        ) : contentType === "action" || contentType === "actions" ? (
+          <ActionScreenPreview deviceView={deviceView} content={content} />
+        ) : contentType === "social_discussion" ? (
+          <SocialDiscussionScreenPreview
+            deviceView={deviceView}
+            content={content}
+          />
+        ) : (
+          contentSections.map((section, index) => (
+            <ContentBlock
+              key={section.id || index}
+              reverse={
+                deviceView === DEVICE_VIEWS.desktop && index % 2 === 1
+              }
+              deviceView={deviceView}
+              section={section}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+
+  const nonMobileWidthClasses =
+    deviceView === DEVICE_VIEWS.tablet
+      ? "px-8 max-w-[90%] mx-auto"
+      : "px-12 max-w-full";
+
   return (
     <div className="flex flex-col h-full rounded-lg w-full">
-      <div className="w-full py-3 px-4 flex items-center justify-center  ">
+      {/* Device toggle buttons */}
+      <div className="w-full py-2 px-4 flex items-center justify-center">
         <div className="flex items-center justify-center bg-primary-100 rounded-xl p-1">
           <DeviceIcon
             view={DEVICE_VIEWS.mobile}
@@ -1429,6 +1481,8 @@ export default function FromDoerToEnabler({
           />
         </div>
       </div>
+
+      {/* Preview canvas */}
       <div
         className={`bg-gray-white flex-1 overflow-y-auto min-h-0 flex flex-col ${
           isMaximized ? "px-0 sm:px-2" : "px-2"
@@ -1439,99 +1493,40 @@ export default function FromDoerToEnabler({
             isMaximized ? "px-0 py-0 sm:px-2 sm:py-2" : "px-2 py-2"
           }`}
         >
-          <div
-            className={`overflow-y-auto rounded-sm bg-white ${
-              deviceView === DEVICE_VIEWS.mobile
-                ? isMaximized
-                  ? "px-4 w-full h-full sm:w-[375px] sm:h-[680px] sm:mx-auto"
-                  : "px-4 w-[375px] h-[680px] mx-auto"
-                : deviceView === DEVICE_VIEWS.tablet
-                ? "px-8 max-w-[90%] mx-auto"
-                : "px-12 max-w-full"
-            } py-2`}
-          >
-            {/* <h1
-              className={`font-bold text-primary mb-4 ${deviceView === DEVICE_VIEWS.mobile
-                  ? "text-2xl"
-                  : deviceView === DEVICE_VIEWS.tablet
-                    ? "text-3xl"
-                    : "text-4xl"
-                } ${deviceView === DEVICE_VIEWS.desktop ? "font-serif" : "font-sans"
-                }`}
-            >
-              {selectedScreen.title || "Untitled"}
-            </h1> */}
+          {deviceView === DEVICE_VIEWS.mobile ? (
+            // iOS-style phone frame
+            <div className="flex flex-1 items-center justify-center py-4">
+              <div className="relative bg-[#05040A] rounded-[2.7rem] shadow-[0_22px_70px_rgba(15,23,42,0.9)] border border-black/60 px-2.5 pt-4 pb-5 w-[360px] h-[720px]">
+                {/* Left side buttons */}
+                <div className="absolute -left-1 top-24 w-0.5 h-10 rounded-full bg-neutral-700" />
+                <div className="absolute -left-1 top-40 w-0.5 h-20 rounded-full bg-neutral-700" />
+                {/* Right side button */}
+                <div className="absolute -right-1 top-32 w-0.5 h-16 rounded-full bg-neutral-700" />
 
-            {/* <div className="w-full h-px bg-gray-300 mb-6"></div> */}
+                {/* Notch */}
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-full flex items-center justify-center gap-2">
+                  <span className="w-14 h-1.5 rounded-full bg-neutral-700" />
+                  <span className="w-3 h-3 rounded-full bg-neutral-900 border border-neutral-600" />
+                </div>
 
-            {/* <h2
-              className={`font-bold text-gray-900 mb-6 font-sans ${deviceView === DEVICE_VIEWS.mobile
-                  ? "text-xl"
-                  : deviceView === DEVICE_VIEWS.tablet
-                    ? "text-2xl"
-                    : "text-3xl"
-                }`}
-            ></h2> */}
-
-            <div className="">
-              {contentType === "content" || contentType === "content_image" ? (
-                <ScreenContentTypePreview
-                  deviceView={deviceView}
-                  content={content}
-                  sections={contentSections}
-                  assets={selectedScreen?.assets || []}
-                />
-              ) : contentType === "mcq" ? (
-                <MCQScreenPreview deviceView={deviceView} content={content} />
-              ) : contentType === "assessment" ? (
-                <AssessmentScreenPreview
-                  deviceView={deviceView}
-                  content={content}
-                />
-              ) : contentType === "force_rank" ? (
-                <ForceRankScreenPreview
-                  deviceView={deviceView}
-                  content={content}
-                />
-              ) : contentType === "habits" ? (
-                <HabitsScreenPreview
-                  deviceView={deviceView}
-                  content={content}
-                />
-              ) : contentType === "reflection" ? (
-                <ReflectionScreenPreview
-                  deviceView={deviceView}
-                  content={content}
-                />
-              ) : contentType === "linear" ? (
-                <LinearPollScreenPreview
-                  deviceView={deviceView}
-                  content={content}
-                />
-              ) : contentType === "action" || contentType === "actions" ? (
-                <ActionScreenPreview
-                  deviceView={deviceView}
-                  content={content}
-                />
-              ) : contentType === "social_discussion" ? (
-                <SocialDiscussionScreenPreview
-                  deviceView={deviceView}
-                  content={content}
-                />
-              ) : (
-                contentSections.map((section, index) => (
-                  <ContentBlock
-                    key={section.id || index}
-                    reverse={
-                      deviceView === DEVICE_VIEWS.desktop && index % 2 === 1
-                    }
-                    deviceView={deviceView}
-                    section={section}
-                  />
-                ))
-              )}
+                {/* Inner screen */}
+                <div className="relative bg-white rounded-[2.1rem] overflow-hidden h-full w-full mt-1.5">
+                  <div className="h-full w-full overflow-y-auto px-4 py-2">
+                    {renderPreviewBody()}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            // Tablet / Desktop simple elevated card
+            <div
+              className={`overflow-y-auto rounded-2xl bg-white shadow-[0_20px_45px_rgba(15,23,42,0.18)] border border-gray-200 ${
+                nonMobileWidthClasses
+              } py-4`}
+            >
+              {renderPreviewBody()}
+            </div>
+          )}
         </div>
       </div>
     </div>

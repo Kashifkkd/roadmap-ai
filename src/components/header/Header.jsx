@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { usePreviewMode } from "@/contexts/PreviewModeContext";
+import { useCometSettings } from "@/contexts/CometSettingsContext";
 import {
   Bell,
   ChevronDown,
@@ -21,6 +22,7 @@ import ClientDropdown from "@/components/common/ClientDropdown";
 import { getClients } from "@/api/client";
 import { shareComet } from "@/api/shareComet";
 import { publishComet } from "@/api/publishComet";
+import { downloadDocument } from "@/api/downloadDocument";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -42,6 +44,7 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { isPreviewMode, setIsPreviewMode } = usePreviewMode();
+  const { setIsCometSettingsOpen } = useCometSettings();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -247,8 +250,42 @@ export default function Header() {
     setIsFeedbackActive(!isFeedbackActive);
   };
 
-  const handleDownloadClick = () => {
-    setIsDownloadActive(!isDownloadActive);
+  const handleDownloadClick = async () => {
+    setIsDownloadActive(true);
+
+    try {
+      const documentId =
+        typeof window !== "undefined"
+          ? localStorage.getItem("sessionId")
+          : null;
+
+      if (!documentId) {
+        toast.error("No document found. Please create or open a comet first.");
+        setIsDownloadActive(false);
+        return;
+      }
+
+      const response = await downloadDocument(documentId);
+      console.log("Download response:", response);
+
+      if (response && response.success) {
+        toast.success("Document downloaded successfully!");
+      } else {
+        const errorMessage =
+          response?.response?.data?.detail ||
+          "Failed to download document. Please try again.";
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("Failed to download document:", error);
+      const errorMessage =
+        error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to download document. Please try again.";
+      toast.error(errorMessage);
+    } finally {
+      setIsDownloadActive(false);
+    }
   };
   const handleLoginClick = () => {
     if (typeof window !== "undefined") {
@@ -262,8 +299,8 @@ export default function Header() {
 
     if (loginButtonRef.current) {
       const rect = loginButtonRef.current.getBoundingClientRect();
-      const dialogWidth = 350; // Approximate dialog width
-      const dialogHeight = 450; // Approximate dialog height
+      const dialogWidth = 350;
+      const dialogHeight = 450;
       const spacing = 8;
 
       let top = rect.bottom + window.scrollY + spacing;
@@ -396,15 +433,6 @@ export default function Header() {
     setIsClientSettingsDialogOpen(true);
   };
 
-  // const userNameParts = userName ? userName.split(" ") : [];
-  // const userFirstName = userNameParts[0] || "";
-  // const userLastName = userNameParts.slice(1).join(" ").trim() || "";
-  // const accountUser = {
-  //   firstName: userFirstName,
-  //   lastName: userLastName,
-  //   avatar: selectedClient?.image_url || "/profile.png",
-  // };
-
   const handlePublish = async () => {
     setIsPublishing(true);
 
@@ -456,8 +484,12 @@ export default function Header() {
           title={collaborator.name}
         >
           <Image
-            src={collaborator.image_url || "/profile.png"}
-            alt={collaborator.name}
+            src={
+              collaborator.image_url && collaborator.image_url.trim() !== ""
+                ? collaborator.image_url
+                : "/profile.png"
+            }
+            alt={collaborator.name || "Collaborator"}
             width={36}
             height={36}
             className="object-cover w-full h-full"
@@ -618,60 +650,65 @@ export default function Header() {
         <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
       </button>
 
-      {/* Settings Button */}
-      <button
-        onClick={() => setActiveModeButton("settings")}
-        style={{
-          transition:
-            "width 10s ease-in-out, padding 10s ease-in-out, background-color 10s ease-in-out, border-color 10s ease-in-out, color 10s ease-in-out",
-          width: activeModeButton === "settings" ? "95px" : undefined,
-          willChange: "width",
-        }}
-        className={`hidden sm:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${
-          activeModeButton === "settings"
-            ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
-            : "bg-gray-50 text-gray-700 border-transparent h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 justify-center p-0 hover:bg-gray-100"
-        }`}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            width: "100%",
-            overflow: "hidden",
-            justifyContent:
-              activeModeButton === "settings" ? "flex-start" : "center",
+      {/* Settings Button - Only shown on comet-manager page */}
+      {isCometManager && (
+        <button
+          onClick={() => {
+            setActiveModeButton("settings");
+            setIsCometSettingsOpen(true);
           }}
-          className="flex items-center"
+          style={{
+            transition:
+              "width 10s ease-in-out, padding 10s ease-in-out, background-color 10s ease-in-out, border-color 10s ease-in-out, color 10s ease-in-out",
+            width: activeModeButton === "settings" ? "95px" : undefined,
+            willChange: "width",
+          }}
+          className={`hidden sm:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${
+            activeModeButton === "settings"
+              ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
+              : "bg-gray-50 text-gray-700 border-transparent h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 justify-center p-0 hover:bg-gray-100"
+          }`}
         >
-          <Settings
+          <div
             style={{
-              transition: "all 10s ease-in-out",
-              flexShrink: 0,
-            }}
-            className={`${
-              activeModeButton === "settings"
-                ? "w-4 sm:w-4 md:w-5 md:h-5 text-primary"
-                : "w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-700"
-            }`}
-          />
-          <span
-            style={{
-              transition:
-                "opacity 10s ease-in-out, max-width 10s ease-in-out, margin-left 10s ease-in-out",
-              whiteSpace: "nowrap",
-              maxWidth: activeModeButton === "settings" ? "100px" : "0px",
-              opacity: activeModeButton === "settings" ? 1 : 0,
-              marginLeft: activeModeButton === "settings" ? "0.375rem" : "0",
+              display: "flex",
+              alignItems: "center",
+              width: "100%",
               overflow: "hidden",
-              flexShrink: 0,
+              justifyContent:
+                activeModeButton === "settings" ? "flex-start" : "center",
             }}
-            className="text-xs sm:text-sm md:text-[14px] font-medium"
+            className="flex items-center"
           >
-            Setting
-          </span>
-        </div>
-      </button>
+            <Settings
+              style={{
+                transition: "all 10s ease-in-out",
+                flexShrink: 0,
+              }}
+              className={`${
+                activeModeButton === "settings"
+                  ? "w-4 sm:w-4 md:w-5 md:h-5 text-primary"
+                  : "w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-700"
+              }`}
+            />
+            <span
+              style={{
+                transition:
+                  "opacity 10s ease-in-out, max-width 10s ease-in-out, margin-left 10s ease-in-out",
+                whiteSpace: "nowrap",
+                maxWidth: activeModeButton === "settings" ? "100px" : "0px",
+                opacity: activeModeButton === "settings" ? 1 : 0,
+                marginLeft: activeModeButton === "settings" ? "0.375rem" : "0",
+                overflow: "hidden",
+                flexShrink: 0,
+              }}
+              className="text-xs sm:text-sm md:text-[14px] font-medium"
+            >
+              Setting
+            </span>
+          </div>
+        </button>
+      )}
 
       <div className="hidden lg:block">
         <FeedbackButton
@@ -784,7 +821,7 @@ export default function Header() {
                           <span className="text-base">My Account</span>
                         </button>
                         <button
-                          className={`px-4 py-1 w-full flex items-center  gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${
+                          className={`pl-4 py-1 w-full flex items-center  gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${
                             activeButton === "settings"
                               ? "bg-primary text-white"
                               : "bg-white text-gray-900 hover:bg-primary-100"
@@ -951,14 +988,15 @@ export default function Header() {
                       </div>
 
                       <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
-                        {user?.image_url ? (
+                        {user?.image_url && user.image_url.trim() !== "" ? (
                           <Image
-                            src={user?.image_url}
-                            alt="User"
+                            src={user.image_url}
+                            alt={`${user?.first_name || ""} ${
+                              user?.last_name || "User"
+                            }`.trim()}
                             width={28}
                             height={28}
                             className="w-full h-full rounded-full object-cover"
-                            style={{ width: "auto", height: "auto" }}
                           />
                         ) : (
                           <span className="text-sm font-semibold text-primary-700">
@@ -1068,10 +1106,12 @@ export default function Header() {
                       <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
                         {/* {userName?.charAt(0).toUpperCase()}
                          */}
-                        {user?.image_url ? (
+                        {user?.image_url && user.image_url.trim() !== "" ? (
                           <Image
-                            src={user?.image_url}
-                            alt="User"
+                            src={user.image_url}
+                            alt={`${user?.first_name || ""} ${
+                              user?.last_name || "User"
+                            }`.trim()}
                             width={28}
                             height={28}
                             className="rounded-full object-cover w-full h-full"
@@ -1127,10 +1167,12 @@ export default function Header() {
                   <div className="relative">
                     <div className="flex items-center gap-1.5 sm:gap-2">
                       <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
-                        {user?.image_url ? (
+                        {user?.image_url && user.image_url.trim() !== "" ? (
                           <Image
-                            src={user?.image_url}
-                            alt="User"
+                            src={user.image_url}
+                            alt={`${user?.first_name || ""} ${
+                              user?.last_name || "User"
+                            }`.trim()}
                             width={28}
                             height={28}
                             className="rounded-full object-cover w-full h-full"

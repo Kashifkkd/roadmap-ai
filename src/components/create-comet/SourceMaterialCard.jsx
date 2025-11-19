@@ -112,11 +112,15 @@ export default function SourceMaterialCard({ files, setFiles }) {
               </div>
               <span className="text-sm font-medium">Click to upload</span>
               <Button
-                type="button"
                 variant="outline"
                 className={cn(
-                  "flex items-center gap-2 border-primary text-primary"
+                  "flex items-center gap-2 border-primary text-primary cursor-pointer"
                 )}
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById("file-upload").click();
+                }}
+                
               >
                 <Plus />
                 <span>Upload File</span>

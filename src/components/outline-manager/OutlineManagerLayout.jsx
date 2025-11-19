@@ -47,6 +47,12 @@ export default function OutlineManagerLayout() {
     }
   }, [sessionData]);
 
+  const welcomeMessage = [
+    "outline Manager Review the Basic Information and Audience & Objectives sections, based on what you've shared so far.",
+    "Add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",
+    "Configure your Comet in the Experience Design section.",
+  ];
+
   return (
     <div className="flex h-full w-full bg-primary-50">
       <div className="flex flex-1 gap-2 p-2 overflow-y-auto">
@@ -55,6 +61,7 @@ export default function OutlineManagerLayout() {
             inputType="outline_updation"
             allMessages={allMessages}
             setAllMessages={setAllMessages}
+            welcomeMessage={welcomeMessage}
             onResponseReceived={setPrefillData}
             sessionData={sessionData}
           />

@@ -12,6 +12,7 @@ export default function ChatWindow({
   inputType = "comet_data_update",
   onResponseReceived = null,
   allMessages = [],
+  welcomeMessage = [],
   setAllMessages = () => {},
   sessionData,
 }) {
@@ -246,6 +247,7 @@ export default function ChatWindow({
     <div className="bg-white h-full w-full p-2 rounded-2xl">
       <Chat
         messages={allMessages}
+        welcomeMessage={welcomeMessage}
         isLoading={isLoading || isInitialLoading}
         onSuggestionClick={handleSuggestionClick}
         inputValue={inputValue}

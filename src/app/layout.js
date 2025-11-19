@@ -5,6 +5,7 @@ import "./globals.css";
 import Header from "@/components/header/Header";
 import { usePathname } from "next/navigation";
 import { PreviewModeProvider } from "@/contexts/PreviewModeContext";
+import { CometSettingsProvider } from "@/contexts/CometSettingsContext";
 import { Toaster } from "@/components/ui/toast";
 
 const geistSans = Geist({
@@ -55,8 +56,10 @@ export default function RootLayout({ children }) {
         h-[100vh] w-[100vw]`}
       >
         <PreviewModeProvider>
-          <LayoutContent>{children}</LayoutContent>
-          <Toaster />
+          <CometSettingsProvider>
+            <LayoutContent>{children}</LayoutContent>
+            <Toaster />
+          </CometSettingsProvider>
         </PreviewModeProvider>
       </body>
     </html>

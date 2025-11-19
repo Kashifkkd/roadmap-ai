@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SCREEN_TYPE_CONSTANTS } from "@/types/comet-manager";
 import { useCometManager } from "@/hooks/useCometManager";
+import { useCometSettings } from "@/contexts/CometSettingsContext";
 import CometManagerSidebar from "./CometManagerSidebar";
 import DynamicForm from "./DynamicForm";
 import ScreenCard from "./ScreenCard";
@@ -53,6 +54,7 @@ import DevicePreview from "./DevicePreview";
 import FromDoerToEnabler from "./FromDoerToEnabler";
 import PDFPreview from "./PDFPreview";
 import ImagePreview from "./ImagePreview";
+import CometSettingsDialog from "./CometSettingsDialog";
 import {
   Drawer,
   DrawerContent,
@@ -191,6 +193,7 @@ export default function CometManager({
   const [selectedAssetCategory, setSelectedAssetCategory] = useState(null);
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [selectedImageAsset, setSelectedImageAsset] = useState(null);
+  const { isCometSettingsOpen, setIsCometSettingsOpen } = useCometSettings();
   const selectedScreenRef = useRef(null);
 
   // Derive selectedScreen from screens array using selectedScreenId - always has latest data
@@ -732,7 +735,7 @@ export default function CometManager({
     ) ?? -1) + 1 || 1;
 
   return (
-    <div className="flex flex-col w-full bg-background rounded-xl h-full">
+    <div className="flex flex-col w-full bg-background rounded-xl h-full relative">
       {/* Loading State */}
       {isLoading ? (
         <div className="flex items-center justify-center h-full">
@@ -1048,6 +1051,11 @@ export default function CometManager({
         onClose={() => setShowAddPopup(false)}
         onAddScreen={handleAddNewScreen}
         screenTypeGroups={SCREEN_TYPE_GROUPS}
+      />
+      {/* Comet Settings Dialog */}
+      <CometSettingsDialog
+        open={isCometSettingsOpen}
+        onOpenChange={setIsCometSettingsOpen}
       />
       {/* Preview Drawer */}
       <Drawer

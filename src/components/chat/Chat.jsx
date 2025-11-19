@@ -7,6 +7,21 @@ import Image from "next/image";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 
+const welcomeMessageChat = ({ messages }) => {
+  return (
+    <div className="flex flex-col space-y-2 w-full p-2 bg-[#ECF7F6] rounded-lg">
+      {messages.length > 0 &&
+        messages.map((msg, idx) => {
+          return (
+            <div key={idx} className="bg-[#D9F0EC] rounded-lg p-2">
+              <p className="text-[#399C8D] text-sm leading-relaxed">{msg}</p>
+            </div>
+          );
+        })}
+    </div>
+  );
+};
+
 // Main Chat Component
 const Chat = ({
   messages = [],
@@ -14,6 +29,7 @@ const Chat = ({
   onSuggestionClick,
   inputValue = "",
   onInputChange,
+  welcomeMessage = [],
   onSubmit,
   error = null,
 }) => {
@@ -35,6 +51,10 @@ const Chat = ({
       <div className="flex-1 overflow-y-auto no-scrollbar p-2 sm:p-2 pb-4">
         {hasMessages ? (
           <div className="max-w-4xl mx-auto w-full">
+            <ChatMessage
+              role="bot"
+              text={welcomeMessageChat({ messages: welcomeMessage })}
+            />
             {messages.map((msg, idx) => (
               <ChatMessage key={idx} role={msg.from} text={msg.content} />
             ))}

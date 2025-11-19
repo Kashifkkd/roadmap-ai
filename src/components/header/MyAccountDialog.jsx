@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { Camera, Eye, EyeOff, CircleX, Trash2 } from "lucide-react";
+import { Camera, Eye, EyeOff, CircleX, Trash2, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,9 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const [userData, setUserData] = useState(null);
   const [profileUrl, setProfileUrl] = useState(null);
@@ -71,6 +74,52 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     setImageUrl(null);
   };
 
+  const validatePassword = (value) => {
+    if (!value) {
+      setPasswordError("");
+      return true;
+    }
+    if (value.length < 8) {
+      setPasswordError("Password must be at least 8 characters long");
+      return false;
+    }
+    setPasswordError("");
+    return true;
+  };
+
+  const validateConfirmPassword = (value, passwordValue) => {
+    if (!passwordValue) {
+      setConfirmPasswordError("");
+      return true;
+    }
+    if (!value) {
+      setConfirmPasswordError("Please confirm your password");
+      return false;
+    }
+    if (value !== passwordValue) {
+      setConfirmPasswordError("Passwords do not match");
+      return false;
+    }
+    setConfirmPasswordError("");
+    return true;
+  };
+
+  const handlePasswordChange = (event) => {
+    const value = event.target.value;
+    setPassword(value);
+    validatePassword(value);
+    // Re-validate confirm password if it has a value
+    if (confirmPassword) {
+      validateConfirmPassword(confirmPassword, value);
+    }
+  };
+
+  const handleConfirmPasswordChange = (event) => {
+    const value = event.target.value;
+    setConfirmPassword(value);
+    validateConfirmPassword(value, password);
+  };
+
   const updateProfileData = async (data) => {
     const payload = {
       email: data.email || userData?.email || "",
@@ -99,15 +148,38 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
   };
 
   const handleSave = async () => {
-    console.log("imageUrl", imageUrl);
-    const response = await updateProfileData({
-      email: userData?.email || "",
-      first_name: firstName,
-      last_name: lastName,
-      image_url: imageUrl || "",
-      timezone: userData?.timezone || "",
-    });
-    onOpenChange(false);
+    // Validate passwords before saving
+    const isPasswordValid = validatePassword(password);
+    const isConfirmPasswordValid = validateConfirmPassword(
+      confirmPassword,
+      password
+    );
+
+    // If passwords are provided, both must be valid
+    if (password || confirmPassword) {
+      if (!isPasswordValid || !isConfirmPasswordValid) {
+        return; // Don't save if validation fails
+      }
+    }
+
+    setIsLoading(true);
+    try {
+      console.log("imageUrl", imageUrl);
+      const response = await updateProfileData({
+        email: userData?.email || "",
+        first_name: firstName,
+        last_name: lastName,
+        image_url: imageUrl || "",
+        timezone: userData?.timezone || "",
+        new_password: password,
+        new_password_confirm: confirmPassword,
+      });
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error saving profile:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const avatar = imageUrl || userData?.image_url || defaultAvatar;
@@ -123,6 +195,9 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     }
     setPassword("");
     setConfirmPassword("");
+    setPasswordError("");
+    setConfirmPasswordError("");
+    setIsLoading(false);
   }, [open, userData]);
 
   return (
@@ -233,9 +308,11 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                       <Input
                         type={isPasswordVisible ? "text" : "password"}
                         value={password}
-                        onChange={(event) => setPassword(event.target.value)}
+                        onChange={handlePasswordChange}
                         placeholder="Enter a new password"
-                        className="pr-12"
+                        className={`pr-12 ${
+                          passwordError ? "border-red-500" : ""
+                        }`}
                       />
                       <button
                         type="button"
@@ -251,6 +328,11 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                         )}
                       </button>
                     </div>
+                    {passwordError && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {passwordError}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-1 text-left">
@@ -261,11 +343,11 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                       <Input
                         type={isConfirmVisible ? "text" : "password"}
                         value={confirmPassword}
-                        onChange={(event) =>
-                          setConfirmPassword(event.target.value)
-                        }
+                        onChange={handleConfirmPasswordChange}
                         placeholder="Re-enter password"
-                        className="pr-12"
+                        className={`pr-12 ${
+                          confirmPasswordError ? "border-red-500" : ""
+                        }`}
                       />
                       <button
                         type="button"
@@ -281,6 +363,11 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                         )}
                       </button>
                     </div>
+                    {confirmPasswordError && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {confirmPasswordError}
+                      </p>
+                    )}
                   </div>
                 </section>
               </form>
@@ -288,9 +375,17 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                 <Button
                   type="button"
                   onClick={handleSave}
-                  className="min-w-[120px] rounded-md bg-[#6B5AE0] px-6 py-2 text-base font-semibold shadow-lg shadow-[#6B5AE0]/30 hover:bg-[#5a48d1]"
+                  disabled={isLoading}
+                  className="min-w-[120px] rounded-md bg-[#6B5AE0] px-6 py-2 text-base font-semibold shadow-lg shadow-[#6B5AE0]/30 hover:bg-[#5a48d1] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save"
+                  )}
                 </Button>
               </div>
             </div>
