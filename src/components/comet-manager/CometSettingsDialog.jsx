@@ -110,6 +110,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         return;
       }
 
+      // Update comet creation data for the comet settings
       const updatedCometCreationData = {
         ...(sessionData?.comet_creation_data || {}),
         "Basic Information": {
@@ -117,21 +118,21 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
           "Comet Title": cometTitle,
           Description: description,
         },
-        Settings: {
-          ...(sessionData?.comet_creation_data?.Settings || {}),
-          "Learning Frequency": learningFrequency,
-          "Kick off Date": kickOffDate,
-          "Kick off Time": kickOffTime,
-          Habit: {
-            enabled: habitEnabled,
-            text: habitText,
-          },
-          Personalization: {
-            enabled: personalizationEnabled,
-            colorLogo: colorLogo ? colorLogo.name : null,
-            whiteLogo: whiteLogo ? whiteLogo.name : null,
-          },
-        },
+        // Settings: {
+        //   ...(sessionData?.comet_creation_data?.Settings || {}),
+        //   "Learning Frequency": learningFrequency,
+        //   "Kick off Date": kickOffDate,
+        //   "Kick off Time": kickOffTime,
+        //   Habit: {
+        //     enabled: habitEnabled,
+        //     text: habitText,
+        //   },
+        //   Personalization: {
+        //     enabled: personalizationEnabled,
+        //     colorLogo: colorLogo ? colorLogo.name : null,
+        //     whiteLogo: whiteLogo ? whiteLogo.name : null,
+        //   },
+        // },
       };
 
       const cometJsonForSave = JSON.stringify({
@@ -146,27 +147,12 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
       const response = await graphqlClient.autoSaveComet(cometJsonForSave);
 
-      if (response && response.autoSaveComet) {
-        try {
-          let savedData;
-          if (typeof response.autoSaveComet === "string") {
-            savedData = JSON.parse(response.autoSaveComet);
-          } else {
-            savedData = {
-              ...sessionData,
-              comet_creation_data: updatedCometCreationData,
-            };
-          }
-
-          localStorage.setItem("sessionData", JSON.stringify(savedData));
-        } catch (parseError) {
-          console.error("Error parsing auto-save response:", parseError);
-          const updatedSessionData = {
-            ...sessionData,
-            comet_creation_data: updatedCometCreationData,
-          };
-          localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
-        }
+      if(response && response?.autoSaveComet){
+        const updatedSessionData = {
+          ...sessionData,
+          comet_creation_data: updatedCometCreationData,
+        };
+        localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
       }
       onOpenChange(false);
     } catch (error) {
