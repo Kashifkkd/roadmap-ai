@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { graphqlClient } from "@/lib/graphql-client";
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
@@ -67,6 +68,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [personalizationEnabled, setPersonalizationEnabled] = useState(true);
   const [colorLogo, setColorLogo] = useState(null);
   const [whiteLogo, setWhiteLogo] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const data = localStorage.getItem("sessionData");
@@ -85,8 +87,93 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
     }
   }, []); // Empty dependency array means this runs only once when component mounts
 
-  const handleSave = () => {
-    onOpenChange(false);
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+
+      const sessionDataRaw = localStorage.getItem("sessionData");
+      if (!sessionDataRaw) {
+        console.error("No session data found");
+        setIsSaving(false);
+        return;
+      }
+
+      const sessionData = JSON.parse(sessionDataRaw);
+      const sessionId =
+        sessionData?.session_id ||
+        (typeof window !== "undefined" && localStorage.getItem("sessionId")) ||
+        null;
+
+      if (!sessionId) {
+        console.error("No session ID available for auto-save");
+        setIsSaving(false);
+        return;
+      }
+
+      const updatedCometCreationData = {
+        ...(sessionData?.comet_creation_data || {}),
+        "Basic Information": {
+          ...(sessionData?.comet_creation_data?.["Basic Information"] || {}),
+          "Comet Title": cometTitle,
+          Description: description,
+        },
+        Settings: {
+          ...(sessionData?.comet_creation_data?.Settings || {}),
+          "Learning Frequency": learningFrequency,
+          "Kick off Date": kickOffDate,
+          "Kick off Time": kickOffTime,
+          Habit: {
+            enabled: habitEnabled,
+            text: habitText,
+          },
+          Personalization: {
+            enabled: personalizationEnabled,
+            colorLogo: colorLogo ? colorLogo.name : null,
+            whiteLogo: whiteLogo ? whiteLogo.name : null,
+          },
+        },
+      };
+
+      const cometJsonForSave = JSON.stringify({
+        session_id: sessionId,
+        input_type: "source_material_based_outliner",
+        comet_creation_data: updatedCometCreationData,
+        response_outline: sessionData?.response_outline || {},
+        response_path: sessionData?.response_path || {},
+        chatbot_conversation: sessionData?.chatbot_conversation || [],
+        to_modify: sessionData?.to_modify || {},
+      });
+
+      const response = await graphqlClient.autoSaveComet(cometJsonForSave);
+
+      if (response && response.autoSaveComet) {
+        try {
+          let savedData;
+          if (typeof response.autoSaveComet === "string") {
+            savedData = JSON.parse(response.autoSaveComet);
+          } else {
+            savedData = {
+              ...sessionData,
+              comet_creation_data: updatedCometCreationData,
+            };
+          }
+
+          localStorage.setItem("sessionData", JSON.stringify(savedData));
+        } catch (parseError) {
+          console.error("Error parsing auto-save response:", parseError);
+          const updatedSessionData = {
+            ...sessionData,
+            comet_creation_data: updatedCometCreationData,
+          };
+          localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
+        }
+      }
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error saving comet settings:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleColorLogoUpload = (e) => {
@@ -496,9 +583,10 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                 <div className="border-t-3 rounded-b-lg border-gray-100 px-3 sm:px-4 md:px-6 lg:px-7 py-2 sm:py-2.5 flex justify-end">
                   <Button
                     onClick={handleSave}
-                    className="bg-primary hover:bg-primary-dark px-6 sm:px-8 md:px-10 py-2 rounded-lg text-sm font-medium w-full sm:w-auto min-w-[120px]"
+                    disabled={isSaving}
+                    className="bg-primary hover:bg-primary-dark px-6 sm:px-8 md:px-10 py-2 rounded-lg text-sm font-medium w-full sm:w-auto min-w-[120px] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Save
+                    {isSaving ? "Saving..." : "Save"}
                   </Button>
                 </div>
               </div>
