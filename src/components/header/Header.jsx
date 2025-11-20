@@ -185,6 +185,8 @@ export default function Header() {
           if (!selectedClient && res.response.length > 0) {
             setSelectedClient(res.response[0]);
           }
+          // localStorage.setItem("Client", res.response[0].name);
+          localStorage.setItem("Client id", res.response[0].id);
         } else {
           setClients([]);
         }
@@ -197,7 +199,7 @@ export default function Header() {
     if (isAuthenticated) load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
-  console.log("clients>>>>>>>", clients);
+
 
   // Update selectedClient if clients change (e.g., after fetch)
   useEffect(() => {
@@ -267,7 +269,7 @@ export default function Header() {
       }
 
       const response = await downloadDocument(documentId);
-      console.log("Download response:", response);
+     
 
       if (response && response.success) {
         toast.success("Document downloaded successfully!");
@@ -360,7 +362,7 @@ export default function Header() {
 
   const handleClientSelect = (client) => {
     setSelectedClient(client);
-    console.log("Selected client:", client);
+    
     localStorage.setItem("Client id", client.id.toString());
     localStorage.setItem("ClientName", client.name.toString());
     window.dispatchEvent(
@@ -373,14 +375,16 @@ export default function Header() {
       })
     );
   };
+  const tempclient = localStorage.getItem("Client id");
   useEffect(() => {
     try {
       const sessionData = JSON.parse(
         localStorage.getItem("sessionData") || "{}"
       );
       setText(
-        sessionData?.response_path?.chapters?.[0]?.name ||
-          "New Manager Essentials"
+        sessionData?.comet_creation_data?.["Basic Information"]?.[
+          "Comet Title"
+        ] || "New Manager Essentials"
       );
     } catch {
       setText("New Manager Essentials");
@@ -792,7 +796,7 @@ export default function Header() {
                       alt="Kyper Logo"
                       width={112}
                       height={52}
-                      style={{ width: "auto", height: "auto" }}
+                      // style={{ width: "auto", height: "auto" }}
                     />
                   </div>
                   <button
@@ -1013,7 +1017,10 @@ export default function Header() {
                         )}
                       </div>
 
-                      <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
+                      <div
+                        className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0 cursor-pointer"
+                        onClick={handleMyAccountClick}
+                      >
                         {user?.image_url && user.image_url.trim() !== "" ? (
                           <Image
                             src={user.image_url}

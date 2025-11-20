@@ -106,14 +106,14 @@ export default function ForceRankForm({
             <Plus size={16} />
             Add Option
           </Button>
-          <Button
+          {/* <Button
             type="button"
             onClick={() => addListItem("question")}
             className="flex items-center gap-2 px-3 py-2 text-background rounded-lg w-full"
           >
             <Plus size={16} />
             Add Question
-          </Button>
+          </Button> */}
         </div>
       </div>
     </div>

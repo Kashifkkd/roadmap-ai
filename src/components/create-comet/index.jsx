@@ -633,6 +633,7 @@ export default function CreateComet({
                     <div className="space-y-1">
                       <Label htmlFor="client-org">Description *</Label>
                       <Input
+                        type="text"
                         id="client-org"
                         placeholder="Enter description"
                         {...register("clientOrg", { required: true })}

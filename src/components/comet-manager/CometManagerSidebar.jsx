@@ -816,7 +816,7 @@ export default function CometManagerSidebar({
                               </div>
                             )}
                         </div>
-                        <div className=" m-auto bottom-6 z-50 w-full shrink-0">
+                        {/* <div className=" m-auto bottom-6 z-50 w-full shrink-0">
                           <Button
                             variant="outline"
                             size="sm"
@@ -825,7 +825,7 @@ export default function CometManagerSidebar({
                             <Plus size={16} />
                             Add Source
                           </Button>
-                        </div>
+                        </div> */}
                       </div>
                     </>
                   );

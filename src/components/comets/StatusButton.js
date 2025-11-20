@@ -26,7 +26,7 @@ export default function StatusButton({ status }) {
 
   return (
     <div
-      className={`w-fit flex items-center gap-2 py-2 px-3 rounded-3xl ${current.bg}`}
+      className={`w-fit flex items-center gap-2 py-1 px-3 rounded-3xl ${current.bg}`}
     >
       <div className="flex justify-center items-center bg-white rounded-xl p-1">
         <Image
@@ -37,7 +37,7 @@ export default function StatusButton({ status }) {
         />
       </div>
       <span
-        className={`font-inter font-medium text-xs leading-4 ${current.text}`}
+        className={`font-inter font-medium text-md leading-4 ${current.text}`}
       >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>

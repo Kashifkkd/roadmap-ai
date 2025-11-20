@@ -368,7 +368,7 @@ const AssessmentScreenPreview = ({ deviceView, content }) => {
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
-      <div className="bg-gray-100 overflow-hidden shadow-sm h-full">
+      <div className="bg-gray-100 overflow-hidden shadow-sm h-full overflow-y-auto">
         <div className={`${paddingClass} space-y-6`}>
           {/* Title */}
           <h2
@@ -1195,7 +1195,10 @@ export default function FromDoerToEnabler({
   const content = screenContents?.content ?? null;
   const contentType = screenContents?.contentType;
   console.log("contentType>>>>>>>>>>>>.", contentType);
-  console.log("FromDoerToEnabler selectedScreen assets:", selectedScreen?.assets);
+  console.log(
+    "FromDoerToEnabler selectedScreen assets:",
+    selectedScreen?.assets
+  );
 
   const contentSections = useMemo(() => {
     if (!contentType || !content) {
@@ -1410,7 +1413,7 @@ export default function FromDoerToEnabler({
 
   // Shared inner preview body (what appears on the "screen")
   const renderPreviewBody = () => (
-    <div className="w-full h-full">
+    <div className="w-full h-full ">
       <div className="">
         {contentType === "content" || contentType === "content_image" ? (
           <ScreenContentTypePreview
@@ -1442,9 +1445,7 @@ export default function FromDoerToEnabler({
           contentSections.map((section, index) => (
             <ContentBlock
               key={section.id || index}
-              reverse={
-                deviceView === DEVICE_VIEWS.desktop && index % 2 === 1
-              }
+              reverse={deviceView === DEVICE_VIEWS.desktop && index % 2 === 1}
               deviceView={deviceView}
               section={section}
             />
@@ -1496,7 +1497,7 @@ export default function FromDoerToEnabler({
           {deviceView === DEVICE_VIEWS.mobile ? (
             // iOS-style phone frame
             <div className="flex flex-1 items-center justify-center py-4">
-              <div className="relative bg-[#05040A] rounded-[2.7rem] shadow-[0_22px_70px_rgba(15,23,42,0.9)] border border-black/60 px-2.5 pt-4 pb-5 w-[360px] h-[720px]">
+              <div className="relative bg-[#05040A] rounded-[2.7rem] shadow-[0_22px_70px_rgba(15,23,42,0.9)] border border-black/60 px-2.5 pt-4 pb-5 w-[360px] h-[600px]">
                 {/* Left side buttons */}
                 <div className="absolute -left-1 top-24 w-0.5 h-10 rounded-full bg-neutral-700" />
                 <div className="absolute -left-1 top-40 w-0.5 h-20 rounded-full bg-neutral-700" />
@@ -1520,9 +1521,7 @@ export default function FromDoerToEnabler({
           ) : (
             // Tablet / Desktop simple elevated card
             <div
-              className={`overflow-y-auto rounded-2xl bg-white shadow-[0_20px_45px_rgba(15,23,42,0.18)] border border-gray-200 ${
-                nonMobileWidthClasses
-              } py-4`}
+              className={`overflow-y-auto rounded-2xl bg-white shadow-[0_20px_45px_rgba(15,23,42,0.18)] border border-gray-200 ${nonMobileWidthClasses} py-4`}
             >
               {renderPreviewBody()}
             </div>

@@ -231,7 +231,6 @@ export default function WelcomePage() {
                 {/* Chat Messages Area - Show when messages exist */}
                 {messages.length > 0 && (
                   <div className="flex-1 overflow-y-auto p-4 pb-2 space-y-3 min-h-0">
-                    
                     {messages.map((msg, idx) => (
                       <ChatMessage
                         key={idx}
@@ -335,9 +334,8 @@ export default function WelcomePage() {
           </div>
         </div>
       </main>
-
       {/* Recent Comets Section */}
-      <section className="max-w-3xl w-full p-4 mx-auto bg-background rounded-3xl">
+      {/* <section className="max-w-3xl w-full p-4 mx-auto bg-background rounded-3xl">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <h3 className="text-xl font-bold">My recent Comets</h3>
@@ -355,28 +353,28 @@ export default function WelcomePage() {
         </div>
 
         {/* Empty State Section */}
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          {/* <div className="w-24 h-24 bg-primary-50 rounded-full flex items-center justify-center mb-6">
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        {/* <div className="w-24 h-24 bg-primary-50 rounded-full flex items-center justify-center mb-6">
             <Stars className="w-12 h-12 text-primary-300" />
           </div> */}
-          <h4 className="text-xl font-bold text-primary-800 mb-2">
-            No Comets yet? Your first one will appear here once you create it.
-          </h4>
-          <p className="text-muted-foreground mb-6 max-w-md">
-            Start building your first Comet by clicking the button above or
-            describing what you'd like to create.
-          </p>
-          <Button
-            variant="default"
-            className="flex items-center justify-center gap-2 px-6 py-3 disabled:opacity-50"
-            onClick={handleCreateNewComet}
-            disabled={isDisabled}
-          >
-            <Stars />
-            <span>Create Your First Comet</span>
-          </Button>
-        </div>
-      </section>
+        <h4 className="text-xl font-bold text-primary-800 mb-2">
+          No Comets yet? Your first one will appear here once you create it.
+        </h4>
+        <p className="text-muted-foreground mb-6 max-w-md">
+          Start building your first Comet by clicking the button above or
+          describing what you'd like to create.
+        </p>
+        <Button
+          variant="default"
+          className="flex items-center justify-center gap-2 px-6 py-3 disabled:opacity-50"
+          onClick={handleCreateNewComet}
+          disabled={isDisabled}
+        >
+          <Stars />
+          <span>Create Your First Comet</span>
+        </Button>
+      </div>
+      {/* </section> */}
     </div>
   );
 }

@@ -42,8 +42,8 @@ export default function AllCometsContainer({ cometSessions }) {
     }
   };
   return (
-    <div className="flex flex-wrap flex-1 w-full rounded-2xl p-4 gap-2.5 bg-white overflow-y-auto no-scrollbar">
-      <div className="flex flex-wrap w-full h-[280px] gap-4">
+    <div className="flex flex-wrap flex-1 w-[90%] mx-auto rounded-2xl p-4 gap-2.5 bg-white overflow-y-auto no-scrollbar">
+      <div className="flex flex-wrap w-full h-[280px] gap-4 justify-between">
         {cometSessions.map((c, idx) => (
           <Comet
             key={idx} // unique key for each item

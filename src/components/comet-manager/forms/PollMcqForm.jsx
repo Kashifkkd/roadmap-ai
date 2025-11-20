@@ -190,14 +190,14 @@ export default function PollMcqForm({
             Add Option
           </Button>
 
-          <Button
+          {/* <Button
             type="button"
             disabled
             className="flex items-center gap-2 px-3 py-2 text-background rounded-lg w-full opacity-50 cursor-not-allowed"
           >
             <Plus size={16} />
             Add Question
-          </Button>
+          </Button> */}
         </div>
       </div>
     </div>

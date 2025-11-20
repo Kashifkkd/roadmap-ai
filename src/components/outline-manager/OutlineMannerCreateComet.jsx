@@ -45,6 +45,7 @@ export default function OutlineMannerCreateComet({
 
   const [expandedChapters, setExpandedChapters] = useState({});
 
+  const [text, setText] = useState("New Manager Essentials");
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [selectedChapterNumber, setSelectedChapterNumber] = useState(null);
   const [selectedStep, setSelectedStep] = useState(null);
@@ -125,6 +126,20 @@ export default function OutlineMannerCreateComet({
     setSelectedChapterNumber(chapterIndex + 1);
     setSelectedStep(step);
   };
+  useEffect(() => {
+    try {
+      const sessionData = JSON.parse(
+        localStorage.getItem("sessionData") || "{}"
+      );
+      setText(
+        sessionData?.comet_creation_data?.["Basic Information"]?.[
+          "Comet Title"
+        ] || "New Manager Essentials"
+      );
+    } catch {
+      setText("New Manager Essentials");
+    }
+  }, []);
 
   // if (isGenerating) {
   //   return (
@@ -137,7 +152,7 @@ export default function OutlineMannerCreateComet({
   return (
     <div className="flex flex-col flex-1 w-full h-full bg-background rounded-xl overflow-hidden ">
       <div className="w-full p-2 shrink-0">
-        <SectionHeader title="New Manager Essentials" />
+        <SectionHeader title={text} />
       </div>
       <div className="p-2 w-full flex-1 overflow-hidden">
         <div className="flex flex-col sm:flex-row gap-4 bg-accent rounded-md h-full p-2">

@@ -33,7 +33,9 @@ export default function AllComet() {
     let clientId = localStorage.getItem("Client id");
 
     if (!token || !clientId) {
-      setError("Missing session/token/client ID");
+      setError(
+        "Please login / create a session (chat) to access this page as this page has dependecies on session"
+      );
       setLoading(false);
       return;
     }
