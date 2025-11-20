@@ -23,6 +23,7 @@ import {
   FileImage,
   FileVideo,
   FileIcon,
+  Paperclip,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -193,6 +194,7 @@ export default function CometManager({
   const [selectedAssetCategory, setSelectedAssetCategory] = useState(null);
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [selectedImageAsset, setSelectedImageAsset] = useState(null);
+  const [activeTab, setActiveTab] = useState(0); // Track active tab: 0=Steps, 1=Sources, 2=Assets
   const { isCometSettingsOpen, setIsCometSettingsOpen } = useCometSettings();
   const selectedScreenRef = useRef(null);
 
@@ -294,6 +296,8 @@ export default function CometManager({
     // Clear selected material when screen is clicked
     setSelectedAssetCategory(null);
     setSelectedAssets([]);
+    setSelectedImageAsset(null);
+    setActiveTab(0);
     setSelectedScreenId(screen.id);
     const screenIndex = screens.findIndex((s) => s.id === screen.id);
     setCurrentScreen(screenIndex);
@@ -752,6 +756,7 @@ export default function CometManager({
                 sessionId={sessionId}
                 selectedStepId={selectedStepId}
                 setSelectedStep={setSelectedStep}
+                externalTab={activeTab}
                 onMaterialSelect={(material) => {
                   setSelectedMaterial(material);
                   // Clear selected screen and assets when material is selected
@@ -770,11 +775,22 @@ export default function CometManager({
                   setSelectedMaterial(null);
                   setSelectedImageAsset(null);
                 }}
-                onChapterClick={(chapterId, chapter) => {
-                  // Clear selected material and assets when chapter is clicked
+                onTabChange={(tabIndex) => {
+                  setActiveTab(tabIndex);
+                  // Clear all selections when tab changes
                   setSelectedMaterial(null);
                   setSelectedAssetCategory(null);
                   setSelectedAssets([]);
+                  setSelectedImageAsset(null);
+                }}
+                onStepClick={(stepId, step) => {}}
+                onChapterClick={(chapterId, chapter) => {
+                  // Clear material and assets when chapter is clicked
+                  setSelectedMaterial(null);
+                  setSelectedAssetCategory(null);
+                  setSelectedAssets([]);
+                  setSelectedImageAsset(null);
+                  setActiveTab(0);
                   // Filter screens for this chapter (use allScreens to get screens from all steps)
                   const chapterScreens = allScreens.filter(
                     (s) => s.chapterId === chapterId
@@ -804,7 +820,7 @@ export default function CometManager({
             {/* Right section - main content */}
             <div className="flex flex-col w-full lg:w-2/3 xl:w-3/4 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl ">
               <div className="flex flex-col  flex-1 overflow-hidden">
-                {/* Show Image Preview if image is selected (takes precedence) */}
+                {/* Show Image Preview if image is selected*/}
                 {selectedImageAsset ? (
                   <div className="flex-1 overflow-hidden p-4">
                     <ImagePreview
@@ -910,7 +926,7 @@ export default function CometManager({
                       onClose={() => setSelectedMaterial(null)}
                     />
                   </div>
-                ) : (
+                ) : activeTab === 0 ? (
                   <>
                     {selectedScreen && chapters && (
                       <div className="shrink-0 p-3 ml-4 sm:p-4 flex justify-between items-center rounded-t-2xl">
@@ -1039,7 +1055,34 @@ export default function CometManager({
                       )} */}
                     </div>
                   </>
-                )}
+                ) : activeTab === 1 ? (
+                  <div className="flex flex-1 items-center justify-center p-8">
+                    <div className="text-center">
+                      <File size={48} className="mx-auto mb-4 text-gray-400" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Select a Source Material
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        Choose a document from the sidebar to preview it here
+                      </p>
+                    </div>
+                  </div>
+                ) : activeTab === 2 ? (
+                  <div className="flex flex-1 items-center justify-center p-8">
+                    <div className="text-center">
+                      <Paperclip
+                        size={48}
+                        className="mx-auto mb-4 text-gray-400"
+                      />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Select an Asset Category
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        Choose a category from the sidebar to view assets
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -1074,7 +1117,7 @@ export default function CometManager({
           } max-w-none! h-screen! bg-primary-50 p-0`}
         >
           {/* Preview Header */}
-          <div className="bg-primary-50 border-b border-gray-200 py-3 px-3 sm:px-4 flex items-center justify-between">
+          <div className="bg-primary-50 border-b border-gray-200 py-2 px-3 sm:px-4 flex items-center justify-between">
             <h3 className="text-base sm:text-[1.125rem] font-bold text-gray-900">
               Preview
             </h3>

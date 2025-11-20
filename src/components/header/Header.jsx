@@ -73,6 +73,7 @@ export default function Header() {
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
   const [user, setUser] = useState(null);
+  const [text, setText] = useState("New Manager Essentials");
 
   // Check if user is super admin
   const isSuperAdmin = () => {
@@ -359,7 +360,32 @@ export default function Header() {
 
   const handleClientSelect = (client) => {
     setSelectedClient(client);
+    console.log("Selected client:", client);
+    localStorage.setItem("Client id", client.id.toString());
+    localStorage.setItem("ClientName", client.name.toString());
+    window.dispatchEvent(
+      new StorageEvent("storage", { key: "Client id", newValue: client.id })
+    );
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "ClientName",
+        newValue: client.name,
+      })
+    );
   };
+  useEffect(() => {
+    try {
+      const sessionData = JSON.parse(
+        localStorage.getItem("sessionData") || "{}"
+      );
+      setText(
+        sessionData?.response_path?.chapters?.[0]?.name ||
+          "New Manager Essentials"
+      );
+    } catch {
+      setText("New Manager Essentials");
+    }
+  }, []);
 
   const handleInviteClick = () => {
     setIsInviteButtonActive(!isInviteButtonActive);
@@ -937,7 +963,7 @@ export default function Header() {
                     fontFamily: "Noto Serif",
                   }}
                 >
-                  New Manager Essentials
+                  {text}
                 </span>
               </div>
             )}

@@ -67,8 +67,17 @@ export default function CometManagerSidebar({
   setSelectedStep: setSelectedStepFromHook,
   onMaterialSelect,
   onAssetCategorySelect,
+  onTabChange,
+  externalTab,
 }) {
   const [tab, setTab] = useState(0);
+
+  // Sync with external tab control
+  useEffect(() => {
+    if (externalTab !== undefined && externalTab !== tab) {
+      setTab(externalTab);
+    }
+  }, [externalTab]);
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [selectedStep, setSelectedStep] = useState(null);
   const [expandedChapters, setExpandedChapters] = useState(new Set());
@@ -131,10 +140,25 @@ export default function CometManagerSidebar({
     setSelectedStep(selectedStepId);
     setExpandedSteps(new Set([selectedStepId]));
   }, [selectedStepId, chapters]);
+
   const handleTabChange = (index) => {
     setTab(index);
+
+    // Clear all Data while changing tabs
+    setSelectedAssetCategory(null);
+
+    if (onMaterialSelect) {
+      onMaterialSelect(null);
+    }
+    if (onAssetCategorySelect) {
+      onAssetCategorySelect(null, []);
+    }
+    if (onTabChange) {
+      onTabChange(index);
+    }
   };
 
+  //chapter
   const toggleChapter = (chapterId) => {
     setExpandedChapters((prev) => {
       const newSet = new Set(prev);
@@ -147,6 +171,7 @@ export default function CometManagerSidebar({
     });
   };
 
+  //step
   const toggleStep = (stepId) => {
     setSelectedStep(stepId);
     if (setSelectedStepFromHook) {
@@ -162,7 +187,7 @@ export default function CometManagerSidebar({
       return newSet;
     });
   };
-
+  //category
   const toggleCategory = (categoryId) => {
     setExpandedCategories((prev) => {
       const newSet = new Set(prev);
@@ -263,7 +288,7 @@ export default function CometManagerSidebar({
         endpoint: endpoints.getAssets,
         method: "GET",
         params: {
-          session_id: "80ee921a-2f4b-4611-80c2-649bae82467b",
+          session_id: sessionId,
         },
       });
       if (response.error) {
@@ -691,7 +716,6 @@ export default function CometManagerSidebar({
                                 {category.materials.map(
                                   (material, materialIndex) => {
                                     const materialId =
-                                      material.id ||
                                       material.uuid ||
                                       `material-${categoryId}-${materialIndex}`;
                                     const isMaterialSelected =

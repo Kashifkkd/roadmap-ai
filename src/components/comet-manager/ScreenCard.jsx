@@ -113,7 +113,7 @@ export default function ScreenCard({
                   }`}
                 >
                   <img
-                    src={screen.thumbnail}
+                    src={screen.thumbnail || "/dummyImage.png"}
                     alt={screen.title || "Screen preview"}
                     className=" w-full h-full object-cover transition-all duration-300"
                     onError={(e) => (e.target.src = "/error-img.png")}

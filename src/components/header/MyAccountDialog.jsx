@@ -20,10 +20,14 @@ const defaultAvatar = "/profile.png";
 export default function MyAccountDialog({ open, onOpenChange, user }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isCurrentPasswordVisible, setIsCurrentPasswordVisible] =
+    useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
+  const [currentPasswordError, setCurrentPasswordError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -74,6 +78,17 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     setImageUrl(null);
   };
 
+  const validateCurrentPassword = (value) => {
+    if (!value && (password || confirmPassword)) {
+      setCurrentPasswordError(
+        "Current password is required to change password"
+      );
+      return false;
+    }
+    setCurrentPasswordError("");
+    return true;
+  };
+
   const validatePassword = (value) => {
     if (!value) {
       setPasswordError("");
@@ -104,6 +119,12 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     return true;
   };
 
+  const handleCurrentPasswordChange = (event) => {
+    const value = event.target.value;
+    setCurrentPassword(value);
+    setCurrentPasswordError(""); // Clear error when typing
+  };
+
   const handlePasswordChange = (event) => {
     const value = event.target.value;
     setPassword(value);
@@ -111,6 +132,10 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     // Re-validate confirm password if it has a value
     if (confirmPassword) {
       validateConfirmPassword(confirmPassword, value);
+    }
+    // Validate current password if new password is being set
+    if (value && currentPassword) {
+      validateCurrentPassword(currentPassword);
     }
   };
 
@@ -129,7 +154,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
       timezone: data.timezone || userData?.timezone || "",
       ...(password && confirmPassword && password === confirmPassword
         ? {
-            current_password: "",
+            current_password: currentPassword,
             new_password: password,
             new_password_confirm: confirmPassword,
           }
@@ -144,7 +169,12 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
       if (refreshResponse.response) {
         setUserData(refreshResponse.response);
       }
+      return { success: true };
+    } else if (response.error) {
+      // Handle error from backend
+      return { success: false, error: response.error };
     }
+    return { success: false };
   };
 
   const handleSave = async () => {
@@ -154,10 +184,15 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
       confirmPassword,
       password
     );
+    const isCurrentPasswordValid = validateCurrentPassword(currentPassword);
 
     // If passwords are provided, both must be valid
     if (password || confirmPassword) {
-      if (!isPasswordValid || !isConfirmPasswordValid) {
+      if (
+        !isPasswordValid ||
+        !isConfirmPasswordValid ||
+        !isCurrentPasswordValid
+      ) {
         return; // Don't save if validation fails
       }
     }
@@ -165,7 +200,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     setIsLoading(true);
     try {
       console.log("imageUrl", imageUrl);
-      const response = await updateProfileData({
+      const result = await updateProfileData({
         email: userData?.email || "",
         first_name: firstName,
         last_name: lastName,
@@ -174,9 +209,33 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
         new_password: password,
         new_password_confirm: confirmPassword,
       });
+
+      if (result && result.success === false) {
+        // Handle backend error for incorrect password
+        if (
+          result.error &&
+          (result.error.includes("password") ||
+            result.error.includes("incorrect") ||
+            result.error.includes("current"))
+        ) {
+          setCurrentPasswordError("Current password is incorrect");
+        }
+        return;
+      }
+
       onOpenChange(false);
     } catch (error) {
       console.error("Error saving profile:", error);
+      // Check if error is related to password
+      if (error.response?.data?.message) {
+        const errorMessage = error.response.data.message.toLowerCase();
+        if (
+          errorMessage.includes("password") ||
+          errorMessage.includes("incorrect")
+        ) {
+          setCurrentPasswordError("Current password is incorrect");
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -193,8 +252,10 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
         setProfileUrl(userData.avatar || userData.profile_picture);
       }
     }
+    setCurrentPassword("");
     setPassword("");
     setConfirmPassword("");
+    setCurrentPasswordError("");
     setPasswordError("");
     setConfirmPasswordError("");
     setIsLoading(false);
@@ -303,7 +364,44 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                   </div>
 
                   <div className="space-y-1 text-left">
-                    <Label className="text-sm text-gray-600">Password*</Label>
+                    <Label className="text-sm text-gray-600">
+                      Current Password
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type={isCurrentPasswordVisible ? "text" : "password"}
+                        value={currentPassword}
+                        onChange={handleCurrentPasswordChange}
+                        placeholder="Enter your current password"
+                        className={`pr-12 ${
+                          currentPasswordError ? "border-red-500" : ""
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-3 flex items-center text-gray-400 transition hover:text-gray-700"
+                        onClick={() =>
+                          setIsCurrentPasswordVisible((current) => !current)
+                        }
+                      >
+                        {isCurrentPasswordVisible ? (
+                          <EyeOff className="size-5" />
+                        ) : (
+                          <Eye className="size-5" />
+                        )}
+                      </button>
+                    </div>
+                    {currentPasswordError && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {currentPasswordError}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1 text-left">
+                    <Label className="text-sm text-gray-600">
+                      New Password
+                    </Label>
                     <div className="relative">
                       <Input
                         type={isPasswordVisible ? "text" : "password"}
@@ -337,7 +435,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
 
                   <div className="space-y-1 text-left">
                     <Label className="text-sm text-gray-600">
-                      Confirm Password*
+                      Confirm Password
                     </Label>
                     <div className="relative">
                       <Input

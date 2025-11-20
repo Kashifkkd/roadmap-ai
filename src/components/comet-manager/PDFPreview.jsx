@@ -18,43 +18,43 @@ export default function PDFPreview({ material, onClose }) {
   //   pdfUrl && pdfUrl.toLowerCase().endsWith(".pdf") ? pdfUrl : fallbackPdfUrl;
   // console.log("finapdfUrl", finalPdfUrl);
 
-  const fileName = material.source_name || material.name || "Document";
-  const fileSize = material.file_size || material.size;
-  const uploadedDate =
-    material.uploaded_at || material.created_at || material.upload_date;
-  const description = material.description || "";
+  const fileName = material.source_name || "Document";
+  // const fileSize = material.file_size || material.size;
+  // const uploadedDate =
+  //   material.uploaded_at || material.created_at || material.upload_date;
+  // const description = material.description || "";
 
-  const formatFileSize = (bytes) => {
-    if (!bytes && bytes !== 0) return null;
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
+  // const formatFileSize = (bytes) => {
+  //   if (!bytes && bytes !== 0) return null;
+  //   if (bytes < 1024) return `${bytes} B`;
+  //   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  //   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  // };
 
   // Format date
-  const formatDate = (dateString) => {
-    if (!dateString) return null;
-    try {
-      const date = new Date(dateString);
-      const months = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sept",
-        "Oct",
-        "Nov",
-        "Dec",
-      ];
-      return `Uploaded ${months[date.getMonth()]} ${date.getDate()}`;
-    } catch {
-      return null;
-    }
-  };
+  // const formatDate = (dateString) => {
+  //   if (!dateString) return null;
+  //   try {
+  //     const date = new Date(dateString);
+  //     const months = [
+  //       "Jan",
+  //       "Feb",
+  //       "Mar",
+  //       "Apr",
+  //       "May",
+  //       "Jun",
+  //       "Jul",
+  //       "Aug",
+  //       "Sept",
+  //       "Oct",
+  //       "Nov",
+  //       "Dec",
+  //     ];
+  //     return `Uploaded ${months[date.getMonth()]} ${date.getDate()}`;
+  //   } catch {
+  //     return null;
+  //   }
+  // };
 
   return (
     <div className="flex flex-col h-full w-full bg-white rounded-lg overflow-hidden shadow-md">
@@ -64,22 +64,22 @@ export default function PDFPreview({ material, onClose }) {
           <h2 className="text-lg font-bold text-gray-900 truncate mb-1">
             {fileName}
           </h2>
-          {description && (
+          {/* {description && (
             <p className="text-sm text-gray-600 mb-2">{description}</p>
-          )}
+          )} */}
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <CheckCircle2 size={16} className="text-green-500" />
-              <span className="text-sm text-gray-700">
+              {/* <span className="text-sm text-gray-700">
                 {fileSize ? `${formatFileSize(fileSize)} - ` : ""}
                 Processed
-              </span>
+              </span> */}
             </div>
-            {uploadedDate && (
+            {/* {uploadedDate && (
               <span className="text-sm text-gray-500">
                 {formatDate(uploadedDate)}
               </span>
-            )}
+            )} */}
           </div>
         </div>
 

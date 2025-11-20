@@ -225,6 +225,7 @@ export default function CometManagerLayout() {
             allMessages={allMessages}
             setAllMessages={setAllMessages}
             sessionData={sessionData}
+            cometManager={true}
           />
         </div>
 

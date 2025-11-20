@@ -85,6 +85,15 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
           ""
       );
     }
+
+    // Load saved comet settings
+    const savedSettings = localStorage.getItem("cometSettings");
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      setHabitEnabled(settings.habit_enabled ?? true);
+      setHabitText(settings.habit_description || "");
+      setPersonalizationEnabled(settings.personalization_enabled ?? true);
+    }
   }, []); // Empty dependency array means this runs only once when component mounts
 
   const handleSave = async () => {
@@ -141,18 +150,33 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         comet_creation_data: updatedCometCreationData,
         response_outline: sessionData?.response_outline || {},
         response_path: sessionData?.response_path || {},
+        additional_data: {
+          personalization_enabled: personalizationEnabled,
+          habit_enabled: habitEnabled,
+          habit_description: habitText || "",
+        },
         chatbot_conversation: sessionData?.chatbot_conversation || [],
         to_modify: sessionData?.to_modify || {},
       });
 
       const response = await graphqlClient.autoSaveComet(cometJsonForSave);
 
-      if(response && response?.autoSaveComet){
+      if (response && response?.autoSaveComet) {
         const updatedSessionData = {
           ...sessionData,
           comet_creation_data: updatedCometCreationData,
         };
         localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
+
+        // Save comet settings
+        localStorage.setItem(
+          "cometSettings",
+          JSON.stringify({
+            personalization_enabled: personalizationEnabled,
+            habit_enabled: habitEnabled,
+            habit_description: habitText,
+          })
+        );
       }
       onOpenChange(false);
     } catch (error) {

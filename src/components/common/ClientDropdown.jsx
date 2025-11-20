@@ -115,7 +115,19 @@ export default function ClientDropdown({
                   className="flex justify-start items-center gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-background border-none shadow-none rounded text-left hover:bg-background active:bg-background"
                 >
                   <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-sm sm:text-base font-semibold text-primary-700 shrink-0">
-                    {getClientInitial(client)}
+                    {client?.image_url && client.image_url.trim() !== "" ? (
+                      <Image
+                        src={client.image_url}
+                        alt={client?.name || "Client"}
+                        width={28}
+                        height={28}
+                        className="rounded-full object-cover w-full h-full"
+                      />
+                    ) : (
+                      <span className="text-sm font-semibold text-primary-700">
+                        {getClientInitial(client)}
+                      </span>
+                    )}
                   </div>
                   <span className="text-xs sm:text-sm md:text-base font-semibold text-gray-900 truncate">
                     {client?.name}

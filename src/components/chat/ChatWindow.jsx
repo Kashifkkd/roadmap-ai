@@ -15,6 +15,7 @@ export default function ChatWindow({
   welcomeMessage = [],
   setAllMessages = () => {},
   sessionData,
+  cometManager = false,
 }) {
   const router = useRouter();
   const processedInitialInputRef = useRef(false);
@@ -246,6 +247,7 @@ export default function ChatWindow({
   return (
     <div className="bg-white h-full w-full p-2 rounded-2xl">
       <Chat
+        cometManager={cometManager}
         messages={allMessages}
         welcomeMessage={welcomeMessage}
         isLoading={isLoading || isInitialLoading}

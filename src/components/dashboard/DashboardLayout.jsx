@@ -114,21 +114,21 @@ export default function DashboardLayout() {
       const messageText =
         initialInput || formData.cometTitle || "Create a new comet";
 
+      // Get comet settings from localStorage
+      const savedSettings = localStorage.getItem("cometSettings");
+      const settings = savedSettings ? JSON.parse(savedSettings) : {};
+
       const cometJsonForMessage = JSON.stringify({
         session_id: newSessionId,
         input_type: "outline_creation",
-        // input_type: "comet_data_creation",
         comet_creation_data: formattedCometData,
-
         response_outline: {},
         response_path: {},
-        // Comet setting data
-        //         additional_data: {
-        //   "personalization_enabled": true,
-        //   "habit_enabled": true,
-        //   "habit_description": "description if habit enabled".
-        // },
-
+        additional_data: {
+          personalization_enabled: settings.personalization_enabled || false,
+          habit_enabled: settings.habit_enabled || false,
+          habit_description: settings.habit_description || "",
+        },
         chatbot_conversation: [{ user: messageText }],
         to_modify: {},
       });

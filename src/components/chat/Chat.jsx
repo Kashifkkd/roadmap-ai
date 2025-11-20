@@ -31,6 +31,7 @@ const Chat = ({
   onInputChange,
   welcomeMessage = [],
   onSubmit,
+  cometManager = false,
   error = null,
 }) => {
   const bottomRef = useRef(null);
@@ -58,6 +59,13 @@ const Chat = ({
             {messages.map((msg, idx) => (
               <ChatMessage key={idx} role={msg.from} text={msg.content} />
             ))}
+          </div>
+        ) : cometManager ? (
+          <div className="max-w-4xl mx-auto w-full">
+            <ChatMessage
+              role="bot"
+              text={welcomeMessageChat({ messages: welcomeMessage })}
+            />
           </div>
         ) : (
           <div className="flex flex-col items-center pt-10 sm:space-y-6 max-w-4xl mx-auto w-full">

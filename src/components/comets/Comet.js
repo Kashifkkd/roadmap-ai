@@ -1,0 +1,163 @@
+"use client";
+import Image from "next/image";
+import React, { useState } from "react";
+import StatusButton from "./StatusButton";
+
+const Comet = ({
+  title,
+  activeUsers,
+  imageURL,
+  date,
+  status,
+  session_id,
+  onCometClick,
+}) => {
+  const [disabled, setDisabled] = useState(false);
+
+  const handleClick = async () => {
+    if (disabled) return;
+    try {
+      setDisabled(true);
+
+      if (!session_id) {
+        console.error("No sessionId found for comet");
+        return;
+      }
+
+      await onCometClick(session_id);
+    } catch (error) {
+      console.error("Comet click error", err.message);
+    } finally {
+      setDisabled(false);
+    }
+  };
+
+  return (
+    <div
+      onClick={handleClick}
+      className="relative flex flex-col  w-[280px] min-h-[260px] rounded-2xl overflow-hidden group cursor-pointer transition-transform duration-300 ease-in-out hover:-translate-y-1"
+    >
+      {/* Background image */}
+      <Image
+        src={imageURL}
+        alt="card image"
+        layout="fill"
+        objectFit="cover"
+        className="absolute inset-0 z-0 transition-all duration-300 group-hover:brightness-110"
+        priority
+      />
+      {/* White overlay on hover */}
+      {/* new white overlay on hover  */}
+      <div className="absolute top-2 bottom-2 left-2 right-2 inset-0 rounded-lg p-2 bg-white/0 group-hover:bg-white transition-all duration-150 z-10 hover:opacity-0 opacity-0 group-hover:opacity-100">
+        <div className="flex flex-col w-full">
+          <div className="flex flex-col gap-2">
+            <StatusButton status={status} />
+            <span className="text-gray-800 font-noto font-semibold text-lg leading-[30px] tracking-normal">
+              {title}
+            </span>
+            <div className="flex w-[70%] rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
+              <span className="font-inter font-medium text-xs gap-2 leading-5 align-middle text-gray-900">
+                Total Active Users{" "}
+                <span className="bg-white py-0.5 px-2 rounded-4xl">
+                  {activeUsers || 10}
+                </span>
+              </span>
+            </div>
+            <div className="flex w-full gap-2">
+              <div className="flex rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
+                <span className="font-inter font-medium text-xs gap-2 leading-5 align-middle text-gray-900">
+                  WAU{" "}
+                  <span className="bg-white py-0.5 px-2 rounded-4xl">
+                    {activeUsers}
+                  </span>
+                </span>
+              </div>
+              <div className="flex  rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
+                <span className="font-inter font-medium text-xs gap-2 leading-5 align-middle text-gray-900">
+                  MAU{" "}
+                  <span className="bg-white py-0.5 px-2 rounded-4xl">
+                    {activeUsers}
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+          {/* another bottom part */}
+          <div className="flex flex-col w-full p-2 gap-2">
+            <div className="border border-gray-300"></div>
+            <span className="font-inter font-medium text-xs align-middle">
+              Last updated at{" "}
+              {new Date(date).toLocaleDateString("en-US", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </span>
+            <div className="flex gap-2 justify-between">
+              <button className="flex justify-center items-center rounded py-2 px-1 gap-2.5 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6]">
+                <div className="flex gap-1">
+                  <Image
+                    src="/edit.png"
+                    alt="edit icon"
+                    height={16}
+                    width={16}
+                  />
+                  <span className="font-inter font-medium text-xs text-white">
+                    Edit
+                  </span>
+                </div>
+              </button>
+              <button className="rounded py-2 px-1 gap-2.5 bg-[#453E90]">
+                <div className="flex gap-1">
+                  <Image
+                    src="/preview.png"
+                    alt="preview icon"
+                    height={16}
+                    width={16}
+                  />
+                  <span className="font-inter font-medium text-xs text-white">
+                    Preview
+                  </span>
+                </div>
+              </button>
+              <button className="rounded py-2 px-1 gap-2.5 bg-[#453E90]">
+                <div className="flex gap-1">
+                  <Image
+                    src="/settings.png"
+                    alt="settings icon"
+                    height={16}
+                    width={16}
+                  />
+                  <span className="font-inter font-medium text-xs text-white">
+                    Settings
+                  </span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Overlay content */}
+
+      <div className="absolute bottom-2 left-2 right-2 z-20 flex flex-col gap-2.5 rounded-lg p-4 bg-white group-hover:opacity-0">
+        <div className="flex flex-col gap-2">
+          <StatusButton status={status} />
+          <span className="text-gray-800 font-noto font-semibold text-lg leading-[30px] tracking-normal">
+            {title?.length > 20 ? `${title.slice(0, 20)}...` : title}
+            {/* {title} */}
+          </span>
+          <div className="flex w-[70%] rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
+            <span className="font-inter font-medium text-xs gap-2 leading-5 align-middle text-gray-900">
+              Total Active Users{" "}
+              <span className="bg-white py-0.5 px-2 rounded-4xl">
+                {activeUsers || 10}
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Comet;
