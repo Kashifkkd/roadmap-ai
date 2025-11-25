@@ -33,14 +33,20 @@ export default function OutlineMannerCreateComet({
     return [];
   }, [prefillData, sessionData]);
 
-  const chapters = useMemo(() => {
-    // console.log("re-render chapters", sourceOutline);
-    return isArrayWithValues(sourceOutline)
-      ? sourceOutline.map((chapter) => ({
-          chapter: chapter?.chapter || "Untitled Chapter",
-          steps: isArrayWithValues(chapter?.steps) ? chapter.steps : [],
-        }))
-      : [];
+  // Use state to allow local updates for drag and drop
+  const [chapters, setChapters] = useState([]);
+
+  // Update chapters when sourceOutline changes
+  useEffect(() => {
+    if (isArrayWithValues(sourceOutline)) {
+      const mappedChapters = sourceOutline.map((chapter) => ({
+        chapter: chapter?.chapter || "Untitled Chapter",
+        steps: isArrayWithValues(chapter?.steps) ? chapter.steps : [],
+      }));
+      setChapters(mappedChapters);
+    } else {
+      setChapters([]);
+    }
   }, [sourceOutline]);
 
   const [expandedChapters, setExpandedChapters] = useState({});
@@ -51,6 +57,11 @@ export default function OutlineMannerCreateComet({
   const [selectedStep, setSelectedStep] = useState(null);
   const [showChapterTextarea, setShowChapterTextarea] = useState(false);
   // const [isGenerating, setIsGenerating] = useState(false);
+
+  // Drag and drop state
+  const [draggedChapterIndex, setDraggedChapterIndex] = useState(null);
+  const [draggedStepIndex, setDraggedStepIndex] = useState(null);
+  const [draggedStepChapterIndex, setDraggedStepChapterIndex] = useState(null);
 
   const selectedChapterNameRef = useRef(null);
   const selectedStepTitleRef = useRef(null);
@@ -126,6 +137,121 @@ export default function OutlineMannerCreateComet({
     setSelectedChapterNumber(chapterIndex + 1);
     setSelectedStep(step);
   };
+
+  // Chapter drag handlers
+  const handleChapterDragStart = (e, index) => {
+    setDraggedChapterIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleChapterDragEnd = () => {
+    setDraggedChapterIndex(null);
+  };
+
+  const handleChapterDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleChapterDrop = (e, dropIndex) => {
+    e.preventDefault();
+    if (draggedChapterIndex === null || draggedChapterIndex === dropIndex) {
+      setDraggedChapterIndex(null);
+      return;
+    }
+
+    // Reorder chapters logic
+    const newChapters = [...chapters];
+    const draggedChapter = newChapters[draggedChapterIndex];
+    newChapters.splice(draggedChapterIndex, 1);
+    newChapters.splice(dropIndex, 0, draggedChapter);
+
+    // Update local state
+    setChapters(newChapters);
+
+    // Update localStorage to persist changes
+    try {
+      const storedData = JSON.parse(
+        localStorage.getItem("sessionData") || "{}"
+      );
+      if (storedData) {
+        storedData.response_outline = newChapters;
+        localStorage.setItem("sessionData", JSON.stringify(storedData));
+      }
+    } catch (error) {
+      console.error("Error updating localStorage:", error);
+    }
+
+    setDraggedChapterIndex(null);
+  };
+
+  // Step drag handlers
+  const handleStepDragStart = (e, chapterIndex, stepIndex) => {
+    e.stopPropagation();
+    setDraggedStepChapterIndex(chapterIndex);
+    setDraggedStepIndex(stepIndex);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleStepDragEnd = (e) => {
+    e.stopPropagation();
+    setDraggedStepChapterIndex(null);
+    setDraggedStepIndex(null);
+  };
+
+  const handleStepDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleStepDrop = (e, chapterIndex, dropIndex) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (
+      draggedStepIndex === null ||
+      draggedStepChapterIndex === null ||
+      draggedStepChapterIndex !== chapterIndex ||
+      draggedStepIndex === dropIndex
+    ) {
+      setDraggedStepChapterIndex(null);
+      setDraggedStepIndex(null);
+      return;
+    }
+
+    // Reorder steps within the same chapter
+    const newChapters = [...chapters];
+    const targetChapter = { ...newChapters[chapterIndex] };
+    const newSteps = [...targetChapter.steps];
+    const draggedStep = newSteps[draggedStepIndex];
+
+    newSteps.splice(draggedStepIndex, 1);
+    newSteps.splice(dropIndex, 0, draggedStep);
+
+    targetChapter.steps = newSteps;
+    newChapters[chapterIndex] = targetChapter;
+
+    // Update local state
+    setChapters(newChapters);
+
+    // Update localStorage to persist changes
+    try {
+      const storedData = JSON.parse(
+        localStorage.getItem("sessionData") || "{}"
+      );
+      if (storedData) {
+        storedData.response_outline = newChapters;
+        localStorage.setItem("sessionData", JSON.stringify(storedData));
+      }
+    } catch (error) {
+      console.error("Error updating localStorage:", error);
+    }
+
+    setDraggedStepChapterIndex(null);
+    setDraggedStepIndex(null);
+  };
+
   useEffect(() => {
     try {
       const sessionData = JSON.parse(
@@ -186,12 +312,17 @@ export default function OutlineMannerCreateComet({
                   chapters.map((chapter, index) => (
                     <React.Fragment key={index}>
                       <div
+                        draggable
+                        onDragStart={(e) => handleChapterDragStart(e, index)}
+                        onDragEnd={handleChapterDragEnd}
+                        onDragOver={handleChapterDragOver}
+                        onDrop={(e) => handleChapterDrop(e, index)}
                         className={`border rounded-sm transition-all duration-200  ${
                           selectedChapter?.chapter === chapter?.chapter &&
                           expandedChapters[index]
                             ? "border-gray-300 bg-primary-100 shadow-sm"
                             : "border-gray-300 bg-white shadow-sm "
-                        }`}
+                        } ${draggedChapterIndex === index ? "opacity-50" : ""}`}
                       >
                         <div
                           onClick={() => handleChapterClick(index, chapter)}
@@ -202,7 +333,7 @@ export default function OutlineMannerCreateComet({
                               <GripVertical
                                 width={18}
                                 height={18}
-                                className="cursor-grab  text-gray-500"
+                                className="cursor-grab active:cursor-grabbing text-gray-500"
                               />
                               <p className="text-[10px] font-medium text-gray-900 px-2">
                                 Chapter {index + 1}
@@ -305,10 +436,24 @@ export default function OutlineMannerCreateComet({
                                 {chapter?.steps.map((step, stepIndex) => (
                                   <div
                                     key={stepIndex}
+                                    draggable
+                                    onDragStart={(e) =>
+                                      handleStepDragStart(e, index, stepIndex)
+                                    }
+                                    onDragEnd={handleStepDragEnd}
+                                    onDragOver={handleStepDragOver}
+                                    onDrop={(e) =>
+                                      handleStepDrop(e, index, stepIndex)
+                                    }
                                     className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all duration-200 ${
                                       selectedStep?.title === step?.title
                                         ? "bg-primary-700 border border-primary shadow-sm text-white"
                                         : "bg-white hover:bg-accent hover:shadow-md text-gray-900"
+                                    } ${
+                                      draggedStepIndex === stepIndex &&
+                                      draggedStepChapterIndex === index
+                                        ? "opacity-50"
+                                        : ""
                                     }`}
                                     onClick={(e) =>
                                       handleStepClick(e, chapter, step, index)
@@ -324,7 +469,7 @@ export default function OutlineMannerCreateComet({
                                       <GripVertical
                                         width={18}
                                         height={18}
-                                        className="cursor-grab shrink-0"
+                                        className="cursor-grab active:cursor-grabbing shrink-0"
                                       />
                                     </div>
                                     <div className="flex-1 min-w-0 ">
@@ -332,7 +477,7 @@ export default function OutlineMannerCreateComet({
                                         className={`text-sm shrink-0 mt-0.5
                                           `}
                                       >
-                                        step {index + 1}.{stepIndex + 1}
+                                        step {stepIndex + 1}
                                       </div>
                                       <div className="flex-1 min-w-0">
                                         <p className={`text-base font-medium`}>
@@ -367,6 +512,7 @@ export default function OutlineMannerCreateComet({
               chapterNumber={selectedChapterNumber}
               setAllMessages={setAllMessages}
               sessionData={sessionData}
+              selectedStep={selectedStep}
             />
           </div>
         </div>

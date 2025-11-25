@@ -286,14 +286,16 @@ export const RichTextArea = ({
             editor.setContents(parsed);
           } else {
             // Not a valid delta, treat as plain text
-            const textValue = typeof value === "string" ? value : String(value || "");
+            const textValue =
+              typeof value === "string" ? value : String(value || "");
             if (textValue.trim() !== "") {
               editor.setText(textValue);
             }
           }
         } catch {
           // Not JSON, treat as plain text
-          const textValue = typeof value === "string" ? value : String(value || "");
+          const textValue =
+            typeof value === "string" ? value : String(value || "");
           if (textValue.trim() !== "") {
             try {
               editor.setText(textValue);
@@ -388,7 +390,11 @@ export const RichTextArea = ({
       </Label>
       {/*Editor Area */}
       <div className="bg-gray-100 rounded-lg p-0.5">
-        <div ref={editorRef} className="h-96 border rounded-lg bg-white p-2" />
+        <div
+          ref={editorRef}
+          className="h-[76px] border rounded-lg bg-white [&_.ql-editor]:font-sans [&_.ql-editor]:text-sm [&_.ql-editor]:text-black [&_.ql-editor]:min-h-[76px]"
+          style={{ fontFamily: "inherit" }}
+        />
 
         {/* Custom toolbar container */}
         <div

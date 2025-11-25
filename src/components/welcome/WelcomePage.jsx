@@ -189,6 +189,15 @@ export default function WelcomePage() {
     }, 0);
   };
 
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      const scrollHeight = textareaRef.current.scrollHeight;
+      textareaRef.current.style.height = `${Math.min(scrollHeight, 200)}px`;
+    }
+  }, [inputText]);
+
   return (
     <div className="bg-primary-50 p-4 min-h-full">
       <main className="px-6 py-12 max-w-3xl mx-auto">
@@ -270,18 +279,22 @@ export default function WelcomePage() {
                         messages.length === 0 ? "pl-10" : "pl-3"
                       } pr-3 ${
                         messages.length > 0 ? "pt-2.5 pb-2.5" : "pt-3 pb-3"
-                      } text-lg shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text ${
-                        messages.length > 0 ? "overflow-hidden" : ""
-                      }`}
-                      rows={messages.length > 0 ? 1 : isExpanded ? 4 : 2}
+                      } text-lg shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text overflow-y-auto`}
+                      rows={1}
                       style={{
-                        maxHeight: messages.length > 0 ? "2.5rem" : "none",
+                        minHeight:
+                          messages.length > 0
+                            ? "2.5rem"
+                            : isExpanded
+                            ? "6rem"
+                            : "3rem",
+                        maxHeight: "200px",
                       }}
                     />
                   </div>
 
-                  {/* Separator Line */}
-                  <div className="w-full border-t border-gray-200"></div>
+                  {/* Separator Line
+                  <div className="w-full border-t border-gray-200"></div> */}
 
                   {/* Action Bar */}
                   <div className="w-full flex flex-row justify-between items-center gap-2 px-3 py-2">

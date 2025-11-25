@@ -25,7 +25,9 @@ export default function ChatInput({
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+    }
     setIsClicked(true);
     setTimeout(() => {
       setIsClicked(false);
@@ -42,6 +44,13 @@ export default function ChatInput({
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
   return (
     <div className="w-full p-2 bg-accent flex flex-col items-center gap-2 rounded-xl h-[96px] sm:h-[116px]">
       <div className="relative w-full h-full rounded-xl  text-[#717680]">
@@ -50,6 +59,7 @@ export default function ChatInput({
           placeholder={placeholder || "Ask me anything"}
           value={currentValue}
           onChange={(e) => setCurrentValue(e.target.value)}
+          onKeyDown={handleKeyDown}
           disabled={disabled}
           className={`pl-[30px] pt-2 pb-3 pr-3 text-sm text-gray-900 placeholder:text-[#717680] shadow-none border-0 rounded-xl bg-background w-full min-h-full focus-visible:ring-primary-300 focus-visible:ring-1 focus-visible:ring-offset-2 leading-5 resize-none ${
             disabled ? " cursor-not-allowed" : ""

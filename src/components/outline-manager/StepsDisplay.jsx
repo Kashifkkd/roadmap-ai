@@ -18,7 +18,13 @@ import AskOutlineKyper from "./AskOutlineKyper";
 import { graphqlClient } from "@/lib/graphql-client";
 import Image from "next/image";
 
-const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionData }) => {
+const StepsDisplay = ({
+  selectedChapter,
+  chapterNumber,
+  setAllMessages,
+  sessionData,
+  selectedStep,
+}) => {
   const [focusedField, setFocusedField] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
   const [selectedText, setSelectedText] = useState("");
@@ -29,7 +35,9 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
   const [isAskingKyper, setIsAskingKyper] = useState(false);
   const selectionRef = useRef(null);
   const inputRef = useRef(null);
-  const [chapterSteps, setChapterSteps] = useState(selectedChapter?.steps || []);
+  const [chapterSteps, setChapterSteps] = useState(
+    selectedChapter?.steps || []
+  );
   const [isAddStepModalOpen, setIsAddStepModalOpen] = useState(false);
   const [stepPrompt, setStepPrompt] = useState("");
   const [includeSourceMaterial, setIncludeSourceMaterial] = useState(false);
@@ -40,10 +48,26 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
   const subscriptionCleanupRef = useRef(null);
   const targetChapterRef = useRef(null);
   const targetChapterIndexRef = useRef(null);
+  const stepRefs = useRef({});
 
   useEffect(() => {
     setChapterSteps(selectedChapter?.steps || []);
   }, [selectedChapter]);
+
+  // Scroll to selected step when it changes
+  useEffect(() => {
+    if (selectedStep && stepRefs.current) {
+      const stepTitle = selectedStep?.title;
+      if (stepTitle && stepRefs.current[stepTitle]) {
+        setTimeout(() => {
+          stepRefs.current[stepTitle]?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }, 100);
+      }
+    }
+  }, [selectedStep]);
 
   useEffect(() => {
     if (storedSessionId) return;
@@ -66,15 +90,18 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
   }, []);
 
   const getLatestSessionSnapshot = useCallback(() => {
-    if (sessionData) return sessionData;
-    if (typeof window === "undefined") return sessionData;
-    try {
-      const raw = localStorage.getItem("sessionData");
-      if (raw) {
-        return JSON.parse(raw);
-      }
-    } catch {}
-    return null;
+    // Always prioritize localStorage as it's the most up-to-date after subscriptions
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("sessionData");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed) return parsed;
+        }
+      } catch {}
+    }
+    // Fallback to sessionData prop
+    return sessionData;
   }, [sessionData]);
 
   const cleanupSubscription = useCallback(() => {
@@ -383,7 +410,11 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
         comet_creation_data: snapshot?.comet_creation_data || {},
         response_outline: snapshot?.response_outline || {},
         response_path: snapshot?.response_path || {},
-        chatbot_conversation: [{ user:  `add a step in chapter: '${chapterLabel}', description: ${userInstruction}`}],
+        chatbot_conversation: [
+          {
+            user: `add a step in chapter: '${chapterLabel}', description: ${userInstruction}`,
+          },
+        ],
         to_modify: {},
       });
 
@@ -404,21 +435,66 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
     }
   };
 
-
   const handleAskKyper = async (query) => {
-
     try {
       setIsAskingKyper(true);
 
-      let currentSessionId = localStorage.getItem("sessionId");
-      const conversationMessageObj = {
-        // path: `chapter-${chapterNumber}-step-${selectedStepInfo?.stepNumber}-screen-${selectedStepInfo?.fieldType}`,
-        field: selectedStepInfo?.fieldType,
-        value: selectedText,
-        instruction: query,
-      };
+      // Small delay to ensure any pending localStorage updates are complete
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // const conversationMessage = JSON.stringify(conversationMessageObj);
+      const { sessionId, snapshot } = await ensureSessionContext();
+
+      if (!sessionId) {
+        throw new Error("Unable to establish a Kyper session.");
+      }
+
+      // Set target chapter refs for tracking updates
+      targetChapterRef.current = selectedChapter?.chapter || null;
+      const numericChapter = Number(chapterNumber);
+      targetChapterIndexRef.current = Number.isFinite(numericChapter)
+        ? numericChapter - 1
+        : null;
+
+      // Cleanup any existing subscription
+      cleanupSubscription();
+
+      let handledUpdate = false;
+
+      // Subscribe to session updates
+      const cleanup = await graphqlClient.subscribeToSessionUpdates(
+        sessionId,
+        (sessionPayload) => {
+          if (handledUpdate) return;
+
+          // Update localStorage with new session data
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(
+                "sessionData",
+                JSON.stringify(sessionPayload)
+              );
+            } catch {}
+          }
+
+          // Find and update the chapter
+          const updatedChapter = findUpdatedChapterFromSession(sessionPayload);
+          if (updatedChapter) {
+            handledUpdate = true;
+            setChapterSteps(updatedChapter?.steps || []);
+            setIsAskingKyper(false);
+            cleanupSubscription();
+          }
+        },
+        (error) => {
+          console.error("Subscription error while asking Kyper:", error);
+          if (handledUpdate) return;
+          handledUpdate = true;
+          setIsAskingKyper(false);
+          cleanupSubscription();
+        }
+      );
+
+      subscriptionCleanupRef.current = cleanup;
 
       setAllMessages((prev) => [
         ...prev,
@@ -427,40 +503,48 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
 
       const conversationMessage = `{ 'field': '${selectedStepInfo?.fieldType}', 'value': '${selectedText}', 'instruction': '${query}' }`;
 
+      // Build the most current response_outline using the latest chapterSteps
+      let currentResponseOutline = snapshot?.response_outline || [];
+
+      // Update the specific chapter with the current steps to ensure we send the latest data
+      if (selectedChapter && isArrayWithValues(chapterSteps)) {
+        currentResponseOutline = currentResponseOutline.map((ch) => {
+          if (ch?.chapter === selectedChapter?.chapter) {
+            return {
+              ...ch,
+              steps: chapterSteps,
+            };
+          }
+          return ch;
+        });
+      }
 
       const payloadObject = JSON.stringify({
-        session_id: currentSessionId,
+        session_id: sessionId,
         input_type: "outline_updation",
-        comet_creation_data: sessionData?.comet_creation_data || {},
-        response_outline: sessionData?.response_outline || {},
-        response_path: sessionData?.response_path || {},
+        comet_creation_data: snapshot?.comet_creation_data || {},
+        response_outline: currentResponseOutline,
+        response_path: snapshot?.response_path || {},
         chatbot_conversation: [{ user: conversationMessage }],
         to_modify: {},
       });
 
-
-      
-
-      const messageResponse = await graphqlClient.sendMessage(
-        payloadObject
-      );
-
-   ;
+      const messageResponse = await graphqlClient.sendMessage(payloadObject);
 
       setAllMessages((prev) => [
         ...prev,
         { from: "bot", content: messageResponse.sendMessage },
       ]);
 
-      handleClosePopup()
+      handleClosePopup();
     } catch (error) {
       console.error("Error sending message to Kyper:", error);
       setAllMessages((prev) => [
         ...prev,
         { from: "bot", content: "Error: Unable to get response from Kyper" },
       ]);
-    } finally {
       setIsAskingKyper(false);
+      cleanupSubscription();
     }
   };
 
@@ -481,8 +565,6 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
       selectedChapter?.step ||
       "Unknown";
 
-   
-
     setEditingField(`${stepIndex}-${fieldType}`);
     setEditValue(currentValue);
 
@@ -497,7 +579,6 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
       selectedChapter?.step ||
       "Unknown";
 
-   
     // TODO: Implement actual save logic here
     // await graphqlClient.updateStepContent(...)
 
@@ -551,15 +632,29 @@ const StepsDisplay = ({ selectedChapter, chapterNumber, setAllMessages, sessionD
         </div>
 
         {/* Steps List */}
-        <div className="flex-1 overflow-y-auto py-2 no-scrollbar">
+        <div
+          className="flex-1 overflow-y-scroll py-2"
+          style={{
+            scrollbarWidth: "thin",
+            scrollbarColor: "#9ca3af #e5e7eb",
+          }}
+        >
           <div className="space-y-4 bg-primary-50 px-2 py-4 rounded">
             {isArrayWithValues(chapterSteps) ? (
               chapterSteps.map((step, index) => (
-                <div key={index} className="border-b border-primary-300 pb-4">
+                <div
+                  key={index}
+                  ref={(el) => {
+                    if (el && step?.title) {
+                      stepRefs.current[step.title] = el;
+                    }
+                  }}
+                  className="border-b border-primary-300 pb-4"
+                >
                   {/* Step Header */}
                   <div className="mb-4 ml-4">
                     <p className="text-xs text-gray-900 mb-1">
-                      Step {step?.step || index + 1}
+                      Step {index + 1}
                     </p>
                     <h3 className="text-base font-semibold text-primary">
                       {step?.title || "Untitled Step"}

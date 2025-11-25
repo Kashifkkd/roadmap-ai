@@ -44,7 +44,7 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { isPreviewMode, setIsPreviewMode } = usePreviewMode();
-  const { setIsCometSettingsOpen } = useCometSettings();
+  const { isCometSettingsOpen, setIsCometSettingsOpen } = useCometSettings();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -200,7 +200,6 @@ export default function Header() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
-
   // Update selectedClient if clients change (e.g., after fetch)
   useEffect(() => {
     if (clients.length > 0 && !selectedClient) {
@@ -269,7 +268,6 @@ export default function Header() {
       }
 
       const response = await downloadDocument(documentId);
-     
 
       if (response && response.success) {
         toast.success("Document downloaded successfully!");
@@ -362,7 +360,7 @@ export default function Header() {
 
   const handleClientSelect = (client) => {
     setSelectedClient(client);
-    
+
     localStorage.setItem("Client id", client.id.toString());
     localStorage.setItem("ClientName", client.name.toString());
     window.dispatchEvent(
@@ -375,7 +373,7 @@ export default function Header() {
       })
     );
   };
-  const tempclient = localStorage.getItem("Client id");
+
   useEffect(() => {
     try {
       const sessionData = JSON.parse(
@@ -390,6 +388,20 @@ export default function Header() {
       setText("New Manager Essentials");
     }
   }, []);
+
+  // When preview mode closes, return to editor mode
+  useEffect(() => {
+    if (!isPreviewMode && activeModeButton === "preview") {
+      setActiveModeButton("editor");
+    }
+  }, [isPreviewMode, activeModeButton]);
+
+  // When settings dialog closes, return to editor mode
+  useEffect(() => {
+    if (!isCometSettingsOpen && activeModeButton === "settings") {
+      setActiveModeButton("editor");
+    }
+  }, [isCometSettingsOpen, activeModeButton]);
 
   const handleInviteClick = () => {
     setIsInviteButtonActive(!isInviteButtonActive);

@@ -1,7 +1,7 @@
 import React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import Stars from "../icons/Stars";
 
 export default function CreateCometFooter({
@@ -14,11 +14,20 @@ export default function CreateCometFooter({
   error = null,
 }) {
   const [isReviewingWithKyper, setIsReviewingWithKyper] = useState(false);
+  const [isNavigatingBack, setIsNavigatingBack] = useState(false);
+
   const handleBackClick = () => {
-    // Navigate back or reset form
+    setIsNavigatingBack(true);
+
+    // Reset form if reset function is provided
     if (reset) {
       reset();
     }
+
+    // Navigate back in history after a short delay to show loader
+    setTimeout(() => {
+      window.history.back();
+    }, 300);
   };
 
   const isLoading = isUpdating;
@@ -43,11 +52,16 @@ export default function CreateCometFooter({
       <div className="flex flex-row items-center justify-between gap-3 sm:gap-4">
         {/* Left side - Back button */}
         <Button
-          className="bg-muted text-primary w-32 sm:w-auto flex items-center justify-center gap-2"
+          className="bg-muted text-primary w-32 sm:w-auto flex items-center justify-center gap-2 disabled:opacity-50"
           onClick={handleBackClick}
+          disabled={isNavigatingBack || isLoading}
         >
-          <ArrowLeft size={16} />
-          <span>Back</span>
+          {isNavigatingBack ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <ArrowLeft size={16} />
+          )}
+          <span>{isNavigatingBack ? "Going back..." : "Back"}</span>
         </Button>
 
         {/* Right side container */}
