@@ -16,6 +16,7 @@ export default function ChatWindow({
   setAllMessages = () => {},
   sessionData,
   cometManager = false,
+  externalLoading = false,
 }) {
   const router = useRouter();
   const processedInitialInputRef = useRef(false);
@@ -126,15 +127,27 @@ export default function ChatWindow({
     setInputValue(suggestionText);
   };
 
-  
-
   const handleInputChange = (value) => {
     setInputValue(value);
   };
 
-  const handleSubmit = async (text) => {
-   
+  const formatDisplayMessage = (message) => {
+    if (!message) return message;
+    const sentinelIndex = message.indexOf("\n\n");
+    if (sentinelIndex > 0) {
+      return message.slice(0, sentinelIndex).trim();
+    }
+    const markers = ["Comet creation data:", "Source Materials:"];
+    for (const marker of markers) {
+      const idx = message.indexOf(marker);
+      if (idx > 0) {
+        return message.slice(0, idx).trim();
+      }
+    }
+    return message.trim();
+  };
 
+  const handleSubmit = async (text) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -152,7 +165,6 @@ export default function ChatWindow({
 
       setSessionId(currentSessionId);
 
-      //userQuestions from URL parameter 
       let parsedUserQuestions = [];
       if (userQuestions) {
         try {
@@ -162,37 +174,31 @@ export default function ChatWindow({
         }
       }
 
-      // Use initialInput 
       const initialUserInput = initialInput || text;
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: inputType,
         comet_creation_data: sessionData?.comet_creation_data || {},
-        user_questions: parsedUserQuestions, 
+        user_questions: parsedUserQuestions,
         response_outline: sessionData?.response_outline || {},
         response_path: sessionData?.response_path || {},
-        chatbot_conversation: [{ user: initialUserInput }], 
+        chatbot_conversation: [{ user: initialUserInput }],
         to_modify: {},
       });
 
-      const messageResponse = await graphqlClient.sendMessage(
-        cometJsonForMessage
-      );
-      console.log("Message sent:", messageResponse.sendMessage);
+      await graphqlClient.sendMessage(cometJsonForMessage);
 
-      // Add messages in a single setState call to avoid duplicates
+      const displayText = formatDisplayMessage(text);
       setAllMessages((prev) => [
         ...prev,
-        { from: "user", content: text },
-        { from: "bot", content: messageResponse.sendMessage },
+        { from: "user", content: displayText },
       ]);
 
       setInputValue("");
     } catch (error) {
       console.error("Error creating session or sending message:", error);
       setError(error.message);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -213,15 +219,20 @@ export default function ChatWindow({
             const agentMessage = sessionData?.chatbot_conversation?.find(
               (conv) => conv?.agent
             )?.agent;
-            if (agentMessage) {
+            
+
               setAllMessages((prev) => {
-                const updatedMessages = prev.slice(0, -1);
-                return [
-                  ...updatedMessages,
-                  { from: "bot", content: agentMessage },
-                ];
+                const lastMessage = prev[prev.length - 1];
+                if (
+                  lastMessage?.from === "bot" &&
+                  lastMessage?.content === agentMessage
+                ) {
+                  return prev;
+                }
+                return [...prev, { from: "bot", content: agentMessage }];
               });
-            }
+              setIsLoading(false);
+            // }
           }
         },
         (error) => {
@@ -250,7 +261,7 @@ export default function ChatWindow({
         cometManager={cometManager}
         messages={allMessages}
         welcomeMessage={welcomeMessage}
-        isLoading={isLoading || isInitialLoading}
+        isLoading={isLoading || isInitialLoading || externalLoading}
         onSuggestionClick={handleSuggestionClick}
         inputValue={inputValue}
         onInputChange={handleInputChange}

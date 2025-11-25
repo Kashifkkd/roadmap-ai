@@ -103,7 +103,8 @@ const getFormValuesFromScreen = (screen) => {
     values.key_learning = content.key_learning || "";
     values.lowerscale = content.lowerscale;
     values.higherscale = content.higherscale;
-    values.linearBenchmarkType = content.benchmark_type || content.benchmarkType || "";
+    values.linearBenchmarkType =
+      content.benchmark_type || content.benchmarkType || "";
   }
 
   if (contentType === "reflection") {
@@ -125,9 +126,10 @@ const getFormValuesFromScreen = (screen) => {
   if (contentType === "habits") {
     values.title = content.title || "";
     // habit_image is a string URL, not an object
-    values.habit_image = typeof content.habit_image === "string"
-      ? content.habit_image
-      : content.habit_image?.url || content.habit_image?.image_url || "";
+    values.habit_image =
+      typeof content.habit_image === "string"
+        ? content.habit_image
+        : content.habit_image?.url || content.habit_image?.image_url || "";
     values.enabled = content.enabled ?? false;
     values.habits = content.habits || [];
   }
@@ -153,6 +155,7 @@ export default function DynamicForm({
   onClose,
   chapterNumber,
   stepNumber,
+  setIsAskingKyper: setParentIsAskingKyper,
 }) {
   // No local state - derive form values directly from screen
   const formData = useMemo(() => {
@@ -165,7 +168,7 @@ export default function DynamicForm({
     return values;
   }, [screen]);
 
-  console.log("screen>>", screen)
+  console.log("screen>>", screen);
 
   const [focusedField, setFocusedField] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
@@ -344,11 +347,7 @@ export default function DynamicForm({
                 if (Array.isArray(value)) {
                   currentScreen.screenContents.content.habits = value.map(
                     (habit) => {
-                      if (
-                        habit &&
-                        typeof habit === "object" &&
-                        habit.text
-                      ) {
+                      if (habit && typeof habit === "object" && habit.text) {
                         return {
                           ...habit,
                           text: extractPlainTextFromDelta(habit.text),
@@ -400,7 +399,7 @@ export default function DynamicForm({
   const reorderListItem = (listName, draggedIndex, dropIndex) => {
     const currentList = formData[listName] || [];
     if (draggedIndex === dropIndex || draggedIndex < 0 || dropIndex < 0) return;
-    
+
     const newList = [...currentList];
     const draggedItem = newList[draggedIndex];
     newList.splice(draggedIndex, 1);
@@ -521,6 +520,7 @@ export default function DynamicForm({
 
     try {
       setIsAskingKyper(true);
+      setParentIsAskingKyper?.(true);
 
       const userMessage = query.trim();
       setAllMessages?.((prev) => [
@@ -578,8 +578,8 @@ export default function DynamicForm({
         typeof screen?.position === "number"
           ? screen.position
           : typeof screen?.order === "number"
-            ? screen.order + 1
-            : 1;
+          ? screen.order + 1
+          : 1;
 
       const conversationMessage = `{ 'path': 'chapter-${chapterNumber}-step-${stepNumber}-screen-${screenNumber}', 'field': '${mappedField}', 'value': '${askContext.selectedText}', 'instruction': '${query}' }`;
 
@@ -596,15 +596,29 @@ export default function DynamicForm({
       const messageResponse = await graphqlClient.sendMessage(payloadObject);
 
       if (messageResponse?.sendMessage) {
-        setAllMessages?.((prev) => [
-          ...(Array.isArray(prev) ? prev : []),
-          { from: "bot", content: messageResponse.sendMessage },
-        ]);
+        const botMessage = messageResponse.sendMessage;
+        const processingMessages = [
+          "copilot is still processing",
+          "copilot is processing",
+          "processing your request",
+          "still processing",
+        ];
+        const isProcessingMessage = processingMessages.some((msg) =>
+          botMessage.toLowerCase().includes(msg.toLowerCase())
+        );
+
+        if (!isProcessingMessage) {
+          setAllMessages?.((prev) => [
+            ...(Array.isArray(prev) ? prev : []),
+            { from: "bot", content: botMessage },
+          ]);
+        }
       }
     } catch (error) {
       console.error("Error asking Kyper:", error);
     } finally {
       setIsAskingKyper(false);
+      setParentIsAskingKyper?.(false);
       clearAskContext();
     }
   };
@@ -614,7 +628,7 @@ export default function DynamicForm({
     const contentType = (
       screen?.screenContents?.contentType || ""
     ).toLowerCase();
-    console.log("contentType>>", contentType)
+    console.log("contentType>>", contentType);
     // Extract IDs for asset upload
     const sessionId =
       sessionData?.session_id ||
@@ -806,10 +820,22 @@ export default function DynamicForm({
       );
     }
 
-    console.log("ACTIONSSSS", screenType, contentType)
+    console.log("ACTIONSSSS", screenType, contentType);
     //5-Actions
-    if (screenType === "action" || screenType === "actions" || contentType === "action" || contentType === "actions") {
-      console.log("🔵 Rendering ActionsForm - screenType:", screenType, "contentType:", contentType, "formData:", formData);
+    if (
+      screenType === "action" ||
+      screenType === "actions" ||
+      contentType === "action" ||
+      contentType === "actions"
+    ) {
+      console.log(
+        "🔵 Rendering ActionsForm - screenType:",
+        screenType,
+        "contentType:",
+        contentType,
+        "formData:",
+        formData
+      );
       return (
         <ActionsForm
           {...formProps}
@@ -822,7 +848,7 @@ export default function DynamicForm({
         />
       );
     }
-    console.log("AFTERRRRRR")
+    console.log("AFTERRRRRR");
     //6-Social Discussion
     if (screenType === "social" || contentType === "social_discussion") {
       return (

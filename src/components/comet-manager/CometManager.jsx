@@ -154,6 +154,7 @@ export default function CometManager({
   isPreviewMode,
   setIsPreviewMode,
   onOutlineChange,
+  setIsAskingKyper,
 }) {
   // Use comet manager hook to get actual data
   const {
@@ -1037,6 +1038,7 @@ export default function CometManager({
                             onClose={() => setSelectedScreenId(null)}
                             chapterNumber={chapterNumber}
                             stepNumber={stepNumber}
+                            setIsAskingKyper={setIsAskingKyper}
                           />
                         </div>
                       )}

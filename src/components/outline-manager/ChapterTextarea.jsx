@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Label";
 import { graphqlClient } from "@/lib/graphql-client";
 
-export default function ChapterTextarea({ sessionData, setAllMessages, onClose }) {
+export default function ChapterTextarea({
+  sessionData,
+  setAllMessages,
+  onClose,
+}) {
   const [text, setText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -26,7 +30,10 @@ export default function ChapterTextarea({ sessionData, setAllMessages, onClose }
       const cometJson = sessionResponse.createSession.cometJson;
       if (cometJson) {
         try {
-          localStorage.setItem("sessionData", JSON.stringify(JSON.parse(cometJson)));
+          localStorage.setItem(
+            "sessionData",
+            JSON.stringify(JSON.parse(cometJson))
+          );
         } catch {}
       }
     }
@@ -54,16 +61,31 @@ export default function ChapterTextarea({ sessionData, setAllMessages, onClose }
         ],
         to_modify: {},
       });
-   /*
+      /*
         const conversationMessage = `{ 'chapter': '${chapter 3}', 'value': '${currentFieldValue}', 'instruction': '${query}' }`;
          const conversationMessage = `{ 'field': '${fieldLabel}', 'value': '${currentFieldValue}', 'instruction': '${query}' }`;
    */
-      const messageResponse = await graphqlClient.sendMessage(cometJsonForMessage);
+      const messageResponse = await graphqlClient.sendMessage(
+        cometJsonForMessage
+      );
+
+      const botMessage = messageResponse.sendMessage;
+      const processingMessages = [
+        "copilot is still processing",
+        "copilot is processing",
+        "processing your request",
+        "still processing",
+      ];
+      const isProcessingMessage =
+        typeof botMessage === "string" &&
+        processingMessages.some((msg) =>
+          botMessage.toLowerCase().includes(msg.toLowerCase())
+        );
 
       setAllMessages((prev) => [
         ...prev,
         { from: "user", content: text },
-        { from: "bot", content: messageResponse.sendMessage },
+        ...(isProcessingMessage ? [] : [{ from: "bot", content: botMessage }]),
       ]);
 
       // Close textarea after submit per requirement
@@ -86,7 +108,9 @@ export default function ChapterTextarea({ sessionData, setAllMessages, onClose }
       />
       {error ? <p className="text-red-500 text-xs">{error}</p> : null}
       <div className="flex gap-2 justify-end">
-        <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+        <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+          Cancel
+        </Button>
         <Button onClick={handleSubmit} disabled={isSubmitting}>
           {isSubmitting ? "Submitting..." : "Submit"}
         </Button>
@@ -94,5 +118,3 @@ export default function ChapterTextarea({ sessionData, setAllMessages, onClose }
     </div>
   );
 }
-
-

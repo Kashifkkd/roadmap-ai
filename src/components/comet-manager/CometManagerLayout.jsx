@@ -13,6 +13,7 @@ export default function CometManagerLayout() {
   const [sessionData, setSessionData] = useState(null);
   const [allMessages, setAllMessages] = useState([]);
   const [prefillData, setPrefillData] = useState(null);
+  const [isAskingKyper, setIsAskingKyper] = useState(false);
 
   const [outline, setOutline] = useState(null);
   const [prevOutline, setPrevOutline] = useState(null);
@@ -79,6 +80,7 @@ export default function CometManagerLayout() {
     const agentMessage = sessionData?.chatbot_conversation?.find(
       (conv) => conv?.agent
     )?.agent;
+
 
     if (agentMessage || userMessage) {
       setAllMessages((prev) => {
@@ -226,6 +228,7 @@ export default function CometManagerLayout() {
             setAllMessages={setAllMessages}
             sessionData={sessionData}
             cometManager={true}
+            externalLoading={isAskingKyper}
           />
         </div>
 
@@ -237,6 +240,7 @@ export default function CometManagerLayout() {
             isPreviewMode={isPreviewMode}
             setIsPreviewMode={setIsPreviewMode}
             onOutlineChange={handleOutlineChange}
+            setIsAskingKyper={setIsAskingKyper}
           />
         </div>
       </div>

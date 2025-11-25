@@ -30,6 +30,7 @@ export default function CreateComet({
   allMessages = [],
   setAllMessages = () => {},
   onProgressChange = () => {},
+  setIsAskingKyper: setParentIsAskingKyper,
 }) {
   const [files, setFiles] = useState([]);
   const [focusedField, setFocusedField] = useState(null);
@@ -216,6 +217,7 @@ export default function CreateComet({
             }
 
             setIsAskingKyper(false);
+            setParentIsAskingKyper?.(false);
           }
 
           // Previous approach - update only specific field (commented out for potential revert)
@@ -243,6 +245,7 @@ export default function CreateComet({
         (error) => {
           console.error("Subscription error:", error);
           setIsAskingKyper(false);
+          setParentIsAskingKyper?.(false);
         }
       );
     };
@@ -435,6 +438,7 @@ export default function CreateComet({
   const handleAskKyper = async (query) => {
     try {
       setIsAskingKyper(true);
+      setParentIsAskingKyper?.(true);
 
       const formValues = watch();
       let currentSessionId =
@@ -508,10 +512,25 @@ export default function CreateComet({
         "Message sent, waiting for AI response via WebSocket:",
         messageResponse
       );
-      setAllMessages((prev) => [
-        ...prev,
-        { from: "bot", content: messageResponse.sendMessage },
-      ]);
+      const botMessage = messageResponse.sendMessage;
+      const processingMessages = [
+        "copilot is still processing",
+        "copilot is processing",
+        "processing your request",
+        "still processing",
+      ];
+      const isProcessingMessage =
+        typeof botMessage === "string" &&
+        processingMessages.some((msg) =>
+          botMessage.toLowerCase().includes(msg.toLowerCase())
+        );
+
+      if (!isProcessingMessage && botMessage) {
+        setAllMessages((prev) => [
+          ...prev,
+          { from: "bot", content: botMessage },
+        ]);
+      }
     } catch (error) {
       console.error("Error asking Kyper:", error);
     }

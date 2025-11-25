@@ -23,6 +23,7 @@ export default function DashboardLayout() {
   const [prefillData, setPrefillData] = useState(null);
   const [allMessages, setAllMessages] = useState([]);
   const [formProgress, setFormProgress] = useState(0);
+  const [isAskingKyper, setIsAskingKyper] = useState(false);
 
   // Cleanup WebSocket connections on unmount
   useEffect(() => {
@@ -185,6 +186,7 @@ export default function DashboardLayout() {
               onResponseReceived={setPrefillData}
               allMessages={allMessages}
               setAllMessages={setAllMessages}
+              externalLoading={isAskingKyper}
             />
           </div>
 
@@ -201,6 +203,7 @@ export default function DashboardLayout() {
               error={error}
               setAllMessages={setAllMessages}
               onProgressChange={setFormProgress}
+              setIsAskingKyper={setIsAskingKyper}
             />
           </div>
         </div>

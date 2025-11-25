@@ -6,6 +6,7 @@ import { MessageCircle } from "lucide-react";
 import Image from "next/image";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
+import SequentialLoader from "./SequentialLoader";
 
 const welcomeMessageChat = ({ messages }) => {
   return (
@@ -59,6 +60,7 @@ const Chat = ({
             {messages.map((msg, idx) => (
               <ChatMessage key={idx} role={msg.from} text={msg.content} />
             ))}
+            {isLoading && <SequentialLoader />}
           </div>
         ) : cometManager ? (
           <div className="max-w-4xl mx-auto w-full">
@@ -66,6 +68,7 @@ const Chat = ({
               role="bot"
               text={welcomeMessageChat({ messages: welcomeMessage })}
             />
+            {isLoading && <SequentialLoader />}
           </div>
         ) : (
           <div className="flex flex-col items-center pt-10 sm:space-y-6 max-w-4xl mx-auto w-full">
