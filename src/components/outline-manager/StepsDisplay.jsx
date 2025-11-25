@@ -90,7 +90,6 @@ const StepsDisplay = ({
   }, []);
 
   const getLatestSessionSnapshot = useCallback(() => {
-    // Always prioritize localStorage as it's the most up-to-date after subscriptions
     if (typeof window !== "undefined") {
       try {
         const raw = localStorage.getItem("sessionData");
@@ -439,7 +438,6 @@ const StepsDisplay = ({
     try {
       setIsAskingKyper(true);
 
-      // Small delay to ensure any pending localStorage updates are complete
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const { sessionId, snapshot } = await ensureSessionContext();
@@ -448,19 +446,16 @@ const StepsDisplay = ({
         throw new Error("Unable to establish a Kyper session.");
       }
 
-      // Set target chapter refs for tracking updates
       targetChapterRef.current = selectedChapter?.chapter || null;
       const numericChapter = Number(chapterNumber);
       targetChapterIndexRef.current = Number.isFinite(numericChapter)
         ? numericChapter - 1
         : null;
 
-      // Cleanup any existing subscription
       cleanupSubscription();
 
       let handledUpdate = false;
 
-      // Subscribe to session updates
       const cleanup = await graphqlClient.subscribeToSessionUpdates(
         sessionId,
         (sessionPayload) => {
@@ -476,7 +471,7 @@ const StepsDisplay = ({
             } catch {}
           }
 
-          // Find and update the chapter
+          // update the chapter
           const updatedChapter = findUpdatedChapterFromSession(sessionPayload);
           if (updatedChapter) {
             handledUpdate = true;
@@ -503,10 +498,9 @@ const StepsDisplay = ({
 
       const conversationMessage = `{ 'field': '${selectedStepInfo?.fieldType}', 'value': '${selectedText}', 'instruction': '${query}' }`;
 
-      // Build the most current response_outline using the latest chapterSteps
+      // update the response outline
       let currentResponseOutline = snapshot?.response_outline || [];
 
-      // Update the specific chapter with the current steps to ensure we send the latest data
       if (selectedChapter && isArrayWithValues(chapterSteps)) {
         currentResponseOutline = currentResponseOutline.map((ch) => {
           if (ch?.chapter === selectedChapter?.chapter) {
