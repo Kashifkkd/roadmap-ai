@@ -21,33 +21,6 @@ export default function OutlineManagerLayout() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!sessionData) return;
-    const userMessage = sessionData?.chatbot_conversation?.find(
-      (conv) => conv?.user
-    )?.user;
-    const agentMessage = sessionData?.chatbot_conversation?.find(
-      (conv) => conv?.agent
-    )?.agent;
-
-    if (agentMessage || userMessage) {
-      setAllMessages((prev) => {
-        const lastUser =
-          prev.length > 1 ? prev[prev.length - 2]?.content : null;
-        const lastAgent =
-          prev.length > 0 ? prev[prev.length - 1]?.content : null;
-        if (lastUser === userMessage && lastAgent === agentMessage) {
-          return prev;
-        }
-        return [
-          ...prev,
-          { from: "user", content: userMessage },
-          { from: "bot", content: agentMessage },
-        ];
-      });
-    }
-  }, [sessionData]);
-
   const welcomeMessage = [
     "outline Manager Review the Basic Information and Audience & Objectives sections, based on what you've shared so far.",
     "Add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",

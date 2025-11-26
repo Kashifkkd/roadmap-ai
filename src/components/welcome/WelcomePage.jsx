@@ -30,13 +30,12 @@ export default function WelcomePage() {
   const textareaRef = useRef(null);
   const router = useRouter();
 
-  // Simple state for question flow
   const [questionIndex, setQuestionIndex] = useState(-1); // -1 = no question shown, 0-2 = question index
-  const [answers, setAnswers] = useState([]); // Store all question-answer pairs
-  const [initialInput, setInitialInput] = useState(""); // Store first user input separately
+  const [answers, setAnswers] = useState([]);
+  const [initialInput, setInitialInput] = useState("");
   const [messages, setMessages] = useState([]); // Store chat messages for display
-  const [isLoading, setIsLoading] = useState(false); // Show loading message
-  const messagesEndRef = useRef(null); // Scroll to bottom of messages
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null);
 
   const handleSuggestionSelect = (suggestion) => {
     setInputText(suggestion);
@@ -45,7 +44,11 @@ export default function WelcomePage() {
   // Scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      messagesEndRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "center",
+      });
     }
   }, [messages]);
 
@@ -194,7 +197,7 @@ export default function WelcomePage() {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${Math.min(scrollHeight, 200)}px`;
+      textareaRef.current.style.height = `${Math.min(scrollHeight, 300)}px`;
     }
   }, [inputText]);
 

@@ -72,33 +72,6 @@ export default function CometManagerLayout() {
     // }
   }, [sessionData]);
 
-  useEffect(() => {
-    if (!sessionData) return;
-    const userMessage = sessionData?.chatbot_conversation?.find(
-      (conv) => conv?.user
-    )?.user;
-    const agentMessage = sessionData?.chatbot_conversation?.find(
-      (conv) => conv?.agent
-    )?.agent;
-
-    if (agentMessage || userMessage) {
-      setAllMessages((prev) => {
-        const lastUser =
-          prev.length > 1 ? prev[prev.length - 2]?.content : null;
-        const lastAgent =
-          prev.length > 0 ? prev[prev.length - 1]?.content : null;
-        if (lastUser === userMessage && lastAgent === agentMessage) {
-          return prev;
-        }
-        return [
-          ...prev,
-          { from: "user", content: userMessage },
-          { from: "bot", content: agentMessage },
-        ];
-      });
-    }
-  }, [sessionData]);
-
   const handleOutlineChange = (newOutline) => {
     if (newOutline !== null) {
       const outlineChanged =

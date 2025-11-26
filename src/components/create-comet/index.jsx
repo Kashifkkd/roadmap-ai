@@ -626,11 +626,11 @@ export default function CreateComet({
                 >
                   <CardContent className="space-y-3 pb-4">
                     <div className="space-y-1">
-                      <Label htmlFor="comet-title">Comet Title *</Label>
+                      <Label htmlFor="comet-title">Comet Title</Label>
                       <Input
                         id="comet-title"
                         placeholder="Enter comet title"
-                        {...register("cometTitle", { required: true })}
+                        {...register("cometTitle")}
                         onSelect={(e) => handleTextSelection("cometTitle", e)}
                         onBlur={handleFieldBlur}
                         className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
@@ -643,12 +643,12 @@ export default function CreateComet({
                     </div>
 
                     <div className="space-y-1">
-                      <Label htmlFor="description">Description *</Label>
+                      <Label htmlFor="description">Description</Label>
                       <Input
                         type="text"
                         id="description"
                         placeholder="Enter description"
-                        {...register("description", { required: true })}
+                        {...register("description")}
                         onSelect={(e) => handleTextSelection("description", e)}
                         onBlur={handleFieldBlur}
                         className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
@@ -681,12 +681,12 @@ export default function CreateComet({
                 <FormCard title="Audience & Objectives">
                   <CardContent className="space-y-3">
                     <div className="space-y-1">
-                      <Label htmlFor="target-audience">Target Audience *</Label>
+                      <Label htmlFor="target-audience">Target Audience</Label>
                       <Textarea
                         id="target-audience"
                         rows={3}
                         placeholder="Describe your target audience"
-                        {...register("targetAudience", { required: true })}
+                        {...register("targetAudience")}
                         onSelect={(e) =>
                           handleTextSelection("targetAudience", e)
                         }
@@ -701,13 +701,13 @@ export default function CreateComet({
 
                     <div className="space-y-1">
                       <Label htmlFor="learning-objectives">
-                        Learning Objectives *
+                        Learning Objectives
                       </Label>
                       <Textarea
                         id="learning-objectives"
                         rows={3}
                         placeholder="Define learning objectives"
-                        {...register("learningObjectives", { required: true })}
+                        {...register("learningObjectives")}
                         onSelect={(e) =>
                           handleTextSelection("learningObjectives", e)
                         }
@@ -737,7 +737,7 @@ export default function CreateComet({
                           label: "Reinforcing & applying",
                         },
                       ]}
-                      required={true}
+                      required={false}
                       value={watch("cometFocus")}
                       onChange={(e) => {
                         setValue("cometFocus", e.target.value);
@@ -753,7 +753,7 @@ export default function CreateComet({
                         { value: "balanced", label: "Balanced" },
                         { value: "extension", label: "Extension" },
                       ]}
-                      required={true}
+                      required={false}
                       value={watch("sourceMaterialFidelity")}
                       onChange={(e) => {
                         setValue("sourceMaterialFidelity", e.target.value);
@@ -767,7 +767,7 @@ export default function CreateComet({
                         { value: "daily", label: "Daily" },
                         { value: "weekly", label: "Weekly" },
                       ]}
-                      required={true}
+                      required={false}
                       value={watch("engagementFrequency")}
                       onChange={(e) => {
                         setValue("engagementFrequency", e.target.value);
@@ -782,7 +782,7 @@ export default function CreateComet({
                       <Input
                         id="length-frequency"
                         placeholder=" "
-                        {...register("lengthFrequency", { required: true })}
+                        {...register("lengthFrequency")}
                         className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
                       />
                     </div>
@@ -794,7 +794,7 @@ export default function CreateComet({
                         id="special-instructions"
                         rows={3}
                         // placeholder="Focus on practical scenarios for first-time managers. Include at least one interactive quiz and one downloadable tool template"
-                        {...register("specialInstructions", { required: true })}
+                        {...register("specialInstructions")}
                         onSelect={(e) =>
                           handleTextSelection("specialInstructions", e)
                         }

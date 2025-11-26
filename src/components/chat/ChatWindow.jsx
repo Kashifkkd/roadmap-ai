@@ -133,8 +133,6 @@ export default function ChatWindow({
     setInputValue(value);
   };
 
-  
-
   const handleSubmit = async (text) => {
     try {
       setIsLoading(true);
@@ -164,14 +162,61 @@ export default function ChatWindow({
 
       const initialUserInput = initialInput || text;
 
+      // Add welcome page conversation to messages
+      if (parsedUserQuestions.length > 0 && initialInput) {
+        const welcomeConversation = [];
+        welcomeConversation.push({ from: "user", content: initialInput });
+        parsedUserQuestions.forEach((item) => {
+          if (item.question) {
+            welcomeConversation.push({ from: "bot", content: item.question });
+          }
+          if (item.answer) {
+            welcomeConversation.push({ from: "user", content: item.answer });
+          }
+        });
+        setAllMessages((prev) => [...prev, ...welcomeConversation]);
+      }
+
+      // const chatbotConversation = [{ user: initialUserInput }];
+      // parsedUserQuestions.forEach((item) => {
+      //   if (item.question) {
+      //     chatbotConversation.push({ agent: item.question });
+      //   }
+      //   if (item.answer) {
+      //     chatbotConversation.push({ user: item.answer });
+      //   }
+      // });
+
+      
+      // const chatbotConversation = [{ user: initialUserInput }];
+      // parsedUserQuestions.forEach((item) => {
+      //   if (item.question) {
+      //     chatbotConversation.push({ question: item.question });
+      //   }
+      //   if (item.answer) {
+      //     chatbotConversation.push({ answer: item.answer });
+      //   }
+      // });
+
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: inputType,
         comet_creation_data: sessionData?.comet_creation_data || {},
-        user_questions: parsedUserQuestions,
+        // user_questions: parsedUserQuestions,
         response_outline: sessionData?.response_outline || {},
         response_path: sessionData?.response_path || {},
-        chatbot_conversation: [{ user: initialUserInput }],
+        // chatbot_conversation: [{ user: { ...parsedUserQuestions, initialUserInput } }],
+        // chatbot_conversation: [
+        //   {
+        //     user: { initialUserInput },
+        //     question: parsedUserQuestions.map((item) => ({
+        //       question: item.question,
+        //       answer: item.answer,
+        //     })),
+        //   },
+        // ],
+        chatbot_conversation: chatbotConversation,
+        // chatbot_conversation: [{ user: initialUserInput }],
         to_modify: {},
       });
 
