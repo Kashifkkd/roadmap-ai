@@ -203,6 +203,7 @@ export default function DashboardLayout() {
               error={error}
               setAllMessages={setAllMessages}
               onProgressChange={setFormProgress}
+              isAskingKyper={isAskingKyper}
               setIsAskingKyper={setIsAskingKyper}
             />
           </div>

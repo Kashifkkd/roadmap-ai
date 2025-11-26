@@ -155,7 +155,8 @@ export default function DynamicForm({
   onClose,
   chapterNumber,
   stepNumber,
-  setIsAskingKyper: setParentIsAskingKyper,
+  isAskingKyper = false,
+  setIsAskingKyper = () => {},
 }) {
   // No local state - derive form values directly from screen
   const formData = useMemo(() => {
@@ -172,7 +173,6 @@ export default function DynamicForm({
 
   const [focusedField, setFocusedField] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
-  const [isAskingKyper, setIsAskingKyper] = useState(false);
   const [askContext, setAskContext] = useState(null);
   const [blurTimeout, setBlurTimeout] = useState(null);
 
@@ -520,7 +520,6 @@ export default function DynamicForm({
 
     try {
       setIsAskingKyper(true);
-      setParentIsAskingKyper?.(true);
 
       const userMessage = query.trim();
       setAllMessages?.((prev) => [
@@ -596,29 +595,15 @@ export default function DynamicForm({
       const messageResponse = await graphqlClient.sendMessage(payloadObject);
 
       if (messageResponse?.sendMessage) {
-        const botMessage = messageResponse.sendMessage;
-        const processingMessages = [
-          "copilot is still processing",
-          "copilot is processing",
-          "processing your request",
-          "still processing",
-        ];
-        const isProcessingMessage = processingMessages.some((msg) =>
-          botMessage.toLowerCase().includes(msg.toLowerCase())
-        );
-
-        if (!isProcessingMessage) {
-          setAllMessages?.((prev) => [
-            ...(Array.isArray(prev) ? prev : []),
-            { from: "bot", content: botMessage },
-          ]);
-        }
+        setAllMessages?.((prev) => [
+          ...(Array.isArray(prev) ? prev : []),
+          // { from: "bot", content: messageResponse.sendMessage },
+        ]);
       }
     } catch (error) {
       console.error("Error asking Kyper:", error);
     } finally {
       setIsAskingKyper(false);
-      setParentIsAskingKyper?.(false);
       clearAskContext();
     }
   };

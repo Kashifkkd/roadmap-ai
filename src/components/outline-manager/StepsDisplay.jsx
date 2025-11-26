@@ -24,7 +24,8 @@ const StepsDisplay = ({
   setAllMessages,
   sessionData,
   selectedStep,
-  setIsAskingKyper: setParentIsAskingKyper,
+  isAskingKyper = false,
+  setIsAskingKyper = () => {},
 }) => {
   const [focusedField, setFocusedField] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
@@ -33,7 +34,6 @@ const StepsDisplay = ({
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState("");
   const [selectedStepInfo, setSelectedStepInfo] = useState(null);
-  const [isAskingKyper, setIsAskingKyper] = useState(false);
   const selectionRef = useRef(null);
   const inputRef = useRef(null);
   const [chapterSteps, setChapterSteps] = useState(
@@ -421,14 +421,15 @@ const StepsDisplay = ({
       const messageResponse = await graphqlClient.sendMessage(payloadObject);
 
       if (typeof setAllMessages === "function") {
-        const botMessage = messageResponse?.sendMessage || "";
+        // const botMessage = messageResponse?.sendMessage || "";
 
         setAllMessages((prev) => [
           ...prev,
           { from: "user", content: userInstruction },
-          ...(isProcessingMessage
-            ? []
-            : [{ from: "bot", content: botMessage }]),
+          { from: "bot", content: messageResponse?.sendMessage || "" },
+          // ...(isProcessingMessage
+          //   ? []
+          //   : [{ from: "bot", content: botMessage }]),
         ]);
       }
     } catch (error) {
@@ -442,7 +443,6 @@ const StepsDisplay = ({
   const handleAskKyper = async (query) => {
     try {
       setIsAskingKyper(true);
-      setParentIsAskingKyper?.(true);
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -483,7 +483,6 @@ const StepsDisplay = ({
             handledUpdate = true;
             setChapterSteps(updatedChapter?.steps || []);
             setIsAskingKyper(false);
-            setParentIsAskingKyper?.(false);
             cleanupSubscription();
           }
         },
@@ -492,7 +491,6 @@ const StepsDisplay = ({
           if (handledUpdate) return;
           handledUpdate = true;
           setIsAskingKyper(false);
-          setParentIsAskingKyper?.(false);
           cleanupSubscription();
         }
       );
@@ -532,15 +530,19 @@ const StepsDisplay = ({
       });
 
       const messageResponse = await graphqlClient.sendMessage(payloadObject);
+      setAllMessages((prev) => [
+        ...prev,
+        // { from: "bot", content: messageResponse.sendMessage },
+      ]);
 
-      const botMessage = messageResponse.sendMessage;
+      // const botMessage = messageResponse.sendMessage;
 
-      if (botMessage) {
-        setAllMessages((prev) => [
-          ...prev,
-          { from: "bot", content: botMessage },
-        ]);
-      }
+      // if (botMessage) {
+      //   setAllMessages((prev) => [
+      //     ...prev,
+      //     { from: "bot", content: botMessage },
+      //   ]);
+      // }
 
       handleClosePopup();
     } catch (error) {
@@ -550,7 +552,6 @@ const StepsDisplay = ({
         { from: "bot", content: "Error: Unable to get response from Kyper" },
       ]);
       setIsAskingKyper(false);
-      setParentIsAskingKyper?.(false);
       cleanupSubscription();
     }
   };

@@ -154,7 +154,8 @@ export default function CometManager({
   isPreviewMode,
   setIsPreviewMode,
   onOutlineChange,
-  setIsAskingKyper,
+  isAskingKyper = false,
+  setIsAskingKyper = () => {},
 }) {
   // Use comet manager hook to get actual data
   const {
@@ -328,7 +329,7 @@ export default function CometManager({
       targetStepId = "#step_1";
     }
 
-    // Generate screen ID - format like #screen_2_2
+    // Generate screen ID -  like #screen_2_2
     const chapterNum =
       targetChapter?.order !== undefined
         ? targetChapter.order + 1
@@ -1038,6 +1039,7 @@ export default function CometManager({
                             onClose={() => setSelectedScreenId(null)}
                             chapterNumber={chapterNumber}
                             stepNumber={stepNumber}
+                            isAskingKyper={isAskingKyper}
                             setIsAskingKyper={setIsAskingKyper}
                           />
                         </div>

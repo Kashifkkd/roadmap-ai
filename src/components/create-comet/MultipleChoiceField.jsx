@@ -29,7 +29,7 @@ export default function MultipleChoiceField({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="">
       {label && (
         <Label htmlFor={name}>
           {label}
@@ -37,9 +37,9 @@ export default function MultipleChoiceField({
         </Label>
       )}
       <div
-        className={`flex ${
+        className={`flex p-1 rounded-2xl bg-[#F8F7FE] w-fit ${
           orientation === "vertical"
-            ? "flex-col gap-2"
+            ? "flex-col gap-1"
             : "flex-col sm:flex-row gap-2 flex-wrap"
         }`}
       >
@@ -48,10 +48,10 @@ export default function MultipleChoiceField({
             key={option.value}
             type="button"
             onClick={() => handleValueChange(option.value)}
-            className={` sm:px-2  rounded-lg border transition-all text-sm sm:text-base ${
+            className={` sm:px-2  rounded-xl p-1  transition-all text-sm sm:text-base cursor-pointer w-fit ${
               value === option.value
                 ? "bg-primary text-white border-primary"
-                : "bg-background text-gray-700 border-gray-300 hover:border-primary hover:text-primary"
+                : "bg-[#F8F7FE] text-gray-700 border-gray-300 hover:border-primary hover:text-primary"
             }`}
           >
             {option.label}

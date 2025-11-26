@@ -19,7 +19,7 @@ import {
 import { tokenManager } from "@/lib/api-client";
 import Image from "next/image";
 import ClientDropdown from "@/components/common/ClientDropdown";
-import { getClients } from "@/api/client";
+import { useClients, useUser } from "@/hooks/useQueryData";
 import { shareComet } from "@/api/shareComet";
 import { publishComet } from "@/api/publishComet";
 import { downloadDocument } from "@/api/downloadDocument";
@@ -38,7 +38,6 @@ import { toast } from "sonner";
 import LoginForm from "@/components/auth/LoginForm";
 import MyAccountDialog from "@/components/header/MyAccountDialog";
 import ClientSettingsDialog from "@/components/header/ClientSettingsDialog";
-import { getUser } from "@/api/User/getUser";
 // import Image from "next/image";
 export default function Header() {
   const pathname = usePathname();
@@ -50,9 +49,14 @@ export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   console.log("selectedClient>>>>>>>", selectedClient);
-  const [clients, setClients] = useState([]);
-  const [clientsLoading, setClientsLoading] = useState(false);
-  const [clientsError, setClientsError] = useState(false);
+
+  // TanStack Query for clients and user
+  const {
+    data: clients = [],
+    isLoading: clientsLoading,
+    isError: clientsError,
+  } = useClients(isAuthenticated);
+  const { data: user } = useUser(isAuthenticated);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isHomeButtonActive, setIsHomeButtonActive] = useState(false);
   const [activeButton, setActiveButton] = useState(null);
@@ -72,7 +76,6 @@ export default function Header() {
   const loginButtonRef = useRef(null);
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
-  const [user, setUser] = useState(null);
   const [text, setText] = useState("New Manager Essentials");
 
   // Check if user is super admin
@@ -125,18 +128,6 @@ export default function Header() {
     typeof window !== "undefined" ? localStorage.getItem("user_name") : null;
 
   useEffect(() => {
-    if (isAuthenticated) {
-      const fetchUser = async () => {
-        const response = await getUser();
-        if (response.response) {
-          setUser(response.response);
-        }
-      };
-      fetchUser();
-    }
-  }, [isAuthenticated]);
-
-  useEffect(() => {
     // Check authentication status
     const isAuth = tokenManager.isAuthenticated();
 
@@ -174,36 +165,19 @@ export default function Header() {
     }
   }, [isLoginDialogOpen]);
 
+  // Update selectedClient when clients change (from TanStack Query)
   useEffect(() => {
-    const load = async () => {
-      setClientsLoading(true);
-      setClientsError(false);
-      try {
-        const res = await getClients({ skip: 0, limit: 5, enabledOnly: true });
-        if (res?.response && Array.isArray(res.response)) {
-          setClients(res.response);
-          if (!selectedClient && res.response.length > 0) {
-            setSelectedClient(res.response[0]);
-          }
-          // localStorage.setItem("Client", res.response[0].name);
-          localStorage.setItem("Client id", res.response[0].id);
-        } else {
-          setClients([]);
+    if (clients.length > 0) {
+      if (!selectedClient) {
+        setSelectedClient(clients[0]);
+        localStorage.setItem("Client id", clients[0].id);
+      } else {
+        // Update selectedClient with fresh data after refetch
+        const updatedClient = clients.find((c) => c.id === selectedClient.id);
+        if (updatedClient) {
+          setSelectedClient(updatedClient);
         }
-      } catch (error) {
-        setClientsError(true);
-        setClients([]);
       }
-      setClientsLoading(false);
-    };
-    if (isAuthenticated) load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
-
-  // Update selectedClient if clients change (e.g., after fetch)
-  useEffect(() => {
-    if (clients.length > 0 && !selectedClient) {
-      setSelectedClient(clients[0]);
     }
   }, [clients]);
 
@@ -402,6 +376,12 @@ export default function Header() {
       setActiveModeButton("editor");
     }
   }, [isCometSettingsOpen, activeModeButton]);
+
+  useEffect(() => {
+    if (!isUserMenuOpen) {
+      setActiveButton(null);
+    }
+  }, [isUserMenuOpen]);
 
   const handleInviteClick = () => {
     setIsInviteButtonActive(!isInviteButtonActive);
@@ -813,7 +793,7 @@ export default function Header() {
                   </div>
                   <button
                     onClick={toggleUserMenu}
-                    className="flex items-center gap-1.5 sm:gap-2 md:gap-3 cursor-pointer outline-none hover:opacity-80 transition-opacity relative z-50"
+                    className="flex items-center gap-1.5 sm:gap-2 md:gap-3 cursor-pointer outline-none hover:opacity-80 transition-opacity relative z-50  rounded-full bg-gray-100 p-1"
                   >
                     <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 shrink-0" />
                   </button>

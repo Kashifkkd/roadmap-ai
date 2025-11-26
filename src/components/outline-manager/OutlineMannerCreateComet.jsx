@@ -17,7 +17,8 @@ export default function OutlineMannerCreateComet({
   sessionData,
   prefillData,
   setAllMessages,
-  setIsAskingKyper,
+  isAskingKyper = false,
+  setIsAskingKyper = () => {},
 }) {
   // console.log("sessionData in OutlineMannerCreateComet:", sessionData);
   // console.log("prefillData in OutlineMannerCreateComet:", prefillData);
@@ -514,6 +515,7 @@ export default function OutlineMannerCreateComet({
               setAllMessages={setAllMessages}
               sessionData={sessionData}
               selectedStep={selectedStep}
+              isAskingKyper={isAskingKyper}
               setIsAskingKyper={setIsAskingKyper}
             />
           </div>

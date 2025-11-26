@@ -81,7 +81,6 @@ export default function CometManagerLayout() {
       (conv) => conv?.agent
     )?.agent;
 
-
     if (agentMessage || userMessage) {
       setAllMessages((prev) => {
         const lastUser =
@@ -240,6 +239,7 @@ export default function CometManagerLayout() {
             isPreviewMode={isPreviewMode}
             setIsPreviewMode={setIsPreviewMode}
             onOutlineChange={handleOutlineChange}
+            isAskingKyper={isAskingKyper}
             setIsAskingKyper={setIsAskingKyper}
           />
         </div>

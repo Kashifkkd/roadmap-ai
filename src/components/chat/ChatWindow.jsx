@@ -35,6 +35,8 @@ export default function ChatWindow({
     };
   }, []);
 
+  console.log("allMessages", allMessages);
+
   // Initialize sessionId from localStorage so subscription can start even if other components send messages
   useEffect(() => {
     if (sessionId) return;
@@ -131,21 +133,7 @@ export default function ChatWindow({
     setInputValue(value);
   };
 
-  const formatDisplayMessage = (message) => {
-    if (!message) return message;
-    const sentinelIndex = message.indexOf("\n\n");
-    if (sentinelIndex > 0) {
-      return message.slice(0, sentinelIndex).trim();
-    }
-    const markers = ["Comet creation data:", "Source Materials:"];
-    for (const marker of markers) {
-      const idx = message.indexOf(marker);
-      if (idx > 0) {
-        return message.slice(0, idx).trim();
-      }
-    }
-    return message.trim();
-  };
+  
 
   const handleSubmit = async (text) => {
     try {
@@ -189,11 +177,7 @@ export default function ChatWindow({
 
       await graphqlClient.sendMessage(cometJsonForMessage);
 
-      const displayText = formatDisplayMessage(text);
-      setAllMessages((prev) => [
-        ...prev,
-        { from: "user", content: displayText },
-      ]);
+      setAllMessages((prev) => [...prev, { from: "user", content: text }]);
 
       setInputValue("");
     } catch (error) {
@@ -219,19 +203,18 @@ export default function ChatWindow({
             const agentMessage = sessionData?.chatbot_conversation?.find(
               (conv) => conv?.agent
             )?.agent;
-            
 
-              setAllMessages((prev) => {
-                const lastMessage = prev[prev.length - 1];
-                if (
-                  lastMessage?.from === "bot" &&
-                  lastMessage?.content === agentMessage
-                ) {
-                  return prev;
-                }
-                return [...prev, { from: "bot", content: agentMessage }];
-              });
-              setIsLoading(false);
+            setAllMessages((prev) => {
+              const lastMessage = prev[prev.length - 1];
+              if (
+                lastMessage?.from === "bot" &&
+                lastMessage?.content === agentMessage
+              ) {
+                return prev;
+              }
+              return [...prev, { from: "bot", content: agentMessage }];
+            });
+            setIsLoading(false);
             // }
           }
         },

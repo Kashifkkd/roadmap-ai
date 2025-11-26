@@ -14,10 +14,12 @@ import { Label } from "@/components/ui/Label";
 import { getUser } from "@/api/User/getUser";
 import { uploadProfile } from "@/api/User/uploadProfile";
 import { updateProfile } from "@/api/User/updateProfile";
+import { useRefreshData } from "@/hooks/useQueryData";
 
 const defaultAvatar = "/profile.png";
 
 export default function MyAccountDialog({ open, onOpenChange, user }) {
+  const { refreshUser } = useRefreshData();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -164,11 +166,8 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     const response = await updateProfile(payload);
     if (response.response) {
       setUserData(response.response);
-      // Refresh user data
-      const refreshResponse = await getUser();
-      if (refreshResponse.response) {
-        setUserData(refreshResponse.response);
-      }
+      // Refresh user to update Header automatically
+      refreshUser();
       return { success: true };
     } else if (response.error) {
       // Handle error from backend

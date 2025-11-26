@@ -36,6 +36,14 @@ const Chat = ({
   error = null,
 }) => {
   const bottomRef = useRef(null);
+
+  // Auto-scroll to bottom when messages change or loading starts
+  useEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isLoading]);
+
   const handleSuggestionClick = async (suggestionText) => {
     try {
       if (onSuggestionClick) {

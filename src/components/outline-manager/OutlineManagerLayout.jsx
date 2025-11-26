@@ -10,22 +10,6 @@ export default function OutlineManagerLayout() {
   const [prefillData, setPrefillData] = useState(null);
   const [isAskingKyper, setIsAskingKyper] = useState(false);
 
-  const formatDisplayMessage = (message) => {
-    if (!message) return message;
-    const sentinelIndex = message.indexOf("\n\n");
-    if (sentinelIndex > 0) {
-      return message.slice(0, sentinelIndex).trim();
-    }
-    const markers = ["Comet creation data:", "Source Materials:"];
-    for (const marker of markers) {
-      const idx = message.indexOf(marker);
-      if (idx > 0) {
-        return message.slice(0, idx).trim();
-      }
-    }
-    return message.trim();
-  };
-
   useEffect(() => {
     // Access localStorage only on the client
     const storedSessionData =
@@ -89,6 +73,7 @@ export default function OutlineManagerLayout() {
             sessionData={sessionData}
             prefillData={prefillData}
             setAllMessages={setAllMessages}
+            isAskingKyper={isAskingKyper}
             setIsAskingKyper={setIsAskingKyper}
           />
         </div>

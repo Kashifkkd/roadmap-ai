@@ -30,13 +30,13 @@ export default function CreateComet({
   allMessages = [],
   setAllMessages = () => {},
   onProgressChange = () => {},
-  setIsAskingKyper: setParentIsAskingKyper,
+  isAskingKyper = false,
+  setIsAskingKyper = () => {},
 }) {
   const [files, setFiles] = useState([]);
   const [focusedField, setFocusedField] = useState(null);
   const [blurTimeout, setBlurTimeout] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
-  const [isAskingKyper, setIsAskingKyper] = useState(false);
   const [habitEnabled, setHabitEnabled] = useState(true);
   const [personalizationEnabled, setPersonalizationEnabled] = useState(true);
   const subscriptionCleanupRef = useRef(null);
@@ -60,6 +60,7 @@ export default function CreateComet({
     reValidateMode: "onChange",
     defaultValues: {
       cometTitle: "",
+      description: "",
       clientOrg: "",
       clientWebsite: "",
       targetAudience: "",
@@ -139,6 +140,8 @@ export default function CreateComet({
             if (basicInfo) {
               if (basicInfo["Comet Title"])
                 setValue("cometTitle", basicInfo["Comet Title"]);
+              if (basicInfo["Description"])
+                setValue("description", basicInfo["Description"]);
               if (basicInfo["Client Organization"])
                 setValue("clientOrg", basicInfo["Client Organization"]);
               if (basicInfo["Client Website"])
@@ -217,7 +220,6 @@ export default function CreateComet({
             }
 
             setIsAskingKyper(false);
-            setParentIsAskingKyper?.(false);
           }
 
           // Previous approach - update only specific field (commented out for potential revert)
@@ -245,7 +247,6 @@ export default function CreateComet({
         (error) => {
           console.error("Subscription error:", error);
           setIsAskingKyper(false);
-          setParentIsAskingKyper?.(false);
         }
       );
     };
@@ -273,6 +274,8 @@ export default function CreateComet({
         if (basicInfo) {
           if (basicInfo["Comet Title"])
             setValue("cometTitle", basicInfo["Comet Title"]);
+          if (basicInfo["Description"])
+            setValue("description", basicInfo["Description"]);
           if (basicInfo["Client Organization"])
             setValue("clientOrg", basicInfo["Client Organization"]);
           if (basicInfo["Client Website"])
@@ -438,7 +441,6 @@ export default function CreateComet({
   const handleAskKyper = async (query) => {
     try {
       setIsAskingKyper(true);
-      setParentIsAskingKyper?.(true);
 
       const formValues = watch();
       let currentSessionId =
@@ -512,25 +514,16 @@ export default function CreateComet({
         "Message sent, waiting for AI response via WebSocket:",
         messageResponse
       );
-      const botMessage = messageResponse.sendMessage;
-      const processingMessages = [
-        "copilot is still processing",
-        "copilot is processing",
-        "processing your request",
-        "still processing",
-      ];
-      const isProcessingMessage =
-        typeof botMessage === "string" &&
-        processingMessages.some((msg) =>
-          botMessage.toLowerCase().includes(msg.toLowerCase())
-        );
 
-      if (!isProcessingMessage && botMessage) {
-        setAllMessages((prev) => [
-          ...prev,
-          { from: "bot", content: botMessage },
-        ]);
-      }
+      console.log(
+        "messageResponse>>>>>>>>>>>.test",
+        messageResponse.sendMessage
+      );
+      setAllMessages((prev) => [
+        ...prev,
+        // { from: "bot", content: messageResponse.sendMessage },
+      ]);
+      // }
     } catch (error) {
       console.error("Error asking Kyper:", error);
     }
@@ -650,19 +643,19 @@ export default function CreateComet({
                     </div>
 
                     <div className="space-y-1">
-                      <Label htmlFor="client-org">Description *</Label>
+                      <Label htmlFor="description">Description *</Label>
                       <Input
                         type="text"
-                        id="client-org"
+                        id="description"
                         placeholder="Enter description"
-                        {...register("clientOrg", { required: true })}
-                        onSelect={(e) => handleTextSelection("clientOrg", e)}
+                        {...register("description", { required: true })}
+                        onSelect={(e) => handleTextSelection("description", e)}
                         onBlur={handleFieldBlur}
                         className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
                       />
-                      {errors.clientOrg && (
+                      {errors.description && (
                         <p className="text-red-600 text-sm">
-                          {errors.clientOrg.message}
+                          {errors.description.message}
                         </p>
                       )}
                     </div>

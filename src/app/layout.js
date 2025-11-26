@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { PreviewModeProvider } from "@/contexts/PreviewModeContext";
 import { CometSettingsProvider } from "@/contexts/CometSettingsContext";
 import { Toaster } from "@/components/ui/toast";
+import QueryProvider from "@/providers/QueryProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,12 +56,14 @@ export default function RootLayout({ children }) {
         className={`font-sans ${notoSerif.variable} ${inter.variable} antialiased 
         h-[100vh] w-[100vw]`}
       >
-        <PreviewModeProvider>
-          <CometSettingsProvider>
-            <LayoutContent>{children}</LayoutContent>
-            <Toaster />
-          </CometSettingsProvider>
-        </PreviewModeProvider>
+        <QueryProvider>
+          <PreviewModeProvider>
+            <CometSettingsProvider>
+              <LayoutContent>{children}</LayoutContent>
+              <Toaster />
+            </CometSettingsProvider>
+          </PreviewModeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

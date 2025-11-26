@@ -16,12 +16,14 @@ import { Label } from "@/components/ui/Label";
 import { getClientDetails, updateClientDetails } from "@/api/client";
 import { uploadProfile } from "@/api/User/uploadProfile";
 import { toast } from "sonner";
+import { useRefreshData } from "@/hooks/useQueryData";
 
 export default function ClientSettingsDialog({
   open,
   onOpenChange,
   selectedClient,
 }) {
+  const { refreshClients } = useRefreshData();
   const [activeTab, setActiveTab] = useState("general");
   const [clientName, setClientName] = useState("");
   const [website, setWebsite] = useState("");
@@ -177,6 +179,8 @@ export default function ClientSettingsDialog({
       if (response?.response && !response.error) {
         toast.success("Client details updated successfully");
         setClientData(response.response);
+        // Refresh clients to update Header automatically
+        refreshClients();
         setSaving(false);
         onOpenChange(false);
       } else {
