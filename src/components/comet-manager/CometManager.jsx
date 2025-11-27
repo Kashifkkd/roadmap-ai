@@ -205,7 +205,7 @@ export default function CometManager({
     if (!selectedScreenId || !screens || screens.length === 0) return null;
     return screens.find((screen) => screen.id === selectedScreenId) || null;
   }, [selectedScreenId, screens]);
-  console.log("selectedScreen", selectedScreen);
+  // console.log("selectedScreen", selectedScreen);
 
   // Select first screen by default when screens are first loaded
   useEffect(() => {

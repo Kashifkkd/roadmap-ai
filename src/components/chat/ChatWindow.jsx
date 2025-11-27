@@ -161,22 +161,23 @@ export default function ChatWindow({
       }
 
       const initialUserInput = initialInput || text;
+      // setAllMessages((prev) => [...prev, { from: "user", content: initialUserInput }]);
 
-      // Add welcome page conversation to messages
-      if (parsedUserQuestions.length > 0 && initialInput) {
-        const welcomeConversation = [];
-        welcomeConversation.push({ from: "user", content: initialInput });
-        parsedUserQuestions.forEach((item) => {
-          if (item.question) {
-            welcomeConversation.push({ from: "bot", content: item.question });
-          }
-          if (item.answer) {
-            welcomeConversation.push({ from: "user", content: item.answer });
-          }
-        });
-        setAllMessages((prev) => [...prev, ...welcomeConversation]);
-      }
+      // if (parsedUserQuestions.length > 0 && initialInput) {
+      //   const welcomeConversation = [];
+      //   welcomeConversation.push({ from: "user", content: initialInput });
+      //   parsedUserQuestions.forEach((item) => {
+      //     if (item.question) {
+      //       welcomeConversation.push({ from: "bot", content: item.question });
+      //     }
+      //     if (item.answer) {
+      //       welcomeConversation.push({ from: "user", content: item.answer });
+      //     }
+      //   });
+      //   setAllMessages((prev) => [...prev, ...welcomeConversation]);
+      // }
 
+      // OLD CODE 
       // const chatbotConversation = [{ user: initialUserInput }];
       // parsedUserQuestions.forEach((item) => {
       //   if (item.question) {
@@ -187,36 +188,29 @@ export default function ChatWindow({
       //   }
       // });
 
-      
-      // const chatbotConversation = [{ user: initialUserInput }];
-      // parsedUserQuestions.forEach((item) => {
-      //   if (item.question) {
-      //     chatbotConversation.push({ question: item.question });
-      //   }
-      //   if (item.answer) {
-      //     chatbotConversation.push({ answer: item.answer });
-      //   }
-      // });
+      // NEW CODE 
+      const existingConversation = sessionData?.chatbot_conversation || [];
+
+      // Build new conversation entries
+      const newEntries = [{ user: initialUserInput }];
+      parsedUserQuestions.forEach((item) => {
+        if (item.question) {
+          newEntries.push({ agent: item.question });
+        }
+        if (item.answer) {
+          newEntries.push({ user: item.answer });
+        }
+      });
+
+      const chatbotConversation = [...existingConversation, ...newEntries];
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: inputType,
         comet_creation_data: sessionData?.comet_creation_data || {},
-        // user_questions: parsedUserQuestions,
         response_outline: sessionData?.response_outline || {},
         response_path: sessionData?.response_path || {},
-        // chatbot_conversation: [{ user: { ...parsedUserQuestions, initialUserInput } }],
-        // chatbot_conversation: [
-        //   {
-        //     user: { initialUserInput },
-        //     question: parsedUserQuestions.map((item) => ({
-        //       question: item.question,
-        //       answer: item.answer,
-        //     })),
-        //   },
-        // ],
         chatbot_conversation: chatbotConversation,
-        // chatbot_conversation: [{ user: initialUserInput }],
         to_modify: {},
       });
 
@@ -244,23 +238,47 @@ export default function ChatWindow({
             onResponseReceived(sessionData);
           }
           localStorage.setItem("sessionData", JSON.stringify(sessionData));
-          if (sessionData.chatbot_conversation) {
-            const agentMessage = sessionData?.chatbot_conversation?.find(
-              (conv) => conv?.agent
-            )?.agent;
 
-            setAllMessages((prev) => {
-              const lastMessage = prev[prev.length - 1];
-              if (
-                lastMessage?.from === "bot" &&
-                lastMessage?.content === agentMessage
-              ) {
-                return prev;
+          if (sessionData.chatbot_conversation) {
+            // OLD CODE 
+            // const agentMessage = sessionData?.chatbot_conversation?.find(
+            //   (conv) => conv?.agent
+            // )?.agent;
+            //
+            // setAllMessages((prev) => {
+            //   const lastMessage = prev[prev.length - 1];
+            //   if (
+            //     lastMessage?.from === "bot" &&
+            //     lastMessage?.content === agentMessage
+            //   ) {
+            //     return prev;
+            //   }
+            //   return [...prev, { from: "bot", content: agentMessage }];
+            // });
+
+            // NEW CODE
+            const conversation = sessionData.chatbot_conversation;
+            const allMessages = [];
+
+            conversation.forEach((entry) => {
+              if (entry.user) {
+                allMessages.push({ from: "user", content: entry.user });
               }
-              return [...prev, { from: "bot", content: agentMessage }];
+              if (entry.agent) {
+                allMessages.push({ from: "bot", content: entry.agent });
+              }
             });
+
+            // Update with all messages
+            if (allMessages.length > 0) {
+              setAllMessages(allMessages);
+            }
             setIsLoading(false);
-            // }
+          }
+
+          // Notify parent component if needed
+          if (onResponseReceived) {
+            onResponseReceived(sessionData);
           }
         },
         (error) => {

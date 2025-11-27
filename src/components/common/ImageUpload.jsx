@@ -84,7 +84,7 @@ export default function ImageUpload({
         screenId || ""
       );
 
-      console.log(uploadResponse, "uploadResponse")
+      // console.log(uploadResponse, "uploadResponse")
       if (uploadResponse?.response) {
         // Normalize asset data to always have image_url
         const assetData = {

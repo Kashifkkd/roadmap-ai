@@ -518,6 +518,7 @@ const StepsDisplay = ({
           return ch;
         });
       }
+      
 
       const payloadObject = JSON.stringify({
         session_id: sessionId,

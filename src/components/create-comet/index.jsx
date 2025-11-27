@@ -452,6 +452,7 @@ export default function CreateComet({
       const formattedCometData = {
         "Basic Information": {
           "Comet Title": formValues.cometTitle || "",
+          Description: formValues.description || "",
           "Client Organization": formValues.clientOrg || "",
           "Client Website": formValues.clientWebsite || "",
         },
@@ -468,12 +469,19 @@ export default function CreateComet({
 
       const fieldLabelMap = {
         cometTitle: "Comet Title",
+        description: "Description",
         clientOrg: "Client Organization",
         clientWebsite: "Client Website",
       };
 
       const fieldLabel = fieldLabelMap[focusedField] || focusedField;
       const currentFieldValue = formValues[focusedField] || "";
+      let parsedSessionData = null;
+      try {
+        const raw = localStorage.getItem("sessionData");
+        if (raw) parsedSessionData = JSON.parse(raw);
+      } catch {}
+      const chatbotConversation = parsedSessionData?.chatbot_conversation || [];
 
       const conversationMessage = `{ 'field': '${fieldLabel}', 'value': '${currentFieldValue}', 'instruction': '${query}' }`;
       // {
@@ -494,7 +502,10 @@ export default function CreateComet({
         comet_creation_data: formattedCometData,
         response_outline: {},
         response_path: {},
-        chatbot_conversation: [{ user: conversationMessage }],
+        chatbot_conversation: [
+          ...chatbotConversation,
+          { user: conversationMessage },
+        ],
         to_modify: {},
       });
 
@@ -504,7 +515,10 @@ export default function CreateComet({
         comet_creation_data: formattedCometData,
         response_outline: {},
         response_path: {},
-        chatbot_conversation: [{ user: conversationMessage }],
+        chatbot_conversation: [
+          ...chatbotConversation,
+          { user: conversationMessage },
+        ],
         to_modify: {},
       });
       const messageResponse = await graphqlClient.sendMessage(

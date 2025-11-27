@@ -48,7 +48,7 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
-  console.log("selectedClient>>>>>>>", selectedClient);
+  // console.log("selectedClient>>>>>>>", selectedClient);
 
   // TanStack Query for clients and user
   const {

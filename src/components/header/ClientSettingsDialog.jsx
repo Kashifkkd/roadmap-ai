@@ -63,7 +63,7 @@ export default function ClientSettingsDialog({
           setSelectedColorCode(fetchedData.color_code || "");
           setImageUrl(fetchedData.image_url || "");
           setBackgroundImageUrl(fetchedData.background_image_url || "");
-          console.log("clientData", fetchedData);
+          // console.log("clientData", fetchedData);
         }
       } catch (error) {
         console.error("Failed to fetch client details:", error);

@@ -14,7 +14,7 @@ export default function OutlineMannerFooter() {
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);  // Check authentication status
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Check authentication status
 
   useEffect(() => {
     const checkAuth = () => {
@@ -137,6 +137,11 @@ export default function OutlineMannerFooter() {
         if (raw) parsedSessionData = JSON.parse(raw);
       } catch {}
 
+      console.log(
+        "parsedSessionData>>>>>>>>>>>>>>>>>>>>>>>",
+        parsedSessionData.chatbot_conversation
+      );
+
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: "path_creation",
@@ -149,6 +154,10 @@ export default function OutlineMannerFooter() {
       });
 
       await graphqlClient.sendMessage(cometJsonForMessage);
+      console.log(
+        "cometJsonForMessage>>>>>>>>>>>>>>>>>>>>>>>",
+        parsedSessionData.chatbot_conversation
+      );
 
       // Start listening for updates, then navigate on data
       // isGenerating is already set to true at the start

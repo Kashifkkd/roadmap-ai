@@ -32,6 +32,67 @@ export default function DashboardLayout() {
     };
   }, []);
 
+ 
+  useEffect(() => {
+    const storedSessionData =
+      typeof window !== "undefined"
+        ? localStorage.getItem("sessionData")
+        : null;
+
+    if (storedSessionData && !sessionData) {
+      setSessionData(JSON.parse(storedSessionData));
+    }
+  }, [sessionData]);
+
+  
+  useEffect(() => {
+    if (!sessionData?.chatbot_conversation) return;
+
+    const conversation = sessionData.chatbot_conversation;
+    if (!Array.isArray(conversation) || conversation.length === 0) return;
+
+    // OLD CODE
+    // const userMessage = sessionData?.chatbot_conversation?.find(
+    //   (conv) => conv?.user
+    // )?.user;
+    // const agentMessage = sessionData?.chatbot_conversation?.find(
+    //   (conv) => conv?.agent
+    // )?.agent;
+    //
+    // if (agentMessage || userMessage) {
+    //   setAllMessages((prev) => {
+    //     const lastUser =
+    //       prev.length > 1 ? prev[prev.length - 2]?.content : null;
+    //     const lastAgent =
+    //       prev.length > 0 ? prev[prev.length - 1]?.content : null;
+    //     if (lastUser === userMessage && lastAgent === agentMessage) {
+    //       return prev;
+    //     }
+    //     return [
+    //       ...prev,
+    //       { from: "user", content: userMessage },
+    //       { from: "bot", content: agentMessage },
+    //     ];
+    //   });
+    // }
+
+    // NEW CODE 
+    const messagesToDisplay = [];
+
+    conversation.forEach((entry) => {
+      if (entry.user) {
+        messagesToDisplay.push({ from: "user", content: entry.user });
+      }
+      if (entry.agent) {
+        messagesToDisplay.push({ from: "bot", content: entry.agent });
+      }
+    });
+
+    if (messagesToDisplay.length > 0) {
+      setAllMessages(messagesToDisplay);
+    }
+  }, [sessionData]);
+
   // Listen for socket response when generating outline
   useEffect(() => {
     if (!isGeneratingOutline || !sessionId) return;
@@ -112,6 +173,14 @@ export default function DashboardLayout() {
           "Special Instructions": formData.specialInstructions || "",
         },
       };
+
+      let parsedSessionData = null;
+      try {
+        const raw = localStorage.getItem("sessionData");
+        if (raw) parsedSessionData = JSON.parse(raw);
+      } catch {}
+
+      const chatbotConversation = parsedSessionData?.chatbot_conversation || [];
       const messageText =
         initialInput || formData.cometTitle || "Create a new comet";
 
@@ -130,7 +199,7 @@ export default function DashboardLayout() {
           habit_enabled: settings.habit_enabled || false,
           habit_description: settings.habit_description || "",
         },
-        chatbot_conversation: [{ user: messageText }],
+        chatbot_conversation: [...chatbotConversation, { user: messageText }],
         to_modify: {},
       });
 

@@ -74,7 +74,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
     const data = localStorage.getItem("sessionData");
     if (data) {
       const sessionData = JSON.parse(data);
-      console.log("sessionData", sessionData);
+      // console.log("sessionData", sessionData);
       setCometTitle(
         sessionData?.comet_creation_data?.["Basic Information"]?.[
           "Comet Title"
