@@ -130,6 +130,7 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
         customPosition={!!buttonPosition}
         style={customStyle}
       >
+        <DialogTitle className="sr-only">Login</DialogTitle>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Email Field */}
           <div className="space-y-2">
