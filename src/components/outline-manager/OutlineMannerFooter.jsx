@@ -3,7 +3,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft } from "lucide-react";
 import Stars from "@/components/icons/Stars";
-import ProgressbarLoader from "@/components/loader";
+import Loader from "@/components/loader2";
 import { graphqlClient } from "@/lib/graphql-client";
 import { tokenManager } from "@/lib/api-client";
 
@@ -180,7 +180,7 @@ export default function OutlineMannerFooter() {
     return (
       <div className="fixed inset-x-0 top-[64px] bottom-0 z-50 bg-primary-50">
         <div className="w-full h-full flex items-center justify-center p-2 overflow-auto">
-          <ProgressbarLoader />
+          <Loader />
         </div>
       </div>
     );

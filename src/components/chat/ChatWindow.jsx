@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Chat from "./Chat";
-import ProgressbarLoader from "@/components/loader";
+import Loader from "@/components/loader2";
 import { graphqlClient } from "@/lib/graphql-client";
 import { useRouter } from "next/navigation";
 
@@ -177,7 +177,7 @@ export default function ChatWindow({
       //   setAllMessages((prev) => [...prev, ...welcomeConversation]);
       // }
 
-      // OLD CODE 
+      // OLD CODE
       // const chatbotConversation = [{ user: initialUserInput }];
       // parsedUserQuestions.forEach((item) => {
       //   if (item.question) {
@@ -188,7 +188,7 @@ export default function ChatWindow({
       //   }
       // });
 
-      // NEW CODE 
+      // NEW CODE
       const existingConversation = sessionData?.chatbot_conversation || [];
 
       // Build new conversation entries
@@ -240,7 +240,7 @@ export default function ChatWindow({
           localStorage.setItem("sessionData", JSON.stringify(sessionData));
 
           if (sessionData.chatbot_conversation) {
-            // OLD CODE 
+            // OLD CODE
             // const agentMessage = sessionData?.chatbot_conversation?.find(
             //   (conv) => conv?.agent
             // )?.agent;
@@ -298,7 +298,7 @@ export default function ChatWindow({
   }, [sessionId, onResponseReceived]);
 
   if (isGeneratingOutline) {
-    return <ProgressbarLoader />;
+    return <Loader />;
   }
 
   return (

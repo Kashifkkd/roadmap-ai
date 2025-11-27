@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Plus, GripVertical, Zap, ChevronDown } from "lucide-react";
 import SelectIcon from "@/components/icons/SelectIcon";
 import ChapterTextarea from "./ChapterTextarea";
-import ProgressbarLoader from "@/components/loader";
+import Loader from "@/components/loader2";
 import { temp2 } from "../../hooks/temp2";
 
 export default function OutlineMannerCreateComet({

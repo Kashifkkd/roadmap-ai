@@ -569,7 +569,19 @@ export default function CreateComet({
     }
   };
 
-  const handleFieldBlur = () => {
+  const handleFieldBlur = (e) => {
+    if (e?.target) {
+      const input = e.target;
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const hasTextSelected = start !== end && start !== null && end !== null;
+
+      // If text is selceted, the close timeout will not statr
+      if (hasTextSelected) {
+        return;
+      }
+    }
+
     const timeout = setTimeout(() => {
       setFocusedField(null);
       setFieldPosition(null);
@@ -646,7 +658,7 @@ export default function CreateComet({
                         placeholder="Enter comet title"
                         {...register("cometTitle")}
                         onSelect={(e) => handleTextSelection("cometTitle", e)}
-                        onBlur={handleFieldBlur}
+                        onBlur={(e) => handleFieldBlur(e)}
                         className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
                       />
                       {errors.cometTitle && (
@@ -664,7 +676,7 @@ export default function CreateComet({
                         placeholder="Enter description"
                         {...register("description")}
                         onSelect={(e) => handleTextSelection("description", e)}
-                        onBlur={handleFieldBlur}
+                        onBlur={(e) => handleFieldBlur(e)}
                         className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
                       />
                       {errors.description && (

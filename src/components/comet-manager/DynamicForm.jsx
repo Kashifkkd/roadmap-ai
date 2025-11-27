@@ -582,13 +582,18 @@ export default function DynamicForm({
 
       const conversationMessage = `{ 'path': 'chapter-${chapterNumber}-step-${stepNumber}-screen-${screenNumber}', 'field': '${mappedField}', 'value': '${askContext.selectedText}', 'instruction': '${query}' }`;
 
+      // Merge with existing conversation history (same pattern as ChatWindow.jsx)
+      const existingConversation = sessionData?.chatbot_conversation || [];
+      const newEntries = [{ user: conversationMessage }];
+      const chatbotConversation = [...existingConversation, ...newEntries];
+
       const payloadObject = JSON.stringify({
         session_id: sessionId,
         input_type: "path_updation",
         comet_creation_data: sessionData?.comet_creation_data || {},
         response_outline: sessionData?.response_outline || {},
         response_path: sessionData?.response_path || {},
-        chatbot_conversation: [{ user: conversationMessage }],
+        chatbot_conversation: chatbotConversation,
         to_modify: {},
       });
 

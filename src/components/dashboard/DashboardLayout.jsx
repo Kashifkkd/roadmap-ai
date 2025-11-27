@@ -4,8 +4,9 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import CreateComet from "@/components/create-comet";
 import ChatWindow from "@/components/chat/ChatWindow";
-import ProgressbarLoader from "@/components/loader";
+// import ProgressbarLoader from "@/components/loader";
 import { graphqlClient } from "@/lib/graphql-client";
+import Loader from "../loader2";
 
 export default function DashboardLayout() {
   const searchParams = useSearchParams();
@@ -32,7 +33,6 @@ export default function DashboardLayout() {
     };
   }, []);
 
- 
   useEffect(() => {
     const storedSessionData =
       typeof window !== "undefined"
@@ -44,7 +44,6 @@ export default function DashboardLayout() {
     }
   }, [sessionData]);
 
-  
   useEffect(() => {
     if (!sessionData?.chatbot_conversation) return;
 
@@ -76,7 +75,7 @@ export default function DashboardLayout() {
     //   });
     // }
 
-    // NEW CODE 
+    // NEW CODE
     const messagesToDisplay = [];
 
     conversation.forEach((entry) => {
@@ -222,7 +221,8 @@ export default function DashboardLayout() {
     return (
       <div className="fixed inset-x-0 top-[64px] bottom-0 z-50 bg-primary-50">
         <div className="w-full h-full flex items-center justify-center p-2 overflow-auto">
-          <ProgressbarLoader />
+          {/* <ProgressbarLoader /> */}
+          <Loader />
         </div>
       </div>
     );

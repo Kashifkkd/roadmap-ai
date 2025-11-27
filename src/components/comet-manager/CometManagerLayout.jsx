@@ -104,7 +104,7 @@ export default function CometManagerLayout() {
     //   });
     // }
 
-    // NEW CODE 
+    // NEW CODE
     const messagesToDisplay = [];
 
     conversation.forEach((entry) => {
@@ -182,7 +182,16 @@ export default function CometManagerLayout() {
             try {
               let savedData;
               if (typeof response.autoSaveComet === "string") {
-                savedData = JSON.parse(response.autoSaveComet);
+                // savedData = JSON.parse(response.autoSaveComet);
+                const parsedResponse = JSON.parse(response.autoSaveComet);
+                savedData = {
+                  ...sessionData,
+                  ...parsedResponse,
+                  chatbot_conversation:
+                    parsedResponse.chatbot_conversation ||
+                    sessionData?.chatbot_conversation ||
+                    [],
+                };
               } else {
                 savedData = {
                   ...sessionData,
@@ -198,6 +207,7 @@ export default function CometManagerLayout() {
               const updatedSessionData = {
                 ...sessionData,
                 response_path: currentOutline,
+                chatbot_conversation: sessionData?.chatbot_conversation || [],
               };
               localStorage.setItem(
                 "sessionData",

@@ -17,9 +17,9 @@ const SUGGESTIONS = [
 
 // Static questions that appear on the right side (bot questions)
 const QUESTIONS = [
-  "That sounds great! Let’s start shaping this into a learning experience .Can you tell me a bit more about your audience,what’s their role, experience level, and which department or function they belong to?",
-  "Perfect — that helps me understand the context.Now, why are you creating this Comet?You can include the organizational context, for example, is this part of a new sales transformation,or a follow-up to a recent training or workshop? Also, what outcomes do you want to achieve — both in learning and behavior change? ",
-  "Perfect. That’s everything I need for now.Let me generate your initial Comet setup — this will take just a moment.",
+  "That sounds great! Let’s start shaping this into a learning experience. Can you tell me a bit more about your audience, what’s their role, experience level, and which department or function they belong to?",
+  "Perfect that helps me understand the context. Now, why are you creating this Comet? You can include the organizational context, for example, is this part of a new sales transformation, or a follow-up to a recent training or workshop? Also, what outcomes do you want to achieve both in learning and behavior change?",
+  "Perfect. That’s everything I need for now. Let me generate your initial Comet setup this will take just a moment.",
 ];
 
 export default function WelcomePage() {

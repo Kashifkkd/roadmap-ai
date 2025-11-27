@@ -65,6 +65,7 @@ const Chat = ({
               role="bot"
               text={welcomeMessageChat({ messages: welcomeMessage })}
             />
+
             {messages.map((msg, idx) => (
               <ChatMessage key={idx} role={msg.from} text={msg.content} />
             ))}

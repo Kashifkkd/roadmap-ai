@@ -21,7 +21,7 @@ export default function OutlineManagerLayout() {
     }
   }, []);
 
-  // Load ALL chat messages from sessionData.chatbot_conversation
+  
   useEffect(() => {
     if (!sessionData?.chatbot_conversation) return;
 
@@ -53,7 +53,7 @@ export default function OutlineManagerLayout() {
     //   });
     // }
 
-    // NEW CODE 
+    // NEW CODE
     const messagesToDisplay = [];
 
     conversation.forEach((entry) => {

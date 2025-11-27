@@ -518,7 +518,12 @@ const StepsDisplay = ({
           return ch;
         });
       }
-      
+
+      const existingConversation = snapshot?.chatbot_conversation || [];
+      const updatedConversation = [
+        ...existingConversation,
+        { user: conversationMessage },
+      ];
 
       const payloadObject = JSON.stringify({
         session_id: sessionId,
@@ -526,7 +531,8 @@ const StepsDisplay = ({
         comet_creation_data: snapshot?.comet_creation_data || {},
         response_outline: currentResponseOutline,
         response_path: snapshot?.response_path || {},
-        chatbot_conversation: [{ user: conversationMessage }],
+        // chatbot_conversation: [{ user: conversationMessage }],
+        chatbot_conversation: updatedConversation,
         to_modify: {},
       });
 
