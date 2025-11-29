@@ -35,13 +35,11 @@ export default function CometManagerLayout() {
       setPrevOutline(null);
     }
 
-    // Update outline when response_path changes (either new session or updated path)
     if (sessionData?.response_path) {
       const currentOutline = sessionData.response_path;
       const outlineChanged =
         JSON.stringify(currentOutline) !== JSON.stringify(outlineRef.current);
 
-      // Update if it's a new session OR if the outline has actually changed
       if (
         initializedSessionIdRef.current !== currentSessionId ||
         outlineChanged
@@ -172,11 +170,14 @@ export default function CometManagerLayout() {
             input_type: "source_material_based_outliner",
             comet_creation_data: sessionData?.comet_creation_data || {},
             response_outline: sessionData?.response_outline || {},
-            response_path: currentOutline || sessionData?.response_path || {},  
+            response_path: currentOutline || sessionData?.response_path || {},
             additional_data: {
-              personalization_enabled: sessionData?.additional_data?.personalization_enabled || false,
-              habit_enabled: sessionData?.additional_data?.habit_enabled || false,
-              habit_description: sessionData?.additional_data?.habit_description || "",
+              personalization_enabled:
+                sessionData?.additional_data?.personalization_enabled || false,
+              habit_enabled:
+                sessionData?.additional_data?.habit_enabled || false,
+              habit_description:
+                sessionData?.additional_data?.habit_description || "",
             },
             chatbot_conversation: sessionData?.chatbot_conversation || [],
             to_modify: sessionData?.to_modify || {},

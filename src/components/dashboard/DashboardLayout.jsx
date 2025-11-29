@@ -250,7 +250,10 @@ export default function DashboardLayout() {
               welcomeMessage={welcomeMessage}
               initialInput={initialInput}
               userQuestions={userQuestionsParam}
-              onResponseReceived={setPrefillData}
+              onResponseReceived={(updatedSessionData) => {
+                setSessionData(updatedSessionData);
+                setPrefillData(updatedSessionData);
+              }}
               allMessages={allMessages}
               setAllMessages={setAllMessages}
               sessionData={prefillData || sessionData}

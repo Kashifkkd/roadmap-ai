@@ -510,9 +510,10 @@ export default function CreateComet({
         response_outline: {},
         response_path: {},
         additional_data: {
-          personalization_enabled: personalizationEnabled,
-          habit_enabled: habitEnabled,
-          habit_description: habitText || "",
+          personalization_enabled:
+            sessionData?.additional_data?.personalizationEnabled || false,
+          habit_enabled: sessionData?.additional_data?.habitEnabled || false,
+          habit_description: sessionData?.additional_data?.habitText || "",
         },
         chatbot_conversation: [
           ...chatbotConversation,
@@ -528,9 +529,10 @@ export default function CreateComet({
         response_outline: {},
         response_path: {},
         additional_data: {
-          personalization_enabled: personalizationEnabled,
-          habit_enabled: habitEnabled,
-          habit_description: habitText || "",
+          personalization_enabled:
+            sessionData?.additional_data?.personalizationEnabled || false,
+          habit_enabled: sessionData?.additional_data?.habitEnabled || false,
+          habit_description: sessionData?.additional_data?.habitText || "",
         },
         chatbot_conversation: [
           ...chatbotConversation,

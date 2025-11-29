@@ -212,9 +212,11 @@ export default function ChatWindow({
         response_outline: sessionData?.response_outline || {},
         response_path: sessionData?.response_path || {},
         additional_data: {
-          personalization_enabled: sessionData?.additional_data?.personalization_enabled || false,
+          personalization_enabled:
+            sessionData?.additional_data?.personalization_enabled || false,
           habit_enabled: sessionData?.additional_data?.habit_enabled || false,
-          habit_description: sessionData?.additional_data?.habit_description || "",
+          habit_description:
+            sessionData?.additional_data?.habit_description || "",
         },
         chatbot_conversation: chatbotConversation,
         to_modify: {},
