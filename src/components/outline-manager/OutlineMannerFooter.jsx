@@ -147,6 +147,11 @@ export default function OutlineMannerFooter() {
         input_type: "path_creation",
         // comet_creation_data: parsedSessionData?.comet_creation_data || {},
         comet_creation_data: parsedSessionData?.comet_creation_data || {},
+        additional_data: {
+          personalization_enabled: parsedSessionData?.additional_data?.personalization_enabled || false,
+          habit_enabled: parsedSessionData?.additional_data?.habit_enabled || false,
+          habit_description: parsedSessionData?.additional_data?.habit_description || "",
+        },
         response_outline: parsedSessionData?.response_outline || {},
         response_path: {},
         chatbot_conversation: parsedSessionData?.chatbot_conversation || [],

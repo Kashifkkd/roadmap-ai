@@ -235,11 +235,13 @@ const StepsDisplay = ({
                 "Unknown",
             });
           }
+          console.log(selectedStepInfo);
         } else {
           handleClosePopup();
         }
         setIsSelecting(false);
       }, 10);
+      console.log("<<<<<<<chapterSteps>>>>>>>>>>>>", chapterSteps);
     },
     [chapterSteps, chapterNumber, isSelecting, selectedChapter]
   );
@@ -410,6 +412,11 @@ const StepsDisplay = ({
         comet_creation_data: snapshot?.comet_creation_data || {},
         response_outline: snapshot?.response_outline || {},
         response_path: snapshot?.response_path || {},
+        additional_data: {
+          personalization_enabled: snapshot?.additional_data?.personalization_enabled || false,
+          habit_enabled: snapshot?.additional_data?.habit_enabled || false,
+          habit_description: snapshot?.additional_data?.habit_description || "",
+        },
         chatbot_conversation: [
           {
             user: `add a step in chapter: '${chapterLabel}', description: ${userInstruction}`,
@@ -502,7 +509,9 @@ const StepsDisplay = ({
         { from: "user", content: query || "" },
       ]);
 
-      const conversationMessage = `{ 'field': '${selectedStepInfo?.fieldType}', 'value': '${selectedText}', 'instruction': '${query}' }`;
+      const conversationMessage = `{ 'field': '${selectedStepInfo?.fieldType}', 'value': '${selectedText}','chapter': '${selectedStepInfo?.chapterNumber}','step': '${selectedStepInfo?.stepNumber}','instruction': '${query}' }`;
+
+      console.log(">>>>>>>conversationMessage>>>>>>>>>>", conversationMessage);
 
       // update the response outline
       let currentResponseOutline = snapshot?.response_outline || [];
@@ -531,10 +540,16 @@ const StepsDisplay = ({
         comet_creation_data: snapshot?.comet_creation_data || {},
         response_outline: currentResponseOutline,
         response_path: snapshot?.response_path || {},
-        // chatbot_conversation: [{ user: conversationMessage }],
+        additional_data: {
+          personalization_enabled:
+            snapshot?.additional_data?.personalization_enabled || false,
+          habit_enabled: snapshot?.additional_data?.habit_enabled || false,
+          habit_description: snapshot?.additional_data?.habit_description || "",
+        },
         chatbot_conversation: updatedConversation,
         to_modify: {},
       });
+      console.log(">>>>>>>payloadObject>>>>>>>>>>", payloadObject);
 
       const messageResponse = await graphqlClient.sendMessage(payloadObject);
       setAllMessages((prev) => [

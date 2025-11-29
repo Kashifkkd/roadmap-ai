@@ -183,9 +183,7 @@ export default function DashboardLayout() {
       const messageText =
         initialInput || formData.cometTitle || "Create a new comet";
 
-      // Get comet settings from localStorage
-      const savedSettings = localStorage.getItem("cometSettings");
-      const settings = savedSettings ? JSON.parse(savedSettings) : {};
+      console.log(formData);
 
       const cometJsonForMessage = JSON.stringify({
         session_id: newSessionId,
@@ -194,9 +192,9 @@ export default function DashboardLayout() {
         response_outline: {},
         response_path: {},
         additional_data: {
-          personalization_enabled: settings.personalization_enabled || false,
-          habit_enabled: settings.habit_enabled || false,
-          habit_description: settings.habit_description || "",
+          personalization_enabled: formData.personalizationEnabled || false,
+          habit_enabled: formData.habitEnabled || false,
+          habit_description: formData.habitText || "",
         },
         chatbot_conversation: [...chatbotConversation, { user: messageText }],
         to_modify: {},
@@ -255,6 +253,7 @@ export default function DashboardLayout() {
               onResponseReceived={setPrefillData}
               allMessages={allMessages}
               setAllMessages={setAllMessages}
+              sessionData={prefillData || sessionData}
               externalLoading={isAskingKyper}
             />
           </div>

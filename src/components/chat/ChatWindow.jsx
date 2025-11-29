@@ -203,6 +203,7 @@ export default function ChatWindow({
       });
 
       const chatbotConversation = [...existingConversation, ...newEntries];
+      console.log("chatbotConversation>>>>>>>>>>", chatbotConversation);
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
@@ -210,6 +211,11 @@ export default function ChatWindow({
         comet_creation_data: sessionData?.comet_creation_data || {},
         response_outline: sessionData?.response_outline || {},
         response_path: sessionData?.response_path || {},
+        additional_data: {
+          personalization_enabled: sessionData?.additional_data?.personalization_enabled || false,
+          habit_enabled: sessionData?.additional_data?.habit_enabled || false,
+          habit_description: sessionData?.additional_data?.habit_description || "",
+        },
         chatbot_conversation: chatbotConversation,
         to_modify: {},
       });

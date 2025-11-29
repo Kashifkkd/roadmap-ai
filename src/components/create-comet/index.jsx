@@ -408,7 +408,14 @@ export default function CreateComet({
       }
 
       if (onSubmit) {
-        await onSubmit(data);
+        // Include toggle states and their associated data
+        const formData = {
+          ...data,
+          habitEnabled,
+          habitText: data.habit || "",
+          personalizationEnabled,
+        };
+        await onSubmit(formData);
       }
     } catch (error) {
       console.error("Error saving comet data:", error);
@@ -502,6 +509,11 @@ export default function CreateComet({
         comet_creation_data: formattedCometData,
         response_outline: {},
         response_path: {},
+        additional_data: {
+          personalization_enabled: personalizationEnabled,
+          habit_enabled: habitEnabled,
+          habit_description: habitText || "",
+        },
         chatbot_conversation: [
           ...chatbotConversation,
           { user: conversationMessage },
@@ -515,6 +527,11 @@ export default function CreateComet({
         comet_creation_data: formattedCometData,
         response_outline: {},
         response_path: {},
+        additional_data: {
+          personalization_enabled: personalizationEnabled,
+          habit_enabled: habitEnabled,
+          habit_description: habitText || "",
+        },
         chatbot_conversation: [
           ...chatbotConversation,
           { user: conversationMessage },
