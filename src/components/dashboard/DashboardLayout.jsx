@@ -101,9 +101,9 @@ export default function DashboardLayout() {
       cleanup = await graphqlClient.subscribeToSessionUpdates(
         sessionId,
         (sessionData) => {
-          setIsGeneratingOutline(false);
           localStorage.setItem("sessionData", JSON.stringify(sessionData));
           router.push("/outline-manager");
+          setIsGeneratingOutline(false);
         },
         (error) => {
           console.error("Subscription error:", error);
