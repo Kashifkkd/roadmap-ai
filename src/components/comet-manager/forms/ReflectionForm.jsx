@@ -31,6 +31,7 @@ export default function ReflectionForm({
       removeScreenAsset(index);
     }
   };
+  console.log("formData of ReflectionForm>>>>>>>>>>", formData);
 
   return (
     <div className="bg-gray-100 rounded-lg p-2">

@@ -32,11 +32,13 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
   const [currentPasswordError, setCurrentPasswordError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
+  const [firstNameError, setFirstNameError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const [userData, setUserData] = useState(null);
   const [profileUrl, setProfileUrl] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
+  const [isPictureDeleted, setIsPictureDeleted] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -64,6 +66,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
         if (url) {
           setImageUrl(url);
           setProfileUrl(url);
+          setIsPictureDeleted(false);
         }
       }
     } catch (error) {
@@ -78,6 +81,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
   const handleDeletePicture = () => {
     setProfileUrl(null);
     setImageUrl(null);
+    setIsPictureDeleted(true);
   };
 
   const validateCurrentPassword = (value) => {
@@ -131,7 +135,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     const value = event.target.value;
     setPassword(value);
     validatePassword(value);
-    // Re-validate confirm password if it has a value
+    
     if (confirmPassword) {
       validateConfirmPassword(confirmPassword, value);
     }
@@ -152,7 +156,10 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
       email: data.email || userData?.email || "",
       first_name: data.first_name || firstName,
       last_name: data.last_name || lastName,
-      image_url: data.image_url || imageUrl || profileUrl || "",
+      image_url:
+        data.image_url !== undefined
+          ? data.image_url
+          : imageUrl || profileUrl || "",
       timezone: data.timezone || userData?.timezone || "",
       ...(password && confirmPassword && password === confirmPassword
         ? {
@@ -177,6 +184,13 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
   };
 
   const handleSave = async () => {
+    // Validate first name before saving
+    if (!firstName || firstName.trim() === "") {
+      setFirstNameError("First name is required");
+      return; // Don't save if first name is empty
+    }
+    setFirstNameError("");
+
     // Validate passwords before saving
     const isPasswordValid = validatePassword(password);
     const isConfirmPasswordValid = validateConfirmPassword(
@@ -192,7 +206,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
         !isConfirmPasswordValid ||
         !isCurrentPasswordValid
       ) {
-        return; // Don't save if validation fails
+        return;
       }
     }
 
@@ -203,14 +217,13 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
         email: userData?.email || "",
         first_name: firstName,
         last_name: lastName,
-        image_url: imageUrl || "",
+        image_url: isPictureDeleted ? "" : imageUrl || "",
         timezone: userData?.timezone || "",
         new_password: password,
         new_password_confirm: confirmPassword,
       });
 
       if (result && result.success === false) {
-        // Handle backend error for incorrect password
         if (
           result.error &&
           (result.error.includes("password") ||
@@ -220,6 +233,11 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
           setCurrentPasswordError("Current password is incorrect");
         }
         return;
+      }
+
+      // Reset deletion flag after successful save
+      if (isPictureDeleted) {
+        setIsPictureDeleted(false);
       }
 
       onOpenChange(false);
@@ -240,7 +258,9 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     }
   };
 
-  const avatar = imageUrl || userData?.image_url || defaultAvatar;
+  const avatar = isPictureDeleted
+    ? defaultAvatar
+    : imageUrl || userData?.image_url || defaultAvatar;
 
   useEffect(() => {
     if (!open) return;
@@ -257,7 +277,10 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     setCurrentPasswordError("");
     setPasswordError("");
     setConfirmPasswordError("");
+    setFirstNameError("");
     setIsLoading(false);
+    setIsPictureDeleted(false);
+    setImageUrl(null);
   }, [open, userData]);
 
   return (
@@ -288,9 +311,11 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                   </span>
                   <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-gray-100 p-1">
                     <div className="relative h-full w-full overflow-hidden rounded-full bg-white">
-                      {!(imageUrl || userData?.image_url) ? (
+                      {isPictureDeleted ||
+                      !(imageUrl || userData?.image_url) ? (
                         <div className="flex h-full w-full items-center justify-center bg-gray-100 text-4xl font-semibold">
-                          {avatar?.charAt(0)?.toUpperCase() ||
+                          {firstName?.charAt(0)?.toUpperCase() ||
+                            lastName?.charAt(0)?.toUpperCase() ||
                             "A".toUpperCase()}
                         </div>
                       ) : (
@@ -344,10 +369,19 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                       </Label>
                       <Input
                         value={firstName}
-                        onChange={(event) => setFirstName(event.target.value)}
+                        onChange={(event) => {
+                          setFirstName(event.target.value);
+                          setFirstNameError("");
+                        }}
                         placeholder="Enter your first name"
                         required
+                        className={firstNameError ? "border-red-500" : ""}
                       />
+                      {firstNameError && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {firstNameError}
+                        </p>
+                      )}
                     </div>
                     <div className="text-left">
                       <Label className="mb-1 text-sm text-gray-600">

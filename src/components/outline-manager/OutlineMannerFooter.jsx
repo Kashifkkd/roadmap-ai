@@ -148,9 +148,13 @@ export default function OutlineMannerFooter() {
         // comet_creation_data: parsedSessionData?.comet_creation_data || {},
         comet_creation_data: parsedSessionData?.comet_creation_data || {},
         additional_data: {
-          personalization_enabled: parsedSessionData?.additional_data?.personalization_enabled || false,
-          habit_enabled: parsedSessionData?.additional_data?.habit_enabled || false,
-          habit_description: parsedSessionData?.additional_data?.habit_description || "",
+          personalization_enabled:
+            parsedSessionData?.additional_data?.personalization_enabled ||
+            false,
+          habit_enabled:
+            parsedSessionData?.additional_data?.habit_enabled || false,
+          habit_description:
+            parsedSessionData?.additional_data?.habit_description || "",
         },
         response_outline: parsedSessionData?.response_outline || {},
         response_path: {},
@@ -175,7 +179,7 @@ export default function OutlineMannerFooter() {
 
   const handleBackClick = () => {
     try {
-      router?.push("/");
+      router?.push("/dashboard");
     } catch (error) {
       console.error("Error navigating back:", error);
     }

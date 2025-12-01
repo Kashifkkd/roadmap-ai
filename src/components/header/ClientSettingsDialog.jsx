@@ -18,6 +18,24 @@ import { uploadProfile } from "@/api/User/uploadProfile";
 import { toast } from "sonner";
 import { useRefreshData } from "@/hooks/useQueryData";
 
+//function to remove image
+const removeImage = (setFile, setPreview, preview) => {
+  setFile(null);
+  setPreview(null);
+  if (preview) {
+    URL.revokeObjectURL(preview);
+  }
+};
+
+//function to upload image
+const uploadImageFile = async (file) => {
+  const uploadResponse = await uploadProfile(file);
+  if (uploadResponse?.response?.image_url) {
+    return uploadResponse.response.image_url;
+  }
+  throw new Error("Failed to upload image");
+};
+
 export default function ClientSettingsDialog({
   open,
   onOpenChange,
@@ -33,11 +51,16 @@ export default function ClientSettingsDialog({
   const [selectedColorCode, setSelectedColorCode] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [backgroundImageUrl, setBackgroundImageUrl] = useState("");
-  const [imageFileName, setImageFileName] = useState("");
-  const [backgroundImageFileName, setBackgroundImageFileName] = useState("");
+
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingBackgroundImage, setUploadingBackgroundImage] =
     useState(false);
+  const [pendingImageFile, setPendingImageFile] = useState(null);
+  const [pendingBackgroundImageFile, setPendingBackgroundImageFile] =
+    useState(null);
+  const [pendingImagePreview, setPendingImagePreview] = useState(null);
+  const [pendingBackgroundImagePreview, setPendingBackgroundImagePreview] =
+    useState(null);
   const imageInputRef = useRef(null);
   const backgroundImageInputRef = useRef(null);
 
@@ -55,15 +78,16 @@ export default function ClientSettingsDialog({
         const response = await getClientDetails(clientId);
         if (response?.response && !response.error) {
           const fetchedData = response.response;
-          // Store full client data
           setClientData(fetchedData);
-          // Populate form fields with fetched data
           setClientName(fetchedData.name || fetchedData.client_name || "");
           setWebsite(fetchedData.faq_url || "");
           setSelectedColorCode(fetchedData.color_code || "");
           setImageUrl(fetchedData.image_url || "");
           setBackgroundImageUrl(fetchedData.background_image_url || "");
-          // console.log("clientData", fetchedData);
+          setPendingImageFile(null);
+          setPendingBackgroundImageFile(null);
+          setPendingImagePreview(null);
+          setPendingBackgroundImagePreview(null);
         }
       } catch (error) {
         console.error("Failed to fetch client details:", error);
@@ -76,63 +100,38 @@ export default function ClientSettingsDialog({
     fetchClientDetails();
   }, [open, selectedClient]);
 
-  const handleImageUpload = async (event, isBackgroundImage = false) => {
+  // Cleanup preview URLs when dialog closes
+  useEffect(() => {
+    return () => {
+      if (pendingImagePreview) {
+        URL.revokeObjectURL(pendingImagePreview);
+      }
+      if (pendingBackgroundImagePreview) {
+        URL.revokeObjectURL(pendingBackgroundImagePreview);
+      }
+    };
+  }, [pendingImagePreview, pendingBackgroundImagePreview]);
+
+  const handleImageUpload = (event, isBackgroundImage = false) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       toast.error("Please upload an image file");
       return;
     }
 
-    // Store file name
+    const previewUrl = URL.createObjectURL(file);
+
     if (isBackgroundImage) {
-      setBackgroundImageFileName(file.name);
-      setUploadingBackgroundImage(true);
+      setPendingBackgroundImageFile(file);
+      setPendingBackgroundImagePreview(previewUrl);
     } else {
-      setImageFileName(file.name);
-      setUploadingImage(true);
+      setPendingImageFile(file);
+      setPendingImagePreview(previewUrl);
     }
 
-    try {
-      const uploadResponse = await uploadProfile(file);
-      if (uploadResponse?.response?.image_url) {
-        const url = uploadResponse.response.image_url;
-        if (isBackgroundImage) {
-          setBackgroundImageUrl(url);
-          toast.success("Color logo uploaded successfully");
-        } else {
-          setImageUrl(url);
-          toast.success("Image uploaded successfully");
-        }
-      } else {
-        toast.error("Failed to upload image");
-
-        if (isBackgroundImage) {
-          setBackgroundImageFileName("");
-        } else {
-          setImageFileName("");
-        }
-      }
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      toast.error("Failed to upload image. Please try again.");
-      // Clear file name on error
-      if (isBackgroundImage) {
-        setBackgroundImageFileName("");
-      } else {
-        setImageFileName("");
-      }
-    } finally {
-      if (isBackgroundImage) {
-        setUploadingBackgroundImage(false);
-      } else {
-        setUploadingImage(false);
-      }
-
-      event.target.value = "";
-    }
+    event.target.value = "";
   };
 
   const handleImageClick = (isBackgroundImage = false) => {
@@ -164,14 +163,62 @@ export default function ClientSettingsDialog({
 
     setSaving(true);
     try {
+      let finalImageUrl = imageUrl || clientData.image_url || "";
+      let finalBackgroundImageUrl =
+        backgroundImageUrl || clientData.background_image_url || "";
+
+      // Upload pending images first if any
+      if (pendingImageFile) {
+        setUploadingImage(true);
+        try {
+          finalImageUrl = await uploadImageFile(pendingImageFile);
+          setImageUrl(finalImageUrl);
+          removeImage(
+            setPendingImageFile,
+            setPendingImagePreview,
+            pendingImagePreview
+          );
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          toast.error("Failed to upload image. Please try again.");
+          setSaving(false);
+          setUploadingImage(false);
+          return;
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+
+      if (pendingBackgroundImageFile) {
+        setUploadingBackgroundImage(true);
+        try {
+          finalBackgroundImageUrl = await uploadImageFile(
+            pendingBackgroundImageFile
+          );
+          setBackgroundImageUrl(finalBackgroundImageUrl);
+          removeImage(
+            setPendingBackgroundImageFile,
+            setPendingBackgroundImagePreview,
+            pendingBackgroundImagePreview
+          );
+        } catch (error) {
+          console.error("Error uploading color logo:", error);
+          toast.error("Failed to upload color logo. Please try again.");
+          setSaving(false);
+          setUploadingBackgroundImage(false);
+          return;
+        } finally {
+          setUploadingBackgroundImage(false);
+        }
+      }
+
       const payload = {
         id: clientId,
         name: clientName,
         faq_url: website || "",
         color_code: selectedColorCode || "",
-        image_url: imageUrl || clientData.image_url || "",
-        background_image_url:
-          backgroundImageUrl || clientData.background_image_url || "",
+        image_url: finalImageUrl,
+        background_image_url: finalBackgroundImageUrl,
       };
 
       const response = await updateClientDetails(payload);
@@ -297,34 +344,53 @@ export default function ClientSettingsDialog({
                           Image (Upload PNG)
                         </Label>
                         <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
-                          <div
-                            onClick={() => handleImageClick(false)}
-                            className="border-2 border-dashed border-gray-300 rounded-lg p-4 gap-2 flex flex-col items-center justify-center bg-gray-50 cursor-pointer relative"
-                          >
-                            <input
-                              ref={imageInputRef}
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleImageUpload(e, false)}
-                              className="hidden"
-                            />
-                            <div className="text-gray-500 text-sm">
-                              {uploadingImage ? "Uploading..." : "Upload PNG"}
+                          {pendingImagePreview ? (
+                            <div className="relative w-full h-[104px] rounded-lg overflow-hidden">
+                              <img
+                                src={pendingImagePreview}
+                                alt="Preview"
+                                className="w-full h-full object-contain rounded-lg"
+                              />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeImage(
+                                    setPendingImageFile,
+                                    setPendingImagePreview,
+                                    pendingImagePreview
+                                  );
+                                }}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 z-10"
+                                title="Remove image"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
                             </div>
-                            <Button
-                              type="button"
-                              disabled={uploadingImage}
-                              className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                          ) : (
+                            <div
+                              onClick={() => handleImageClick(false)}
+                              className="border-2 border-dashed border-gray-300 rounded-lg p-4 gap-2 flex flex-col items-center justify-center bg-gray-50 cursor-pointer relative h-[104px]"
                             >
-                              {uploadingImage ? "Uploading..." : "+ Browse"}
-                            </Button>
-                          </div>
+                              <input
+                                ref={imageInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleImageUpload(e, false)}
+                                className="hidden"
+                              />
+                              <div className="text-gray-500 text-sm">
+                                {uploadingImage ? "Uploading..." : "Upload PNG"}
+                              </div>
+                              <Button
+                                type="button"
+                                disabled={uploadingImage}
+                                className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                              >
+                                {uploadingImage ? "Uploading..." : "+ Browse"}
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                        {imageFileName && (
-                          <div className="mt-2 text-xs text-gray-600">
-                            Selected: {imageFileName}
-                          </div>
-                        )}
                       </div>
 
                       {/* Color Logo */}
@@ -333,38 +399,57 @@ export default function ClientSettingsDialog({
                           Color Logo (Upload PNG)
                         </Label>
                         <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
-                          <div
-                            onClick={() => handleImageClick(true)}
-                            className="border-2 border-dashed border-gray-300 rounded-lg p-4 gap-2 flex flex-col items-center justify-center bg-gray-50 cursor-pointer relative"
-                          >
-                            <input
-                              ref={backgroundImageInputRef}
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleImageUpload(e, true)}
-                              className="hidden"
-                            />
-                            <div className="text-gray-500 text-sm">
-                              {uploadingBackgroundImage
-                                ? "Uploading..."
-                                : "Upload PNG"}
+                          {pendingBackgroundImagePreview ? (
+                            <div className="relative w-full h-[104px] rounded-lg overflow-hidden">
+                              <img
+                                src={pendingBackgroundImagePreview}
+                                alt="Preview"
+                                className="w-full h-full object-contain rounded-lg"
+                              />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeImage(
+                                    setPendingBackgroundImageFile,
+                                    setPendingBackgroundImagePreview,
+                                    pendingBackgroundImagePreview
+                                  );
+                                }}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 z-10"
+                                title="Remove image"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
                             </div>
-                            <Button
-                              type="button"
-                              disabled={uploadingBackgroundImage}
-                              className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                          ) : (
+                            <div
+                              onClick={() => handleImageClick(true)}
+                              className="border-2 border-dashed border-gray-300 rounded-lg p-4 gap-2 flex flex-col items-center justify-center bg-gray-50 cursor-pointer relative h-[104px]"
                             >
-                              {uploadingBackgroundImage
-                                ? "Uploading..."
-                                : "+ Browse"}
-                            </Button>
-                          </div>
+                              <input
+                                ref={backgroundImageInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleImageUpload(e, true)}
+                                className="hidden"
+                              />
+                              <div className="text-gray-500 text-sm">
+                                {uploadingBackgroundImage
+                                  ? "Uploading..."
+                                  : "Upload PNG"}
+                              </div>
+                              <Button
+                                type="button"
+                                disabled={uploadingBackgroundImage}
+                                className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                              >
+                                {uploadingBackgroundImage
+                                  ? "Uploading..."
+                                  : "+ Browse"}
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                        {backgroundImageFileName && (
-                          <div className="mt-2 text-xs text-gray-600">
-                            Selected: {backgroundImageFileName}
-                          </div>
-                        )}
                       </div>
                     </div>
 

@@ -62,7 +62,6 @@ const extractPlainTextFromDelta = (value) => {
 // Uses actual keys from the structure as defined in temp2.js
 const getFormValuesFromScreen = (screen) => {
   if (!screen) return {};
-
   const contentType = screen.screenContents?.contentType;
   const content = screen.screenContents?.content || {};
 
@@ -108,8 +107,9 @@ const getFormValuesFromScreen = (screen) => {
   }
 
   if (contentType === "reflection") {
-    values.title = content.title || "";
-    values.prompt = content.prompt || "";
+    // Some reflection screens may still use heading/body from older schema
+    values.title = content.title || content.heading || "";
+    values.prompt = content.prompt || content.body || "";
   }
 
   if (contentType === "action" || contentType === "actions") {
@@ -134,9 +134,9 @@ const getFormValuesFromScreen = (screen) => {
     values.habits = content.habits || [];
   }
 
-  if (contentType === "social_discussion") {
-    values.title = content.title || "";
-    values.question = content.question || "";
+  if (contentType === "socialDiscussion" || contentType === "social") {
+    values.title = content.title || content.heading || "";
+    values.question = content.question || content.body || "";
   }
 
   if (contentType === "assessment") {
@@ -196,8 +196,7 @@ export default function DynamicForm({
           if (screenIndex !== undefined && screenIndex >= 0) {
             // Get current screen from latest state (prevOutline)
             const currentScreen = stepItem.screens[screenIndex];
-            const contentType =
-              currentScreen?.screenContents?.contentType || "";
+            const contentType = currentScreen?.screenContents?.contentType;
 
             // Ensure screenContents and content exist
             if (!currentScreen.screenContents) {
@@ -296,18 +295,31 @@ export default function DynamicForm({
               else if (field === "linearBenchmarkType")
                 currentScreen.screenContents.content.benchmark_type = value;
             } else if (contentType === "reflection") {
-              if (field === "title")
+              if (field === "title") {
+                // Write to both title and heading to support mixed schemas
                 currentScreen.screenContents.content.title = value;
-              else if (field === "prompt") {
-                currentScreen.screenContents.content.prompt =
-                  extractPlainTextFromDelta(value);
+                if (!currentScreen.screenContents.content.heading) {
+                  currentScreen.screenContents.content.heading = value;
+                }
+              } else if (field === "prompt") {
+                const promptValue = extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.prompt = promptValue;
+                if (!currentScreen.screenContents.content.body) {
+                  currentScreen.screenContents.content.body = promptValue;
+                }
               }
-            } else if (contentType === "social_discussion") {
-              if (field === "title")
+            } else if (contentType === "socialdiscussion") {
+              if (field === "title") {
                 currentScreen.screenContents.content.title = value;
-              else if (field === "question") {
-                currentScreen.screenContents.content.question =
-                  extractPlainTextFromDelta(value);
+                if (!currentScreen.screenContents.content.heading) {
+                  currentScreen.screenContents.content.heading = value;
+                }
+              } else if (field === "question") {
+                const questionValue = extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.question = questionValue;
+                if (!currentScreen.screenContents.content.body) {
+                  currentScreen.screenContents.content.body = questionValue;
+                }
               }
             } else if (contentType === "assessment") {
               if (field === "title")
@@ -581,11 +593,13 @@ export default function DynamicForm({
           : 1;
 
       const conversationMessage = `{ 'path': 'chapter-${chapterNumber}-step-${stepNumber}-screen-${screenNumber}', 'field': '${mappedField}', 'value': '${askContext.selectedText}', 'instruction': '${query}' }`;
+      console.log("conversationMessage>>", conversationMessage);
 
       // Merge with existing conversation history (same pattern as ChatWindow.jsx)
       const existingConversation = sessionData?.chatbot_conversation || [];
       const newEntries = [{ user: conversationMessage }];
       const chatbotConversation = [...existingConversation, ...newEntries];
+      console.log("chatbotConversation>>", chatbotConversation);
 
       const payloadObject = JSON.stringify({
         session_id: sessionId,
@@ -605,6 +619,7 @@ export default function DynamicForm({
       });
 
       const messageResponse = await graphqlClient.sendMessage(payloadObject);
+      console.log("messageResponse>>", messageResponse);
 
       if (messageResponse?.sendMessage) {
         setAllMessages?.((prev) => [
@@ -825,14 +840,6 @@ export default function DynamicForm({
       contentType === "action" ||
       contentType === "actions"
     ) {
-      console.log(
-        "🔵 Rendering ActionsForm - screenType:",
-        screenType,
-        "contentType:",
-        contentType,
-        "formData:",
-        formData
-      );
       return (
         <ActionsForm
           {...formProps}

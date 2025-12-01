@@ -40,7 +40,7 @@ export default function MultipleChoiceField({
         className={`flex p-1 rounded-2xl bg-[#F8F7FE] w-fit ${
           orientation === "vertical"
             ? "flex-col gap-1"
-            : "flex-col sm:flex-row gap-2 flex-wrap"
+            : "flex-col sm:flex-row gap-1"
         }`}
       >
         {normalizedOptions.map((option) => (
@@ -51,7 +51,7 @@ export default function MultipleChoiceField({
             className={` sm:px-2  rounded-xl p-1  transition-all text-sm sm:text-base cursor-pointer w-fit ${
               value === option.value
                 ? "bg-primary text-white border-primary"
-                : "bg-[#F8F7FE] text-gray-700 border-gray-300 hover:border-primary hover:text-primary"
+                : "bg-[#F8F7FE] text-gray-700 border-gray-300 hover:border-primary hover:text-primary overflow-hidden text-ellipsis whitespace-nowrap"
             }`}
           >
             {option.label}

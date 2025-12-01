@@ -172,6 +172,9 @@ export default function DashboardLayout() {
           "Special Instructions": formData.specialInstructions || "",
         },
       };
+      console.log("habitEnabled", formData.habitEnabled);
+      console.log("habitText", formData.habitText);
+      console.log("personalizationEnabled", formData.personalizationEnabled);
 
       let parsedSessionData = null;
       try {

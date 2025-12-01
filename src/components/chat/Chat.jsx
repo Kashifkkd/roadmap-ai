@@ -31,6 +31,7 @@ const Chat = ({
   inputValue = "",
   onInputChange,
   welcomeMessage = [],
+  showWelcomeMessage = false,
   onSubmit,
   cometManager = false,
   error = null,
@@ -61,22 +62,25 @@ const Chat = ({
       <div className="flex-1 overflow-y-auto no-scrollbar p-2 sm:p-2 pb-4">
         {hasMessages ? (
           <div className="max-w-4xl mx-auto w-full">
-            <ChatMessage
-              role="bot"
-              text={welcomeMessageChat({ messages: welcomeMessage })}
-            />
-
             {messages.map((msg, idx) => (
               <ChatMessage key={idx} role={msg.from} text={msg.content} />
             ))}
+            {showWelcomeMessage && (
+              <ChatMessage
+                role="bot"
+                text={welcomeMessageChat({ messages: welcomeMessage })}
+              />
+            )}
             {isLoading && <SequentialLoader />}
           </div>
         ) : cometManager ? (
           <div className="max-w-4xl mx-auto w-full">
-            <ChatMessage
-              role="bot"
-              text={welcomeMessageChat({ messages: welcomeMessage })}
-            />
+            {showWelcomeMessage && (
+              <ChatMessage
+                role="bot"
+                text={welcomeMessageChat({ messages: welcomeMessage })}
+              />
+            )}
             {isLoading && <SequentialLoader />}
           </div>
         ) : (

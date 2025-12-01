@@ -89,8 +89,12 @@ export default function ImageUpload({
         // Normalize asset data to always have image_url
         const assetData = {
           status: "success",
-          image_url: uploadResponse.response.s3_url || uploadResponse.response.url || uploadResponse.response.image_url,
-          asset_id: uploadResponse.response.id || uploadResponse.response.asset_id,
+          image_url:
+            uploadResponse.response.s3_url ||
+            uploadResponse.response.url ||
+            uploadResponse.response.image_url,
+          asset_id:
+            uploadResponse.response.id || uploadResponse.response.asset_id,
         };
         if (onUploadSuccess) {
           onUploadSuccess(assetData);
@@ -250,7 +254,7 @@ export default function ImageUpload({
     return asset.asset_type === "image";
   }).length;
 
-  console.log(">>assets", assets)
+  console.log(">>assets", assets);
 
   return (
     <>
@@ -363,7 +367,7 @@ export default function ImageUpload({
                     className="relative border border-gray-300 rounded-lg overflow-hidden group"
                   >
                     {typeof imageUrl === "string" &&
-                      imageUrl.startsWith("http") ? (
+                    imageUrl.startsWith("http") ? (
                       <img
                         src={imageUrl}
                         alt={assetName}
@@ -492,7 +496,10 @@ export default function ImageUpload({
       <Dialog open={isAssetDialogOpen} onOpenChange={setIsAssetDialogOpen}>
         <DialogContent className="sm:max-w-[900px] h-[600px] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Select from Assets {assets && assets.length > 0 ? ` (${imageAssetsCount})` : ""}</DialogTitle>
+            <DialogTitle>
+              Select from Assets{" "}
+              {assets && assets.length > 0 ? ` (${imageAssetsCount})` : ""}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4 overflow-y-auto flex-1 min-h-0">
             {isLoadingAssets ? (
@@ -534,47 +541,50 @@ export default function ImageUpload({
               </div>
             ) : (
               <div className="grid grid-cols-6 gap-2">
-                {assets && assets.length > 0 && assets
-                  .filter((asset) => {
-                    // Filter only image assets using exact API response field
-                    return asset.asset_type === "image";
-                  })
-                  .map((asset, index) => {
-                    // Use exact API response fields
-                    const imageUrl = asset.asset_url;
-                    const assetName = getFilenameFromUrl(imageUrl) || `Image ${index + 1}`;
+                {assets &&
+                  assets.length > 0 &&
+                  assets
+                    .filter((asset) => {
+                      // Filter only image assets using exact API response field
+                      return asset.asset_type === "image";
+                    })
+                    .map((asset, index) => {
+                      // Use exact API response fields
+                      const imageUrl = asset.asset_url;
+                      const assetName =
+                        getFilenameFromUrl(imageUrl) || `Image ${index + 1}`;
 
-                    return (
-                      <div
-                        key={asset.id || asset.asset_id || index}
-                        className="relative border-2 border-gray-200 rounded-lg overflow-hidden group cursor-pointer hover:border-primary transition-colors aspect-square"
-                        onClick={() => handleSelectAsset(asset)}
-                      >
-                        {typeof imageUrl === "string" &&
+                      return (
+                        <div
+                          key={asset.id || asset.asset_id || index}
+                          className="relative border-2 border-gray-200 rounded-lg overflow-hidden group cursor-pointer hover:border-primary transition-colors aspect-square"
+                          onClick={() => handleSelectAsset(asset)}
+                        >
+                          {typeof imageUrl === "string" &&
                           imageUrl.startsWith("http") ? (
-                          <img
-                            src={imageUrl}
-                            alt={assetName}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-gray-500 p-2 text-center">
-                            {assetName}
+                            <img
+                              src={imageUrl}
+                              alt={assetName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-gray-500 p-2 text-center">
+                              {assetName}
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Check className="h-6 w-6 text-white drop-shadow-lg" />
+                            </div>
                           </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Check className="h-6 w-6 text-white drop-shadow-lg" />
-                          </div>
+                          {assetName && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate">
+                              {assetName}
+                            </div>
+                          )}
                         </div>
-                        {assetName && (
-                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate">
-                            {assetName}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
               </div>
             )}
           </div>

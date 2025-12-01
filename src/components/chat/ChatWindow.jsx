@@ -27,6 +27,7 @@ export default function ChatWindow({
   const [inputValue, setInputValue] = useState("");
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState(null);
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
 
   // Cleanup WebSocket connections on unmount
   useEffect(() => {
@@ -47,6 +48,17 @@ export default function ChatWindow({
       }
     } catch {}
   }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionData || !sessionData.flag) {
+      setShowWelcomeMessage(false);
+      return;
+    }
+    const { comet_created, outline_created, path_created } = sessionData.flag;
+    const flagValue = comet_created || outline_created || path_created;
+
+    setShowWelcomeMessage(flagValue);
+  }, [sessionData]);
 
   // Function to parse response and extract form data
   const parseResponseForFormData = (responseText) => {
@@ -314,6 +326,7 @@ export default function ChatWindow({
       <Chat
         cometManager={cometManager}
         messages={allMessages}
+        showWelcomeMessage={showWelcomeMessage}
         welcomeMessage={welcomeMessage}
         isLoading={isLoading || isInitialLoading || externalLoading}
         onSuggestionClick={handleSuggestionClick}

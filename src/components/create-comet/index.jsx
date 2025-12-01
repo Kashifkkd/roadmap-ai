@@ -37,8 +37,8 @@ export default function CreateComet({
   const [focusedField, setFocusedField] = useState(null);
   const [blurTimeout, setBlurTimeout] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
-  const [habitEnabled, setHabitEnabled] = useState(true);
-  const [personalizationEnabled, setPersonalizationEnabled] = useState(true);
+  const [habitEnabled, setHabitEnabled] = useState(false);
+  const [personalizationEnabled, setPersonalizationEnabled] = useState(false);
   const subscriptionCleanupRef = useRef(null);
   const [sessionId, setSessionId] = useState(null);
 
@@ -329,7 +329,6 @@ export default function CreateComet({
             }
           }
 
-          // Map Source Alignment field to sourceMaterialFidelity
           if (experienceDesign["Source Alignment"]) {
             const sourceValue = experienceDesign["Source Alignment"];
             if (sourceValue.toLowerCase().includes("fidelity")) {
@@ -503,18 +502,19 @@ export default function CreateComet({
         { from: "user", content: query || "" },
       ]);
 
+      const additionalData = {
+        personalization_enabled: personalizationEnabled || false,
+        habit_enabled: habitEnabled || false,
+        habit_description: formValues.habit || "",
+      };
+
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: "comet_data_update",
         comet_creation_data: formattedCometData,
         response_outline: {},
         response_path: {},
-        additional_data: {
-          personalization_enabled:
-            sessionData?.additional_data?.personalizationEnabled || false,
-          habit_enabled: sessionData?.additional_data?.habitEnabled || false,
-          habit_description: sessionData?.additional_data?.habitText || "",
-        },
+        additional_data: additionalData,
         chatbot_conversation: [
           ...chatbotConversation,
           { user: conversationMessage },
@@ -528,12 +528,7 @@ export default function CreateComet({
         comet_creation_data: formattedCometData,
         response_outline: {},
         response_path: {},
-        additional_data: {
-          personalization_enabled:
-            sessionData?.additional_data?.personalizationEnabled || false,
-          habit_enabled: sessionData?.additional_data?.habitEnabled || false,
-          habit_description: sessionData?.additional_data?.habitText || "",
-        },
+        additional_data: additionalData,
         chatbot_conversation: [
           ...chatbotConversation,
           { user: conversationMessage },
@@ -689,14 +684,14 @@ export default function CreateComet({
 
                     <div className="space-y-1">
                       <Label htmlFor="description">Description</Label>
-                      <Input
-                        type="text"
+                      <Textarea
                         id="description"
+                        rows={4}
                         placeholder="Enter description"
                         {...register("description")}
                         onSelect={(e) => handleTextSelection("description", e)}
                         onBlur={(e) => handleFieldBlur(e)}
-                        className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
+                        className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300 resize-none overflow-y-auto create-comet-scrollbar"
                       />
                       {errors.description && (
                         <p className="text-red-600 text-sm">

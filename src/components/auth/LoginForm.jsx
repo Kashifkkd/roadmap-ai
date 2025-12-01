@@ -186,13 +186,13 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
               </button>
             </div>
             {error.field === "password" && (
-              <p className="text-sm text-red-600">{error.message}</p>
+              <p className="text-sm text-white">{error.message}</p>
             )}
           </div>
 
           {/* Global / API Error */}
           {error.field === "api" && (
-            <div className="p-3 text-sm text-red-600 border border-red-200 rounded-md bg-red-50">
+            <div className="p-3 text-sm text-white border border-red-200 rounded-md bg-red-50">
               {error.message}
             </div>
           )}

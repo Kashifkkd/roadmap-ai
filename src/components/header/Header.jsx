@@ -793,7 +793,7 @@ export default function Header() {
                   </div>
                   <button
                     onClick={toggleUserMenu}
-                    className="flex items-center gap-1.5 sm:gap-2 md:gap-3 cursor-pointer outline-none hover:opacity-80 transition-opacity relative z-50  rounded-full bg-gray-100 p-1"
+                    className="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 md:size-6 bg-gray-100 rounded-full shrink-0 cursor-pointer hover:bg-gray-200 transition-colors"
                   >
                     <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 shrink-0" />
                   </button>
@@ -855,7 +855,7 @@ export default function Header() {
                               activeButton === "settings" ? "text-white" : ""
                             }`}
                           />
-                          <span className="text-base ">Clients Settings</span>
+                          <span className="text-base ">Clients Setting</span>
                         </button>
                       </div>
 

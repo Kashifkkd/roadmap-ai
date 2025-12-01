@@ -120,17 +120,17 @@ export default function WelcomePage() {
       const initialInputParam = encodeURIComponent(initialInput);
 
       // Create session if needed
-      try {
-        const { graphqlClient } = await import("@/lib/graphql-client");
-        let sessionId = localStorage.getItem("sessionId");
-        if (!sessionId) {
-          const sessionResponse = await graphqlClient.createSession();
-          sessionId = sessionResponse.createSession.sessionId;
-          localStorage.setItem("sessionId", sessionId);
-        }
-      } catch (error) {
-        console.error("Error creating session:", error);
-      }
+      // try {
+      //   const { graphqlClient } = await import("@/lib/graphql-client");
+      //   let sessionId = localStorage.getItem("sessionId");
+      //   if (!sessionId) {
+      //     const sessionResponse = await graphqlClient.createSession();
+      //     sessionId = sessionResponse.createSession.sessionId;
+      //     localStorage.setItem("sessionId", sessionId);
+      //   }
+      // } catch (error) {
+      //   console.error("Error creating session:", error);
+      // }
 
       // Small delay before redirect to show loading message
       setTimeout(() => {

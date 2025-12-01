@@ -3,13 +3,6 @@ import { apiService } from "./apiService";
 
 /**
  * Upload an asset file
- * @param {File|Blob} file - The file to upload
- * @param {string} assetType - The type of asset (e.g., 'pdf')
- * @param {string} [sessionId] - Optional session ID
- * @param {string} [chapterId] - Optional chapter ID
- * @param {string} [stepId] - Optional step ID
- * @param {string} [screenId] - Optional screen ID
- * @returns {Promise} API response
  */
 export const uploadAssetFile = async (
   file,
@@ -23,11 +16,34 @@ export const uploadAssetFile = async (
   formData.append("file", file);
   formData.append("asset_type", assetType);
   formData.append("session_id", sessionId);
-  formData.append("chapter_id", chapterId);
-  formData.append("step_id", stepId);
-  formData.append("screen_id", screenId);
 
-  console.log("Uploading asset file:", formData);
+  
+  const normalizeId = (id) => {
+    if (id === undefined || id === null || id === "") return null;
+    const numeric = Number(id);
+    return Number.isNaN(numeric) ? null : numeric;
+  };
+
+  const normalizedChapterId = normalizeId(chapterId);
+  const normalizedStepId = normalizeId(stepId);
+  const normalizedScreenId = normalizeId(screenId);
+
+  if (normalizedChapterId !== null) {
+    formData.append("chapter_id", String(normalizedChapterId));
+  }
+  if (normalizedStepId !== null) {
+    formData.append("step_id", String(normalizedStepId));
+  }
+  if (normalizedScreenId !== null) {
+    formData.append("screen_id", String(normalizedScreenId));
+  }
+
+  console.log("Uploading asset file with:", {
+    sessionId,
+    chapterId: normalizedChapterId,
+    stepId: normalizedStepId,
+    screenId: normalizedScreenId,
+  });
 
   return await apiService({
     endpoint: endpoints.uploadAssets,
