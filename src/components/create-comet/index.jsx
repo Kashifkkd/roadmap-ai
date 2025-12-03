@@ -64,7 +64,7 @@ export default function CreateComet({
       clientOrg: "",
       clientWebsite: "",
       targetAudience: "",
-      learningObjectives: "",
+      learningObjectives: [""],
       cometFocus: "",
       sourceMaterialFidelity: "",
       engagementFrequency: "",
@@ -154,22 +154,24 @@ export default function CreateComet({
                   "targetAudience",
                   audienceObjectives["Target Audience"]
                 );
-              if (audienceObjectives["Learning Objectives"])
-                setValue(
-                  "learningObjectives",
-                  audienceObjectives["Learning Objectives"]
-                );
+              if (audienceObjectives["Learning Objectives"]) {
+                const objectives = audienceObjectives["Learning Objectives"];
+                const objectivesArray = Array.isArray(objectives)
+                  ? objectives
+                  : typeof objectives === "string"
+                  ? objectives.split("\n").filter((obj) => obj.trim())
+                  : [objectives];
+                setValue("learningObjectives", objectivesArray);
+              }
             }
 
             if (experienceDesign) {
               if (experienceDesign["Focus"]) {
                 const focusValue = experienceDesign["Focus"];
-                if (focusValue.toLowerCase().includes("learning new content")) {
-                  setValue("cometFocus", "learning_new_content");
-                } else if (
-                  focusValue.toLowerCase().includes("reinforcing") ||
-                  focusValue.toLowerCase().includes("applying")
-                ) {
+                const lowerFocus = focusValue.toLowerCase();
+                if (lowerFocus.includes("teaching new things")) {
+                  setValue("cometFocus", "Teaching new things");
+                } else if (lowerFocus.includes("reinforcing")) {
                   setValue("cometFocus", "reinforcing_applying");
                 } else {
                   setValue("cometFocus", focusValue);
@@ -285,11 +287,15 @@ export default function CreateComet({
         if (audienceObjectives) {
           if (audienceObjectives["Target Audience"])
             setValue("targetAudience", audienceObjectives["Target Audience"]);
-          if (audienceObjectives["Learning Objectives"])
-            setValue(
-              "learningObjectives",
-              audienceObjectives["Learning Objectives"]
-            );
+          if (audienceObjectives["Learning Objectives"]) {
+            const objectives = audienceObjectives["Learning Objectives"];
+            const objectivesArray = Array.isArray(objectives)
+              ? objectives
+              : typeof objectives === "string"
+              ? objectives.split("\n").filter((obj) => obj.trim())
+              : [objectives];
+            setValue("learningObjectives", objectivesArray);
+          }
         }
 
         if (experienceDesign) {
@@ -298,11 +304,16 @@ export default function CreateComet({
           if (experienceDesign["Focus"]) {
             // Map text values to form values
             const focusValue = experienceDesign["Focus"];
-            if (focusValue.toLowerCase().includes("learning new content")) {
-              setValue("cometFocus", "learning_new_content");
+            console.log("focusValue >>>>>>>>", focusValue);
+            const lowerFocus = focusValue.toLowerCase();
+            if (
+              lowerFocus.includes("teaching new things") ||
+              lowerFocus.includes("teaching new")
+            ) {
+              setValue("cometFocus", "Teaching new things");
             } else if (
-              focusValue.toLowerCase().includes("reinforcing") ||
-              focusValue.toLowerCase().includes("applying")
+              lowerFocus.includes("reinforcing") ||
+              lowerFocus.includes("applying")
             ) {
               setValue("cometFocus", "reinforcing_applying");
             } else {
@@ -350,6 +361,7 @@ export default function CreateComet({
               experienceDesign["Special Instructions"]
             );
         }
+        console.log("prefillData >>>>>>>>", prefillData);
 
         if (prefillData.comet_creation_data["Source Materials"]) {
         }
@@ -364,8 +376,12 @@ export default function CreateComet({
           setValue("targetAudience", prefillData.targetAudience);
         if (prefillData.learningObjectives) {
           const objectives = Array.isArray(prefillData.learningObjectives)
-            ? prefillData.learningObjectives.join("\n")
-            : prefillData.learningObjectives;
+            ? prefillData.learningObjectives
+            : typeof prefillData.learningObjectives === "string"
+            ? prefillData.learningObjectives
+                .split("\n")
+                .filter((obj) => obj.trim())
+            : [prefillData.learningObjectives];
           setValue("learningObjectives", objectives);
         }
         if (prefillData.cometFocus)
@@ -429,6 +445,9 @@ export default function CreateComet({
         if (typeof value === "string") {
           return value.trim().length > 0;
         }
+        if (Array.isArray(value)) {
+          return value.some((item) => item && item.trim().length > 0);
+        }
         return Boolean(value);
       }).length;
       return Math.round((filledCount / requiredFields.length) * 100);
@@ -449,6 +468,7 @@ export default function CreateComet({
       setIsAskingKyper(true);
 
       const formValues = watch();
+
       let currentSessionId =
         sessionId ||
         (typeof window !== "undefined"
@@ -464,7 +484,9 @@ export default function CreateComet({
         },
         "Audience & Objectives": {
           "Target Audience": formValues.targetAudience || "",
-          "Learning Objectives": formValues.learningObjectives || "",
+          "Learning Objectives": Array.isArray(formValues.learningObjectives)
+            ? formValues.learningObjectives.filter((obj) => obj && obj.trim())
+            : formValues.learningObjectives || "",
         },
         "Experience Design": {
           "Length & Frequency": formValues.D || "",
@@ -739,20 +761,37 @@ export default function CreateComet({
                       )}
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <Label htmlFor="learning-objectives">
                         Learning Objectives
                       </Label>
-                      <Textarea
-                        id="learning-objectives"
-                        rows={3}
-                        placeholder="Define learning objectives"
-                        {...register("learningObjectives")}
-                        onSelect={(e) =>
-                          handleTextSelection("learningObjectives", e)
-                        }
-                        className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
-                      />
+                      <div className="space-y-2">
+                        {(watch("learningObjectives") || [""]).map(
+                          (objective, index) => (
+                            <Textarea
+                              key={index}
+                              id={`learning-objective-${index}`}
+                              placeholder={`Learning objective ${index + 1}`}
+                              value={objective || ""}
+                              onChange={(e) => {
+                                const current = watch("learningObjectives") || [
+                                  "",
+                                ];
+                                const updated = [...current];
+                                updated[index] = e.target.value;
+                                setValue("learningObjectives", updated);
+                              }}
+                              onSelect={(e) =>
+                                handleTextSelection(
+                                  `learningObjectives.${index}`,
+                                  e
+                                )
+                              }
+                              className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
+                            />
+                          )
+                        )}
+                      </div>
                       {errors.learningObjectives && (
                         <p className="text-red-600 text-sm">
                           {errors.learningObjectives.message}
@@ -769,8 +808,8 @@ export default function CreateComet({
                       name="cometFocus"
                       options={[
                         {
-                          value: "learning_new_content",
-                          label: "Learning new content",
+                          value: "Teaching new things",
+                          label: "Teaching new things",
                         },
                         {
                           value: "reinforcing_applying",

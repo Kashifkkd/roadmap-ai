@@ -228,7 +228,6 @@ export default function ChatWindow({
           newEntries.push({ user: item.answer });
         }
       });
-      
 
       const chatbotConversation = [...existingConversation, ...newEntries];
       console.log("chatbotConversation>>>>>>>>>>", chatbotConversation);

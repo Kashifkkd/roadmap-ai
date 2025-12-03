@@ -94,6 +94,7 @@ export default function CometManagerSidebar({
   const [isLoadingAssets, setIsLoadingAssets] = useState(false);
   const [assetsError, setAssetsError] = useState(null);
   const [selectedAssetCategory, setSelectedAssetCategory] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Store the callback in a ref to avoid infinite loops
   const onAssetCategorySelectRef = useRef(onAssetCategorySelect);
@@ -106,6 +107,16 @@ export default function CometManagerSidebar({
     if (!selectedAssetCategory) return [];
     return filterAssetsByType(assets, selectedAssetCategory);
   }, [assets, selectedAssetCategory]);
+
+  // Filter source materials by search query
+  const filteredSourceMaterials = useMemo(() => {
+    if (!searchQuery.trim()) return sourceMaterials;
+    const query = searchQuery.toLowerCase().trim();
+    return sourceMaterials.filter((material) => {
+      const materialName = material.source_name?.toLowerCase() || "";
+      return materialName.includes(query);
+    });
+  }, [sourceMaterials, searchQuery]);
 
   useEffect(() => {
     if (selectedAssetCategory && onAssetCategorySelectRef.current) {
@@ -146,6 +157,7 @@ export default function CometManagerSidebar({
 
     // Clear all Data while changing tabs
     setSelectedAssetCategory(null);
+    setSearchQuery("");
 
     if (onMaterialSelect) {
       onMaterialSelect(null);
@@ -322,6 +334,15 @@ export default function CometManagerSidebar({
       fetchAssetsData();
     }
   }, [tab, sessionId, fetchAssetsData]);
+
+  // Format file size helper
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
 
   // Get material file size
   const getMaterialSize = (material) => {
@@ -640,31 +661,37 @@ export default function CometManagerSidebar({
                 </Button>
               </div>
             ) : sourceMaterials && sourceMaterials.length > 0 ? (
-              organizeMaterialsByCategory(sourceMaterials).map(
-                (category, categoryIndex) => {
-                  const categoryId = category.id || `category-${categoryIndex}`;
-                  const isSelected = selectedCategory === categoryId;
-                  const isExpanded = expandedCategories.has(categoryId);
-
-                  return (
-                    <>
-                      <div
-                        className="flex items-center justify-between px-2 
+              <>
+                {/* Search Bar */}
+                <div
+                  className="flex items-center justify-between px-2 
               bg-background rounded-md border border-gray-200 
               hover:border-primary-500"
-                      >
-                        <Search
-                          className="w-5 h-5 text-gray-400 ml-2 
+                >
+                  <Search
+                    className="w-5 h-5 text-gray-400 ml-2 
                 hover:text-primary-400"
-                        />
-                        <input
-                          type="search"
-                          className="w-full p-1 focus:outline-none 
+                  />
+                  <input
+                    type="search"
+                    className="w-full p-1 focus:outline-none 
                   hover:border-primary-500"
-                          placeholder="Search"
-                        />
-                      </div>
-                      <div className="flex flex-col flex-1 min-h-0 justify-between gap-87">
+                    placeholder="Search source materials..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                {/* Categories */}
+                {organizeMaterialsByCategory(filteredSourceMaterials).length >
+                0 ? (
+                  organizeMaterialsByCategory(filteredSourceMaterials).map(
+                    (category, categoryIndex) => {
+                      const categoryId =
+                        category.id || `category-${categoryIndex}`;
+                      const isSelected = selectedCategory === categoryId;
+                      const isExpanded = expandedCategories.has(categoryId);
+
+                      return (
                         <div
                           key={categoryId}
                           className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
@@ -816,21 +843,17 @@ export default function CometManagerSidebar({
                               </div>
                             )}
                         </div>
-                        {/* <div className=" m-auto bottom-6 z-50 w-full shrink-0">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs flex items-center gap-1 w-full"
-                          >
-                            <Plus size={16} />
-                            Add Source
-                          </Button>
-                        </div> */}
-                      </div>
-                    </>
-                  );
-                }
-              )
+                      );
+                    }
+                  )
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                    <p className="text-sm text-gray-500">
+                      No source materials found matching "{searchQuery}"
+                    </p>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <p className="text-sm text-gray-500">

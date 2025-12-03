@@ -250,16 +250,16 @@ export default function CometManager({
   }, [selectedScreenId, screens]);
 
   // Ensure the selected screen is visible in the horizontal list
-  // useEffect(() => {
-  //   const target = selectedScreenRef.current;
-  //   if (target && typeof target.scrollIntoView === "function") {
-  //     target.scrollIntoView({
-  //       behavior: "smooth",
-  //       inline: "center",
-  //       block: "nearest",
-  //     });
-  //   }
-  // }, [currentScreen, selectedScreen]);
+  useEffect(() => {
+    const target = selectedScreenRef.current;
+    if (target && typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    }
+  }, [currentScreen, selectedScreen]);
 
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
@@ -1001,7 +1001,7 @@ export default function CometManager({
                             <button
                               onClick={() => navigateScreen("prev")}
                               disabled={currentScreen === 0}
-                              className="p-2 bg-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              className="p-2 bg-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                               aria-label="Previous screen"
                             >
                               <ChevronLeft size={16} />
@@ -1018,7 +1018,7 @@ export default function CometManager({
                             <button
                               onClick={() => navigateScreen("next")}
                               disabled={currentScreen === screens.length - 1}
-                              className="p-2 bg-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              className="p-2 bg-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                               aria-label="Next screen"
                             >
                               <ChevronRight size={16} />
