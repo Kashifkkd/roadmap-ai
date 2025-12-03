@@ -71,7 +71,7 @@ export default function OutlineManagerLayout() {
   }, [sessionData]);
 
   const welcomeMessage = [
-    "outline Manager Review the Basic Information and Audience & Objectives sections, based on what you've shared so far.",
+    "Review the Basic Information and Audience & Objectives sections, based on what you've shared so far.",
     "Add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",
     "Configure your Comet in the Experience Design section.",
   ];
