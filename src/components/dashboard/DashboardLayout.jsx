@@ -34,6 +34,31 @@ export default function DashboardLayout() {
   }, []);
 
   useEffect(() => {
+    if (!initialInput) return;
+
+    setAllMessages([]);
+    setSessionData(null);
+    setPrefillData(null);
+
+    try {
+      const raw = localStorage.getItem("sessionData");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed) {
+          // Remove previous chatbot conversation and flags
+          if (parsed.chatbot_conversation) {
+            delete parsed.chatbot_conversation;
+          }
+          if (parsed.flag) {
+            delete parsed.flag;
+          }
+          localStorage.setItem("sessionData", JSON.stringify(parsed));
+        }
+      }
+    } catch {}
+  }, [initialInput]);
+
+  useEffect(() => {
     const storedSessionData =
       typeof window !== "undefined"
         ? localStorage.getItem("sessionData")
@@ -247,6 +272,7 @@ export default function DashboardLayout() {
           {/* Chat Window - Hidden on small screens, Desktop: 360px width */}
           <div className="lg:block w-full lg:w-[360px] h-full lg:h-full">
             <ChatWindow
+              cometManager={!!initialInput}
               inputType={
                 prefillData ? "comet_data_update" : "comet_data_creation"
               }

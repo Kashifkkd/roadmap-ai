@@ -560,7 +560,7 @@ export default function CometManagerSidebar({
                                           : "text-gray-900"
                                       }`}
                                     >
-                                      Step {index + 1}.{stepIndex + 1}
+                                      Step {stepIndex + 1}
                                     </p>
                                     <p
                                       className={`text-xs sm:text-sm font-semibold ${

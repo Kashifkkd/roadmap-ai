@@ -50,10 +50,10 @@ export default function ChatWindow({
 
   useEffect(() => {
     const flag = sessionData?.flag;
-    const hasCreationFlag =
+    const hasFlag =
       flag?.comet_created || flag?.outline_created || flag?.path_created;
 
-    if (!hasCreationFlag) {
+    if (!hasFlag) {
       initialMessageCountRef.current = null;
       setShowWelcomeMessage(false);
       return;
@@ -66,9 +66,10 @@ export default function ChatWindow({
       initialMessageCountRef.current = allMessages.length;
     }
 
-    // Hide welcome only when new messages are added in update mode
     const isUpdateMode =
-      inputType === "outline_updation" || inputType === "path_updation";
+      inputType === "outline_updation" ||
+      inputType === "path_updation" ||
+      inputType === "comet_data_update";
     const hasNewMessages = allMessages.length > initialMessageCountRef.current;
 
     setShowWelcomeMessage(!(isUpdateMode && hasNewMessages));
@@ -227,6 +228,7 @@ export default function ChatWindow({
           newEntries.push({ user: item.answer });
         }
       });
+      
 
       const chatbotConversation = [...existingConversation, ...newEntries];
       console.log("chatbotConversation>>>>>>>>>>", chatbotConversation);
