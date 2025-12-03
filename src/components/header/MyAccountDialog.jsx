@@ -305,11 +305,11 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                 onSubmit={(event) => event.preventDefault()}
                 className="flex flex-col gap-6 md:flex-row bg-white rounded-t-2xl p-2"
               >
-                <section className="flex flex-col  gap-4 rounded-2xl bg-[#F1F0FE] p-4 md:w-1/3">
+                <section className="flex flex-col  gap-4 rounded-2xl bg-[#F1F0FE] p-2 md:w-1/3">
                   <span className="text-sm font-medium text-center text-gray-900">
                     Profile Picture
                   </span>
-                  <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-gray-100 p-1">
+                  <div className="relative flex h-38 w-38 items-center justify-center rounded-full bg-gray-100 ">
                     <div className="relative h-full w-full overflow-hidden rounded-full bg-white">
                       {isPictureDeleted ||
                       !(imageUrl || userData?.image_url) ? (
@@ -326,13 +326,13 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                         />
                       )}
                     </div>
-                    <button
+                    {/* <button
                       type="button"
                       onClick={handleChangeClick}
                       className="absolute bottom-3 right-3 flex size-10 items-center justify-center rounded-full bg-white text-[#6B5AE0] shadow-lg transition"
                     >
                       <Camera className="size-5" />
-                    </button>
+                    </button> */}
                   </div>
                   <input
                     type="file"
@@ -346,7 +346,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                       type="button"
                       variant="outline"
                       onClick={handleChangeClick}
-                      className=" border-[#D0C7FF] text-[#6B5AE0] hover:bg-white py-4"
+                      className=" border-primary-400 text-[#6B5AE0] hover:bg-[#6B5AE0]/10 py-4 px-6 cursor-pointer"
                     >
                       Change
                     </Button>
@@ -354,7 +354,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                       type="button"
                       variant="ghost"
                       onClick={handleDeletePicture}
-                      className=" text-sm bg-gray-100 text-gray-500 hover:text-red-500"
+                      className=" text-sm bg-gray-100 text-gray-500 hover:text-[#6B5AE0] cursor-pointer"
                     >
                       <Trash2 className="size-4" />
                     </Button>
@@ -364,7 +364,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                 <section className="flex-1 space-y-4">
                   <div className="flex flex-col gap-4">
                     <div className="text-left">
-                      <Label className="mb-1 text-sm text-gray-600">
+                      <Label className="mb-1 text-sm text-gray-900">
                         First Name*
                       </Label>
                       <Input
@@ -384,7 +384,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                       )}
                     </div>
                     <div className="text-left">
-                      <Label className="mb-1 text-sm text-gray-600">
+                      <Label className="mb-1 text-sm text-gray-900">
                         Last Name*
                       </Label>
                       <Input
@@ -397,7 +397,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                   </div>
 
                   <div className="space-y-1 text-left">
-                    <Label className="text-sm text-gray-600">
+                    <Label className="text-sm text-gray-900">
                       Current Password
                     </Label>
                     <div className="relative">
@@ -432,7 +432,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                   </div>
 
                   <div className="space-y-1 text-left">
-                    <Label className="text-sm text-gray-600">
+                    <Label className="text-sm text-gray-900">
                       New Password
                     </Label>
                     <div className="relative">
@@ -467,7 +467,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                   </div>
 
                   <div className="space-y-1 text-left">
-                    <Label className="text-sm text-gray-600">
+                    <Label className="text-sm text-gray-900">
                       Confirm Password
                     </Label>
                     <div className="relative">

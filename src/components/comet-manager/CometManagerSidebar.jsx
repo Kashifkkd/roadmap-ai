@@ -476,7 +476,7 @@ export default function CometManagerSidebar({
                       </div>
                       <div className="flex flex-col flex-1 min-w-0">
                         <p className="text-[10px] font-medium text-gray-900">
-                          Chapter {index + 1}
+                          Chapter {index}
                         </p>
                         <p
                           className={`text-sm sm:text-sm font-medium ${
