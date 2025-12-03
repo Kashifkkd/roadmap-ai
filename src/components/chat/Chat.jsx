@@ -65,13 +65,13 @@ const Chat = ({
             {messages.map((msg, idx) => (
               <ChatMessage key={idx} role={msg.from} text={msg.content} />
             ))}
+            {isLoading && <SequentialLoader />}
             {showWelcomeMessage && (
               <ChatMessage
                 role="bot"
                 text={welcomeMessageChat({ messages: welcomeMessage })}
               />
             )}
-            {isLoading && <SequentialLoader />}
           </div>
         ) : cometManager ? (
           <div className="max-w-4xl mx-auto w-full">

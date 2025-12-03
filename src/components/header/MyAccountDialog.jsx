@@ -135,7 +135,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     const value = event.target.value;
     setPassword(value);
     validatePassword(value);
-    
+
     if (confirmPassword) {
       validateConfirmPassword(confirmPassword, value);
     }
@@ -287,7 +287,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[572px] max-h-[485px] border-0 bg-transparent p-0 shadow-none [&>button]:hidden">
         <div className="rounded-[32px] bg-white">
-          <div className="rounded-[28px]  bg-white px-4 py-2 sm:px-4 sm:py-2">
+          <div className="rounded-[28px]  bg-white px-2 py-2 sm:px-4 sm:py-2">
             <DialogHeader className="py-6">
               <div className="flex items-center justify-between">
                 <DialogTitle className="text-xl font-semibold text-gray-900">

@@ -20,6 +20,7 @@ export default function ChatWindow({
 }) {
   const router = useRouter();
   const processedInitialInputRef = useRef(false);
+  const initialMessageCountRef = useRef(null);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
@@ -36,8 +37,6 @@ export default function ChatWindow({
     };
   }, []);
 
-  console.log("allMessages", allMessages);
-
   // Initialize sessionId from localStorage so subscription can start even if other components send messages
   useEffect(() => {
     if (sessionId) return;
@@ -50,15 +49,30 @@ export default function ChatWindow({
   }, [sessionId]);
 
   useEffect(() => {
-    if (!sessionData || !sessionData.flag) {
+    const flag = sessionData?.flag;
+    const hasCreationFlag =
+      flag?.comet_created || flag?.outline_created || flag?.path_created;
+
+    if (!hasCreationFlag) {
+      initialMessageCountRef.current = null;
       setShowWelcomeMessage(false);
       return;
     }
-    const { comet_created, outline_created, path_created } = sessionData.flag;
-    const flagValue = comet_created || outline_created || path_created;
 
-    setShowWelcomeMessage(flagValue);
-  }, [sessionData]);
+    // Track initial message count
+    if (initialMessageCountRef.current === null) {
+      initialMessageCountRef.current = allMessages.length;
+    } else if (initialMessageCountRef.current === 0 && allMessages.length > 0) {
+      initialMessageCountRef.current = allMessages.length;
+    }
+
+    // Hide welcome only when new messages are added in update mode
+    const isUpdateMode =
+      inputType === "outline_updation" || inputType === "path_updation";
+    const hasNewMessages = allMessages.length > initialMessageCountRef.current;
+
+    setShowWelcomeMessage(!(isUpdateMode && hasNewMessages));
+  }, [sessionData, allMessages, inputType]);
 
   // Function to parse response and extract form data
   const parseResponseForFormData = (responseText) => {
