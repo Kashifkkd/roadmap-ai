@@ -38,7 +38,62 @@ import { toast } from "sonner";
 import LoginForm from "@/components/auth/LoginForm";
 import MyAccountDialog from "@/components/header/MyAccountDialog";
 import ClientSettingsDialog from "@/components/header/ClientSettingsDialog";
-// import Image from "next/image";
+
+// ---------- Helper: Safe avatar renderer ----------
+const UserAvatar = ({ user }) => {
+  const raw = user?.image_url?.trim();
+  const alt = `${user?.first_name || ""} ${user?.last_name || "User"}`.trim();
+  const fallbackInitial =
+    user?.first_name?.charAt(0)?.toUpperCase() ||
+    user?.last_name?.charAt(0)?.toUpperCase() ||
+    "U";
+
+  // No URL at all → show initials
+  if (!raw) {
+    return (
+      <span className="text-sm font-semibold text-primary-700">
+        {fallbackInitial}
+      </span>
+    );
+  }
+
+  const isRelative = raw.startsWith("/");
+  const isHttp =
+    raw.startsWith("http://") || raw.startsWith("https://");
+
+  // Local path → safe for next/image
+  if (isRelative) {
+    return (
+      <Image
+        src={raw}
+        alt={alt}
+        width={28}
+        height={28}
+        className="w-full h-full rounded-full object-cover"
+      />
+    );
+  }
+
+  // External URL → use <img> to avoid Next.js domain restriction errors
+  if (isHttp) {
+    return (
+      <img
+        src={raw}
+        alt={alt}
+        className="w-full h-full rounded-full object-cover"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+
+  // Anything else weird → fallback to initials
+  return (
+    <span className="text-sm font-semibold text-primary-700">
+      {fallbackInitial}
+    </span>
+  );
+};
+
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
@@ -48,7 +103,6 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
-  // console.log("selectedClient>>>>>>>", selectedClient);
 
   // TanStack Query for clients and user
   const {
@@ -84,6 +138,7 @@ export default function Header() {
     if (!client) return false;
     return client.role === "Super Admin";
   };
+
   // Mock client data - replace with actual data fetching
   const mockClients = [
     {
@@ -119,7 +174,6 @@ export default function Header() {
 
   const navItems = [
     { name: "Dashboard", path: "/" },
-    // { name: "Chat", path: "/chat" },
     { name: "All Comets", path: "/comets" },
     { name: "About Us", path: "/about" },
     { name: "Contact Us", path: "/contact" },
@@ -128,9 +182,7 @@ export default function Header() {
     typeof window !== "undefined" ? localStorage.getItem("user_name") : null;
 
   useEffect(() => {
-    // Check authentication status
     const isAuth = tokenManager.isAuthenticated();
-
     setIsAuthenticated(isAuth);
   }, [pathname]);
 
@@ -157,7 +209,6 @@ export default function Header() {
     };
   }, []);
 
-  // Re-check authentication when login dialog closes (in case user successfully logged in)
   useEffect(() => {
     if (!isLoginDialogOpen) {
       const isAuth = tokenManager.isAuthenticated();
@@ -165,14 +216,12 @@ export default function Header() {
     }
   }, [isLoginDialogOpen]);
 
-  // Update selectedClient when clients change (from TanStack Query)
   useEffect(() => {
     if (clients.length > 0) {
       if (!selectedClient) {
         setSelectedClient(clients[0]);
         localStorage.setItem("Client id", clients[0].id);
       } else {
-        // Update selectedClient with fresh data after refetch
         const updatedClient = clients.find((c) => c.id === selectedClient.id);
         if (updatedClient) {
           setSelectedClient(updatedClient);
@@ -181,33 +230,18 @@ export default function Header() {
     }
   }, [clients]);
 
-  // Fetch notification count
   useEffect(() => {
     if (!isAuthenticated) return;
 
     const fetchNotifications = async () => {
       try {
-        // TODO: Replace with actual notifications API endpoint
-        // Example:
-        // const res = await apiService({
-        //   endpoint: endpoints.getNotifications,
-        //   method: "GET",
-        // });
-        // if (res?.response?.count !== undefined) {
-        //   setNotificationCount(res.response.count);
-        // }
-        // For now, you can set notificationCount manually:
-        // setNotificationCount(4);
+        // placeholder – add real API later
       } catch (error) {
         console.error("Failed to fetch notifications:", error);
       }
     };
 
     fetchNotifications();
-
-    // Optionally set up polling or WebSocket subscription for real-time updates
-    // const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
-    // return () => clearInterval(interval);
   }, [isAuthenticated]);
 
   const handleLogoClick = () => {
@@ -216,8 +250,8 @@ export default function Header() {
 
   const handleButtonClick = (buttonName) => {
     setActiveButton(buttonName);
-    // setIsUserMenuOpen(false);
   };
+
   const handleHomeButtonClick = () => {
     setIsHomeButtonActive(!isHomeButtonActive);
   };
@@ -262,6 +296,7 @@ export default function Header() {
       setIsDownloadActive(false);
     }
   };
+
   const handleLoginClick = () => {
     if (typeof window !== "undefined") {
       try {
@@ -281,21 +316,17 @@ export default function Header() {
       let top = rect.bottom + window.scrollY + spacing;
       let left = rect.left + window.scrollX;
 
-      // Ensure dialog doesn't go off the right edge
       if (left + dialogWidth > window.innerWidth + window.scrollX) {
         left = window.innerWidth + window.scrollX - dialogWidth - 16;
       }
 
-      // Ensure dialog doesn't go off the bottom edge
       if (top + dialogHeight > window.innerHeight + window.scrollY) {
         top = rect.top + window.scrollY - dialogHeight - spacing;
-        // If still off screen, position at top
         if (top < window.scrollY) {
           top = window.scrollY + 16;
         }
       }
 
-      // Ensure dialog doesn't go off the left edge
       if (left < window.scrollX) {
         left = window.scrollX + 16;
       }
@@ -320,7 +351,6 @@ export default function Header() {
       } catch {}
       window.dispatchEvent(new Event("auth-changed"));
     }
-    // localStorage.clear();
     router.push("/");
   };
 
@@ -363,14 +393,12 @@ export default function Header() {
     }
   }, []);
 
-  // When preview mode closes, return to editor mode
   useEffect(() => {
     if (!isPreviewMode && activeModeButton === "preview") {
       setActiveModeButton("editor");
     }
   }, [isPreviewMode, activeModeButton]);
 
-  // When settings dialog closes, return to editor mode
   useEffect(() => {
     if (!isCometSettingsOpen && activeModeButton === "settings") {
       setActiveModeButton("editor");
@@ -396,7 +424,6 @@ export default function Header() {
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(inviteEmail)) {
       alert("Please enter a valid email address");
@@ -406,7 +433,6 @@ export default function Header() {
     setIsInviting(true);
 
     try {
-      // Get sessionId from localStorage
       const sessionId =
         typeof window !== "undefined"
           ? localStorage.getItem("sessionId")
@@ -424,7 +450,6 @@ export default function Header() {
         toast.success(`Comet shared with ${inviteEmail}`);
         handleInviteClose();
       } else {
-        // Check for error details in response
         const errorMessage =
           response?.response?.data?.detail ||
           "Failed to share comet. Please try again.";
@@ -459,7 +484,6 @@ export default function Header() {
     setIsPublishing(true);
 
     try {
-      // Get sessionId from localStorage
       const sessionId =
         typeof window !== "undefined"
           ? localStorage.getItem("sessionId")
@@ -487,12 +511,12 @@ export default function Header() {
       setIsPublishing(false);
     }
   };
+
   const getClientInitial = (client) => {
     const name = client?.name || "";
     return name.charAt(0).toUpperCase() || "?";
   };
 
-  // Small presentational helpers
   const Collaborators = () => (
     <div className="flex items-center">
       {mockCollaborators.map((collaborator, index) => (
@@ -602,7 +626,6 @@ export default function Header() {
 
   const RightSectionCometManager = () => (
     <div className="flex items-center my-1 gap-0.5 sm:gap-1 md:gap-1 shrink-0">
-      {/* Editor Button */}
       <button
         onClick={() => setActiveModeButton("editor")}
         style={{
@@ -657,7 +680,6 @@ export default function Header() {
         </div>
       </button>
 
-      {/* Preview Button */}
       <button
         onClick={() => {
           setActiveModeButton("preview");
@@ -672,7 +694,6 @@ export default function Header() {
         <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
       </button>
 
-      {/* Settings Button - Only shown on comet-manager page */}
       {isCometManager && (
         <button
           onClick={() => {
@@ -788,7 +809,6 @@ export default function Header() {
                       alt="Kyper Logo"
                       width={112}
                       height={52}
-                      // style={{ width: "auto", height: "auto" }}
                     />
                   </div>
                   <button
@@ -916,7 +936,6 @@ export default function Header() {
                         style={
                           isHomeButtonActive
                             ? {
-                                // filter: "brightness(0) invert(1)",
                                 color: "primary-600",
                                 opacity: 1,
                               }
@@ -966,7 +985,6 @@ export default function Header() {
 
             {isHome && (
               <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 ml-auto shrink-0">
-                {/* User Profile Section */}
                 {isAuthenticated ? (
                   <div className="relative">
                     <div className="flex items-center gap-1.5 sm:gap-2">
@@ -995,7 +1013,6 @@ export default function Header() {
                               style={
                                 isHomeButtonActive
                                   ? {
-                                      // filter: "brightness(0) invert(1)",
                                       color: "primary-600",
                                       opacity: 1,
                                     }
@@ -1013,29 +1030,11 @@ export default function Header() {
                         className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0 cursor-pointer"
                         onClick={handleMyAccountClick}
                       >
-                        {user?.image_url && user.image_url.trim() !== "" ? (
-                          <Image
-                            src={user.image_url}
-                            alt={`${user?.first_name || ""} ${
-                              user?.last_name || "User"
-                            }`.trim()}
-                            width={28}
-                            height={28}
-                            className="w-full h-full rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-sm font-semibold text-primary-700">
-                            {user?.first_name?.charAt(0)?.toUpperCase() ||
-                              user?.last_name?.charAt(0)?.toUpperCase() ||
-                              "U"}
-                          </span>
-                        )}
+                        <UserAvatar user={user} />
                       </div>
 
                       <div className="hidden sm:flex flex-col justify-start">
                         <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
-                          {/* {userName?.split(" ")[0]}
-                           */}
                           {user?.first_name || user?.last_name || "User"}
                         </span>
                         {isSuperAdmin() && (
@@ -1045,48 +1044,6 @@ export default function Header() {
                         )}
                       </div>
                     </div>
-
-                    {/* {isUserMenuOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">
-                          {clients[0]?.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {clients[0]?.email}
-                        </p>
-                      </div>
-
-                      <div className="py-1">
-                        <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                          <User className="w-4 h-4" />
-                          <span>Profile</span>
-                        </button>
-                        <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                          <Settings className="w-4 h-4" />
-                          <span>Settings</span>
-                        </button>
-                        <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                          <CreditCard className="w-4 h-4" />
-                          <span>Billing</span>
-                        </button>
-                        <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                          <HelpCircle className="w-4 h-4" />
-                          <span>Help & Support</span>
-                        </button>
-                      </div>
-
-                      <div className="border-t border-gray-100 py-1">
-                        <button
-                          onClick={handleLogout}
-                          className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          <span>Logout</span>
-                        </button>
-                      </div>
-                    </div>
-                  )} */}
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5 sm:gap-3 relative">
@@ -1124,31 +1081,11 @@ export default function Header() {
             {!isHome && !isCometManager && (
               <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 ml-auto shrink-0">
                 <RightSectionGeneric />
-                {/* User Profile Section */}
                 {isAuthenticated ? (
                   <div className="relative">
                     <div className="flex items-center gap-1.5 sm:gap-2">
                       <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
-                        {/* {userName?.charAt(0).toUpperCase()}
-                         */}
-                        {user?.image_url && user.image_url.trim() !== "" ? (
-                          <Image
-                            src={user.image_url}
-                            alt={`${user?.first_name || ""} ${
-                              user?.last_name || "User"
-                            }`.trim()}
-                            width={28}
-                            height={28}
-                            className="rounded-full object-cover w-full h-full"
-                            style={{ width: "auto", height: "auto" }}
-                          />
-                        ) : (
-                          <span className="text-sm font-semibold text-primary-700">
-                            {user?.first_name?.charAt(0)?.toUpperCase() ||
-                              user?.last_name?.charAt(0)?.toUpperCase() ||
-                              "U"}
-                          </span>
-                        )}
+                        <UserAvatar user={user} />
                       </div>
 
                       <div className="hidden sm:flex flex-col justify-start">
@@ -1187,29 +1124,11 @@ export default function Header() {
             {isCometManager && (
               <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 ml-auto shrink-0 min-w-0 max-w-full overflow-hidden">
                 <RightSectionCometManager />
-                {/* User Profile Section */}
                 {isAuthenticated ? (
                   <div className="relative">
                     <div className="flex items-center gap-1.5 sm:gap-2">
                       <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
-                        {user?.image_url && user.image_url.trim() !== "" ? (
-                          <Image
-                            src={user.image_url}
-                            alt={`${user?.first_name || ""} ${
-                              user?.last_name || "User"
-                            }`.trim()}
-                            width={28}
-                            height={28}
-                            className="rounded-full object-cover w-full h-full"
-                            style={{ width: "auto", height: "auto" }}
-                          />
-                        ) : (
-                          <span className="text-sm font-semibold text-primary-700">
-                            {user?.first_name?.charAt(0)?.toUpperCase() ||
-                              user?.last_name?.charAt(0)?.toUpperCase() ||
-                              "U"}
-                          </span>
-                        )}
+                        <UserAvatar user={user} />
                       </div>
 
                       <div className="hidden sm:flex flex-col justify-start">
@@ -1249,7 +1168,6 @@ export default function Header() {
           {isMobileMenuOpen && (
             <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-40 mt-1 mx-1 sm:mx-2 rounded-lg">
               <div className="px-3 sm:px-4 py-3 sm:py-4 space-y-2">
-                {/* Mobile Client Dropdown */}
                 {isAuthenticated && (
                   <div className="mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-200">
                     <ClientDropdown
@@ -1293,7 +1211,6 @@ export default function Header() {
             <div
               className="fixed inset-0 z-40"
               onClick={(e) => {
-                // Don't close if clicking on the button or menu
                 if (e.target.closest("[data-user-menu]")) {
                   return;
                 }
@@ -1302,7 +1219,6 @@ export default function Header() {
             />
           )}
 
-          {/* Invite Dialog */}
           <Dialog
             open={isInviteDialogOpen}
             onOpenChange={setIsInviteDialogOpen}
@@ -1358,7 +1274,6 @@ export default function Header() {
       <MyAccountDialog
         open={isAccountDialogOpen}
         onOpenChange={setIsAccountDialogOpen}
-        // user={accountUser}
       />
       <ClientSettingsDialog
         open={isClientSettingsDialogOpen}
