@@ -21,7 +21,6 @@ export default function OutlineManagerLayout() {
     }
   }, []);
 
-  
   useEffect(() => {
     if (!sessionData?.chatbot_conversation) return;
 
@@ -86,7 +85,7 @@ export default function OutlineManagerLayout() {
             setAllMessages={setAllMessages}
             welcomeMessage={welcomeMessage}
             onResponseReceived={setPrefillData}
-            sessionData={sessionData}
+            sessionData={prefillData || sessionData}
             externalLoading={isAskingKyper}
           />
         </div>

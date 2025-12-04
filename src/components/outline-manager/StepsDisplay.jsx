@@ -406,6 +406,15 @@ const StepsDisplay = ({
         selectedChapter?.chapter ||
         (chapterNumber ? `Chapter ${chapterNumber}` : "current chapter");
 
+      // Preserve existing chatbot conversation history (same pattern as Ask Kyper)
+      const existingConversation = snapshot?.chatbot_conversation || [];
+      const updatedConversation = [
+        ...existingConversation,
+        {
+          user: `add a step in chapter: '${chapterLabel}', description: ${userInstruction}`,
+        },
+      ];
+
       const payloadObject = JSON.stringify({
         session_id: sessionId,
         input_type: "outline_updation",
@@ -413,15 +422,12 @@ const StepsDisplay = ({
         response_outline: snapshot?.response_outline || {},
         response_path: snapshot?.response_path || {},
         additional_data: {
-          personalization_enabled: snapshot?.additional_data?.personalization_enabled || false,
+          personalization_enabled:
+            snapshot?.additional_data?.personalization_enabled || false,
           habit_enabled: snapshot?.additional_data?.habit_enabled || false,
           habit_description: snapshot?.additional_data?.habit_description || "",
         },
-        chatbot_conversation: [
-          {
-            user: `add a step in chapter: '${chapterLabel}', description: ${userInstruction}`,
-          },
-        ],
+        chatbot_conversation: updatedConversation,
         to_modify: {},
       });
 
