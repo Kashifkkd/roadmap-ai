@@ -68,7 +68,7 @@ const Chat = ({
             {isLoading && <SequentialLoader />}
             {showWelcomeMessage && (
               <ChatMessage
-                role="agent"
+                role="bot"
                 text={welcomeMessageChat({ messages: welcomeMessage })}
               />
             )}

@@ -875,7 +875,7 @@ export default function Header() {
                               activeButton === "settings" ? "text-white" : ""
                             }`}
                           />
-                          <span className="text-base ">Clients Setting</span>
+                          <span className="text-base ">Client Settings</span>
                         </button>
                       </div>
 
@@ -891,7 +891,7 @@ export default function Header() {
                           }`}
                         >
                           <Image
-                            src="/logout.svg"
+                            src="/Logout.svg"
                             alt="Logout"
                             width={20}
                             height={20}

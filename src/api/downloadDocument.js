@@ -3,7 +3,7 @@ import { endpoints } from "./endpoint";
 
 const BACKEND_URL = "https://kyper-stage.1st90.com";
 
-export const downloadDocument = async (documentId, customFilename = null) => {
+export const downloadDocument = async (documentId) => {
   try {
     const token = localStorage.getItem("access_token");
 
@@ -18,54 +18,17 @@ export const downloadDocument = async (documentId, customFilename = null) => {
       responseType: "blob",
     });
 
-    // Extract filename from header
-    const contentDisposition = response.headers["content-disposition"];
-    let filename = customFilename || "document.docx"; // Default filename
-
-    if (contentDisposition) {
-      // Handle different formats
-      const filenameMatch = contentDisposition.match(
-        /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
-      );
-      if (filenameMatch && filenameMatch[1]) {
-        filename = filenameMatch[1].replace(/['"]/g, ""); // Remove 
-        try {
-          filename = decodeURIComponent(filename);
-        } catch (e) {
-          
-        }
-      }
-    }
-
-    // If no filename from header  get from sessionData
-    if (!customFilename && filename === "document.docx") {
-      try {
-        const sessionDataRaw = localStorage.getItem("sessionData");
-        if (sessionDataRaw) {
-          const sessionData = JSON.parse(sessionDataRaw);
-          const cometTitle =
-            sessionData?.comet_creation_data?.["Basic Information"]?.[
-              "Comet Title"
-            ];
-          if (cometTitle) {
-            //remove invalid characters
-            const sanitizedTitle = cometTitle
-              .replace(/[<>:"/\\|?*]/g, "_")
-              .trim()
-              .replace(/\s+/g, "_");
-            filename = `${sanitizedTitle}.docx`;
-          }
-        }
-      } catch (e) {
-        
-      }
-    }
+    // // Extract filename from header
+    // const contentDisposition = response.headers["content-disposition"];
+    // console.log("contentDisposition>>>>>>>", contentDisposition);
+    // const filename =
+    //   contentDisposition?.split("filename=")[1] || "document.docx";
 
     // Trigger download
     const url = window.URL.createObjectURL(response.data);
     const link = document.createElement("a");
     link.href = url;
-    link.download = filename;
+    // link.download = filename;
     link.click();
     window.URL.revokeObjectURL(url);
 
