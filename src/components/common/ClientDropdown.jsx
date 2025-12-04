@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
-import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { isArrayWithValues } from "@/utils/isArrayWithValues";
 
@@ -15,7 +14,6 @@ function isValidHttpUrl(string) {
     return false;
   }
 }
-// console.log("clients", clients);
 
 export default function ClientDropdown({
   onClientSelect,
@@ -26,6 +24,10 @@ export default function ClientDropdown({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  // track image errors so we can fallback to initials
+  const [selectedImageError, setSelectedImageError] = useState(false);
+  const [imageErrorMap, setImageErrorMap] = useState({}); // { [id]: true }
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -38,6 +40,11 @@ export default function ClientDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    // whenever selected client changes, reset its error
+    setSelectedImageError(false);
+  }, [selectedClient?.id, selectedClient?.image_url]);
+
   const handleClientClick = (client) => {
     setIsOpen(false);
     if (onClientSelect) {
@@ -45,36 +52,34 @@ export default function ClientDropdown({
     }
   };
 
-  const getDisplayText = () => {
-    if (selectedClient) return selectedClient?.name;
-    if (isLoading) return "Loading...";
-    if (isError) return "Error loading clients";
-    if (isArrayWithValues(clients)) return clients[0]?.name || "Select Client";
-    return "No clients available";
-  };
- 
- 
-
   const getClientInitial = (client) => {
     const name = client?.name || "";
     return name.charAt(0).toUpperCase() || "?";
   };
 
+  const handleListImageError = (clientId) => {
+    if (!clientId) return;
+    setImageErrorMap((prev) => ({
+      ...prev,
+      [clientId]: true,
+    }));
+  };
+
   return (
-    <div className="relative " ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef}>
       <Button
         disabled={isLoading}
         className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 sm:py-2 bg-background border-none shadow-none rounded-lg text-xs sm:text-sm font-medium text-gray-800 hover:bg-background active:bg-background disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
-        <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
-          {selectedClient?.image_url &&
-          selectedClient.image_url.trim() !== "" ? (
-            <Image
+        <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0 overflow-hidden">
+          {selectedClient &&
+          isValidHttpUrl(selectedClient.image_url) &&
+          !selectedImageError ? (
+            <img
               src={selectedClient.image_url}
               alt={selectedClient?.name || "Client"}
-              width={28}
-              height={28}
               className="rounded-full object-cover w-full h-full"
+              onError={() => setSelectedImageError(true)}
             />
           ) : (
             <span className="text-sm font-semibold text-primary-700">
@@ -110,32 +115,38 @@ export default function ClientDropdown({
               </div>
             ) : (
               isArrayWithValues(clients) &&
-              clients.map((client) => (
-                <Button
-                  key={client?.id}
-                  onClick={() => handleClientClick(client)}
-                  className="flex justify-start items-center gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-background border-none shadow-none rounded text-left hover:bg-background active:bg-background cursor-pointer"
-                >
-                  <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-sm sm:text-base font-semibold text-primary-700 shrink-0">
-                    {client?.image_url && client.image_url.trim() !== "" ? (
-                      <Image
-                        src={client.image_url}
-                        alt={client?.name || "Client"}
-                        width={28}
-                        height={28}
-                        className="rounded-full object-cover w-full h-full"
-                      />
-                    ) : (
-                      <span className="text-sm font-semibold text-primary-700">
-                        {getClientInitial(client)}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-xs sm:text-sm md:text-base font-semibold text-gray-900 truncate">
-                    {client?.name}
-                  </span>
-                </Button>
-              ))
+              clients.map((client) => {
+                const hasImg =
+                  client &&
+                  isValidHttpUrl(client.image_url) &&
+                  !imageErrorMap[client.id];
+
+                return (
+                  <Button
+                    key={client?.id || client?.name}
+                    onClick={() => handleClientClick(client)}
+                    className="flex justify-start items-center gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-background border-none shadow-none rounded text-left hover:bg-background active:bg-background cursor-pointer"
+                  >
+                    <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-sm sm:text-base font-semibold text-primary-700 shrink-0 overflow-hidden">
+                      {hasImg ? (
+                        <img
+                          src={client.image_url}
+                          alt={client?.name || "Client"}
+                          className="rounded-full object-cover w-full h-full"
+                          onError={() => handleListImageError(client.id)}
+                        />
+                      ) : (
+                        <span className="text-sm font-semibold text-primary-700">
+                          {getClientInitial(client)}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs sm:text-sm md:text-base font-semibold text-gray-900 truncate">
+                      {client?.name}
+                    </span>
+                  </Button>
+                );
+              })
             )}
           </div>
         </div>
