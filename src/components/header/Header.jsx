@@ -130,7 +130,7 @@ export default function Header() {
   const loginButtonRef = useRef(null);
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
-  const [text, setText] = useState("New Manager Essentials");
+  const [text, setText] = useState("");
 
   // Check if user is super admin
   const isSuperAdmin = () => {
@@ -384,13 +384,9 @@ export default function Header() {
         localStorage.getItem("sessionData") || "{}"
       );
       setText(
-        sessionData?.comet_creation_data?.["Basic Information"]?.[
-          "Comet Title"
-        ] || "New Manager Essentials"
+        sessionData?.comet_creation_data?.["Basic Information"]?.["Comet Title"]
       );
-    } catch {
-      setText("New Manager Essentials");
-    }
+    } catch {}
   }, []);
 
   useEffect(() => {

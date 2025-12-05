@@ -9,6 +9,7 @@ export default function OutlineManagerLayout() {
   const [allMessages, setAllMessages] = useState([]);
   const [prefillData, setPrefillData] = useState(null);
   const [isAskingKyper, setIsAskingKyper] = useState(false);
+  const [isSubmittingStep, setIsSubmittingStep] = useState(false);
 
   useEffect(() => {
     // Access localStorage only on the client
@@ -86,7 +87,7 @@ export default function OutlineManagerLayout() {
             welcomeMessage={welcomeMessage}
             onResponseReceived={setPrefillData}
             sessionData={prefillData || sessionData}
-            externalLoading={isAskingKyper}
+            externalLoading={isAskingKyper || isSubmittingStep}
           />
         </div>
         <div className="w-full lg:flex-1 h-full">
@@ -96,6 +97,8 @@ export default function OutlineManagerLayout() {
             setAllMessages={setAllMessages}
             isAskingKyper={isAskingKyper}
             setIsAskingKyper={setIsAskingKyper}
+            isSubmittingStep={isSubmittingStep}
+            setIsSubmittingStep={setIsSubmittingStep}
           />
         </div>
       </div>

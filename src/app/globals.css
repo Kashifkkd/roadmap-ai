@@ -316,3 +316,17 @@
   animation: moveStripe 0.8s linear infinite;
   background-size: 20px 100%;
 }
+
+/* Blink animation for typing cursor */
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}

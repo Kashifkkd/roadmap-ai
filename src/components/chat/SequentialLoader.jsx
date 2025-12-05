@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { cn } from "@/lib/utils";
+import TypingText from "./TypingText";
 
 const loadingMessages = [
   "Interpreting your question…",
@@ -9,36 +10,6 @@ const loadingMessages = [
   "Synthesizing index data…",
   "Crafting your answer…",
 ];
-
-const TypingText = ({ text, onComplete }) => {
-  const [displayedText, setDisplayedText] = useState("");
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  useEffect(() => {
-    if (currentIndex < text.length) {
-      const timer = setTimeout(() => {
-        setDisplayedText((prev) => prev + text[currentIndex]);
-        setCurrentIndex((prev) => prev + 1);
-      }, 30);
-
-      return () => clearTimeout(timer);
-    } else if (onComplete) {
-      const completeTimer = setTimeout(() => {
-        onComplete();
-      }, 500);
-      return () => clearTimeout(completeTimer);
-    }
-  }, [currentIndex, text, onComplete]);
-
-  return (
-    <span>
-      {displayedText}
-      {currentIndex < text.length && (
-        <span className="inline-block w-0.5 h-4 bg-primary ml-0.5 animate-blink" />
-      )}
-    </span>
-  );
-};
 
 const SequentialLoader = () => {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
@@ -67,6 +38,8 @@ const SequentialLoader = () => {
                 key={currentMessageIndex}
                 text={currentMessage}
                 onComplete={handleMessageComplete}
+                completeDelay={500}
+                resetOnChange={false}
               />
             </span>
           </span>

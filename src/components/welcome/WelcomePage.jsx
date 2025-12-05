@@ -35,6 +35,7 @@ export default function WelcomePage() {
   const [initialInput, setInitialInput] = useState("");
   const [messages, setMessages] = useState([]); // Store chat messages for display
   const [isLoading, setIsLoading] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const messagesEndRef = useRef(null);
 
   const handleSuggestionSelect = (suggestion) => {
@@ -59,10 +60,14 @@ export default function WelcomePage() {
     }
   }, [messages.length, isExpanded]);
 
+  const handleMessageTypingComplete = () => {
+    setIsAnimating(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!inputText.trim() || isDisabled) return;
+    if (!inputText.trim() || isDisabled || isAnimating) return;
 
     setIsDisabled(true);
     const userInput = inputText.trim();
@@ -76,6 +81,7 @@ export default function WelcomePage() {
         { from: "user", content: userInput },
         { from: "bot", content: QUESTIONS[0] },
       ]);
+      setIsAnimating(true);
 
       setQuestionIndex(0);
       setIsExpanded(true);
@@ -101,6 +107,7 @@ export default function WelcomePage() {
               "Perfect. That's everything I need for now. Let me generate your initial Comet setup — this will take just a moment.",
           },
         ]);
+        setIsAnimating(true);
       }, 200);
 
       // Show loading message after a short delay
@@ -114,7 +121,8 @@ export default function WelcomePage() {
               "Analyzing source materials and preparing your Input Screen…",
           },
         ]);
-      }, 300);
+        setIsAnimating(true);
+      }, 4500);
 
       const userQuestionsParam = encodeURIComponent(JSON.stringify(allAnswers));
       const initialInputParam = encodeURIComponent(initialInput);
@@ -132,12 +140,11 @@ export default function WelcomePage() {
       //   console.error("Error creating session:", error);
       // }
 
-      // Small delay before redirect to show loading message
       setTimeout(() => {
         router.push(
           `/dashboard?initialInput=${initialInputParam}&userQuestions=${userQuestionsParam}`
         );
-      }, 1500);
+      }, 7000);
       return;
     }
 
@@ -152,6 +159,7 @@ export default function WelcomePage() {
           content: QUESTIONS[nextIndex],
         },
       ]);
+      setIsAnimating(true);
     }, 300);
 
     setIsDisabled(false);
@@ -245,9 +253,14 @@ export default function WelcomePage() {
                   <div className="flex-1 overflow-y-auto p-4 pb-2 space-y-3 min-h-0">
                     {messages.map((msg, idx) => (
                       <ChatMessage
-                        key={idx}
+                        key={`${idx}-${msg.from}-${msg.content.substring(
+                          0,
+                          20
+                        )}`}
                         role={msg.from === "user" ? "user" : "bot"}
                         text={msg.content}
+                        animate={msg.from === "bot"}
+                        onTypingComplete={handleMessageTypingComplete}
                       />
                     ))}
                     <div ref={messagesEndRef} />
@@ -277,7 +290,7 @@ export default function WelcomePage() {
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      disabled={isDisabled || isLoading}
+                      disabled={isDisabled || isLoading || isAnimating}
                       className={`w-full ${
                         messages.length === 0 ? "pl-10" : "pl-3"
                       } pr-3 ${
@@ -317,7 +330,12 @@ export default function WelcomePage() {
 
                     <button
                       onClick={(e) => handleSubmit(e)}
-                      disabled={isDisabled || !inputText.trim() || isLoading}
+                      disabled={
+                        isDisabled ||
+                        !inputText.trim() ||
+                        isLoading ||
+                        isAnimating
+                      }
                       className="p-2 bg-primary text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors flex items-center justify-center w-8 h-8"
                     >
                       <ArrowUp className="w-4 h-4" />

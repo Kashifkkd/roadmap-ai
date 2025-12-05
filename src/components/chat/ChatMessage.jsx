@@ -2,8 +2,9 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
+import TypingText from "./TypingText";
 
-const ChatMessage = ({ role, text }) => {
+const ChatMessage = ({ role, text, animate = false, onTypingComplete }) => {
   const isUser = role === "user";
 
   return (
@@ -17,7 +18,11 @@ const ChatMessage = ({ role, text }) => {
         )}
       >
         <div className="text-sm leading-relaxed whitespace-pre-wrap">
-          {text}
+          {!isUser && animate ? (
+            <TypingText text={text} onComplete={onTypingComplete} />
+          ) : (
+            text
+          )}
         </div>
       </div>
     </div>

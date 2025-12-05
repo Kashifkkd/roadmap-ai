@@ -26,6 +26,8 @@ const StepsDisplay = ({
   selectedStep,
   isAskingKyper = false,
   setIsAskingKyper = () => {},
+  isSubmittingStep = false,
+  setIsSubmittingStep = () => {},
 }) => {
   const [focusedField, setFocusedField] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
@@ -43,7 +45,6 @@ const StepsDisplay = ({
   const [stepPrompt, setStepPrompt] = useState("");
   const [includeSourceMaterial, setIncludeSourceMaterial] = useState(false);
   const [sourceMaterialNotes, setSourceMaterialNotes] = useState("");
-  const [isSubmittingStep, setIsSubmittingStep] = useState(false);
   const [addStepError, setAddStepError] = useState(null);
   const [storedSessionId, setStoredSessionId] = useState(null);
   const subscriptionCleanupRef = useRef(null);
@@ -434,15 +435,9 @@ const StepsDisplay = ({
       const messageResponse = await graphqlClient.sendMessage(payloadObject);
 
       if (typeof setAllMessages === "function") {
-        // const botMessage = messageResponse?.sendMessage || "";
-
         setAllMessages((prev) => [
           ...prev,
           { from: "user", content: userInstruction },
-          { from: "bot", content: messageResponse?.sendMessage || "" },
-          // ...(isProcessingMessage
-          //   ? []
-          //   : [{ from: "bot", content: botMessage }]),
         ]);
       }
     } catch (error) {

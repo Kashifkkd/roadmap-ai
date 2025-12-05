@@ -7,8 +7,65 @@ import Image from "next/image";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import SequentialLoader from "./SequentialLoader";
+import TypingText from "./TypingText";
 
-const welcomeMessageChat = ({ messages }) => {
+const TypingWelcomeMessage = ({ messages, onTyping }) => {
+  const [visibleMessages, setVisibleMessages] = useState([]);
+  const [typingMessageIndex, setTypingMessageIndex] = useState(-1);
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+
+    setVisibleMessages([]);
+    setTypingMessageIndex(0);
+  }, [messages]);
+
+  const handleMessageComplete = () => {
+    if (typingMessageIndex >= 0 && typingMessageIndex < messages.length) {
+      setVisibleMessages((prev) => [...prev, typingMessageIndex]);
+      setTypingMessageIndex((prev) => prev + 1);
+    }
+  };
+
+  const handleTyping = () => {
+    if (onTyping) {
+      onTyping();
+    }
+  };
+
+  return (
+    <div className="flex flex-col space-y-2 w-full p-2 bg-[#ECF7F6] rounded-lg">
+      {visibleMessages.map((idx) => (
+        <div key={idx} className="bg-[#D9F0EC] rounded-lg p-2">
+          <p className="text-[#399C8D] text-sm leading-relaxed">
+            {messages[idx]}
+          </p>
+        </div>
+      ))}
+      {typingMessageIndex >= 0 && typingMessageIndex < messages.length && (
+        <div className="bg-[#D9F0EC] rounded-lg p-2">
+          <p className="text-[#399C8D] text-sm leading-relaxed">
+            <TypingText
+              key={typingMessageIndex}
+              text={messages[typingMessageIndex]}
+              onComplete={handleMessageComplete}
+              onTyping={handleTyping}
+              cursorColor="bg-[#399C8D]"
+              completeDelay={100}
+              resetOnChange={false}
+            />
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const welcomeMessageChat = ({ messages, animate = false, onTyping }) => {
+  if (animate) {
+    return <TypingWelcomeMessage messages={messages} onTyping={onTyping} />;
+  }
+
   return (
     <div className="flex flex-col space-y-2 w-full p-2 bg-[#ECF7F6] rounded-lg">
       {messages.length > 0 &&
@@ -38,13 +95,29 @@ const Chat = ({
 }) => {
   const bottomRef = useRef(null);
 
-  // Auto-scroll to bottom when messages change or loading starts
+  // Auto-scroll to bottom
   useEffect(() => {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, showWelcomeMessage]);
 
+  const [typingProgress, setTypingProgress] = useState(0);
+
+  const handleWelcomeTyping = () => {
+    setTypingProgress((prev) => prev + 1);
+  };
+
+  //welcome message scroll
+  useEffect(() => {
+    if (showWelcomeMessage && welcomeMessage.length > 0) {
+      if (bottomRef.current) {
+        bottomRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, [showWelcomeMessage, typingProgress]);
+
+  // Handle suggestion click
   const handleSuggestionClick = async (suggestionText) => {
     try {
       if (onSuggestionClick) {
@@ -55,6 +128,7 @@ const Chat = ({
     }
   };
 
+  // Check if there are messages
   const hasMessages = messages && messages.length > 0;
 
   return (
@@ -65,11 +139,16 @@ const Chat = ({
             {messages.map((msg, idx) => (
               <ChatMessage key={idx} role={msg.from} text={msg.content} />
             ))}
+
             {isLoading && <SequentialLoader />}
             {showWelcomeMessage && (
               <ChatMessage
-                role="bot"
-                text={welcomeMessageChat({ messages: welcomeMessage })}
+                role="agent"
+                text={welcomeMessageChat({
+                  messages: welcomeMessage,
+                  animate: true,
+                  onTyping: handleWelcomeTyping,
+                })}
               />
             )}
           </div>
@@ -78,7 +157,11 @@ const Chat = ({
             {showWelcomeMessage && (
               <ChatMessage
                 role="bot"
-                text={welcomeMessageChat({ messages: welcomeMessage })}
+                text={welcomeMessageChat({
+                  messages: welcomeMessage,
+                  animate: true,
+                  onTyping: handleWelcomeTyping,
+                })}
               />
             )}
             {isLoading && <SequentialLoader />}
