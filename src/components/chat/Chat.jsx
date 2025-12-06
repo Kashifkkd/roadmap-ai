@@ -159,7 +159,7 @@ const Chat = ({
           </div>
         ) : cometManager ? (
           <div className="max-w-4xl mx-auto w-full">
-            {showWelcomeMessage && (
+            {/* {showWelcomeMessage && (
               <ChatMessage
                 role="bot"
                 text={welcomeMessageChat({
@@ -167,8 +167,12 @@ const Chat = ({
                   animate: true,
                 })}
               />
-            )}
+            )} */}
             {isLoading && <SequentialLoader />}
+          </div>
+        ) : isLoading ? (
+          <div className="max-w-4xl mx-auto w-full">
+            <SequentialLoader />
           </div>
         ) : (
           <div className="flex flex-col items-center pt-10 sm:space-y-6 max-w-4xl mx-auto w-full">
