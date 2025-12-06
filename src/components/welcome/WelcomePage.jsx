@@ -122,7 +122,7 @@ export default function WelcomePage() {
           },
         ]);
         setIsAnimating(true);
-      }, 4500);
+      }, 3000);
 
       const userQuestionsParam = encodeURIComponent(JSON.stringify(allAnswers));
       const initialInputParam = encodeURIComponent(initialInput);
@@ -144,7 +144,7 @@ export default function WelcomePage() {
         router.push(
           `/dashboard?initialInput=${initialInputParam}&userQuestions=${userQuestionsParam}`
         );
-      }, 7000);
+      }, 4000);
       return;
     }
 

@@ -6,7 +6,7 @@ const TypingText = ({
   text,
   onComplete,
   onTyping,
-  speed = 30,
+  speed = 20,
   completeDelay = 300,
   cursorColor = "bg-primary",
   resetOnChange = true,

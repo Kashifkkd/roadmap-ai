@@ -94,28 +94,25 @@ const Chat = ({
   error = null,
 }) => {
   const bottomRef = useRef(null);
+  // const scrollContainerRef = useRef(null);
+  // const [isBottom, setIsBottom] = useState(false);
+
+  // const handleScroll = () => {
+  //   const container = scrollContainerRef.current;
+  //   if (!container) return;
+
+  //   const threshold = 40;
+  //   const { scrollTop, scrollHeight, clientHeight } = container;
+  //   const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+  //   setIsBottom(distanceToBottom <= threshold);
+  // };
 
   // Auto-scroll to bottom
   useEffect(() => {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, isLoading, showWelcomeMessage]);
-
-  const [typingProgress, setTypingProgress] = useState(0);
-
-  const handleWelcomeTyping = () => {
-    setTypingProgress((prev) => prev + 1);
-  };
-
-  //welcome message scroll
-  useEffect(() => {
-    if (showWelcomeMessage && welcomeMessage.length > 0) {
-      if (bottomRef.current) {
-        bottomRef.current.scrollIntoView({ behavior: "smooth" });
-      }
-    }
-  }, [showWelcomeMessage, typingProgress]);
+  }, [messages, isLoading]);
 
   // Handle suggestion click
   const handleSuggestionClick = async (suggestionText) => {
@@ -133,7 +130,11 @@ const Chat = ({
 
   return (
     <div className="h-full bg-background flex flex-col border-2 border-[#C7C2F9] rounded-lg overflow-hidden">
-      <div className="flex-1 overflow-y-auto no-scrollbar p-2 sm:p-2 pb-4">
+      <div
+        className="flex-1 overflow-y-auto no-scrollbar p-2 sm:p-2 pb-4"
+        // ref={scrollContainerRef}
+        // onScroll={handleScroll}
+      >
         {hasMessages ? (
           <div className="max-w-4xl mx-auto w-full">
             {messages.map((msg, idx) => (
@@ -147,7 +148,11 @@ const Chat = ({
                 text={welcomeMessageChat({
                   messages: welcomeMessage,
                   animate: true,
-                  onTyping: handleWelcomeTyping,
+                  onTyping: () => {
+                    if (bottomRef.current) {
+                      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+                    }
+                  },
                 })}
               />
             )}
@@ -160,7 +165,6 @@ const Chat = ({
                 text={welcomeMessageChat({
                   messages: welcomeMessage,
                   animate: true,
-                  onTyping: handleWelcomeTyping,
                 })}
               />
             )}
