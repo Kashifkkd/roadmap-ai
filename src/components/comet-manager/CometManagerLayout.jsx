@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import ChatWindow from "@/components/chat/ChatWindow";
 import CometManager from "./CometManager";
 import { usePreviewMode } from "@/contexts/PreviewModeContext";
@@ -242,11 +242,16 @@ export default function CometManagerLayout() {
     }
   }, [outline]);
 
-  const welcomeMessage = [
-    "Comet Manager Review the Basic Information and Audience & Objectives sections, based on what you've shared so far.",
-    "Add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",
-    "Configure your Comet in the Experience Design section.",
-  ];
+  // Memoize welcomeMessage to prevent re-renders when auto-save updates
+  const welcomeMessage = useMemo(() => {
+    if (sessionData?.flag?.comet_created) {
+      return [
+        "Comet Manager Review the Basic Information and Audience & Objectives sections, based on what you've shared so far.",
+        "Add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",
+        "Configure your Comet in the Experience Design section.",
+      ];
+    }
+  }, [sessionData?.flag?.comet_created]);
 
   return (
     <div className="flex h-full w-full bg-primary-50 overflow-y-auto">
