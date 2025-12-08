@@ -244,14 +244,14 @@ export default function CometManagerLayout() {
 
   // Memoize welcomeMessage to prevent re-renders when auto-save updates
   const welcomeMessage = useMemo(() => {
-    if (sessionData?.flag?.comet_created) {
+    if (sessionData?.flag?.path_created) {
       return [
         "Comet Manager Review the Basic Information and Audience & Objectives sections, based on what you've shared so far.",
         "Add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",
         "Configure your Comet in the Experience Design section.",
       ];
     }
-  }, [sessionData?.flag?.comet_created]);
+  }, [sessionData?.flag?.path_created]);
 
   return (
     <div className="flex h-full w-full bg-primary-50 overflow-y-auto">

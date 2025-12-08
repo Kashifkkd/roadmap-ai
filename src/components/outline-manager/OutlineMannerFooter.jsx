@@ -43,7 +43,7 @@ export default function OutlineMannerFooter() {
             localStorage.setItem("sessionData", JSON.stringify(sessionData));
           } catch {}
           router.push("/comet-manager");
-          setIsGenerating(false);
+          // setIsGenerating(false);
         },
         (err) => {
           console.error("Subscription error:", err);
