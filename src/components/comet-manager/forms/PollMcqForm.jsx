@@ -10,8 +10,9 @@ import { Plus } from "lucide-react";
 
 // Helper to generate unique IDs
 const generateId = (prefix) => {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `${prefix}_${crypto.randomUUID()}`;
 };
+
 
 // Helper to extract plain text from Quill delta JSON
 const extractPlainTextFromDelta = (value) => {

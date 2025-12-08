@@ -254,9 +254,9 @@ export default function DashboardLayout() {
     );
   }
   const welcomeMessage = [
-    "Review the Basic Information and Audience & Objectives sections, based on what you've shared so far.",
-    "Add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",
-    "Configure your Comet in the Experience Design section.",
+    "Review the Basic Information and Audience & Objectives sections, which I drafted based on what you've shared so far.",
+    "Then, add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",
+    "Finally, configure your Comet in the Experience Design section. When you're ready, move to the next step to review your Comet Outline.",
   ];
 
   return (
