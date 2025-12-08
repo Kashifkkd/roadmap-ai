@@ -62,7 +62,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
       // First upload the file to get the URL
       const uploadResponse = await uploadProfile(file);
       if (uploadResponse.response) {
-        const url = uploadResponse.response.image_url;
+        const url = uploadResponse.response.ImageUrl;
         if (url) {
           setImageUrl(url);
           setProfileUrl(url);
@@ -156,9 +156,9 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
       email: data.email || userData?.email || "",
       first_name: data.first_name || firstName,
       last_name: data.last_name || lastName,
-      image_url:
-        data.image_url !== undefined
-          ? data.image_url
+      ImageUrl:
+        data.ImageUrl !== undefined
+          ? data.ImageUrl
           : imageUrl || profileUrl || "",
       timezone: data.timezone || userData?.timezone || "",
       ...(password && confirmPassword && password === confirmPassword
@@ -217,7 +217,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
         email: userData?.email || "",
         first_name: firstName,
         last_name: lastName,
-        image_url: isPictureDeleted ? "" : imageUrl || "",
+        ImageUrl: isPictureDeleted ? "" : imageUrl || "",
         timezone: userData?.timezone || "",
         new_password: password,
         new_password_confirm: confirmPassword,
@@ -260,7 +260,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
 
   const avatar = isPictureDeleted
     ? defaultAvatar
-    : imageUrl || userData?.image_url || defaultAvatar;
+    : imageUrl || userData?.ImageUrl || defaultAvatar;
 
   useEffect(() => {
     if (!open) return;
@@ -311,8 +311,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                   </span>
                   <div className="relative flex h-38 w-38 items-center justify-center rounded-full bg-gray-100 ">
                     <div className="relative h-full w-full overflow-hidden rounded-full bg-white">
-                      {isPictureDeleted ||
-                      !(imageUrl || userData?.image_url) ? (
+                      {isPictureDeleted || !(imageUrl || userData?.ImageUrl) ? (
                         <div className="flex h-full w-full items-center justify-center bg-gray-100 text-4xl font-semibold">
                           {firstName?.charAt(0)?.toUpperCase() ||
                             lastName?.charAt(0)?.toUpperCase() ||
@@ -320,7 +319,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                         </div>
                       ) : (
                         <img
-                          src={imageUrl || userData?.image_url || defaultAvatar}
+                          src={imageUrl || userData?.ImageUrl || defaultAvatar}
                           alt="Profile preview"
                           className="rounded-full h-full w-full object-cover"
                         />

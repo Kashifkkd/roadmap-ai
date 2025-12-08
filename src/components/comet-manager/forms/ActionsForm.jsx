@@ -21,14 +21,16 @@ const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${checked ? "bg-primary" : "bg-gray-300"
-        }`}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+        checked ? "bg-primary" : "bg-gray-300"
+      }`}
       role="switch"
       aria-checked={checked}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${checked ? "translate-x-6" : "translate-x-1"
-          }`}
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
+          checked ? "translate-x-6" : "translate-x-1"
+        }`}
       />
     </button>
   </div>
@@ -46,7 +48,7 @@ export default function ActionsForm({
     onRichTextBlur,
   } = askKyperHandlers;
 
-  console.log("formData >>>", formData)
+  console.log("formData >>>", formData);
 
   return (
     <div className="bg-gray-100 rounded-lg p-2">
@@ -85,16 +87,12 @@ export default function ActionsForm({
           </Label>
           <Input
             type="text"
-            value={formData.tool_link || ""}
-            onChange={(e) => updateField("tool_link", e.target.value)}
+            value={formData.toolLink || ""}
+            onChange={(e) => updateField("toolLink", e.target.value)}
             placeholder="Enter tool URL or link"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
             onSelect={(event) =>
-              onTextFieldSelect?.(
-                "actionToolLink",
-                event,
-                formData.tool_link
-              )
+              onTextFieldSelect?.("actionToolLink", event, formData.toolLink)
             }
             onBlur={onFieldBlur}
           />
@@ -106,8 +104,8 @@ export default function ActionsForm({
             Tool Prompt
           </Label>
           <Textarea
-            value={formData.reflection_prompt || ""}
-            onChange={(e) => updateField("reflection_prompt", e.target.value)}
+            value={formData.reflectionPrompt || ""}
+            onChange={(e) => updateField("reflectionPrompt", e.target.value)}
             rows={4}
             placeholder="Enter prompt for tool creation..."
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white resize-none"
@@ -115,7 +113,7 @@ export default function ActionsForm({
               onTextFieldSelect?.(
                 "actionReflectionPrompt",
                 event,
-                formData.reflection_prompt
+                formData.reflectionPrompt
               )
             }
             onBlur={onFieldBlur}
@@ -126,16 +124,14 @@ export default function ActionsForm({
         <div className="mb-4 pt-6 border-t border-gray-300">
           <div className="space-y-4">
             <ToggleSwitch
-              checked={formData.can_complete_now ?? false}
-              onChange={(value) =>
-                updateField("can_complete_now", value)
-              }
+              checked={formData.canCompleteNow ?? false}
+              onChange={(value) => updateField("canCompleteNow", value)}
               label="Users can complete this action immediately"
             />
 
             <ToggleSwitch
-              checked={formData.can_scheduled ?? false}
-              onChange={(value) => updateField("can_scheduled", value)}
+              checked={formData.canSchedule ?? false}
+              onChange={(value) => updateField("canSchedule", value)}
               label="Users can schedule this action for later"
             />
 

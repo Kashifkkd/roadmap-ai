@@ -41,7 +41,7 @@ import ClientSettingsDialog from "@/components/header/ClientSettingsDialog";
 
 // ---------- Helper: Safe avatar renderer ----------
 const UserAvatar = ({ user }) => {
-  const raw = user?.image_url?.trim();
+  const raw = user?.ImageUrl?.trim();
   const alt = `${user?.first_name || ""} ${user?.last_name || "User"}`.trim();
   const fallbackInitial =
     user?.first_name?.charAt(0)?.toUpperCase() ||
@@ -143,12 +143,12 @@ export default function Header() {
     {
       id: 1,
       name: "Jhon Doe",
-      image_url: "/profile.png",
+      ImageUrl: "/profile.png",
     },
     {
       id: 2,
       name: "Jane Doe",
-      image_url: "/profile.png",
+      ImageUrl: "/profile.png",
     },
   ];
 
@@ -157,17 +157,17 @@ export default function Header() {
     {
       id: 1,
       name: "John Smith",
-      image_url: "/profile.png",
+      ImageUrl: "/profile.png",
     },
     {
       id: 2,
       name: "Jane Doe",
-      image_url: "/profile.png",
+      ImageUrl: "/profile.png",
     },
     {
       id: 3,
       name: "Mike Johnson",
-      image_url: "/profile.png",
+      ImageUrl: "/profile.png",
     },
   ];
 
@@ -526,8 +526,8 @@ export default function Header() {
         >
           <Image
             src={
-              collaborator.image_url && collaborator.image_url.trim() !== ""
-                ? collaborator.image_url
+              collaborator.ImageUrl && collaborator.ImageUrl.trim() !== ""
+                ? collaborator.ImageUrl
                 : "/profile.png"
             }
             alt={collaborator.name || "Collaborator"}

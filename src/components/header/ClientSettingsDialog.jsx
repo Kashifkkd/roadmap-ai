@@ -30,8 +30,8 @@ const removeImage = (setFile, setPreview, preview) => {
 //function to upload image
 const uploadImageFile = async (file) => {
   const uploadResponse = await uploadProfile(file);
-  if (uploadResponse?.response?.image_url) {
-    return uploadResponse.response.image_url;
+  if (uploadResponse?.response?.ImageUrl) {
+    return uploadResponse.response.ImageUrl;
   }
   throw new Error("Failed to upload image");
 };
@@ -82,7 +82,7 @@ export default function ClientSettingsDialog({
           setClientName(fetchedData.name || fetchedData.client_name || "");
           setWebsite(fetchedData.faq_url || "");
           setSelectedColorCode(fetchedData.color_code || "");
-          setImageUrl(fetchedData.image_url || "");
+          setImageUrl(fetchedData.ImageUrl || "");
           setBackgroundImageUrl(fetchedData.background_image_url || "");
           setPendingImageFile(null);
           setPendingBackgroundImageFile(null);
@@ -163,7 +163,7 @@ export default function ClientSettingsDialog({
 
     setSaving(true);
     try {
-      let finalImageUrl = imageUrl || clientData.image_url || "";
+      let finalImageUrl = imageUrl || clientData.ImageUrl || "";
       let finalBackgroundImageUrl =
         backgroundImageUrl || clientData.background_image_url || "";
 
@@ -217,7 +217,7 @@ export default function ClientSettingsDialog({
         name: clientName,
         faq_url: website || "",
         color_code: selectedColorCode || "",
-        image_url: finalImageUrl,
+        ImageUrl: finalImageUrl,
         background_image_url: finalBackgroundImageUrl,
       };
 

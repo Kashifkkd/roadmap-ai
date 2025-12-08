@@ -86,13 +86,13 @@ export default function ImageUpload({
 
       // console.log(uploadResponse, "uploadResponse")
       if (uploadResponse?.response) {
-        // Normalize asset data to always have image_url
+        // Normalize asset data to always have ImageUrl
         const assetData = {
           status: "success",
-          image_url:
+          ImageUrl:
             uploadResponse.response.s3_url ||
             uploadResponse.response.url ||
-            uploadResponse.response.image_url,
+            uploadResponse.response.ImageUrl,
           asset_id:
             uploadResponse.response.id || uploadResponse.response.asset_id,
         };
@@ -140,10 +140,10 @@ export default function ImageUpload({
       }
 
       if (response) {
-        // Normalize asset data to always have image_url
+        // Normalize asset data to always have ImageUrl
         const assetToSave = {
           status: response.status || "success",
-          image_url: response.image_url || response.url,
+          ImageUrl: response.ImageUrl || response.url,
           asset_id: response.asset_id || response.id,
           style: response.style,
           prompt_used: response.prompt_used,
@@ -233,7 +233,7 @@ export default function ImageUpload({
     // Format asset to match outline structure: { type: "image", url: "...", alt: "..." }
     const assetToSave = {
       status: "success",
-      image_url: imageUrl,
+      ImageUrl: imageUrl,
       url: imageUrl, // Also include url for compatibility
       asset_id: asset.id,
       id: asset.id,
@@ -351,10 +351,7 @@ export default function ImageUpload({
             <div className="grid grid-cols-3 gap-3">
               {existingAssets.map((asset, index) => {
                 const imageUrl =
-                  asset.s3_url ||
-                  asset.image_url ||
-                  asset.imageUrl ||
-                  asset.url;
+                  asset.s3_url || asset.ImageUrl || asset.imageUrl || asset.url;
                 const assetName =
                   asset.name ||
                   asset.prompt_used ||

@@ -86,16 +86,16 @@ export default function HabitOptInForm({
             if (updateScreenAssets) {
               updateScreenAssets([assetData]);
             }
-            if (assetData.image_url) {
-              updateField("habit_image", assetData.image_url);
+            if (assetData.ImageUrl) {
+              updateField("habit_image", assetData.ImageUrl);
             }
           }}
           onAIGenerateSuccess={(assetData) => {
             if (updateScreenAssets) {
               updateScreenAssets([assetData]);
             }
-            if (assetData.image_url) {
-              updateField("habit_image", assetData.image_url);
+            if (assetData.ImageUrl) {
+              updateField("habit_image", assetData.ImageUrl);
             }
           }}
           existingAssets={existingAssets}
@@ -138,9 +138,7 @@ export default function HabitOptInForm({
                   <RichTextArea
                     label="Text"
                     value={habit.text || ""}
-                    onChange={(value) =>
-                      updateHabitField(index, "text", value)
-                    }
+                    onChange={(value) => updateHabitField(index, "text", value)}
                     onSelectionChange={(selectionInfo) =>
                       onRichTextSelection?.(
                         "habitsText",

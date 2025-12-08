@@ -88,8 +88,8 @@ const getFormValuesFromScreen = (screen) => {
   if (contentType === "force_rank") {
     values.title = content.title || "";
     values.question = content.question || "";
-    values.high_label = content.high_label || "";
-    values.low_label = content.low_label || "";
+    values.highLabel = content.highLabel || "";
+    values.lowLabel = content.lowLabel || "";
     values.key_learning = content.key_learning || "";
     values.options = content.options || [];
   }
@@ -97,11 +97,11 @@ const getFormValuesFromScreen = (screen) => {
   if (contentType === "linear") {
     values.title = content.title || "";
     values.question = content.question || "";
-    values.high_label = content.high_label || "";
-    values.low_label = content.low_label || "";
+    values.highLabel = content.highLabel || "";
+    values.lowLabel = content.lowLabel || "";
     values.key_learning = content.key_learning || "";
-    values.lowerscale = content.lowerscale;
-    values.higherscale = content.higherscale;
+    values.lowerScale = content.lowerScale;
+    values.higherScale = content.higherScale;
     values.linearBenchmarkType =
       content.benchmark_type || content.benchmarkType || "";
   }
@@ -115,11 +115,11 @@ const getFormValuesFromScreen = (screen) => {
   if (contentType === "action" || contentType === "actions") {
     values.title = content.title || "";
     values.text = content.text || "";
-    values.can_scheduled = content.can_scheduled ?? false;
-    values.can_complete_now = content.can_complete_now ?? false;
+    values.canSchedule = content.canSchedule ?? false;
+    values.canCompleteNow = content.canCompleteNow ?? false;
     values.has_reflection_question = content.has_reflection_question ?? false;
-    values.tool_link = content.tool_link || "";
-    values.reflection_prompt = content.reflection_prompt || "";
+    values.toolLink = content.toolLink || "";
+    values.reflectionPrompt = content.reflectionPrompt || "";
     values.reflection_question = content.reflection_question || "";
   }
 
@@ -129,7 +129,7 @@ const getFormValuesFromScreen = (screen) => {
     values.habit_image =
       typeof content.habit_image === "string"
         ? content.habit_image
-        : content.habit_image?.url || content.habit_image?.image_url || "";
+        : content.habit_image?.url || content.habit_image?.ImageUrl || "";
     values.enabled = content.enabled ?? false;
     values.habits = content.habits || [];
   }
@@ -230,17 +230,17 @@ export default function DynamicForm({
                 // RichTextArea - extract plain text from Quill delta
                 const textValue = extractPlainTextFromDelta(value);
                 currentScreen.screenContents.content.text = textValue;
-              } else if (field === "can_scheduled") {
-                currentScreen.screenContents.content.can_scheduled = value;
-              } else if (field === "can_complete_now") {
-                currentScreen.screenContents.content.can_complete_now = value;
+              } else if (field === "canSchedule") {
+                currentScreen.screenContents.content.canSchedule = value;
+              } else if (field === "canCompleteNow") {
+                currentScreen.screenContents.content.canCompleteNow = value;
               } else if (field === "has_reflection_question") {
                 currentScreen.screenContents.content.has_reflection_question =
                   value;
-              } else if (field === "tool_link") {
-                currentScreen.screenContents.content.tool_link = value;
-              } else if (field === "reflection_prompt") {
-                currentScreen.screenContents.content.reflection_prompt = value;
+              } else if (field === "toolLink") {
+                currentScreen.screenContents.content.toolLink = value;
+              } else if (field === "reflectionPrompt") {
+                currentScreen.screenContents.content.reflectionPrompt = value;
               } else if (field === "reflection_question") {
                 currentScreen.screenContents.content.reflection_question =
                   value;
@@ -268,10 +268,10 @@ export default function DynamicForm({
               else if (field === "question") {
                 currentScreen.screenContents.content.question =
                   extractPlainTextFromDelta(value);
-              } else if (field === "high_label")
-                currentScreen.screenContents.content.high_label = value;
-              else if (field === "low_label")
-                currentScreen.screenContents.content.low_label = value;
+              } else if (field === "highLabel")
+                currentScreen.screenContents.content.highLabel = value;
+              else if (field === "lowLabel")
+                currentScreen.screenContents.content.lowLabel = value;
               else if (field === "key_learning")
                 currentScreen.screenContents.content.key_learning = value;
               else if (field === "options")
@@ -282,16 +282,16 @@ export default function DynamicForm({
               else if (field === "question") {
                 currentScreen.screenContents.content.question =
                   extractPlainTextFromDelta(value);
-              } else if (field === "high_label")
-                currentScreen.screenContents.content.high_label = value;
-              else if (field === "low_label")
-                currentScreen.screenContents.content.low_label = value;
+              } else if (field === "highLabel")
+                currentScreen.screenContents.content.highLabel = value;
+              else if (field === "lowLabel")
+                currentScreen.screenContents.content.lowLabel = value;
               else if (field === "key_learning")
                 currentScreen.screenContents.content.key_learning = value;
-              else if (field === "lowerscale")
-                currentScreen.screenContents.content.lowerscale = value;
-              else if (field === "higherscale")
-                currentScreen.screenContents.content.higherscale = value;
+              else if (field === "lowerScale")
+                currentScreen.screenContents.content.lowerScale = value;
+              else if (field === "higherScale")
+                currentScreen.screenContents.content.higherScale = value;
               else if (field === "linearBenchmarkType")
                 currentScreen.screenContents.content.benchmark_type = value;
             } else if (contentType === "reflection") {
@@ -556,24 +556,24 @@ export default function DynamicForm({
         mcqKeyLearning: "key_learning",
         mcqOptions: "options",
         forceRankTitle: "title",
-        forceRankHighLabel: "high_label",
-        forceRankLowLabel: "low_label",
+        forceRankHighLabel: "highLabel",
+        forceRankLowLabel: "lowLabel",
         forceRankQuestion: "question",
         forceRankKeyLearning: "key_learning",
         forceRankOptions: "options",
         linearTitle: "title",
-        linearHighLabel: "high_label",
-        linearLowLabel: "low_label",
+        linearHighLabel: "highLabel",
+        linearLowLabel: "lowLabel",
         linearQuestion: "question",
         linearKeyLearning: "key_learning",
-        linearLowerScale: "lowerscale",
-        linearHigherScale: "higherscale",
+        linearLowerScale: "lowerScale",
+        linearHigherScale: "higherScale",
         reflectionTitle: "title",
         reflectionPrompt: "prompt",
         actionTitle: "title",
         actionText: "text",
-        actionToolLink: "tool_link",
-        actionReflectionPrompt: "reflection_prompt",
+        actionToolLink: "toolLink",
+        actionReflectionPrompt: "reflectionPrompt",
         socialTitle: "title",
         socialQuestion: "question",
         assessmentTitle: "title",

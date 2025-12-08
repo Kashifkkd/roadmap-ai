@@ -44,21 +44,21 @@ export default function PollLinearForm({
         />
         <TextField
           label="Top Label"
-          value={formData.high_label || ""}
-          onChange={(value) => updateField("high_label", value)}
+          value={formData.highLabel || ""}
+          onChange={(value) => updateField("highLabel", value)}
           inputProps={{
             onSelect: (event) =>
-              onTextFieldSelect?.("linearHighLabel", event, formData.high_label),
+              onTextFieldSelect?.("linearHighLabel", event, formData.highLabel),
             onBlur: onFieldBlur,
           }}
         />
         <TextField
           label="Bottom Label"
-          value={formData.low_label || ""}
-          onChange={(value) => updateField("low_label", value)}
+          value={formData.lowLabel || ""}
+          onChange={(value) => updateField("lowLabel", value)}
           inputProps={{
             onSelect: (event) =>
-              onTextFieldSelect?.("linearLowLabel", event, formData.low_label),
+              onTextFieldSelect?.("linearLowLabel", event, formData.lowLabel),
             onBlur: onFieldBlur,
           }}
         />
@@ -82,10 +82,10 @@ export default function PollLinearForm({
           <div className="flex items-center gap-3">
             <Input
               type="number"
-              value={formData.lowerscale ?? ""}
+              value={formData.lowerScale ?? ""}
               onChange={(e) =>
                 updateField(
-                  "lowerscale",
+                  "lowerScale",
                   e.target.value === "" ? "" : Number(e.target.value)
                 )
               }
@@ -95,10 +95,10 @@ export default function PollLinearForm({
             <span className="text-sm font-medium text-gray-700">To</span>
             <Input
               type="number"
-              value={formData.higherscale ?? ""}
+              value={formData.higherScale ?? ""}
               onChange={(e) =>
                 updateField(
-                  "higherscale",
+                  "higherScale",
                   e.target.value === "" ? "" : Number(e.target.value)
                 )
               }
@@ -112,7 +112,9 @@ export default function PollLinearForm({
             Benchmark Type
           </Label>
           <Select
-            value={formData.linearBenchmarkType || formData.benchmark_type || ""}
+            value={
+              formData.linearBenchmarkType || formData.benchmark_type || ""
+            }
             onValueChange={(value) => updateField("linearBenchmarkType", value)}
           >
             <SelectTrigger className="w-full">

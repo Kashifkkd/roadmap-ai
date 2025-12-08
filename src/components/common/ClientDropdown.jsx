@@ -43,7 +43,7 @@ export default function ClientDropdown({
   useEffect(() => {
     // whenever selected client changes, reset its error
     setSelectedImageError(false);
-  }, [selectedClient?.id, selectedClient?.image_url]);
+  }, [selectedClient?.id, selectedClient?.ImageUrl]);
 
   const handleClientClick = (client) => {
     setIsOpen(false);
@@ -73,10 +73,10 @@ export default function ClientDropdown({
       >
         <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0 overflow-hidden">
           {selectedClient &&
-          isValidHttpUrl(selectedClient.image_url) &&
+          isValidHttpUrl(selectedClient.ImageUrl) &&
           !selectedImageError ? (
             <img
-              src={selectedClient.image_url}
+              src={selectedClient.ImageUrl}
               alt={selectedClient?.name || "Client"}
               className="rounded-full object-cover w-full h-full"
               onError={() => setSelectedImageError(true)}
@@ -118,7 +118,7 @@ export default function ClientDropdown({
               clients.map((client) => {
                 const hasImg =
                   client &&
-                  isValidHttpUrl(client.image_url) &&
+                  isValidHttpUrl(client.ImageUrl) &&
                   !imageErrorMap[client.id];
 
                 return (
@@ -130,7 +130,7 @@ export default function ClientDropdown({
                     <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-sm sm:text-base font-semibold text-primary-700 shrink-0 overflow-hidden">
                       {hasImg ? (
                         <img
-                          src={client.image_url}
+                          src={client.ImageUrl}
                           alt={client?.name || "Client"}
                           className="rounded-full object-cover w-full h-full"
                           onError={() => handleListImageError(client.id)}

@@ -117,7 +117,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_1_2",
@@ -170,7 +170,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_1_4",
@@ -182,14 +182,14 @@ export const temp2 = [
                     content: {
                       title: "Action: Write Your First C-sharp Program",
                       text: "Write a C-sharp program that prints 'Hello, iOS!' and play with changing the message and adding variables.",
-                      can_scheduled: true,
-                      can_complete_now: true,
-                      reply_count: 0,
-                      votescount: 0,
-                      tool_link:
+                      canSchedule: true,
+                      canCompleteNow: true,
+                      replyCount: 0,
+                      votesCount: 0,
+                      toolLink:
                         "Swift Playgrounds app for hands-on coding practice",
-                      image_url: "",
-                      reflection_prompt:
+                      ImageUrl: "",
+                      reflectionPrompt:
                         "What did you find easiest or hardest when writing your first program?",
                     },
                   },
@@ -200,7 +200,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_1_5",
@@ -259,7 +259,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
               ],
             },
@@ -302,7 +302,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_2_2",
@@ -314,13 +314,13 @@ export const temp2 = [
                     content: {
                       title: "Action: Create Your First Xcode Project",
                       text: "Create a new Xcode app project using a template and run it in the simulator.",
-                      can_scheduled: true,
-                      can_complete_now: true,
-                      reply_count: 0,
-                      votescount: 0,
-                      tool_link: "Xcode IDE with sample project templates",
-                      image_url: "",
-                      reflection_prompt:
+                      canSchedule: true,
+                      canCompleteNow: true,
+                      replyCount: 0,
+                      votesCount: 0,
+                      toolLink: "Xcode IDE with sample project templates",
+                      ImageUrl: "",
+                      reflectionPrompt:
                         "What did you notice about the default files Xcode created for you?",
                     },
                   },
@@ -331,7 +331,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_2_3",
@@ -388,7 +388,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_2_5",
@@ -410,7 +410,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_2_6",
@@ -480,7 +480,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_3_2",
@@ -526,7 +526,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_3_4",
@@ -538,18 +538,18 @@ export const temp2 = [
                     content: {
                       title: "Action: Label Key Files",
                       text: "Open your project and add comments at the top of key files summarizing their purpose.",
-                      can_scheduled: true,
-                      can_complete_now: true,
-                      reply_count: 0,
-                      votescount: 0,
-                      tool_link: "",
-                      image_url: "",
-                      reflection_prompt:
+                      canSchedule: true,
+                      canCompleteNow: true,
+                      replyCount: 0,
+                      votesCount: 0,
+                      toolLink: "",
+                      ImageUrl: "",
+                      reflectionPrompt:
                         "Did writing descriptions help you mentally organize the app structure?",
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_3_5",
@@ -569,7 +569,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_3_6",
@@ -645,7 +645,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_4_2",
@@ -688,13 +688,13 @@ export const temp2 = [
                     content: {
                       title: "Action: Add a Breakpoint",
                       text: "Add a breakpoint inside a button tap handler and watch variables change.",
-                      can_scheduled: true,
-                      can_complete_now: true,
-                      reply_count: 0,
-                      votescount: 0,
-                      tool_link: "",
-                      image_url: "",
-                      reflection_prompt:
+                      canSchedule: true,
+                      canCompleteNow: true,
+                      replyCount: 0,
+                      votesCount: 0,
+                      toolLink: "",
+                      ImageUrl: "",
+                      reflectionPrompt:
                         "What did you learn about how your code runs step by step?",
                     },
                   },
@@ -705,7 +705,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_4_4",
@@ -731,7 +731,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_4_5",
@@ -753,7 +753,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_4_6",
@@ -829,7 +829,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_5_2",
@@ -841,13 +841,13 @@ export const temp2 = [
                     content: {
                       title: "Action: Run on Two Devices",
                       text: "Run your app on an iPhone and an iPad simulator and note layout differences.",
-                      can_scheduled: true,
-                      can_complete_now: true,
-                      reply_count: 0,
-                      votescount: 0,
-                      tool_link: "",
-                      image_url: "",
-                      reflection_prompt:
+                      canSchedule: true,
+                      canCompleteNow: true,
+                      replyCount: 0,
+                      votesCount: 0,
+                      toolLink: "",
+                      ImageUrl: "",
+                      reflectionPrompt:
                         "How did the UI behave differently on each device?",
                     },
                   },
@@ -858,7 +858,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_5_3",
@@ -915,7 +915,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_5_5",
@@ -937,7 +937,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_5_6",
@@ -1013,7 +1013,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_6_2",
@@ -1025,13 +1025,13 @@ export const temp2 = [
                     content: {
                       title: "Action: Build a Greeting Screen",
                       text: "Create a screen where the user enters their name and taps a button to see a greeting label update.",
-                      can_scheduled: true,
-                      can_complete_now: true,
-                      reply_count: 0,
-                      votescount: 0,
-                      tool_link: "",
-                      image_url: "",
-                      reflection_prompt:
+                      canSchedule: true,
+                      canCompleteNow: true,
+                      replyCount: 0,
+                      votesCount: 0,
+                      toolLink: "",
+                      ImageUrl: "",
+                      reflectionPrompt:
                         "What did you learn about connecting outlets and actions?",
                     },
                   },
@@ -1042,7 +1042,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_6_3",
@@ -1091,7 +1091,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_6_5",
@@ -1113,7 +1113,7 @@ export const temp2 = [
                       alt: "Simple C-sharp hello world code sample.",
                     },
                   ],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_6_6",
@@ -1182,7 +1182,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_7_2",
@@ -1232,7 +1232,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_7_4",
@@ -1244,18 +1244,18 @@ export const temp2 = [
                     content: {
                       title: "Action: Log Lifecycle Events",
                       text: "Add print statements to lifecycle methods and run your app, observing when each line appears.",
-                      can_scheduled: true,
-                      can_complete_now: true,
-                      reply_count: 0,
-                      votescount: 0,
-                      tool_link: "",
-                      image_url: "",
-                      reflection_prompt:
+                      canSchedule: true,
+                      canCompleteNow: true,
+                      replyCount: 0,
+                      votesCount: 0,
+                      toolLink: "",
+                      ImageUrl: "",
+                      reflectionPrompt:
                         "Did any lifecycle timing surprise you?",
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_7_5",
@@ -1271,7 +1271,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_7_6",
@@ -1341,7 +1341,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_8_2",
@@ -1353,18 +1353,18 @@ export const temp2 = [
                     content: {
                       title: "Action: Plan Your App",
                       text: "Sketch the screens and flows for your mini app on paper or digitally.",
-                      can_scheduled: true,
-                      can_complete_now: false,
-                      reply_count: 0,
-                      votescount: 0,
-                      tool_link: "",
-                      image_url: "",
-                      reflection_prompt:
+                      canSchedule: true,
+                      canCompleteNow: false,
+                      replyCount: 0,
+                      votesCount: 0,
+                      toolLink: "",
+                      ImageUrl: "",
+                      reflectionPrompt:
                         "What is the core user problem your mini app solves?",
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_8_3",
@@ -1376,18 +1376,18 @@ export const temp2 = [
                     content: {
                       title: "Action: Build and Run",
                       text: "Create the screens, connect inputs, and run the app in the simulator.",
-                      can_scheduled: true,
-                      can_complete_now: true,
-                      reply_count: 0,
-                      votescount: 0,
-                      tool_link: "",
-                      image_url: "",
-                      reflection_prompt:
+                      canSchedule: true,
+                      canCompleteNow: true,
+                      replyCount: 0,
+                      votesCount: 0,
+                      toolLink: "",
+                      ImageUrl: "",
+                      reflectionPrompt:
                         "Which part of building the app felt most natural? Which felt hardest?",
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_8_4",
@@ -1434,7 +1434,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_8_6",
@@ -1454,7 +1454,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
               ],
             },
@@ -1497,7 +1497,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_9_2",
@@ -1509,18 +1509,18 @@ export const temp2 = [
                     content: {
                       title: "Action: Build a Login Screen Two Ways",
                       text: "Create the same login UI using Storyboard and C-sharpUI and compare the experience.",
-                      can_scheduled: true,
-                      can_complete_now: false,
-                      reply_count: 0,
-                      votescount: 0,
-                      tool_link: "Xcode Storyboard and SwiftUI preview canvas",
-                      image_url: "",
-                      reflection_prompt:
+                      canSchedule: true,
+                      canCompleteNow: false,
+                      replyCount: 0,
+                      votesCount: 0,
+                      toolLink: "Xcode Storyboard and SwiftUI preview canvas",
+                      ImageUrl: "",
+                      reflectionPrompt:
                         "Which approach felt more intuitive for you and why?",
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_9_3",
@@ -1571,7 +1571,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_9_5",
@@ -1587,7 +1587,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_9_6",
@@ -1657,7 +1657,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_10_2",
@@ -1669,19 +1669,19 @@ export const temp2 = [
                     content: {
                       title: "Action: Add Navigation",
                       text: "Embed your main view controller in a navigation controller and push to a detail screen on button tap.",
-                      can_scheduled: true,
-                      can_complete_now: true,
-                      reply_count: 0,
-                      votescount: 0,
-                      tool_link:
+                      canSchedule: true,
+                      canCompleteNow: true,
+                      replyCount: 0,
+                      votesCount: 0,
+                      toolLink:
                         "Xcode Interface Builder and Swift event handling",
-                      image_url: "",
-                      reflection_prompt:
+                      ImageUrl: "",
+                      reflectionPrompt:
                         "How does navigation feel different before and after using a nav controller?",
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_10_3",
@@ -1732,7 +1732,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_10_5",
@@ -1748,7 +1748,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_10_6",
@@ -1818,7 +1818,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_11_2",
@@ -1830,18 +1830,18 @@ export const temp2 = [
                     content: {
                       title: "Action: Add Constraints",
                       text: "Pin labels and buttons so they stay aligned on different devices.",
-                      can_scheduled: true,
-                      can_complete_now: true,
-                      reply_count: 0,
-                      votescount: 0,
-                      tool_link: "",
-                      image_url: "",
-                      reflection_prompt:
+                      canSchedule: true,
+                      canCompleteNow: true,
+                      replyCount: 0,
+                      votesCount: 0,
+                      toolLink: "",
+                      ImageUrl: "",
+                      reflectionPrompt:
                         "How did constraints change when rotating or switching devices?",
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_11_3",
@@ -1892,7 +1892,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_11_5",
@@ -1908,7 +1908,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_11_6",
@@ -1978,7 +1978,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_12_2",
@@ -1990,18 +1990,18 @@ export const temp2 = [
                     content: {
                       title: "Action: Build a Profile Card",
                       text: "Use stack views to layout an avatar, name, and details with minimal constraints.",
-                      can_scheduled: true,
-                      can_complete_now: true,
-                      reply_count: 0,
-                      votescount: 0,
-                      tool_link: "",
-                      image_url: "",
-                      reflection_prompt:
+                      canSchedule: true,
+                      canCompleteNow: true,
+                      replyCount: 0,
+                      votesCount: 0,
+                      toolLink: "",
+                      ImageUrl: "",
+                      reflectionPrompt:
                         "How many constraints did you need compared to manual layout?",
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_12_3",
@@ -2052,7 +2052,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_12_5",
@@ -2068,7 +2068,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_12_6",
@@ -2121,7 +2121,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
               ],
             },
@@ -2158,7 +2158,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_13_2",
@@ -2170,15 +2170,15 @@ export const temp2 = [
                     content: {
                       title: "Action: Enable Dynamic Type",
                       text: "Update your labels to use preferredFont(forTextStyle:) and test in Accessiblity settings.",
-                      can_scheduled: true,
-                      can_complete_now: true,
-                      tool_link: "",
-                      reflection_prompt:
+                      canSchedule: true,
+                      canCompleteNow: true,
+                      toolLink: "",
+                      reflectionPrompt:
                         "Did your UI adjust gracefully to large text sizes?",
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_13_3",
@@ -2228,7 +2228,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_13_5",
@@ -2244,7 +2244,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_13_6",
@@ -2314,7 +2314,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_14_2",
@@ -2326,12 +2326,12 @@ export const temp2 = [
                     content: {
                       title: "Action: Add a Tap Gesture",
                       text: "Make an image view respond to tap by changing its color or text.",
-                      can_scheduled: true,
-                      can_complete_now: true,
+                      canSchedule: true,
+                      canCompleteNow: true,
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_14_3",
@@ -2382,7 +2382,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_14_5",
@@ -2398,7 +2398,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_14_6",
@@ -2467,7 +2467,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_15_2",
@@ -2479,12 +2479,12 @@ export const temp2 = [
                     content: {
                       title: "Action: Build a Simple List",
                       text: "Create a table of items like tasks, songs, or contacts.",
-                      can_scheduled: true,
-                      can_complete_now: true,
+                      canSchedule: true,
+                      canCompleteNow: true,
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_15_3",
@@ -2583,7 +2583,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_16_2",
@@ -2595,12 +2595,12 @@ export const temp2 = [
                     content: {
                       title: "Action: Build a Photo Grid",
                       text: "Use a collection view to display a 3-column photo gallery.",
-                      can_scheduled: true,
-                      can_complete_now: true,
+                      canSchedule: true,
+                      canCompleteNow: true,
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_16_3",
@@ -2699,7 +2699,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_17_2",
@@ -2711,12 +2711,12 @@ export const temp2 = [
                     content: {
                       title: "Action: Fade In a View",
                       text: "Use UIView.animate to fade a label or image into view.",
-                      can_scheduled: true,
-                      can_complete_now: true,
+                      canSchedule: true,
+                      canCompleteNow: true,
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_17_3",
@@ -2815,7 +2815,7 @@ export const temp2 = [
                     },
                   },
                   assets: [],
-                  image_status: "pending",
+                  imageStatus: "pending",
                 },
                 {
                   id: "#screen_18_2",
@@ -2827,12 +2827,12 @@ export const temp2 = [
                     content: {
                       title: "Action: Add Accessibility Labels",
                       text: "Set accessibilityLabel and accessibilityHint for your main UI elements.",
-                      can_scheduled: true,
-                      can_complete_now: true,
+                      canSchedule: true,
+                      canCompleteNow: true,
                     },
                   },
                   assets: [],
-                  image_status: "ready",
+                  imageStatus: "ready",
                 },
                 {
                   id: "#screen_18_3",

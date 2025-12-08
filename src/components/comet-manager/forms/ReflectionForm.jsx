@@ -78,16 +78,16 @@ export default function ReflectionForm({
             if (updateScreenAssets) {
               updateScreenAssets([assetData]);
             }
-            if (assetData.image_url) {
-              updateField("reflectionImage", assetData.image_url);
+            if (assetData.ImageUrl) {
+              updateField("reflectionImage", assetData.ImageUrl);
             }
           }}
           onAIGenerateSuccess={(assetData) => {
             if (updateScreenAssets) {
               updateScreenAssets([assetData]);
             }
-            if (assetData.image_url) {
-              updateField("reflectionImage", assetData.image_url);
+            if (assetData.ImageUrl) {
+              updateField("reflectionImage", assetData.ImageUrl);
             }
           }}
           existingAssets={existingAssets}

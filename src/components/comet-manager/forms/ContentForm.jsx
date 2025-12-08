@@ -102,16 +102,16 @@ export default function ContentForm({
                 if (updateScreenAssets) {
                   updateScreenAssets([assetData]);
                 }
-                if (assetData.image_url) {
-                  updateField("contentImageIcon", assetData.image_url);
+                if (assetData.ImageUrl) {
+                  updateField("contentImageIcon", assetData.ImageUrl);
                 }
               }}
               onAIGenerateSuccess={(assetData) => {
                 if (updateScreenAssets) {
                   updateScreenAssets([assetData]);
                 }
-                if (assetData.image_url) {
-                  updateField("contentImageIcon", assetData.image_url);
+                if (assetData.ImageUrl) {
+                  updateField("contentImageIcon", assetData.ImageUrl);
                 }
               }}
               existingAssets={existingAssets}

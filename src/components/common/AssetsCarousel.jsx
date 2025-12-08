@@ -38,12 +38,12 @@ export default function AssetsCarousel({ assets = [] }) {
         onSelect(emblaApi);
       });
     };
-    
+
     // Initial state - defer to avoid synchronous setState
     requestAnimationFrame(() => {
       onSelect(emblaApi);
     });
-    
+
     emblaApi.on("select", handleSelect);
     emblaApi.on("reInit", handleSelect);
 
@@ -63,10 +63,7 @@ export default function AssetsCarousel({ assets = [] }) {
         <div className="flex h-full">
           {assets.map((asset, index) => {
             const imageUrl =
-              asset.s3_url ||
-              asset.image_url ||
-              asset.imageUrl ||
-              asset.url;
+              asset.s3_url || asset.ImageUrl || asset.imageUrl || asset.url;
             const assetName =
               asset.name ||
               asset.prompt_used ||
@@ -78,8 +75,7 @@ export default function AssetsCarousel({ assets = [] }) {
                 key={asset.id || asset.asset_id || index}
                 className="flex-[0_0_100%] min-w-0 h-full"
               >
-                {typeof imageUrl === "string" &&
-                imageUrl.startsWith("http") ? (
+                {typeof imageUrl === "string" && imageUrl.startsWith("http") ? (
                   <div className="relative w-full h-full bg-gray-100 overflow-hidden">
                     <img
                       src={imageUrl}
@@ -126,9 +122,7 @@ export default function AssetsCarousel({ assets = [] }) {
               <button
                 key={index}
                 className={`h-2 rounded-full transition-all ${
-                  index === selectedIndex
-                    ? "w-8 bg-primary"
-                    : "w-2 bg-gray-300"
+                  index === selectedIndex ? "w-8 bg-primary" : "w-2 bg-gray-300"
                 }`}
                 onClick={() => emblaApi?.scrollTo(index)}
                 aria-label={`Go to slide ${index + 1}`}
@@ -140,4 +134,3 @@ export default function AssetsCarousel({ assets = [] }) {
     </div>
   );
 }
-

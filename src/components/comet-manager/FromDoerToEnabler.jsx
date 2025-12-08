@@ -429,8 +429,8 @@ const ForceRankScreenPreview = ({ deviceView, content }) => {
   const title = content?.title || "";
   const question = content?.question || "";
   const options = content?.options || [];
-  const lowLabel = content?.low_label || "";
-  const highLabel = content?.high_label || "";
+  const lowLabel = content?.lowLabel || "";
+  const highLabel = content?.highLabel || "";
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
@@ -775,10 +775,10 @@ const ReflectionScreenPreview = ({ deviceView, content }) => {
 const LinearPollScreenPreview = ({ deviceView, content }) => {
   const title = content?.title || "";
   const question = content?.question || "";
-  const lowLabel = content?.low_label || "";
-  const highLabel = content?.high_label || "";
-  const lowerScale = content?.lowerscale || 1;
-  const higherScale = content?.higherscale || 10;
+  const lowLabel = content?.lowLabel || "";
+  const highLabel = content?.highLabel || "";
+  const lowerScale = content?.lowerScale || 1;
+  const higherScale = content?.higherScale || 10;
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
@@ -879,8 +879,8 @@ const LinearPollScreenPreview = ({ deviceView, content }) => {
 const ActionScreenPreview = ({ deviceView, content }) => {
   const title = content?.title || "";
   const text = content?.text || content?.question || "";
-  const toolLink = content?.tool_link || content?.tool || "";
-  const reflectionPrompt = content?.reflection_prompt || "";
+  const toolLink = content?.toolLink || content?.tool || "";
+  const reflectionPrompt = content?.reflectionPrompt || "";
   const imageUrl = content?.media?.url || FALLBACK_IMAGE_URL;
 
   const containerWidth =
@@ -1272,11 +1272,11 @@ export default function FromDoerToEnabler({
           description: content.question || "",
           list: content.options,
           meta: [
-            content.low_label
-              ? { label: "Lowest Rank", value: content.low_label }
+            content.lowLabel
+              ? { label: "Lowest Rank", value: content.lowLabel }
               : null,
-            content.high_label
-              ? { label: "Highest Rank", value: content.high_label }
+            content.highLabel
+              ? { label: "Highest Rank", value: content.highLabel }
               : null,
           ].filter(Boolean),
         });
@@ -1287,26 +1287,26 @@ export default function FromDoerToEnabler({
           sectionTitle: content.title || title,
           description: content.question || "",
           meta: [
-            content.low_label || content.lowerscale !== undefined
+            content.lowLabel || content.lowerScale !== undefined
               ? {
                   label: "Scale Start",
                   value: [
-                    content.low_label,
-                    content.lowerscale !== undefined
-                      ? `(${content.lowerscale})`
+                    content.lowLabel,
+                    content.lowerScale !== undefined
+                      ? `(${content.lowerScale})`
                       : null,
                   ]
                     .filter(Boolean)
                     .join(" "),
                 }
               : null,
-            content.high_label || content.higherscale !== undefined
+            content.highLabel || content.higherScale !== undefined
               ? {
                   label: "Scale End",
                   value: [
-                    content.high_label,
-                    content.higherscale !== undefined
-                      ? `(${content.higherscale})`
+                    content.highLabel,
+                    content.higherScale !== undefined
+                      ? `(${content.higherScale})`
                       : null,
                   ]
                     .filter(Boolean)
@@ -1328,22 +1328,22 @@ export default function FromDoerToEnabler({
           id: "action",
           sectionTitle: content.title || title,
           description: content.text || content.question || "",
-          secondaryText: content.reflection_prompt || null,
+          secondaryText: content.reflectionPrompt || null,
           meta: [
             content.tool ? { label: "Tool", value: content.tool } : null,
-            content.tool_link
-              ? { label: "Link", value: content.tool_link }
+            content.toolLink
+              ? { label: "Link", value: content.toolLink }
               : null,
-            typeof content.can_complete_now === "boolean"
+            typeof content.canCompleteNow === "boolean"
               ? {
                   label: "Complete Now",
-                  value: content.can_complete_now ? "Yes" : "No",
+                  value: content.canCompleteNow ? "Yes" : "No",
                 }
               : null,
-            typeof content.can_scheduled === "boolean"
+            typeof content.canSchedule === "boolean"
               ? {
                   label: "Schedule",
-                  value: content.can_scheduled ? "Available" : "Not available",
+                  value: content.canSchedule ? "Available" : "Not available",
                 }
               : null,
           ].filter(Boolean),

@@ -49,28 +49,28 @@ export default function ForceRankForm({
         />
         <TextField
           label="Top Label"
-          value={formData.high_label || ""}
-          onChange={(value) => updateField("high_label", value)}
+          value={formData.highLabel || ""}
+          onChange={(value) => updateField("highLabel", value)}
           inputProps={{
             onSelect: (event) =>
               onTextFieldSelect?.(
                 "forceRankHighLabel",
                 event,
-                formData.high_label
+                formData.highLabel
               ),
             onBlur: onFieldBlur,
           }}
         />
         <TextField
           label="Bottom Label"
-          value={formData.low_label || ""}
-          onChange={(value) => updateField("low_label", value)}
+          value={formData.lowLabel || ""}
+          onChange={(value) => updateField("lowLabel", value)}
           inputProps={{
             onSelect: (event) =>
               onTextFieldSelect?.(
                 "forceRankLowLabel",
                 event,
-                formData.low_label
+                formData.lowLabel
               ),
             onBlur: onFieldBlur,
           }}
