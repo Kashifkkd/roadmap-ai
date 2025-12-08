@@ -11,7 +11,9 @@ import ChatMessage from "@/components/chat/ChatMessage";
 const SUGGESTIONS = [
   "Create a go-to microlearning experience for new managers",
   "Get store managers ready for the holiday season",
+  "Boost collaboration and trust within teams",
   "Help sales leaders reinforce the SKO",
+  "Onboard new employees with essential training",
   "Add reinforcement & application to a training",
 ];
 
@@ -210,11 +212,14 @@ export default function WelcomePage() {
   }, [inputText]);
 
   return (
-    <div className="bg-primary-50 p-4 min-h-full">
-      <main className="px-6 py-12 max-w-3xl mx-auto">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <div className="space-y-6 text-primary-900">
-            <div className="flex items-center justify-center">
+    <div
+      className="pt-4 pb-0 min-h-full
+     bg-[radial-gradient(100%_120%_at_50%_100%,rgba(115,103,240,0.70)_0%,rgba(255,255,255,1)_60%)]"
+    >
+      <main className="px-6 pt-20 max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto text-center space-y-10">
+          <div className="text-primary-900">
+            {/* <div className="flex items-center justify-center">
               <Image
                 src="/logo2.svg"
                 alt="Kyper Logo"
@@ -225,13 +230,13 @@ export default function WelcomePage() {
                   animation: "spin 8s linear infinite",
                 }}
               />
-            </div>
+            </div> */}
             <div className="space-y-2">
-              <h1 className="text-4xl font-bold text-primary-900">Welcome!</h1>
-              <h2 className="text-3xl font-semibold text-primary-900">
+              {/* <h1 className="text-4xl font-bold text-primary-900">Welcome!</h1> */}
+              <h2 className="text-3xl font-semibold text-primary-900 font-serif">
                 Let's build your next Comet together.
               </h2>
-              <p className="text-lg max-w-2xl mx-auto text-primary-900">
+              <p className="text-md max-w-2xl mx-auto text-primary-900">
                 You can type your idea below, or pick one of the suggestions to
                 get started.
               </p>
@@ -239,8 +244,8 @@ export default function WelcomePage() {
           </div>
 
           {/* Input Section with Chat Messages Inside */}
-          <div className="space-y-8 ">
-            <div className="relative w-full max-w-3xl mx-auto rounded-xl border border-primary-300 shadow-sm  ">
+          <div className="space-y-4">
+            <div className="relative w-full max-w-3xl mx-auto rounded-xl border-primary-200 p-1.5 bg-[#E3E1FC] bg-[linear-gradient(147deg,rgba(227, 225, 252, 1) 0%, rgba(248, 247, 254, 1) 100%)]">
               <div
                 className={`w-full flex flex-col relative transition-all duration-200 rounded-xl bg-white ${
                   isExpanded || messages.length > 0
@@ -347,17 +352,17 @@ export default function WelcomePage() {
 
             {/* Suggestion Buttons - Only show if no question is shown */}
             {questionIndex === -1 && (
-              <div className="w-full max-w-4xl mx-auto">
+              <div className="w-full max-w-3xl mx-auto">
                 <h3 className="text-primary-900 text-lg font-medium mb-4 text-start">
-                  Pick an idea to to get started
+                  Here are some suggested prompts to get you started
                 </h3>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2">
                   {SUGGESTIONS.map((suggestion, index) => (
                     <button
                       key={index}
                       onClick={() => handleSuggestionSelect(suggestion)}
                       disabled={isDisabled}
-                      className="px-4 py-2 text-sm border rounded-md bg-white text-primary-600 font-medium transition-all duration-200 hover:bg-primary-50 hover:border-primary-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-2 py-2 text-sm rounded-md bg-white text-primary-600 font-medium  hover:bg-primary-600 hover:text-white  cursor-pointer"
                     >
                       {suggestion}
                     </button>
@@ -366,48 +371,24 @@ export default function WelcomePage() {
               </div>
             )}
           </div>
+
+          {/* Empty State Section */}
+          <div className="flex flex-row items-center  text-center justify-between bg-white rounded-xl border border-primary-200 max-w-3xl  p-3  mx-auto">
+            <h4 className="text-md font-medium text-[#352F6E] mb-2">
+              Or, begin with a blank canvas and shape your Comet step by step.
+            </h4>
+            <Button
+              variant="default"
+              className="flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50"
+              onClick={handleCreateNewComet}
+              disabled={isDisabled}
+            >
+              <Stars />
+              <span>Create New Comet</span>
+            </Button>
+          </div>
         </div>
       </main>
-      {/* Recent Comets Section */}
-      {/* <section className="max-w-3xl w-full p-4 mx-auto bg-background rounded-3xl">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <h3 className="text-xl font-bold">My recent Comets</h3>
-            <ArrowDown size={20} />
-          </div>
-          <Button
-            variant="default"
-            className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
-            onClick={handleCreateNewComet}
-            disabled={isDisabled}
-          >
-            <Stars />
-            <span>Create New Comet</span>
-          </Button>
-        </div>
-
-        {/* Empty State Section */}
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        {/* <div className="w-24 h-24 bg-primary-50 rounded-full flex items-center justify-center mb-6">
-            <Stars className="w-12 h-12 text-primary-300" />
-          </div> */}
-        <h4 className="text-xl font-bold text-primary-800 mb-2">
-          No Comets yet? Your first one will appear here once you create it.
-        </h4>
-        <p className="text-muted-foreground mb-6 max-w-md">
-          Start building your first Comet by clicking the button above or
-          describing what you'd like to create.
-        </p>
-        <Button
-          variant="default"
-          className="flex items-center justify-center gap-2 px-6 py-3 disabled:opacity-50"
-          onClick={handleCreateNewComet}
-          disabled={isDisabled}
-        >
-          <Stars />
-          <span>Create Your First Comet</span>
-        </Button>
-      </div>
       {/* </section> */}
     </div>
   );

@@ -58,8 +58,7 @@ const UserAvatar = ({ user }) => {
   }
 
   const isRelative = raw.startsWith("/");
-  const isHttp =
-    raw.startsWith("http://") || raw.startsWith("https://");
+  const isHttp = raw.startsWith("http://") || raw.startsWith("https://");
 
   // Local path → safe for next/image
   if (isRelative) {
@@ -790,7 +789,11 @@ export default function Header() {
 
   return (
     <>
-      <header className="px-1 sm:px-2 pt-2 bg-primary-50 border-gray-200 w-full">
+      <header
+        className={`px-1 sm:px-2 pt-2 border-gray-200 w-full ${
+          isHome ? "bg-white" : "bg-primary-50"
+        }`}
+      >
         <div className="bg-white px-3 sm:px-4 md:px-6 py-1 rounded-lg w-full">
           <div className="flex items-center justify-between w-full h-full text-sm sm:text-base gap-2 sm:gap-4">
             <div className="flex items-center gap-2 sm:gap-4 md:gap-6 lg:gap-8 shrink-0 min-w-0">
