@@ -92,7 +92,7 @@ export default function CreateCometFooter({
           >
             <Stars size={16} />
             {/* <span>{isLoading ? "Saving..." : "Create Outline"}</span> */}
-            <span>Create Comet</span>
+            <span>Create Outline</span>
           </Button>
         </div>
       </div>
