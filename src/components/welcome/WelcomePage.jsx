@@ -213,8 +213,8 @@ export default function WelcomePage() {
 
   return (
     <div
-      className="pt-4 pb-0 min-h-full
-     bg-[radial-gradient(100%_120%_at_50%_100%,rgba(115,103,240,0.70)_0%,rgba(255,255,255,1)_60%)]"
+   className="pt-4 pb-0 min-h-full bg-[radial-gradient(100%_120%_at_50%_100%,rgba(115,103,240,0.70)_0%,rgba(255,255,255,1)_60%)]"
+
     >
       <main className="px-6 pt-20 max-w-4xl mx-auto">
         <div className="max-w-4xl mx-auto text-center space-y-10">
