@@ -135,31 +135,34 @@ const Chat = ({
         // ref={scrollContainerRef}
         // onScroll={handleScroll}
       >
-        {hasMessages ? (
-          <div className="max-w-4xl mx-auto w-full">
-            {messages.map((msg, idx) => (
-              <ChatMessage key={idx} role={msg.from} text={msg.content} />
-            ))}
+        {
+          hasMessages ? (
+            <div className="max-w-4xl mx-auto w-full">
+              {messages.map((msg, idx) => (
+                <ChatMessage key={idx} role={msg.from} text={msg.content} />
+              ))}
 
-            {isLoading && <SequentialLoader />}
-            {showWelcomeMessage && (
-              <ChatMessage
-                role="agent"
-                text={welcomeMessageChat({
-                  messages: welcomeMessage,
-                  animate: true,
-                  onTyping: () => {
-                    if (bottomRef.current) {
-                      bottomRef.current.scrollIntoView({ behavior: "smooth" });
-                    }
-                  },
-                })}
-              />
-            )}
-          </div>
-        ) : cometManager ? (
-          <div className="max-w-4xl mx-auto w-full">
-            {/* {showWelcomeMessage && (
+              {isLoading && <SequentialLoader />}
+              {showWelcomeMessage && (
+                <ChatMessage
+                  role="agent"
+                  text={welcomeMessageChat({
+                    messages: welcomeMessage,
+                    animate: true,
+                    onTyping: () => {
+                      if (bottomRef.current) {
+                        bottomRef.current.scrollIntoView({
+                          behavior: "smooth",
+                        });
+                      }
+                    },
+                  })}
+                />
+              )}
+            </div>
+          ) : cometManager ? (
+            <div className="max-w-4xl mx-auto w-full">
+              {/* {showWelcomeMessage && (
               <ChatMessage
                 role="bot"
                 text={welcomeMessageChat({
@@ -168,102 +171,104 @@ const Chat = ({
                 })}
               />
             )} */}
-            {isLoading && <SequentialLoader />}
-          </div>
-        ) : isLoading ? (
-          <div className="max-w-4xl mx-auto w-full">
-            <SequentialLoader />
-          </div>
-        ) : (
-          <div className="flex flex-col items-center pt-10 sm:space-y-6 max-w-4xl mx-auto w-full">
-            <div className="w-full flex justify-center items-center">
-              <Image
-                src="/logo2.svg"
-                alt="Kyper Logo"
-                width={60}
-                height={60}
-                className="rounded-full animate-spin sm:w-20 sm:h-20"
-                style={{
-                  animation: "spin 8s linear infinite",
-                }}
-              />
+              {isLoading && <SequentialLoader />}
             </div>
-            <div className="text-center space-y-1 sm:space-y-2 w-full">
-              <h1 className="text-2xl sm:text-3xl font-bold text-primary ">
-                Welcome!
-              </h1>
-              <h2 className="text-xl sm:text-2xl font-semibold text-primary">
-                Let&apos;s build your next
-                <br />
-                Comet together.
-              </h2>
+          ) : isLoading ? (
+            <div className="max-w-4xl mx-auto w-full">
+              <SequentialLoader />
             </div>
-            {/* Description */}
-            <p className="text-center text-base sm:text-lg text-gray-600 w-full max-w-2xl px-2">
-              You can type your idea below, or pick one of the suggestions to
-              get started.
-            </p>
-            {/* Heading for suggestions */}
-            <h3 className="text-lg sm:text-xl font-medium text-primary w-full text-center">
-              Pick an idea to get started
-            </h3>
-            <div className="space-y-2 sm:space-y-3 w-full max-w-2xl">
-              <button
-                onClick={() =>
-                  handleSuggestionClick(
-                    "Create a go-to microlearning experience for new managers"
-                  )
-                }
-                disabled={isLoading}
-                className="w-full py-3 sm:py-4 px-4 sm:px-6 text-left bg-primary-50 hover:bg-purple-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-              >
-                <span className="text-primary-700">
-                  Create a go-to microlearning experience for new managers
-                </span>
-              </button>
+          ) : null
+          // : (
+          // <div className="flex flex-col items-center pt-10 sm:space-y-6 max-w-4xl mx-auto w-full">
+          //   <div className="w-full flex justify-center items-center">
+          //     <Image
+          //       src="/logo2.svg"
+          //       alt="Kyper Logo"
+          //       width={60}
+          //       height={60}
+          //       className="rounded-full animate-spin sm:w-20 sm:h-20"
+          //       style={{
+          //         animation: "spin 8s linear infinite",
+          //       }}
+          //     />
+          //   </div>
+          //   <div className="text-center space-y-1 sm:space-y-2 w-full">
+          //     <h1 className="text-2xl sm:text-3xl font-bold text-primary ">
+          //       Welcome!
+          //     </h1>
+          //     <h2 className="text-xl sm:text-2xl font-semibold text-primary">
+          //       Let&apos;s build your next
+          //       <br />
+          //       Comet together.
+          //     </h2>
+          //   </div>
+          //   {/* Description */}
+          //   <p className="text-center text-base sm:text-lg text-gray-600 w-full max-w-2xl px-2">
+          //     You can type your idea below, or pick one of the suggestions to
+          //     get started.
+          //   </p>
+          //   {/* Heading for suggestions */}
+          //   <h3 className="text-lg sm:text-xl font-medium text-primary w-full text-center">
+          //     Pick an idea to get started
+          //   </h3>
+          //   <div className="space-y-2 sm:space-y-3 w-full max-w-2xl">
+          //     <button
+          //       onClick={() =>
+          //         handleSuggestionClick(
+          //           "Create a go-to microlearning experience for new managers"
+          //         )
+          //       }
+          //       disabled={isLoading}
+          //       className="w-full py-3 sm:py-4 px-4 sm:px-6 text-left bg-primary-50 hover:bg-purple-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+          //     >
+          //       <span className="text-primary-700">
+          //         Create a go-to microlearning experience for new managers
+          //       </span>
+          //     </button>
 
-              <button
-                onClick={() =>
-                  handleSuggestionClick(
-                    "Get store managers ready for the holiday season"
-                  )
-                }
-                disabled={isLoading}
-                className="w-full py-3 sm:py-4 px-4 sm:px-6 text-left bg-primary-50 hover:bg-purple-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-              >
-                <span className="text-primary-700">
-                  Get store managers ready for the holiday season
-                </span>
-              </button>
+          //     <button
+          //       onClick={() =>
+          //         handleSuggestionClick(
+          //           "Get store managers ready for the holiday season"
+          //         )
+          //       }
+          //       disabled={isLoading}
+          //       className="w-full py-3 sm:py-4 px-4 sm:px-6 text-left bg-primary-50 hover:bg-purple-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+          //     >
+          //       <span className="text-primary-700">
+          //         Get store managers ready for the holiday season
+          //       </span>
+          //     </button>
 
-              <button
-                onClick={() =>
-                  handleSuggestionClick("Help sales leaders reinforce the SKO")
-                }
-                disabled={isLoading}
-                className="w-full py-3 sm:py-4 px-4 sm:px-6 text-left bg-primary-50 hover:bg-purple-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-              >
-                <span className="text-primary-700">
-                  Help sales leaders reinforce the SKO
-                </span>
-              </button>
+          //     <button
+          //       onClick={() =>
+          //         handleSuggestionClick("Help sales leaders reinforce the SKO")
+          //       }
+          //       disabled={isLoading}
+          //       className="w-full py-3 sm:py-4 px-4 sm:px-6 text-left bg-primary-50 hover:bg-purple-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+          //     >
+          //       <span className="text-primary-700">
+          //         Help sales leaders reinforce the SKO
+          //       </span>
+          //     </button>
 
-              <button
-                onClick={() =>
-                  handleSuggestionClick(
-                    "Add reinforcement & application to a training"
-                  )
-                }
-                disabled={isLoading}
-                className="w-full py-3 sm:py-4 px-4 sm:px-6 text-left bg-primary-50 hover:bg-purple-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-              >
-                <span className="text-primary-700">
-                  Add reinforcement & application to a training
-                </span>
-              </button>
-            </div>
-          </div>
-        )}
+          //     <button
+          //       onClick={() =>
+          //         handleSuggestionClick(
+          //           "Add reinforcement & application to a training"
+          //         )
+          //       }
+          //       disabled={isLoading}
+          //       className="w-full py-3 sm:py-4 px-4 sm:px-6 text-left bg-primary-50 hover:bg-purple-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+          //     >
+          //       <span className="text-primary-700">
+          //         Add reinforcement & application to a training
+          //       </span>
+          //     </button>
+          //   </div>
+          // </div>
+          // )
+        }
         <div ref={bottomRef} />
       </div>
 
