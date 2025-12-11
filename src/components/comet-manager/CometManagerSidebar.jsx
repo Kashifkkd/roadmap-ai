@@ -28,6 +28,7 @@ import { Stack } from "@mui/material";
 import DevicePreview from "./DevicePreview";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
+import { getSourceMaterials } from "@/api/getSourceMaterials";
 
 // Asset category buttons
 const ASSET_CATEGORIES = [
@@ -253,30 +254,9 @@ export default function CometManagerSidebar({
     setSourcesError(null);
 
     try {
-      const response = await apiService({
-        endpoint: endpoints.getSourceMaterials,
-        method: "GET",
-        params: {
-          session_id: sessionId,
-        },
-      });
-
-      if (response.error) {
-        throw new Error(
-          response.error?.message || "Failed to fetch source materials"
-        );
-      }
-
-      if (response.response) {
-        // Handle both array and object responses
-        const materials = Array.isArray(response?.response)
-          ? response.response
-          : [];
-        setSourceMaterials(materials);
-        console.log(">>> materials", materials);
-      } else {
-        setSourceMaterials([]);
-      }
+      const materials = await getSourceMaterials(sessionId);
+      setSourceMaterials(materials);
+      console.log(">>> materials", materials);
     } catch (error) {
       console.error("Failed to fetch source materials:", error);
       setSourcesError(error.message || "Failed to load source materials");

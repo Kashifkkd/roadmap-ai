@@ -1,13 +1,15 @@
 import React, { useEffect, useCallback, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { getSourceMaterials } from "@/api/getSourceMaterials";
 
-import { Plus, CircleX, BadgeCheck } from "lucide-react";
+import { Plus, CircleX } from "lucide-react";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function SourceMaterialCard({ files, setFiles }) {
   const [sessionId, setSessionId] = useState(null);
@@ -17,6 +19,30 @@ export default function SourceMaterialCard({ files, setFiles }) {
       setSessionId(localStorage.getItem("sessionId"));
     }
   }, []);
+
+  const fetchSourceMaterials = useCallback(async () => {
+    try {
+      const materials = await getSourceMaterials(sessionId);
+      console.log(">>> materials", materials);
+
+      if (materials && materials.length > 0) {
+        const uploadedMaterials = materials.map((material) => ({
+          name: material.source_name || "Unknown File",
+          isUploaded: true,
+        }));
+
+        setFiles(uploadedMaterials);
+      }
+    } catch (error) {
+      console.error("Error fetching source materials:", error);
+    }
+  }, [sessionId, setFiles]);
+
+  useEffect(() => {
+    if (sessionId) {
+      fetchSourceMaterials();
+    }
+  }, [sessionId, fetchSourceMaterials]);
 
   const uploadFile = useCallback(
     async (file) => {
@@ -49,16 +75,28 @@ export default function SourceMaterialCard({ files, setFiles }) {
   const handleFileSelect = (event) => {
     const selectedFiles = Array.from(event.target.files);
 
-    // Append new files to existing ones, avoiding duplicates
-    setFiles((prevFiles) => {
-      const existingFileNames = new Set(
-        prevFiles.map((f) => `${f.name}-${f.size}`)
+    // Check for duplicate file
+    const existingFile = new Set(files.map((f) => f.name));
+    const duplicateFiles = selectedFiles.filter((file) =>
+      existingFile.has(file.name)
+    );
+
+    if (duplicateFiles.length > 0) {
+      const duplicateNames = duplicateFiles.map((f) => f.name).join(", ");
+      toast.error(
+        duplicateFiles.length === 1
+          ? `"${duplicateNames}" is already uploaded`
+          : `These files are already uploaded: ${duplicateNames}`
       );
-      const newFiles = selectedFiles.filter(
-        (file) => !existingFileNames.has(`${file.name}-${file.size}`)
-      );
-      return [...prevFiles, ...newFiles];
-    });
+    }
+
+    const newFiles = selectedFiles.filter(
+      (file) => !existingFile.has(file.name)
+    );
+
+    if (newFiles.length > 0) {
+      setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+    }
 
     // Reset the input so the same file can be selected again if needed
     event.target.value = "";
@@ -67,11 +105,14 @@ export default function SourceMaterialCard({ files, setFiles }) {
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.uploadAllFiles = async () => {
-        if (files && files.length > 0 && sessionId) {
-          console.log("Uploading all files on submit...");
-          await Promise.all(files.map((file) => uploadFile(file)));
-        } else if (files.length === 0) {
-          console.log("No files to upload");
+        // Only upload files that haven't been uploaded
+        const newFiles = files.filter((file) => !file.isUploaded);
+
+        if (newFiles.length > 0 && sessionId) {
+          console.log("newfiles>>>>>>>>>>", newFiles.length);
+          await Promise.all(newFiles.map((file) => uploadFile(file)));
+        } else if (newFiles.length === 0) {
+          console.log("No new files to upload");
         } else {
           console.warn("Cannot upload: no session ID");
         }
@@ -120,7 +161,6 @@ export default function SourceMaterialCard({ files, setFiles }) {
                   e.preventDefault();
                   document.getElementById("file-upload").click();
                 }}
-                
               >
                 <Plus />
                 <span>Upload File</span>
@@ -148,14 +188,14 @@ export default function SourceMaterialCard({ files, setFiles }) {
 
 const FilePreview = ({ file, setFiles, files }) => {
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return "0 Bytes";
+    if (!bytes || bytes === 0) return " ";
     const k = 1024;
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const truncateFileName = (name, maxLength = 20) => {
+  const truncateFileName = (name, maxLength = 30) => {
     if (name.length <= maxLength) return name;
     return name.substring(0, maxLength) + "...";
   };
@@ -173,7 +213,7 @@ const FilePreview = ({ file, setFiles, files }) => {
                 {truncateFileName(file.name)}
               </span>
               <span className="text-xs text-muted-foreground">
-                ({formatFileSize(file.size)})
+                {formatFileSize(file.size)}
               </span>
             </div>
           </div>
@@ -188,12 +228,14 @@ const FilePreview = ({ file, setFiles, files }) => {
               {/* <BadgeCheck className="w-6 h-6 font-bold text-green-600 " /> */}
             </button>
 
-            <button
-              onClick={() => setFiles(files.filter((f) => f !== file))}
-              className="cursor-pointer hover:text-red-600 transition-colors"
-            >
-              <CircleX className="w-4 h-4 font-bold" />
-            </button>
+            {!file.isUploaded && (
+              <button
+                onClick={() => setFiles(files.filter((f) => f !== file))}
+                className="cursor-pointer hover:text-red-600 transition-colors"
+              >
+                <CircleX className="w-4 h-4 font-bold" />
+              </button>
+            )}
           </div>
         </CardContent>
         <div className="m-2">
