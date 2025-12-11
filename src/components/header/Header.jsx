@@ -23,6 +23,7 @@ import { useClients, useUser } from "@/hooks/useQueryData";
 import { shareComet } from "@/api/shareComet";
 import { publishComet } from "@/api/publishComet";
 import { downloadDocument } from "@/api/downloadDocument";
+import { sendFeedback } from "@/api/sendFeedback";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -120,6 +121,9 @@ export default function Header() {
   const [isFeedbackActive, setIsFeedbackActive] = useState(false);
   const [isDownloadActive, setIsDownloadActive] = useState(false);
   const [isInviteButtonActive, setIsInviteButtonActive] = useState(false);
+  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
   const [loginButtonPosition, setLoginButtonPosition] = useState(null);
@@ -130,6 +134,9 @@ export default function Header() {
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
   const [text, setText] = useState("");
+
+  const [subject, setSubject] = useState("Kyper Feedback");
+  const to = "hello@1st90.com";
 
   // Check if user is super admin
   const isSuperAdmin = () => {
@@ -257,6 +264,49 @@ export default function Header() {
 
   const handleFeedbackClick = () => {
     setIsFeedbackActive(!isFeedbackActive);
+    setIsFeedbackDialogOpen(true);
+  };
+
+  const handleFeedbackClose = () => {
+    setIsFeedbackDialogOpen(false);
+    setFeedbackMessage("");
+    setIsFeedbackActive(false);
+  };
+
+  const handleFeedbackSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!feedbackMessage.trim()) {
+      toast.error("Please enter your feedback");
+      return;
+    }
+
+    setIsSubmittingFeedback(true);
+
+    try {
+      const response = await sendFeedback(feedbackMessage);
+
+      if (response?.response && !response.error) {
+        toast.success(
+          "Feedback sent successfully! Thank you for your feedback."
+        );
+        handleFeedbackClose();
+      } else {
+        toast.error(
+          response?.response?.data?.detail ||
+            "Failed to send feedback. Please try again."
+        );
+      }
+    } catch (error) {
+      console.error("Failed to send feedback:", error);
+      toast.error(
+        error?.response?.data?.detail ||
+          error?.message ||
+          "Failed to send feedback. Please try again."
+      );
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
   };
 
   const handleDownloadClick = async () => {
@@ -378,10 +428,8 @@ export default function Header() {
   };
 
   useEffect(() => {
+    const sessionData = JSON.parse(localStorage.getItem("sessionData") || "{}");
     try {
-      const sessionData = JSON.parse(
-        localStorage.getItem("sessionData") || "{}"
-      );
       setText(
         sessionData?.comet_creation_data?.["Basic Information"]?.["Comet Title"]
       );
@@ -1263,6 +1311,92 @@ export default function Header() {
                   </Button>
                   <Button type="submit" disabled={isInviting}>
                     {isInviting ? "Sending..." : "Send Invite"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog
+            open={isFeedbackDialogOpen}
+            onOpenChange={(open) => {
+              setIsFeedbackDialogOpen(open);
+              if (!open) {
+                setFeedbackMessage("");
+                setIsFeedbackActive(false);
+
+                // clear new fields when dialog closes
+                setSubject("Kyper Feedback");
+                setCc("");
+              }
+            }}
+          >
+            <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+              <DialogHeader>
+                <DialogTitle>Send Feedback</DialogTitle>
+              </DialogHeader>
+
+              <form onSubmit={handleFeedbackSubmit} className="space-y-4">
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                    To
+                  </Label>
+                  <input
+                    value={to}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 focus:outline-none focus:ring-1 focus:ring-primary-300 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Subject */}
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                    Subject
+                  </Label>
+                  <input
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    placeholder="Subject"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-300 focus:border-transparent"
+                    required
+                    disabled={isSubmittingFeedback}
+                  />
+                </div>
+
+                {/* Message (body) */}
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                    Message
+                  </Label>
+                  <textarea
+                    value={feedbackMessage}
+                    onChange={(e) => setFeedbackMessage(e.target.value)}
+                    placeholder="Write your message..."
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-300 focus:border-transparent resize-none min-h-[140px]"
+                    disabled={isSubmittingFeedback}
+                  />
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleFeedbackClose}
+                    disabled={isSubmittingFeedback}
+                  >
+                    Cancel
+                  </Button>
+
+                  <Button
+                    type="submit"
+                    disabled={
+                      isSubmittingFeedback ||
+                      feedbackMessage.trim() === "" ||
+                      subject.trim() === ""
+                    }
+                  >
+                    {isSubmittingFeedback ? "Sending..." : "Send Feedback"}
                   </Button>
                 </DialogFooter>
               </form>

@@ -12,7 +12,9 @@ export const endpoints = {
   shareComet: (sessionId) => `api/comet/share_comets/${sessionId}`,
   publishComet: (sessionId) => `api/comet/publish_comet/${sessionId}`,
   generateDalleImage: "api/generative-ai/v1/generate-dalle-image",
-  getClientDetails: (clientId) => `api/clients/v1/client_details/?client_id=${clientId}`,
+  getClientDetails: (clientId) =>
+    `api/clients/v1/client_details/?client_id=${clientId}`,
   updateClient: "api/clients/v1/upsert/client/",
   downloadDocument: (documentId) => `api/documents/download/${documentId}`,
+  feedbackEmail: (feedback) => `api/comet/feedback_email?feedback=${feedback}`,
 };

@@ -297,7 +297,7 @@ export default function DashboardLayout() {
               initialInput={initialInput}
               cometData={null}
               sessionId={sessionId}
-              prefillData={prefillData}
+              prefillData={prefillData || sessionData}
               onSubmit={handleFormSubmit}
               isLoading={isLoading}
               error={error}

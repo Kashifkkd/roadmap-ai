@@ -60,7 +60,7 @@ export default function ChatInput({
   };
 
   return (
-    <div className="w-full p-2 bg-accent flex flex-col items-center gap-2 rounded-xl h-[96px] sm:h-[116px]">
+    <div className="w-full p-2 bg-accent flex flex-col items-center gap-2 rounded-xl h-[100px] sm:h-[130px]">
       <div className="relative w-full h-full rounded-xl  text-[#717680]">
         <Search className="absolute top-3 left-2 w-4 h-4 text-[#717680]" />
         <Textarea
@@ -70,10 +70,11 @@ export default function ChatInput({
           onChange={(e) => setCurrentValue(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          className={`pl-[30px] pt-2 pb-10 pr-10 text-sm text-gray-900 placeholder:text-[#717680] shadow-none border-0 rounded-xl bg-background w-full min-h-full focus-visible:ring-primary-300 focus-visible:ring-1 focus-visible:ring-offset-2 leading-5 resize-none ${
+          className={`pl-[30px] pt-2 pb-12 pr-2 text-sm text-gray-900 placeholder:text-[#717680] shadow-none border-0 rounded-xl bg-background w-full min-h-full focus-visible:ring-primary-300 focus-visible:ring-1 focus-visible:ring-offset-2 leading-5 resize-none ${
             disabled ? " cursor-not-allowed" : ""
           }`}
         />
+        <div className="absolute bottom-0 left-0 right-0 h-10 bg-background rounded-b-xl" />
         <div className="absolute bottom-2 right-2">
           <Button
             variant="default"
