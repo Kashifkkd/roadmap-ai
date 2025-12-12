@@ -11,14 +11,33 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-export default function SourceMaterialCard({ files, setFiles }) {
+export default function SourceMaterialCard({
+  files,
+  setFiles,
+  isNewComet = false,
+}) {
   const [sessionId, setSessionId] = useState(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setSessionId(localStorage.getItem("sessionId"));
-    }
+    if (typeof window === "undefined") return;
+
+    const updateSessionId = () => {
+      const currentId = localStorage.getItem("sessionId");
+      setSessionId(currentId);
+    };
+
+    // Initial read
+    updateSessionId();
+
+    // Listen for sessionId changes from chatwindow
+    window.addEventListener("sessionIdChanged", updateSessionId);
+
+    return () => {
+      window.removeEventListener("sessionIdChanged", updateSessionId);
+    };
   }, []);
+
+  console.log(">>> sessionId", sessionId, "isNewComet", isNewComet);
 
   const fetchSourceMaterials = useCallback(async () => {
     try {
@@ -39,17 +58,34 @@ export default function SourceMaterialCard({ files, setFiles }) {
   }, [sessionId, setFiles]);
 
   useEffect(() => {
+    // Skip fetching if new comet is created
+    if (isNewComet) {
+      return;
+    }
+
     if (sessionId) {
       fetchSourceMaterials();
     }
-  }, [sessionId, fetchSourceMaterials]);
+  }, [sessionId, isNewComet, fetchSourceMaterials]);
 
   const uploadFile = useCallback(
     async (file) => {
       try {
+        const currentSessionId =
+          sessionId ||
+          (typeof window !== "undefined"
+            ? localStorage.getItem("sessionId")
+            : null);
+
+        if (!currentSessionId) {
+          console.error("Cannot upload file: no session ID available");
+          toast.error("Please wait for session to be created");
+          return;
+        }
+
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("session_id", sessionId);
+        formData.append("session_id", currentSessionId);
 
         const result = await apiService({
           endpoint: endpoints.uploadSourceMaterial,
@@ -108,7 +144,10 @@ export default function SourceMaterialCard({ files, setFiles }) {
         // Only upload files that haven't been uploaded
         const newFiles = files.filter((file) => !file.isUploaded);
 
-        if (newFiles.length > 0 && sessionId) {
+        // Get sessionId from state or localStorage
+        const currentSessionId = sessionId || localStorage.getItem("sessionId");
+
+        if (newFiles.length > 0 && currentSessionId) {
           console.log("newfiles>>>>>>>>>>", newFiles.length);
           await Promise.all(newFiles.map((file) => uploadFile(file)));
         } else if (newFiles.length === 0) {

@@ -170,11 +170,13 @@ export default function ChatWindow({
         currentSessionId = localStorage.getItem("sessionId");
       }
 
-      if (!currentSessionId) {
-        const sessionResponse = await graphqlClient.createSession();
-        currentSessionId = sessionResponse.createSession.sessionId;
-        localStorage.setItem("sessionId", currentSessionId);
-      }
+      // if (!currentSessionId) {
+      const sessionResponse = await graphqlClient.createSession();
+      currentSessionId = sessionResponse.createSession.sessionId;
+      localStorage.setItem("sessionId", currentSessionId);
+      // Notify source material card
+      window.dispatchEvent(new Event("sessionIdChanged"));
+      // }
 
       setSessionId(currentSessionId);
 

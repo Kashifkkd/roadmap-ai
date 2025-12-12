@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import CreateComet from "@/components/create-comet";
 import ChatWindow from "@/components/chat/ChatWindow";
@@ -14,6 +14,8 @@ export default function DashboardLayout() {
   const suggestion = searchParams.get("suggestion");
   const initialInput = searchParams.get("initialInput");
   const userQuestionsParam = searchParams.get("userQuestions");
+
+  const isNewCometRef = useRef(!!initialInput);
 
   // State for session data
   const [sessionData, setSessionData] = useState(null);
@@ -295,6 +297,7 @@ export default function DashboardLayout() {
             <CreateComet
               suggestion={suggestion}
               initialInput={initialInput}
+              isNewComet={isNewCometRef.current}
               cometData={null}
               sessionId={sessionId}
               prefillData={prefillData || sessionData}

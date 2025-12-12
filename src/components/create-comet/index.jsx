@@ -21,6 +21,7 @@ export default function CreateComet({
   initialData = null,
   suggestion,
   initialInput,
+  isNewComet = false,
   cometData,
   sessionData = null,
   prefillData = null,
@@ -935,7 +936,11 @@ export default function CreateComet({
 
             <div className="flex p-1 sm:p-2 w-full lg:w-1/2 bg-background rounded-xl">
               <div className="flex-1 w-full border rounded-xl overflow-auto h-full create-comet-scrollbar p-2 sm:p-4">
-                <SourceMaterialCard files={files} setFiles={setFiles} />
+                <SourceMaterialCard
+                  files={files}
+                  setFiles={setFiles}
+                  isNewComet={isNewComet}
+                />
               </div>
             </div>
           </div>
