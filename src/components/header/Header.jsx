@@ -15,6 +15,8 @@ import {
   Pencil,
   Eye,
   Mail,
+  PaintRollerIcon,
+  ChevronRight,
 } from "lucide-react";
 import { tokenManager } from "@/lib/api-client";
 import Image from "next/image";
@@ -94,6 +96,28 @@ const UserAvatar = ({ user }) => {
   );
 };
 
+// Dummy client data for UI design purposes when no clients are available
+const DUMMY_CLIENTS = [
+  {
+    id: "dummy-1",
+    name: "Acme Corporation",
+    ImageUrl: "",
+    role: "Admin",
+  },
+  {
+    id: "dummy-2",
+    name: "Tech Solutions Inc",
+    ImageUrl: "",
+    role: "Member",
+  },
+  {
+    id: "dummy-3",
+    name: "Global Industries",
+    ImageUrl: "",
+    role: "Member",
+  },
+];
+
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
@@ -110,6 +134,7 @@ export default function Header() {
     isLoading: clientsLoading,
     isError: clientsError,
   } = useClients(isAuthenticated);
+
   const { data: user } = useUser(isAuthenticated);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isHomeButtonActive, setIsHomeButtonActive] = useState(false);
@@ -130,6 +155,8 @@ export default function Header() {
   const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
   const [isClientSettingsDialogOpen, setIsClientSettingsDialogOpen] =
     useState(false);
+  const [isThemeSubmenuOpen, setIsThemeSubmenuOpen] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState("system");
   const loginButtonRef = useRef(null);
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
@@ -140,24 +167,13 @@ export default function Header() {
 
   // Check if user is super admin
   const isSuperAdmin = () => {
-    const client = selectedClient || clients[0];
+    const client = selectedClient || displayClients[0];
     if (!client) return false;
     return client.role === "Super Admin";
   };
 
-  // Mock client data - replace with actual data fetching
-  const mockClients = [
-    {
-      id: 1,
-      name: "Jhon Doe",
-      ImageUrl: "/profile.png",
-    },
-    {
-      id: 2,
-      name: "Jane Doe",
-      ImageUrl: "/profile.png",
-    },
-  ];
+  // Use dummy clients if no real clients are available (for UI design purposes)
+  const displayClients = clients.length > 0 ? clients : DUMMY_CLIENTS;
 
   // Mock collaborators data
   const mockCollaborators = [
@@ -223,17 +239,34 @@ export default function Header() {
   }, [isLoginDialogOpen]);
 
   useEffect(() => {
-    if (clients.length > 0) {
+    const clientsToUse = clients.length > 0 ? clients : DUMMY_CLIENTS;
+    if (clientsToUse.length > 0) {
       if (!selectedClient) {
-        setSelectedClient(clients[0]);
-        localStorage.setItem("Client id", clients[0].id);
+        setSelectedClient(clientsToUse[0]);
+        localStorage.setItem("Client id", clientsToUse[0].id);
       } else {
-        const updatedClient = clients.find((c) => c.id === selectedClient.id);
-        if (updatedClient) {
-          setSelectedClient(updatedClient);
+        // Only update if the selected client's data has actually changed
+        const updatedClient = clientsToUse.find(
+          (c) => c.id === selectedClient.id
+        );
+        if (updatedClient && updatedClient !== selectedClient) {
+          // Check if any relevant properties have changed
+          const hasChanged =
+            updatedClient.name !== selectedClient.name ||
+            updatedClient.ImageUrl !== selectedClient.ImageUrl ||
+            updatedClient.role !== selectedClient.role;
+
+          if (hasChanged) {
+            setSelectedClient(updatedClient);
+          }
+        } else if (!updatedClient && clientsToUse.length > 0) {
+          // Selected client no longer exists, select the first one
+          setSelectedClient(clientsToUse[0]);
+          localStorage.setItem("Client id", clientsToUse[0].id);
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clients]);
 
   useEffect(() => {
@@ -451,8 +484,19 @@ export default function Header() {
   useEffect(() => {
     if (!isUserMenuOpen) {
       setActiveButton(null);
+      setIsThemeSubmenuOpen(false);
     }
   }, [isUserMenuOpen]);
+
+  const handleThemeClick = () => {
+    setIsThemeSubmenuOpen(!isThemeSubmenuOpen);
+    handleButtonClick("theme");
+  };
+
+  const handleThemeSelect = (theme) => {
+    setSelectedTheme(theme);
+    // setIsThemeSubmenuOpen(false);
+  };
 
   const handleInviteClick = () => {
     setIsInviteButtonActive(!isInviteButtonActive);
@@ -868,6 +912,7 @@ export default function Header() {
                     <div
                       className="absolute left-0 top-full mt-3 w-48 bg-white rounded-sm shadow-lg border border-gray-200 z-50"
                       onClick={(e) => e.stopPropagation()}
+                      data-user-menu
                     >
                       <div className=" p-2 border-gray-200 border-b">
                         <button
@@ -922,8 +967,68 @@ export default function Header() {
                               activeButton === "settings" ? "text-white" : ""
                             }`}
                           />
-                          <span className="text-base ">Client Settings</span>
+                          <span className="text-base ">Settings</span>
                         </button>
+                        <div className="relative">
+                          <button
+                            className={`pl-4 py-1 w-full flex items-center gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${
+                              activeButton === "theme"
+                                ? "bg-primary text-white"
+                                : "bg-white text-gray-900 hover:bg-primary-100"
+                            }`}
+                            onClick={handleThemeClick}
+                          >
+                            <PaintRollerIcon
+                              className={`w-5 h-5 ${
+                                activeButton === "theme" ? "text-white" : ""
+                              }`}
+                            />
+                            <div className="flex items-center gap-2 justify-between w-full">
+                              <span className="text-base ">Theme</span>
+                              <ChevronRight className="w-5 h-5" />
+                            </div>
+                          </button>
+                          {isThemeSubmenuOpen && (
+                            <div
+                              className="absolute left-full top-0 ml-2 w-48 bg-white rounded-sm shadow-lg border border-gray-200 z-50"
+                              onClick={(e) => e.stopPropagation()}
+                              data-user-menu
+                            >
+                              <div className="p-2">
+                                <button
+                                  className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${
+                                    selectedTheme === "light"
+                                      ? "bg-primary text-white"
+                                      : "bg-white text-gray-900 hover:bg-primary-100"
+                                  }`}
+                                  onClick={() => handleThemeSelect("light")}
+                                >
+                                  Light Theme
+                                </button>
+                                <button
+                                  className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${
+                                    selectedTheme === "dark"
+                                      ? "bg-primary text-white"
+                                      : "bg-white text-gray-900 hover:bg-primary-100"
+                                  }`}
+                                  onClick={() => handleThemeSelect("dark")}
+                                >
+                                  Dark Theme
+                                </button>
+                                <button
+                                  className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${
+                                    selectedTheme === "system"
+                                      ? "bg-primary text-white"
+                                      : "bg-white text-gray-900 hover:bg-primary-100"
+                                  }`}
+                                  onClick={() => handleThemeSelect("system")}
+                                >
+                                  System Theme
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div className="p-2 border-t border-gray-100 ">
@@ -959,7 +1064,7 @@ export default function Header() {
               {isAuthenticated && (
                 <div className="hidden md:flex items-center gap-2 shrink-0">
                   <ClientDropdown
-                    clients={clients}
+                    clients={displayClients}
                     selectedClient={selectedClient}
                     onClientSelect={handleClientSelect}
                     isLoading={clientsLoading}
@@ -1218,7 +1323,7 @@ export default function Header() {
                 {isAuthenticated && (
                   <div className="mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-200">
                     <ClientDropdown
-                      clients={clients}
+                      clients={displayClients}
                       selectedClient={selectedClient}
                       onClientSelect={handleClientSelect}
                       isLoading={clientsLoading}
@@ -1262,6 +1367,7 @@ export default function Header() {
                   return;
                 }
                 setIsUserMenuOpen(false);
+                setIsThemeSubmenuOpen(false);
               }}
             />
           )}
@@ -1327,7 +1433,7 @@ export default function Header() {
 
                 // clear new fields when dialog closes
                 setSubject("Kyper Feedback");
-                setCc("");
+                // setCc("");
               }
             }}
           >
@@ -1349,7 +1455,7 @@ export default function Header() {
                 </div>
 
                 {/* Subject */}
-                <div>
+                <div className="mb-4">
                   <Label className="block text-sm font-medium text-gray-700 mb-1">
                     Subject
                   </Label>

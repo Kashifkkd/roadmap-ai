@@ -40,21 +40,21 @@ const Loader = () => {
     "Finalizing outline structure",
   ];
 
-  const itemHeight = 60;
+  const itemHeight = 40;
   const totalHeight = steps.length * itemHeight;
   const animationDuration = steps.length * 1;
 
   return (
     <div className="w-full h-full flex flex-col rounded-2xl p-2 bg-white">
-      <div className="w-full h-full flex flex-col items-center rounded-lg px-2 sm:px-2 md:px-6 border border-[#C7C2F9]">
+      <div className="w-full pt-14 h-full flex flex-col items-center rounded-lg px-2 sm:px-2 md:px-6 border border-[#C7C2F9]">
         <div className="flex flex-col items-center justify-center max-w-2xl mx-auto px-4 rounded mt-10">
           {/* Logo */}
           <div className="mb-2">
             <Image
               src="/logo2.svg"
               alt="Kyper Logo"
-              width={80}
-              height={80}
+              width={70}
+              height={70}
               className="rounded-full animate-spin"
               style={{
                 animation: "spin 8s linear infinite",
@@ -62,19 +62,19 @@ const Loader = () => {
             />
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 text-center">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 text-center">
             Your Comet Is Taking Shape
           </h1>
 
-          <p className="text-base sm:text-lg text-gray-700 mb-12 text-center max-w-xl">
+          <p className="text-sm sm:text-base text-gray-700 mb-12 text-center max-w-xl">
             Extracting insights, drafting early ideas, and preparing your Input
             Screen.
           </p>
 
           <div className="w-full  relative">
-            <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white via-white/80 to-transparent z-10 pointer-events-none " />
+            <div className="absolute top-0 left-0 right-0 h-16 bg-linear-to-b from-white via-white/80 to-transparent z-10 pointer-events-none " />
 
-            <div className="relative h-56 overflow-hidden flex justify-center">
+            <div className="relative h-42 overflow-hidden flex justify-center">
               <div
                 className="animate-scroll flex flex-col items-start gap-2"
                 style={{
@@ -96,7 +96,7 @@ const Loader = () => {
                         className="w-6 h-6"
                       />
                     </div>
-                    <span className="text-base sm:text-sm whitespace-nowrap">
+                    <span className="text-base sm:text-sm font-medium whitespace-nowrap">
                       {step}
                     </span>
                   </div>
@@ -105,7 +105,7 @@ const Loader = () => {
                 {steps.map((step, index) => (
                   <div
                     key={`step-b-${index}`}
-                    className="flex items-center gap-4 text-gray-700"
+                    className="flex items-center gap-6 text-gray-700"
                     aria-hidden="true"
                   >
                     <div className="shrink-0 opacity-80">
@@ -117,7 +117,7 @@ const Loader = () => {
                         className="w-6 h-6"
                       />
                     </div>
-                    <span className="text-base sm:text-sm whitespace-nowrap">
+                    <span className="text-base sm:text-sm font-medium whitespace-nowrap">
                       {step}
                     </span>
                   </div>
@@ -125,7 +125,7 @@ const Loader = () => {
               </div>
             </div>
 
-            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white via-white/80 to-transparent z-10 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-white via-white/80 to-transparent z-10 pointer-events-none" />
           </div>
         </div>
 

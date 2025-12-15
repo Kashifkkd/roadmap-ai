@@ -46,6 +46,9 @@ export default function HabitOptInForm({
     updateField("habits", next);
   };
 
+  // console.log("updateHabitField>>>>>>>>>>", updateHabitField);
+  console.log("habits>>>>>>>>>>", habits);
+
   const removeHabit = (index) => {
     updateField(
       "habits",
@@ -172,7 +175,7 @@ export default function HabitOptInForm({
             ))}
           </div>
 
-          {/* <div className="mt-4">
+          <div className="mt-4">
             <Button
               onClick={addHabit}
               className="w-full flex items-center justify-center gap-2 px-3 py-2 text-background rounded-lg"
@@ -180,7 +183,7 @@ export default function HabitOptInForm({
               <Plus size={16} />
               Add Habit
             </Button>
-          </div> */}
+          </div>
         </div>
       </div>
     </div>

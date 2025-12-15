@@ -357,12 +357,32 @@ export default function DynamicForm({
               } else if (field === "habits") {
                 // Extract plain text from delta for nested habit.text fields
                 if (Array.isArray(value)) {
+                  const existingHabits =
+                    currentScreen.screenContents.content.habits || [];
+
                   currentScreen.screenContents.content.habits = value.map(
-                    (habit) => {
-                      if (habit && typeof habit === "object" && habit.text) {
+                    (habit, idx) => {
+                      if (habit && typeof habit === "object") {
+                        const existing = existingHabits[idx] || {};
+                        const nextTitle =
+                          habit.title !== undefined && habit.title !== ""
+                            ? habit.title
+                            : existing.title ?? "";
+                        const nextReps =
+                          habit.reps !== undefined && habit.reps !== ""
+                            ? habit.reps
+                            : existing.reps ?? "";
+                        const nextText =
+                          habit.text !== undefined && habit.text !== ""
+                            ? extractPlainTextFromDelta(habit.text)
+                            : existing.text ?? "";
+
                         return {
+                          ...existing,
                           ...habit,
-                          text: extractPlainTextFromDelta(habit.text),
+                          title: nextTitle,
+                          reps: nextReps,
+                          text: nextText,
                         };
                       }
                       return habit;

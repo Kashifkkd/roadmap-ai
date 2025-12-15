@@ -2,12 +2,17 @@
 import React, { useEffect, useState } from "react";
 import CometFilter from "./CometFilter";
 import AllCometsContainer from "./AllCometsContainer";
+// import SequentialLoader from "../chat/SequentialLoader";
+import Loader from "../loader2/index";
+import CometSettingsDialog from "../comet-manager/CometSettingsDialog";
+import { useCometSettings } from "@/contexts/CometSettingsContext";
 
 export default function AllComet() {
   const [cometSessions, setCometSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [noComet, setNoComet] = useState(false);
   const [error, setError] = useState(null);
+  const { isCometSettingsOpen, setIsCometSettingsOpen } = useCometSettings();
 
   const fetchCometSessions = async ({ clientId, token }) => {
     if (!clientId || !token)
@@ -69,7 +74,8 @@ export default function AllComet() {
   if (loading) {
     return (
       <div className="w-screen h-screen flex justify-center items-center">
-        Loading comet sessions...
+        {/* Loading comet sessions... */}
+        <Loader />
       </div>
     );
   }
@@ -96,6 +102,11 @@ export default function AllComet() {
         <CometFilter />
         <AllCometsContainer cometSessions={cometSessions} />
       </div>
+      {/* Comet Settings Dialog */}
+      <CometSettingsDialog
+        open={isCometSettingsOpen}
+        onOpenChange={setIsCometSettingsOpen}
+      />
     </div>
   );
 }

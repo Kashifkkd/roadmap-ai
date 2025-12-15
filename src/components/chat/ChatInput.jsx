@@ -101,7 +101,7 @@ export default function ChatInput({
           className={`absolute p-1 bottom-2 left-2 cursor-pointer flex text-center gap-0 rounded-sm ${
             isAttachActive
               ? "text-white bg-primary-600"
-              : "text-placeholder-gray-500 bg-white  hover:text-primary-600 hover:bg-primary-50"
+              : "text-white bg-primary  hover:text-primary-600 hover:bg-primary-50"
           }`}
           onClick={handleAttach}
         >

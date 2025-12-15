@@ -15,7 +15,7 @@ import MultipleChoiceField from "./MultipleChoiceField";
 import SliderField from "./SliderField";
 import AskKyperPopup from "./AskKyperPopup";
 import { graphqlClient } from "@/lib/graphql-client";
-import { Info } from "lucide-react";
+import { Info, Trash2 } from "lucide-react";
 
 export default function CreateComet({
   initialData = null,
@@ -669,6 +669,22 @@ export default function CreateComet({
     console.log("Generate Habit clicked");
   };
 
+  const handleAddObjective = () => {
+    const current = watch("learningObjectives") || [""];
+    setValue("learningObjectives", [...current, ""]);
+  };
+
+  const handleDeleteObjective = (index) => {
+    const current = watch("learningObjectives") || [""];
+    if (current.length > 1) {
+      const updated = current.filter((_, i) => i !== index);
+      setValue("learningObjectives", updated);
+    } else {
+      // Keep at least one empty objective
+      setValue("learningObjectives", [""]);
+    }
+  };
+
   return (
     <>
       <form
@@ -769,29 +785,49 @@ export default function CreateComet({
                       <div className="space-y-2">
                         {(watch("learningObjectives") || [""]).map(
                           (objective, index) => (
-                            <Textarea
-                              key={index}
-                              id={`learning-objective-${index}`}
-                              placeholder={`Learning objective ${index + 1}`}
-                              value={objective || ""}
-                              onChange={(e) => {
-                                const current = watch("learningObjectives") || [
-                                  "",
-                                ];
-                                const updated = [...current];
-                                updated[index] = e.target.value;
-                                setValue("learningObjectives", updated);
-                              }}
-                              onSelect={(e) =>
-                                handleTextSelection(
-                                  `learningObjectives.${index}`,
-                                  e
-                                )
-                              }
-                              className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
-                            />
+                            <div key={index} className="flex gap-2 items-start">
+                              <Textarea
+                                id={`learning-objective-${index}`}
+                                placeholder={`Learning objective ${index + 1}`}
+                                value={objective || ""}
+                                onChange={(e) => {
+                                  const current = watch(
+                                    "learningObjectives"
+                                  ) || [""];
+                                  const updated = [...current];
+                                  updated[index] = e.target.value;
+                                  setValue("learningObjectives", updated);
+                                }}
+                                onSelect={(e) =>
+                                  handleTextSelection(
+                                    `learningObjectives.${index}`,
+                                    e
+                                  )
+                                }
+                                className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300 min-h-10 flex-1"
+                              />
+                              <Button
+                                size="sm"
+                                type="button"
+                                variant="ghost"
+                                onClick={() => handleDeleteObjective(index)}
+                                className="text-red-600 p-2 shrink-0"
+                                title="Delete objective"
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            </div>
                           )
                         )}
+                        <Button
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                          onClick={handleAddObjective}
+                          className="border-primary text-primary hover:bg-primary hover:text-white bg-transparent"
+                        >
+                          Add
+                        </Button>
                       </div>
                       {errors.learningObjectives && (
                         <p className="text-red-600 text-sm">

@@ -8,33 +8,27 @@ import {
   MoreVertical,
   CircleX,
   Loader2,
+  MoreHorizontal,
+  Info,
+  Trash2,
+  Plus,
 } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getClientDetails, updateClientDetails } from "@/api/client";
-import { uploadProfile } from "@/api/User/uploadProfile";
 import { toast } from "sonner";
 import { useRefreshData } from "@/hooks/useQueryData";
-
-//function to remove image
-const removeImage = (setFile, setPreview, preview) => {
-  setFile(null);
-  setPreview(null);
-  if (preview) {
-    URL.revokeObjectURL(preview);
-  }
-};
-
-//function to upload image
-const uploadImageFile = async (file) => {
-  const uploadResponse = await uploadProfile(file);
-  if (uploadResponse?.response?.ImageUrl) {
-    return uploadResponse.response.ImageUrl;
-  }
-  throw new Error("Failed to upload image");
-};
+import ClientFormFields from "@/components/common/ClientFormFields";
 
 export default function ClientSettingsDialog({
   open,
@@ -43,26 +37,37 @@ export default function ClientSettingsDialog({
 }) {
   const { refreshClients } = useRefreshData();
   const [activeTab, setActiveTab] = useState("general");
-  const [clientName, setClientName] = useState("");
-  const [website, setWebsite] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [clientData, setClientData] = useState(null);
-  const [selectedColorCode, setSelectedColorCode] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [backgroundImageUrl, setBackgroundImageUrl] = useState("");
+  const clientFormRef = useRef(null);
 
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [uploadingBackgroundImage, setUploadingBackgroundImage] =
-    useState(false);
-  const [pendingImageFile, setPendingImageFile] = useState(null);
-  const [pendingBackgroundImageFile, setPendingBackgroundImageFile] =
-    useState(null);
-  const [pendingImagePreview, setPendingImagePreview] = useState(null);
-  const [pendingBackgroundImagePreview, setPendingBackgroundImagePreview] =
-    useState(null);
-  const imageInputRef = useRef(null);
-  const backgroundImageInputRef = useRef(null);
+  // Add User form state
+  const [showAddUserForm, setShowAddUserForm] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [cohort, setCohort] = useState("");
+  const [cometAssignments, setCometAssignments] = useState([
+    { id: 1, isCurrent: true, cometType: "" },
+  ]);
+  const [currentCometIndex, setCurrentCometIndex] = useState(0);
+
+  // Add Creator form state
+  const [showAddCreatorForm, setShowAddCreatorForm] = useState(false);
+  const [creatorFirstName, setCreatorFirstName] = useState("");
+  const [creatorLastName, setCreatorLastName] = useState("");
+  const [creatorEmail, setCreatorEmail] = useState("");
+  const [creatorPassword, setCreatorPassword] = useState("");
+  const [creatorConfirmPassword, setCreatorConfirmPassword] = useState("");
+  const [creatorRole, setCreatorRole] = useState("");
+  const [creatorClient, setCreatorClient] = useState("");
+  const [creatorImageFile, setCreatorImageFile] = useState(null);
+  const [creatorImagePreview, setCreatorImagePreview] = useState(null);
+  const [uploadingCreatorImage, setUploadingCreatorImage] = useState(false);
+  const creatorImageInputRef = useRef(null);
 
   // Fetch client details when dialog opens and selectedClient is available
   useEffect(() => {
@@ -79,15 +84,6 @@ export default function ClientSettingsDialog({
         if (response?.response && !response.error) {
           const fetchedData = response.response;
           setClientData(fetchedData);
-          setClientName(fetchedData.name || fetchedData.client_name || "");
-          setWebsite(fetchedData.faq_url || "");
-          setSelectedColorCode(fetchedData.color_code || "");
-          setImageUrl(fetchedData.ImageUrl || "");
-          setBackgroundImageUrl(fetchedData.background_image_url || "");
-          setPendingImageFile(null);
-          setPendingBackgroundImageFile(null);
-          setPendingImagePreview(null);
-          setPendingBackgroundImagePreview(null);
         }
       } catch (error) {
         console.error("Failed to fetch client details:", error);
@@ -100,19 +96,16 @@ export default function ClientSettingsDialog({
     fetchClientDetails();
   }, [open, selectedClient]);
 
-  // Cleanup preview URLs when dialog closes
+  // Cleanup creator image preview URL when dialog closes
   useEffect(() => {
     return () => {
-      if (pendingImagePreview) {
-        URL.revokeObjectURL(pendingImagePreview);
-      }
-      if (pendingBackgroundImagePreview) {
-        URL.revokeObjectURL(pendingBackgroundImagePreview);
+      if (creatorImagePreview) {
+        URL.revokeObjectURL(creatorImagePreview);
       }
     };
-  }, [pendingImagePreview, pendingBackgroundImagePreview]);
+  }, [creatorImagePreview]);
 
-  const handleImageUpload = (event, isBackgroundImage = false) => {
+  const handleCreatorImageUpload = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -122,24 +115,13 @@ export default function ClientSettingsDialog({
     }
 
     const previewUrl = URL.createObjectURL(file);
-
-    if (isBackgroundImage) {
-      setPendingBackgroundImageFile(file);
-      setPendingBackgroundImagePreview(previewUrl);
-    } else {
-      setPendingImageFile(file);
-      setPendingImagePreview(previewUrl);
-    }
-
+    setCreatorImageFile(file);
+    setCreatorImagePreview(previewUrl);
     event.target.value = "";
   };
 
-  const handleImageClick = (isBackgroundImage = false) => {
-    if (isBackgroundImage) {
-      backgroundImageInputRef.current?.click();
-    } else {
-      imageInputRef.current?.click();
-    }
+  const handleCreatorImageClick = () => {
+    creatorImageInputRef.current?.click();
   };
 
   const handleSave = async () => {
@@ -155,70 +137,22 @@ export default function ClientSettingsDialog({
       return;
     }
 
-    // Validate required fields
-    if (!clientName.trim()) {
-      toast.error("Client name is required");
+    if (!clientFormRef.current) {
+      toast.error("Form not initialized");
       return;
     }
 
     setSaving(true);
     try {
-      let finalImageUrl = imageUrl || clientData.ImageUrl || "";
-      let finalBackgroundImageUrl =
-        backgroundImageUrl || clientData.background_image_url || "";
-
-      // Upload pending images first if any
-      if (pendingImageFile) {
-        setUploadingImage(true);
-        try {
-          finalImageUrl = await uploadImageFile(pendingImageFile);
-          setImageUrl(finalImageUrl);
-          removeImage(
-            setPendingImageFile,
-            setPendingImagePreview,
-            pendingImagePreview
-          );
-        } catch (error) {
-          console.error("Error uploading image:", error);
-          toast.error("Failed to upload image. Please try again.");
-          setSaving(false);
-          setUploadingImage(false);
-          return;
-        } finally {
-          setUploadingImage(false);
-        }
-      }
-
-      if (pendingBackgroundImageFile) {
-        setUploadingBackgroundImage(true);
-        try {
-          finalBackgroundImageUrl = await uploadImageFile(
-            pendingBackgroundImageFile
-          );
-          setBackgroundImageUrl(finalBackgroundImageUrl);
-          removeImage(
-            setPendingBackgroundImageFile,
-            setPendingBackgroundImagePreview,
-            pendingBackgroundImagePreview
-          );
-        } catch (error) {
-          console.error("Error uploading color logo:", error);
-          toast.error("Failed to upload color logo. Please try again.");
-          setSaving(false);
-          setUploadingBackgroundImage(false);
-          return;
-        } finally {
-          setUploadingBackgroundImage(false);
-        }
+      const formData = await clientFormRef.current.getFormData();
+      if (!formData) {
+        setSaving(false);
+        return;
       }
 
       const payload = {
         id: clientId,
-        name: clientName,
-        faq_url: website || "",
-        color_code: selectedColorCode || "",
-        ImageUrl: finalImageUrl,
-        background_image_url: finalBackgroundImageUrl,
+        ...formData,
       };
 
       const response = await updateClientDetails(payload);
@@ -228,7 +162,6 @@ export default function ClientSettingsDialog({
         setClientData(response.response);
         // Refresh clients to update Header automatically
         refreshClients();
-        setSaving(false);
         onOpenChange(false);
       } else {
         const errorMessage =
@@ -236,7 +169,6 @@ export default function ClientSettingsDialog({
           response?.response?.message ||
           "Failed to update client details";
         toast.error(errorMessage);
-        setSaving(false);
       }
     } catch (error) {
       console.error("Failed to update client details:", error);
@@ -245,15 +177,19 @@ export default function ClientSettingsDialog({
         error?.message ||
         "Failed to update client details";
       toast.error(errorMessage);
+    } finally {
       setSaving(false);
     }
   };
 
-  const isLoading = uploadingImage || uploadingBackgroundImage || saving;
+  const isLoading = clientFormRef.current?.isLoading?.() || false || saving;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[908px] max-h-[90vh] border-0 bg-transparent p-0 shadow-none overflow-hidden [&>button]:hidden">
+        <VisuallyHidden>
+          <DialogTitle>Client Settings</DialogTitle>
+        </VisuallyHidden>
         <div className="rounded-[32px] bg-white overflow-hidden flex flex-col max-h-[90vh] relative">
           {/* Loader */}
           {isLoading && (
@@ -286,17 +222,6 @@ export default function ClientSettingsDialog({
               {/* Left Sidebar */}
               <div className="w-[240px] rounded-lg border-gray-200 bg-gray-50 p-4 flex flex-col flex-shrink-0">
                 <button
-                  onClick={() => setActiveTab("general")}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-md transition-colors mb-2 cursor-pointer ${
-                    activeTab === "general"
-                      ? "bg-primary-700 text-white"
-                      : "text-gray-700 hover:bg-primary-100"
-                  }`}
-                >
-                  <FileText className="w-5 h-5" />
-                  <span className="text-base font-medium">General Info</span>
-                </button>
-                <button
                   onClick={() => setActiveTab("users")}
                   className={`flex items-center gap-3 px-4 py-3 rounded-md transition-colors cursor-pointer ${
                     activeTab === "users"
@@ -307,314 +232,650 @@ export default function ClientSettingsDialog({
                   <Users className="w-5 h-5" />
                   <span className="text-base font-medium">Users</span>
                 </button>
+                <button
+                  onClick={() => setActiveTab("general")}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-md transition-colors mb-2 cursor-pointer ${
+                    activeTab === "general"
+                      ? "bg-primary-700 text-white"
+                      : "text-gray-700 hover:bg-primary-100"
+                  }`}
+                >
+                  <FileText className="w-5 h-5" />
+                  <span className="text-base font-medium">Client</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab("creators")}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-md transition-colors cursor-pointer ${
+                    activeTab === "creators"
+                      ? "bg-primary-700 text-white"
+                      : "text-gray-700 hover:bg-primary-100"
+                  }`}
+                >
+                  <Users className="w-5 h-5" />
+                  <span className="text-base font-medium">Creators</span>
+                </button>
               </div>
 
               {/* Right Content Area */}
-              <div className="flex-1 overflow-y-auto p-8 rounded-lg bg-white">
+              <div className="flex-1 overflow-y-auto p-4 rounded-lg bg-white">
                 {activeTab === "general" && (
-                  <div className="space-y-6">
-                    {/* Client Name and Website Row */}
-                    <div className="grid grid-cols-2 gap-6">
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                          Client Name<span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          value={clientName}
-                          onChange={(e) => setClientName(e.target.value)}
-                          className="w-full"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                          Website
-                        </Label>
-                        <Input
-                          value={website}
-                          onChange={(e) => setWebsite(e.target.value)}
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6">
-                      {/* General Image Upload */}
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-3 block">
-                          Image (Upload PNG)
-                        </Label>
-                        <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
-                          {pendingImagePreview ? (
-                            <div className="relative w-full h-[104px] rounded-lg overflow-hidden">
-                              <img
-                                src={pendingImagePreview}
-                                alt="Preview"
-                                className="w-full h-full object-contain rounded-lg"
-                              />
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeImage(
-                                    setPendingImageFile,
-                                    setPendingImagePreview,
-                                    pendingImagePreview
-                                  );
-                                }}
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 z-10"
-                                title="Remove image"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ) : (
-                            <div
-                              onClick={() => handleImageClick(false)}
-                              className="border-2 border-dashed border-gray-300 rounded-lg p-4 gap-2 flex flex-col items-center justify-center bg-gray-50 cursor-pointer relative h-[104px]"
-                            >
-                              <input
-                                ref={imageInputRef}
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handleImageUpload(e, false)}
-                                className="hidden"
-                              />
-                              <div className="text-gray-500 text-sm">
-                                {uploadingImage ? "Uploading..." : "Upload PNG"}
-                              </div>
-                              <Button
-                                type="button"
-                                disabled={uploadingImage}
-                                className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
-                              >
-                                {uploadingImage ? "Uploading..." : "+ Browse"}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Color Logo */}
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-3 block">
-                          Color Logo (Upload PNG)
-                        </Label>
-                        <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
-                          {pendingBackgroundImagePreview ? (
-                            <div className="relative w-full h-[104px] rounded-lg overflow-hidden">
-                              <img
-                                src={pendingBackgroundImagePreview}
-                                alt="Preview"
-                                className="w-full h-full object-contain rounded-lg"
-                              />
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeImage(
-                                    setPendingBackgroundImageFile,
-                                    setPendingBackgroundImagePreview,
-                                    pendingBackgroundImagePreview
-                                  );
-                                }}
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 z-10"
-                                title="Remove image"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ) : (
-                            <div
-                              onClick={() => handleImageClick(true)}
-                              className="border-2 border-dashed border-gray-300 rounded-lg p-4 gap-2 flex flex-col items-center justify-center bg-gray-50 cursor-pointer relative h-[104px]"
-                            >
-                              <input
-                                ref={backgroundImageInputRef}
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handleImageUpload(e, true)}
-                                className="hidden"
-                              />
-                              <div className="text-gray-500 text-sm">
-                                {uploadingBackgroundImage
-                                  ? "Uploading..."
-                                  : "Upload PNG"}
-                              </div>
-                              <Button
-                                type="button"
-                                disabled={uploadingBackgroundImage}
-                                className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
-                              >
-                                {uploadingBackgroundImage
-                                  ? "Uploading..."
-                                  : "+ Browse"}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Brand Colors */}
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700 mb-4 block">
-                        Brand Colors
-                      </Label>
-                      <div className="grid grid-cols-2  gap-4">
-                        {/* Color Swatch 1 - Purple */}
-                        <div
-                          onClick={() => setSelectedColorCode("#7367F0")}
-                          className={`flex gap-3 p-2 border w-full h-full rounded-lg bg-white cursor-pointer transition-all ${
-                            selectedColorCode === "#7367F0"
-                              ? "border-primary-700 border-2 shadow-md"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                        >
-                          <div className="w-16 h-10 rounded-md bg-[#7367F0]"></div>
-                          <div className="gap-1 flex flex-col">
-                            <div className="text-sm font-medium text-gray-700">
-                              Title
-                            </div>
-                            <div className="text-xs text-gray-500">#7367F0</div>
-                          </div>
-                        </div>
-
-                        <div
-                          onClick={() => setSelectedColorCode("#41B3A2")}
-                          className={`flex items-center gap-3 p-2 border max-h-[54px] rounded-lg bg-white cursor-pointer transition-all ${
-                            selectedColorCode === "#41B3A2"
-                              ? "border-primary-700 border-2 shadow-md"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                        >
-                          <div className="w-16 h-10 rounded-lg bg-[#41B3A2]"></div>
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-700">
-                              Title
-                            </div>
-                            <div className="text-xs text-gray-500">#41B3A2</div>
-                          </div>
-                        </div>
-
-                        <div
-                          onClick={() => setSelectedColorCode("#CF1662")}
-                          className={`flex gap-3 p-2 border items-center max-h-[54px] rounded-lg bg-white cursor-pointer transition-all ${
-                            selectedColorCode === "#CF1662"
-                              ? "border-primary-700 border-2 shadow-md"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                        >
-                          <div className="w-16 h-10 rounded-md bg-[#CF1662]"></div>
-                          <div className="gap-1 flex flex-col">
-                            <div className="text-sm font-medium text-gray-700">
-                              Title
-                            </div>
-                            <div className="text-xs text-gray-500">#CF1662</div>
-                          </div>
-                        </div>
-
-                        <div
-                          onClick={() => setSelectedColorCode("#FFDC2F")}
-                          className={`flex items-center gap-3 p-2 max-h-[54px] border rounded-lg bg-white cursor-pointer transition-all ${
-                            selectedColorCode === "#FFDC2F"
-                              ? "border-primary-700 border-2 shadow-md"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                        >
-                          <div className="w-16 h-10 rounded-md bg-[#FFDC2F]"></div>
-                          <div className="gap-1 flex flex-col">
-                            <div className="text-sm font-medium text-gray-700">
-                              Title
-                            </div>
-                            <div className="text-xs text-gray-500">#FFDC2F</div>
-                          </div>
-                        </div>
-                        <div
-                          onClick={() => setSelectedColorCode("#00A885")}
-                          className={`flex items-center gap-3 p-2 border rounded-lg bg-white cursor-pointer transition-all ${
-                            selectedColorCode === "#00A885"
-                              ? "border-primary-700 border-2 shadow-md"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                        >
-                          <div className="w-16 h-10 rounded-lg bg-[#00A885]"></div>
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-700">
-                              Title
-                            </div>
-                            <div className="text-xs text-gray-500">#00A885</div>
-                          </div>
-                        </div>
-                        <div
-                          onClick={() => setSelectedColorCode("#006C55")}
-                          className={`flex items-center gap-3 max-h-[54px] p-2 border rounded-lg bg-white cursor-pointer transition-all ${
-                            selectedColorCode === "#006C55"
-                              ? "border-primary-700 border-2 shadow-md"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                        >
-                          <div className="w-16 h-10 rounded-lg bg-[#006C55]"></div>
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-700">
-                              Title
-                            </div>
-                            <div className="text-xs text-gray-500">#006C55</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <ClientFormFields
+                    ref={clientFormRef}
+                    initialValues={clientData}
+                  />
                 )}
 
                 {activeTab === "users" && (
                   <div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse">
-                        <thead>
-                          <tr className="bg-[#E8F4F3]">
-                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                              First Name
-                            </th>
-                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                              Last Name
-                            </th>
-                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                              Email
-                            </th>
-                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                              Current Comet
-                            </th>
-                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                              Action
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {Array.from({ length: 11 }).map((_, index) => (
-                            <tr
-                              key={index}
-                              className="border-b border-gray-100 hover:bg-gray-50"
+                    {!showAddUserForm ? (
+                      <div className="overflow-x-auto">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-lg font-medium text-gray-700">
+                            User List
+                          </span>
+
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              placeholder="Search"
+                              className="w-1/2 border border-gray-300 rounded-lg p-1"
+                            />
+                            <Button
+                              size="md"
+                              variant="outline"
+                              onClick={() => setShowAddUserForm(true)}
+                              className="text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer"
                             >
-                              <td className="px-4 py-3 text-sm text-gray-600">
+                              {/* <Plus className="w-5 h-5" /> */}
+                              Add User
+                            </Button>
+                            <Button
+                              size="md"
+                              variant="outline"
+                              className=" text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer"
+                            >
+                              User Bulk Upload
+                            </Button>
+                          </div>
+                        </div>
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className="bg-[#E8F4F3]">
+                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
                                 First Name
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-600">
+                              </th>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
                                 Last Name
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-600">
+                              </th>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
                                 Email
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-600">
+                              </th>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
                                 Current Comet
-                              </td>
-                              <td className="px-4 py-3">
-                                <button className="text-gray-400 hover:text-gray-600">
-                                  <MoreVertical className="w-5 h-5" />
-                                </button>
-                              </td>
+                              </th>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                                Action
+                              </th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody>
+                            {Array.from({ length: 11 }).map((_, index) => (
+                              <tr
+                                key={index}
+                                className="border-b border-gray-100 hover:bg-gray-50"
+                              >
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  First Name
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  Last Name
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  Email
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  Current Comet
+                                </td>
+                                <td className="px-4 py-3">
+                                  <button className="text-gray-400 hover:text-gray-600">
+                                    <MoreVertical className="w-5 h-5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {/* Back Button */}
+                        <div className="flex items-center justify-between">
+                          <h2 className="text-xl font-semibold text-gray-900">
+                            Add User
+                          </h2>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => {
+                              setShowAddUserForm(false);
+                              // Reset form
+                              setFirstName("");
+                              setLastName("");
+                              setEmail("");
+                              setPassword("");
+                              setConfirmPassword("");
+                              setCohort("");
+                              setCometAssignments([
+                                { id: 1, isCurrent: true, cometType: "" },
+                              ]);
+                              setCurrentCometIndex(0);
+                            }}
+                            className="text-gray-600 hover:text-gray-900"
+                          >
+                            <X className="w-5 h-5" />
+                          </Button>
+                        </div>
+
+                        {/* Personal Information */}
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                First Name
+                                <span className="text-red-500">*</span>
+                              </Label>
+                              <Input
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                className="w-full bg-white border border-gray-300"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                Last Name
+                              </Label>
+                              <Input
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                className="w-full bg-white border border-gray-300"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                              Email
+                            </Label>
+                            <Input
+                              type="email"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              className="w-full bg-white border border-gray-300"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Account Details */}
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                Password<span className="text-red-500">*</span>
+                              </Label>
+                              <Input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full bg-white border border-gray-300"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                Confirm Password
+                                <span className="text-red-500">*</span>
+                              </Label>
+                              <Input
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) =>
+                                  setConfirmPassword(e.target.value)
+                                }
+                                className="w-full bg-white border border-gray-300"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                              Cohort
+                            </Label>
+                            <Select value={cohort} onValueChange={setCohort}>
+                              <SelectTrigger className="w-full bg-white border border-gray-300">
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="cohort1">
+                                  Cohort 1
+                                </SelectItem>
+                                <SelectItem value="cohort2">
+                                  Cohort 2
+                                </SelectItem>
+                                <SelectItem value="cohort3">
+                                  Cohort 3
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        {/* Current Comet Assignment */}
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium text-gray-700">
+                            Current Comet
+                          </h3>
+                          <div className="space-y-3">
+                            {cometAssignments.map((assignment, index) => (
+                              <div
+                                key={assignment.id}
+                                className="flex items-center gap-3"
+                              >
+                                {/* Numbered Label */}
+                                <button
+                                  type="button"
+                                  className="w-9 h-9 rounded-lg bg-gray-200 text-gray-600 font-medium text-sm flex items-center justify-center shrink-0"
+                                >
+                                  {assignment.id}
+                                </button>
+
+                                {/* Current Comet Selector */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCurrentCometIndex(index);
+                                    setCometAssignments((prev) =>
+                                      prev.map((item, idx) => ({
+                                        ...item,
+                                        isCurrent: idx === index,
+                                      }))
+                                    );
+                                  }}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${
+                                    assignment.isCurrent
+                                      ? "bg-green-50 border-green-500"
+                                      : "bg-gray-50 border-gray-300"
+                                  }`}
+                                >
+                                  <div
+                                    className={`w-4 h-4 rounded-full ${
+                                      assignment.isCurrent
+                                        ? "bg-green-500"
+                                        : "bg-white border-2 border-gray-400"
+                                    }`}
+                                  />
+                                  <span className="text-sm font-medium text-gray-700">
+                                    Current Comet
+                                  </span>
+                                </button>
+
+                                {/* Comet Type Dropdown */}
+                                <Select
+                                  value={assignment.cometType}
+                                  onValueChange={(value) => {
+                                    setCometAssignments((prev) =>
+                                      prev.map((item) =>
+                                        item.id === assignment.id
+                                          ? { ...item, cometType: value }
+                                          : item
+                                      )
+                                    );
+                                  }}
+                                >
+                                  <SelectTrigger className="flex-1 bg-white border border-gray-300">
+                                    <SelectValue placeholder="Select" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="comet1">
+                                      Comet 1
+                                    </SelectItem>
+                                    <SelectItem value="comet2">
+                                      Comet 2
+                                    </SelectItem>
+                                    <SelectItem value="comet3">
+                                      Comet 3
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+
+                                {/* Delete Button */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (cometAssignments.length > 1) {
+                                      setCometAssignments((prev) =>
+                                        prev.filter(
+                                          (item) => item.id !== assignment.id
+                                        )
+                                      );
+                                    }
+                                  }}
+                                  className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0"
+                                  disabled={cometAssignments.length === 1}
+                                >
+                                  <Trash2 className="w-4 h-4 text-white" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Assign Comet Button */}
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              const newId =
+                                Math.max(...cometAssignments.map((a) => a.id)) +
+                                1;
+                              setCometAssignments((prev) => [
+                                ...prev,
+                                { id: newId, isCurrent: false, cometType: "" },
+                              ]);
+                            }}
+                            variant="outline"
+                            className="w-full border-purple-300 text-primary-700 hover:bg-purple-50 flex items-center justify-center gap-2 py-2"
+                          >
+                            <Plus className="w-4 h-4 text-blue-500" />
+                            Assign Comet
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {activeTab === "creators" && (
+                  <div>
+                    {!showAddCreatorForm ? (
+                      <div className="overflow-x-auto">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-lg font-medium text-gray-700">
+                            Creator List
+                          </span>
+
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              placeholder="Search"
+                              className="w-full border border-gray-300 rounded-lg p-1"
+                            />
+                            <Button
+                              size="md"
+                              variant="default"
+                              onClick={() => setShowAddCreatorForm(true)}
+                              className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {/* <Plus className="w-5 h-5" /> */}
+                              Add Creator
+                            </Button>
+                          </div>
+                        </div>
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className="bg-[#E8F4F3]">
+                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                                First Name
+                              </th>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                                Last Name
+                              </th>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                                Email
+                              </th>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                                Role
+                              </th>
+
+                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                                Action
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Array.from({ length: 11 }).map((_, index) => (
+                              <tr
+                                key={index}
+                                className="border-b border-gray-100 hover:bg-gray-50"
+                              >
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  First Name
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  Last Name
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  Email
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  Role
+                                </td>
+                                <td className="px-4 py-3">
+                                  <button className="text-gray-400 hover:text-gray-600">
+                                    <MoreHorizontal className="w-5 h-5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {/* Back Button */}
+                        <div className="flex items-center justify-between">
+                          <h2 className="text-xl font-semibold text-gray-900">
+                            Add Creator
+                          </h2>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => {
+                              setShowAddCreatorForm(false);
+                              // Reset form
+                              setCreatorFirstName("");
+                              setCreatorLastName("");
+                              setCreatorEmail("");
+                              setCreatorPassword("");
+                              setCreatorConfirmPassword("");
+                              setCreatorRole("");
+                              setCreatorClient("");
+                              setCreatorImageFile(null);
+                              if (creatorImagePreview) {
+                                URL.revokeObjectURL(creatorImagePreview);
+                              }
+                              setCreatorImagePreview(null);
+                            }}
+                            className="text-gray-600 hover:text-gray-900"
+                          >
+                            <X className="w-5 h-5" />
+                          </Button>
+                        </div>
+
+                        {/* Personal Information */}
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                First Name
+                                <span className="text-red-500">*</span>
+                              </Label>
+                              <Input
+                                value={creatorFirstName}
+                                onChange={(e) =>
+                                  setCreatorFirstName(e.target.value)
+                                }
+                                className="w-full bg-white border border-gray-300"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                Last Name
+                              </Label>
+                              <Input
+                                value={creatorLastName}
+                                onChange={(e) =>
+                                  setCreatorLastName(e.target.value)
+                                }
+                                className="w-full bg-white border border-gray-300"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                Email
+                              </Label>
+                              <Input
+                                type="email"
+                                value={creatorEmail}
+                                onChange={(e) =>
+                                  setCreatorEmail(e.target.value)
+                                }
+                                className="w-full bg-white border border-gray-300"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                Role
+                              </Label>
+                              <Select
+                                value={creatorRole}
+                                onValueChange={setCreatorRole}
+                              >
+                                <SelectTrigger className="w-full bg-white border border-gray-300">
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="admin">Admin</SelectItem>
+                                  <SelectItem value="editor">Editor</SelectItem>
+                                  <SelectItem value="viewer">Viewer</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Account Details */}
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                Password<span className="text-red-500">*</span>
+                              </Label>
+                              <Input
+                                type="password"
+                                value={creatorPassword}
+                                onChange={(e) =>
+                                  setCreatorPassword(e.target.value)
+                                }
+                                className="w-full bg-white border border-gray-300"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                Confirm Password
+                                <span className="text-red-500">*</span>
+                              </Label>
+                              <Input
+                                type="password"
+                                value={creatorConfirmPassword}
+                                onChange={(e) =>
+                                  setCreatorConfirmPassword(e.target.value)
+                                }
+                                className="w-full bg-white border border-gray-300"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                              Client
+                            </Label>
+                            <Select
+                              value={creatorClient}
+                              onValueChange={setCreatorClient}
+                            >
+                              <SelectTrigger className="w-full bg-white border border-gray-300">
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="client1">
+                                  Client 1
+                                </SelectItem>
+                                <SelectItem value="client2">
+                                  Client 2
+                                </SelectItem>
+                                <SelectItem value="client3">
+                                  Client 3
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        {/* Image Upload Section */}
+                        <div className="space-y-4">
+                          <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                            Upload Image
+                          </Label>
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 bg-gray-100">
+                            {creatorImagePreview ? (
+                              <div className="relative w-full h-[200px] rounded-lg overflow-hidden">
+                                <img
+                                  src={creatorImagePreview}
+                                  alt="Creator preview"
+                                  className="w-full h-full object-contain rounded-lg"
+                                />
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeImage(
+                                      setCreatorImageFile,
+                                      setCreatorImagePreview,
+                                      creatorImagePreview
+                                    );
+                                  }}
+                                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 z-10"
+                                  title="Remove image"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div
+                                onClick={handleCreatorImageClick}
+                                className="border-2 border-dashed border-gray-300 rounded-lg gap-2 flex flex-col items-center justify-center bg-white cursor-pointer relative min-h-[100px]"
+                              >
+                                <input
+                                  ref={creatorImageInputRef}
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleCreatorImageUpload}
+                                  className="hidden"
+                                />
+                                <div className="text-gray-500 text-sm mb-2">
+                                  {uploadingCreatorImage
+                                    ? "Uploading..."
+                                    : "Upload Image"}
+                                </div>
+                                <Button
+                                  type="button"
+                                  disabled={uploadingCreatorImage}
+                                  className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                                >
+                                  {uploadingCreatorImage
+                                    ? "Uploading..."
+                                    : "+ Browse"}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

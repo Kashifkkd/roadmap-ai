@@ -259,7 +259,7 @@ export default function CometManager({
         block: "nearest",
       });
     }
-  }, [currentScreen, selectedScreen]);
+  }, [currentScreen]);
 
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);

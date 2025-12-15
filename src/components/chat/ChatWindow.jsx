@@ -21,6 +21,9 @@ export default function ChatWindow({
   const router = useRouter();
   const processedInitialInputRef = useRef(false);
   const initialMessageCountRef = useRef(null);
+  const previousSessionIdRef = useRef(null);
+  const welcomeAnimationCheckedRef = useRef(false);
+  const welcomeAnimationStateRef = useRef(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
@@ -29,6 +32,7 @@ export default function ChatWindow({
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState(null);
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
+  const [shouldAnimateWelcome, setShouldAnimateWelcome] = useState(false);
 
   // Cleanup WebSocket connections on unmount
   useEffect(() => {
@@ -44,8 +48,44 @@ export default function ChatWindow({
       const existing = localStorage.getItem("sessionId");
       if (existing) {
         setSessionId(existing);
+        previousSessionIdRef.current = existing;
+        // Reset welcome animation check when sessionId is first loaded
+        welcomeAnimationCheckedRef.current = false;
+        welcomeAnimationStateRef.current = false;
       }
     } catch {}
+  }, [sessionId]);
+
+  // Clear welcome message flags when sessionId changes (new session)
+  useEffect(() => {
+    const currentSessionId = sessionId || localStorage.getItem("sessionId");
+
+    if (currentSessionId) {
+      // If we have a previous sessionId and it's different, clear old flags
+      if (
+        previousSessionIdRef.current &&
+        currentSessionId !== previousSessionIdRef.current
+      ) {
+        // Session changed - clear all welcome message flags for the old session
+        const pages = ["dashboard", "outline-manager", "comet-manager"];
+        pages.forEach((page) => {
+          localStorage.removeItem(
+            `welcomeMessageShown_${previousSessionIdRef.current}_${page}`
+          );
+        });
+        // Reset the animation check ref when session changes
+        welcomeAnimationCheckedRef.current = false;
+        welcomeAnimationStateRef.current = false;
+      }
+
+      // Update the ref to track current session
+      if (
+        !previousSessionIdRef.current ||
+        previousSessionIdRef.current !== currentSessionId
+      ) {
+        previousSessionIdRef.current = currentSessionId;
+      }
+    }
   }, [sessionId]);
 
   useEffect(() => {
@@ -55,7 +95,10 @@ export default function ChatWindow({
 
     if (!hasFlag) {
       initialMessageCountRef.current = null;
+      welcomeAnimationCheckedRef.current = false;
+      welcomeAnimationStateRef.current = false;
       setShowWelcomeMessage(false);
+      setShouldAnimateWelcome(false);
       return;
     }
 
@@ -72,8 +115,59 @@ export default function ChatWindow({
       inputType === "comet_data_update";
     const hasNewMessages = allMessages.length > initialMessageCountRef.current;
 
-    setShowWelcomeMessage(!(isUpdateMode && hasNewMessages));
-  }, [sessionData, allMessages, inputType]);
+    const shouldShow = !(isUpdateMode && hasNewMessages);
+    setShowWelcomeMessage(shouldShow);
+
+    // Determine if we should animate the welcome message
+    if (shouldShow) {
+      const currentSessionId = sessionId || localStorage.getItem("sessionId");
+      if (!currentSessionId) {
+        setShouldAnimateWelcome(false);
+        return;
+      }
+
+      let pageName = "dashboard";
+      if (inputType === "outline_updation") {
+        pageName = "outline-manager";
+      } else if (inputType === "path_updation") {
+        pageName = "comet-manager";
+      } else if (
+        inputType === "comet_data_update" ||
+        inputType === "comet_data_creation"
+      ) {
+        pageName = "dashboard";
+      }
+
+      // Create a unique key
+      const checkKey = `${currentSessionId}_${pageName}`;
+
+      // Check if welcome message was already shown for this session and page
+      const welcomeKey = `welcomeMessageShown_${currentSessionId}_${pageName}`;
+      const wasShown = localStorage.getItem(welcomeKey) === "true";
+
+      if (welcomeAnimationCheckedRef.current !== checkKey) {
+        welcomeAnimationCheckedRef.current = checkKey;
+
+        if (!wasShown) {
+          // First time showing - animate it
+          welcomeAnimationStateRef.current = true;
+          setShouldAnimateWelcome(true);
+          // Mark as shown
+          localStorage.setItem(welcomeKey, "true");
+        } else {
+          // if Already shown before donot animate
+          welcomeAnimationStateRef.current = false;
+          setShouldAnimateWelcome(false);
+        }
+      } else {
+        setShouldAnimateWelcome(welcomeAnimationStateRef.current);
+      }
+    } else {
+      setShouldAnimateWelcome(false);
+      welcomeAnimationCheckedRef.current = false;
+      welcomeAnimationStateRef.current = false;
+    }
+  }, [sessionData, allMessages, inputType, sessionId]);
 
   // Function to parse response and extract form data
   const parseResponseForFormData = (responseText) => {
@@ -345,6 +439,7 @@ export default function ChatWindow({
         messages={allMessages}
         showWelcomeMessage={showWelcomeMessage}
         welcomeMessage={welcomeMessage}
+        shouldAnimateWelcome={shouldAnimateWelcome}
         isLoading={isLoading || isInitialLoading || externalLoading}
         onSuggestionClick={handleSuggestionClick}
         inputValue={inputValue}

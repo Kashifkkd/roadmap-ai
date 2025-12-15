@@ -2,6 +2,7 @@
 import Image from "next/image";
 import React, { useState } from "react";
 import StatusButton from "./StatusButton";
+import { useCometSettings } from "@/contexts/CometSettingsContext";
 
 const Comet = ({
   title,
@@ -13,6 +14,7 @@ const Comet = ({
   onCometClick,
 }) => {
   const [disabled, setDisabled] = useState(false);
+  const { setIsCometSettingsOpen } = useCometSettings();
 
   const handleClick = async () => {
     if (disabled) return;
@@ -32,6 +34,43 @@ const Comet = ({
     }
   };
 
+  const handleSettingsClick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // Prevent event from bubbling up to parent div
+
+    if (!session_id) {
+      console.error("No sessionId found for comet");
+      return;
+    }
+
+    try {
+      // Fetch session details from API
+      const response = await fetch(
+        `https://kyper-stage.1st90.com/api/comet/session_details/${session_id}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch session details");
+      }
+
+      const result = await response.json();
+
+      // Store sessionData in localStorage
+      localStorage.setItem("sessionData", JSON.stringify(result));
+      localStorage.setItem("sessionId", session_id);
+
+      setIsCometSettingsOpen(true);
+    } catch (error) {
+      console.error("Error fetching comet session details:", error.message);
+    }
+  };
+
   return (
     <div
       onClick={handleClick}
@@ -48,7 +87,7 @@ const Comet = ({
       />
       {/* White overlay on hover */}
       {/* new white overlay on hover  */}
-      <div className="absolute top-2 bottom-2 left-2 right-2 inset-0 rounded-lg p-2 bg-white/0 group-hover:bg-white transition-all duration-150 z-10 hover:opacity-0 opacity-0 group-hover:opacity-100">
+      <div className="absolute top-2 bottom-2 left-2 right-2 inset-0 rounded-lg p-2 bg-white/0 group-hover:bg-white transition-all duration-150 z-10 opacity-0 group-hover:opacity-100">
         <div className="flex flex-col w-full h-full justify-between">
           <div className="flex flex-col gap-2">
             <StatusButton status={status} />
@@ -120,7 +159,11 @@ const Comet = ({
                   </span>
                 </div>
               </button>
-              <button className="rounded-sm py-2 px-3 gap-3 bg-[#453E90]">
+              <button
+                type="button"
+                className="rounded-sm py-2 px-3 gap-3 bg-[#453E90]"
+                onClick={handleSettingsClick}
+              >
                 <div className="flex gap-1">
                   <Image
                     src="/settings.png"
@@ -139,7 +182,7 @@ const Comet = ({
       </div>
       {/* Overlay content */}
 
-      <div className="absolute bottom-2 left-2 right-2 z-20 flex flex-col gap-2.5 rounded-lg p-4 bg-white group-hover:opacity-0">
+      <div className="absolute bottom-2 left-2 right-2 z-20 flex flex-col gap-2.5 rounded-lg p-4 bg-white group-hover:opacity-0 group-hover:pointer-events-none">
         <div className="flex flex-col gap-2">
           <StatusButton status={status} />
           <span className="text-gray-800 font-noto font-semibold text-[20px] leading-[30px] tracking-normal">

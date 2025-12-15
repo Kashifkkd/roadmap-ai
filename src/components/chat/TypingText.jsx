@@ -14,12 +14,12 @@ const TypingText = ({
   const [displayedText, setDisplayedText] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  useEffect(() => {
-    if (resetOnChange) {
-      setDisplayedText("");
-      setCurrentIndex(0);
-    }
-  }, [text, resetOnChange]);
+  // useEffect(() => {
+  //   if (resetOnChange) {
+  //     setDisplayedText("");
+  //     setCurrentIndex(0);
+  //   }
+  // }, [text, resetOnChange]);
 
   useEffect(() => {
     if (currentIndex < text.length) {

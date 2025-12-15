@@ -1,9 +1,26 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronDown } from "lucide-react";
+import {
+  ChevronDown,
+  Users,
+  Plus,
+  ChevronRight,
+  Search,
+  CircleX,
+  Loader2,
+} from "lucide-react";
+import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { isArrayWithValues } from "@/utils/isArrayWithValues";
+import ClientSettingsDialog from "@/components/header/ClientSettingsDialog";
+import ClientFormFields from "@/components/common/ClientFormFields";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { updateClientDetails } from "@/api/client";
+import { toast } from "sonner";
+import { useRefreshData } from "@/hooks/useQueryData";
 
 function isValidHttpUrl(string) {
   if (!string) return false;
@@ -22,17 +39,32 @@ export default function ClientDropdown({
   isLoading = false,
   isError = false,
 }) {
+  const { refreshClients } = useRefreshData();
   const [isOpen, setIsOpen] = useState(false);
+  const [isAllClientsOpen, setIsAllClientsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isClientSettingsDialogOpen, setIsClientSettingsDialogOpen] =
+    useState(false);
+  const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const allClientsDropdownRef = useRef(null);
+  const allClientsButtonRef = useRef(null);
 
   // track image errors so we can fallback to initials
   const [selectedImageError, setSelectedImageError] = useState(false);
   const [imageErrorMap, setImageErrorMap] = useState({}); // { [id]: true }
 
+  // Add Client form ref and state
+  const clientFormRef = useRef(null);
+  const [saving, setSaving] = useState(false);
+  const [formResetKey, setFormResetKey] = useState(0);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
+        setIsAllClientsOpen(false);
+        setSearchQuery("");
       }
     };
 
@@ -64,6 +96,73 @@ export default function ClientDropdown({
       [clientId]: true,
     }));
   };
+
+  // Filter clients based on search query
+  const filteredClients = clients.filter((client) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase().trim();
+    const clientName = (client?.name || "").toLowerCase();
+    return clientName.includes(query);
+  });
+
+  const handleAllClientsClick = () => {
+    setIsAllClientsOpen(!isAllClientsOpen);
+    setSearchQuery("");
+  };
+
+  const handleAllClientsClientClick = (client) => {
+    setIsAllClientsOpen(false);
+    setSearchQuery("");
+    if (onClientSelect) {
+      onClientSelect(client);
+    }
+  };
+
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!isAddClientDialogOpen) {
+      setFormResetKey((prev) => prev + 1);
+    }
+  }, [isAddClientDialogOpen]);
+
+  const handleAddClient = async () => {
+    if (!clientFormRef.current) return;
+
+    setSaving(true);
+    try {
+      const formData = await clientFormRef.current.getFormData();
+      if (!formData) {
+        setSaving(false);
+        return;
+      }
+
+      const response = await updateClientDetails(formData);
+
+      if (response?.response && !response.error) {
+        toast.success("Client created successfully");
+        refreshClients();
+        setIsAddClientDialogOpen(false);
+      } else {
+        const errorMessage =
+          response?.response?.detail ||
+          response?.response?.message ||
+          "Failed to create client";
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("Failed to create client:", error);
+      const errorMessage =
+        error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to create client";
+      toast.error(errorMessage);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const isDialogLoading =
+    clientFormRef.current?.isLoading?.() || false || saving;
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -107,7 +206,7 @@ export default function ClientDropdown({
       </Button>
 
       {isOpen && !isLoading && !isError && (
-        <div className="absolute top-full mt-2 right-0 w-44 sm:w-48 md:w-56 bg-background rounded-md shadow-xl overflow-hidden no-scrollbar z-50">
+        <div className="absolute top-full mt-2 right-0 w-44 sm:w-48 md:w-56 bg-background rounded-md shadow-xl overflow-visible no-scrollbar z-[60]">
           <div className="flex flex-col p-1.5 sm:p-2 gap-1.5 sm:gap-2 max-h-80 overflow-y-auto">
             {clients.length === 0 ? (
               <div className="py-4 sm:py-6 text-center text-xs sm:text-sm text-muted-foreground">
@@ -149,8 +248,178 @@ export default function ClientDropdown({
               })
             )}
           </div>
+          <div className="border-t mx-3 py-2 border-gray-200">
+            <div
+              ref={allClientsButtonRef}
+              className="px-4 py-2 hover:bg-primary-50 rounded-md items-center flex justify-between cursor-pointer relative"
+              onClick={handleAllClientsClick}
+            >
+              <button className="w-full flex items-center ">
+                <Users className="w-4 h-4 mr-2" />
+                All Client
+              </button>
+              <ChevronRight className="w-5 h-5" />
+
+              {/* All Clients Dropdown - Opens to the right */}
+              {isAllClientsOpen && (
+                <div
+                  ref={allClientsDropdownRef}
+                  className="absolute top-0 left-full ml-4 w-64 bg-background rounded-md shadow-xl overflow-hidden z-[60]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Search Bar */}
+                  <div className="p-3 border-b border-gray-200">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <Input
+                        type="text"
+                        placeholder="Search"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 w-full"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  {/* Clients List */}
+                  <div className="flex flex-col p-1.5 gap-1.5 max-h-80 overflow-y-auto">
+                    {filteredClients.length === 0 ? (
+                      <div className="py-4 text-center text-sm text-muted-foreground">
+                        {searchQuery.trim()
+                          ? `No clients found matching "${searchQuery}"`
+                          : "No clients found"}
+                      </div>
+                    ) : (
+                      isArrayWithValues(filteredClients) &&
+                      filteredClients.map((client) => {
+                        const hasImg =
+                          client &&
+                          isValidHttpUrl(client.ImageUrl) &&
+                          !imageErrorMap[client.id];
+
+                        return (
+                          <Button
+                            key={client?.id || client?.name}
+                            onClick={() => handleAllClientsClientClick(client)}
+                            className="flex justify-start items-center gap-2 px-3 py-2 bg-background border-none shadow-none rounded text-left hover:bg-primary-50 active:bg-gray-100 cursor-pointer"
+                          >
+                            <div className="w-7 h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-sm font-semibold text-primary-700 shrink-0 overflow-hidden">
+                              {hasImg ? (
+                                <img
+                                  src={client.ImageUrl}
+                                  alt={client?.name || "Client"}
+                                  className="rounded-full object-cover w-full h-full"
+                                  onError={() =>
+                                    handleListImageError(client.id)
+                                  }
+                                />
+                              ) : (
+                                <span className="text-sm font-semibold text-primary-700">
+                                  {getClientInitial(client)}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-sm font-semibold text-gray-900 truncate">
+                              {client?.name}
+                            </span>
+                          </Button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="px-4 py-2 hover:bg-primary-50 rounded-md">
+              <button
+                className="w-full flex items-center gap-2"
+                onClick={() => {
+                  setIsOpen(false);
+                  setIsAddClientDialogOpen(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Client
+              </button>
+            </div>
+            <div className="px-4 py-2 hover:bg-primary-50 rounded-md">
+              <button
+                className="w-full  flex items-center gap-2"
+                onClick={() => {
+                  setIsOpen(false);
+                  setIsClientSettingsDialogOpen(true);
+                }}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Client Settings
+              </button>
+            </div>
+          </div>
         </div>
       )}
+      <ClientSettingsDialog
+        open={isClientSettingsDialogOpen}
+        onOpenChange={setIsClientSettingsDialogOpen}
+        selectedClient={selectedClient}
+      />
+
+      {/* Add Client Dialog */}
+      <Dialog
+        open={isAddClientDialogOpen}
+        onOpenChange={setIsAddClientDialogOpen}
+      >
+        <DialogContent className="max-w-[700px] max-h-[85vh] border-0 bg-transparent p-0 shadow-none overflow-hidden [&>button]:hidden">
+          <VisuallyHidden>
+            <DialogTitle>Add Client</DialogTitle>
+          </VisuallyHidden>
+          <div className="rounded-[32px] bg-white overflow-hidden flex flex-col max-h-[85vh] relative">
+            {/* Loader */}
+            {isDialogLoading && (
+              <div className="absolute inset-0 z-50 bg-white/80 flex items-center justify-center rounded-[32px]">
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary-700" />
+                  <p className="text-sm font-medium text-gray-700">
+                    {saving
+                      ? "Saving..."
+                      : uploadingImage || uploadingBackgroundImage
+                      ? "Uploading image..."
+                      : "Loading..."}
+                  </p>
+                </div>
+              </div>
+            )}
+            <div className="flex flex-col flex-1 min-h-0">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 pt-4 pb-3 border-b border-gray-200 shrink-0">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Add Client
+                </h2>
+                <button onClick={() => setIsAddClientDialogOpen(false)}>
+                  <CircleX className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+
+              {/* Content Area */}
+              <div className="flex-1 overflow-y-auto p-4 rounded-lg bg-white">
+                <ClientFormFields ref={clientFormRef} resetKey={formResetKey} />
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-end px-6 py-3 border-t border-gray-200 shrink-0">
+                <Button
+                  type="button"
+                  onClick={handleAddClient}
+                  disabled={saving || isDialogLoading}
+                  className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? "Saving..." : "Add Client"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

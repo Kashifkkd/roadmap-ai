@@ -321,7 +321,7 @@ export default function WelcomePage() {
                       className={`cursor-pointer flex items-center gap-2 ${
                         isAttachActive
                           ? "text-white bg-primary-600"
-                          : "text-placeholder-gray-500 bg-transparent hover:text-placeholder-gray-700 hover:bg-transparent"
+                          : "text-white bg-primary hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
                       }`}
                       onClick={handleAttach}
                       disabled={isLoading}

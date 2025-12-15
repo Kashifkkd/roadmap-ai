@@ -89,6 +89,7 @@ const Chat = ({
   onInputChange,
   welcomeMessage = [],
   showWelcomeMessage = false,
+  shouldAnimateWelcome = false,
   onSubmit,
   cometManager = false,
   error = null,
@@ -148,7 +149,7 @@ const Chat = ({
                   role="agent"
                   text={welcomeMessageChat({
                     messages: welcomeMessage,
-                    animate: true,
+                    animate: shouldAnimateWelcome,
                     onTyping: () => {
                       if (bottomRef.current) {
                         bottomRef.current.scrollIntoView({

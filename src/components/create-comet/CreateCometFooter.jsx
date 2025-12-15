@@ -24,7 +24,7 @@ export default function CreateCometFooter({
       reset();
     }
 
-    // Navigate back in history after a short delay to show loader
+    // Navigate back in history after a short delay to show loader  
     setTimeout(() => {
       window.history.back();
     }, 100);
