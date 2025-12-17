@@ -322,7 +322,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
-      <div className="w-full max-w-[998px] max-h-[90vh] md:max-h-[580px] p-1.5 sm:p-2 border-0 bg-white rounded-[20px] sm:rounded-[28px] shadow-[0_20px_70px_rgba(30,30,50,0.2)] flex flex-col overflow-hidden">
+      <div className="w-full max-w-[998px] max-h-[90vh] md:max-h-[530px] p-1.5 sm:p-2 border-0 bg-white rounded-[20px] sm:rounded-[28px] shadow-[0_20px_70px_rgba(30,30,50,0.2)] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-3 sm:px-4 md:px-5 py-3 sm:py-4 md:py-5 border-gray-200">
           <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900">
@@ -413,315 +413,217 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                 <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 lg:px-7 py-3 sm:py-4 md:py-6">
                   <div className="space-y-4 md:space-y-5">
                     {/* Comet Title */}
-                    <div className="space-y-4 flex flex-row gap-2 w-full">
-                      <div className="flex flex-col gap-2 w-1/2">
-                        <div className="space-y-2 ">
-                          <Label
-                            htmlFor="comet-title"
-                            className="text-sm font-medium text-gray-700"
-                          >
-                            Comet Title
-                            <span className="text-red-500 ml-1">*</span>
-                          </Label>
-                          <Input
-                            id="comet-title"
-                            value={cometTitle}
-                            onChange={(e) => setCometTitle(e.target.value)}
-                            placeholder="Enter comet title"
-                            className="w-full rounded-lg border-gray-300"
-                          />
+                    <div className="bg-gray-100 p-2 pt-6 rounded-lg ">
+                      <span className="text-sm font-medium text-gray-700 p-2 ">
+                        Basic Info
+                      </span>
+                      <div className="space-y-4 flex flex-row gap-2 w-full bg-white p-2 rounded-b-lg">
+                        <div className="flex flex-col gap-2 w-1/2">
+                          <div className="space-y-2 ">
+                            <Label
+                              htmlFor="comet-title"
+                              className="text-sm font-medium text-gray-700"
+                            >
+                              Comet Title
+                              <span className="text-red-500 ml-1">*</span>
+                            </Label>
+                            <Input
+                              id="comet-title"
+                              value={cometTitle}
+                              onChange={(e) => setCometTitle(e.target.value)}
+                              placeholder="Enter comet title"
+                              className="w-full rounded-lg border-gray-300"
+                            />
+                          </div>
+
+                          {/* Description */}
+
+                          <div className="space-y-2">
+                            <Label
+                              htmlFor="description"
+                              className="text-sm font-medium text-gray-700"
+                            >
+                              Description
+                            </Label>
+                            <Textarea
+                              id="description"
+                              value={description}
+                              onChange={(e) => setDescription(e.target.value)}
+                              placeholder="Enter description"
+                              rows={4}
+                              className="w-full resize-none rounded-lg border-gray-300"
+                            />
+                          </div>
                         </div>
 
-                        {/* Description */}
-
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor="description"
-                            className="text-sm font-medium text-gray-700"
-                          >
-                            Description
+                        {/* Comet Cover Image */}
+                        <div className="space-y-2 w-1/2 ">
+                          <Label className="text-sm font-medium text-gray-700">
+                            Comet Cover Image
                           </Label>
-                          <Textarea
-                            id="description"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Enter description"
-                            rows={4}
-                            className="w-full resize-none rounded-lg border-gray-300"
-                          />
+                          <div className="w-full p-2 bg-gray-100 rounded-lg">
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-white">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleCoverImageUpload}
+                                className="hidden"
+                                id="cover-image-upload"
+                              />
+                              <label
+                                htmlFor="cover-image-upload"
+                                className="cursor-pointer flex flex-col items-center gap-3"
+                              >
+                                <span className="text-sm text-gray-600">
+                                  Upload Image
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="border-primary text-primary hover:bg-primary hover:text-white"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    document
+                                      .getElementById("cover-image-upload")
+                                      ?.click();
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4 mr-1" />
+                                  Browse
+                                </Button>
+                              </label>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Comet Cover Image */}
-                      <div className="space-y-2 w-1/2 ">
-                        <Label className="text-sm font-medium text-gray-700">
-                          Comet Cover Image
-                        </Label>
-                        <div className="w-full p-2 bg-gray-100 rounded-lg">
-                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-white">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={handleCoverImageUpload}
-                              className="hidden"
-                              id="cover-image-upload"
-                            />
-                            <label
-                              htmlFor="cover-image-upload"
-                              className="cursor-pointer flex flex-col items-center gap-3"
-                            >
-                              <span className="text-sm text-gray-600">
-                                Upload Image
-                              </span>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="border-primary text-primary hover:bg-primary hover:text-white"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  document
-                                    .getElementById("cover-image-upload")
-                                    ?.click();
-                                }}
+                      {/* Configuration Settings Section */}
+                      <div className="space-y-4 bg-white p-2 rounded-b-lg">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Left Column */}
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-700">
+                                Learning Frequency
+                              </Label>
+                              <Select
+                                value={learningFrequency}
+                                onValueChange={setLearningFrequency}
                               >
-                                <Plus className="h-4 w-4 mr-1" />
-                                Browse
-                              </Button>
-                            </label>
+                                <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Daily">Daily</SelectItem>
+                                  <SelectItem value="Weekly">Weekly</SelectItem>
+                                  <SelectItem value="Monthly">
+                                    Monthly
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          {/* Right Column */}
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-700">
+                                Language
+                              </Label>
+                              <Select
+                                value={language}
+                                onValueChange={setLanguage}
+                              >
+                                <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="English">
+                                    English
+                                  </SelectItem>
+                                  <SelectItem value="Spanish">
+                                    Spanish
+                                  </SelectItem>
+                                  <SelectItem value="French">French</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-
-                    {/* Configuration Settings Section */}
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Left Column */}
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Learning Frequency
-                            </Label>
-                            <Select
-                              value={learningFrequency}
-                              onValueChange={setLearningFrequency}
-                            >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Daily">Daily</SelectItem>
-                                <SelectItem value="Weekly">Weekly</SelectItem>
-                                <SelectItem value="Monthly">Monthly</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {/* <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Manager Email Enabled?
-                            </Label>
-                            <Select
-                              value={managerEmailEnabled}
-                              onValueChange={setManagerEmailEnabled}
-                            >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Yes">Yes</SelectItem>
-                                <SelectItem value="No">No</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>  */}
-
-                          {/* <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Show User Email?
-                            </Label>
-                            <Select
-                              value={showUserEmail}
-                              onValueChange={setShowUserEmail}
-                            >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Yes">Yes</SelectItem>
-                                <SelectItem value="No">No</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div> */}
-
-                          {/* <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Leaderboard Enabled?
-                            </Label>
-                            <Select
-                              value={leaderboardEnabled}
-                              onValueChange={setLeaderboardEnabled}
-                            >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Yes">Yes</SelectItem>
-                                <SelectItem value="No">No</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div> */}
-
-                          {/* <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Enable Community?
-                            </Label>
-                            <Select
-                              value={enableCommunity}
-                              onValueChange={setEnableCommunity}
-                            >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Yes">Yes</SelectItem>
-                                <SelectItem value="No">No</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div> */}
-
-                          {/* <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Secure Links
-                            </Label>
-                            <Select
-                              value={secureLinks}
-                              onValueChange={setSecureLinks}
-                            >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Yes">Yes</SelectItem>
-                                <SelectItem value="No">No</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div> */}
+                    {/* Toggles Section */}
+                    <div className="pt-6 pb-2 px-2 bg-gray-100 rounded-lg">
+                      <p className=" font-bold mb-2 px-4  text-gray-700">
+                        Experiance Design
+                      </p>
+                      <div className="space-y-4 bg-white p-2 rounded-lg">
+                        <div className="border-b-2 border-gray-200 pb-2">
+                          <ToggleSwitch
+                            checked={habitEnabled}
+                            onChange={setHabitEnabled}
+                            label="Enable Habits"
+                            showInfo={true}
+                          />
                         </div>
-
-                        {/* Right Column */}
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Language
-                            </Label>
-                            <Select
-                              value={language}
-                              onValueChange={setLanguage}
-                            >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="English">English</SelectItem>
-                                <SelectItem value="Spanish">Spanish</SelectItem>
-                                <SelectItem value="French">French</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {/* <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Accountability Partners Email Enabled?
-                            </Label>
-                            <Select
-                              value={accountabilityPartnersEmailEnabled}
-                              onValueChange={
-                                setAccountabilityPartnersEmailEnabled
-                              }
-                            >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Yes">Yes</SelectItem>
-                                <SelectItem value="No">No</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div> */}
-
-                          {/* <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Enable Calendar Invites?
-                            </Label>
-                            <Select
-                              value={enableCalendarInvites}
-                              onValueChange={setEnableCalendarInvites}
-                            >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Yes">Yes</SelectItem>
-                                <SelectItem value="No">No</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div> */}
-
-                          {/* <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Leaderboard Entry Amount
-                            </Label>
-                            <Select
-                              value={leaderboardEntryAmount}
-                              onValueChange={setLeaderboardEntryAmount}
-                            >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="25">25</SelectItem>
-                                <SelectItem value="50">50</SelectItem>
-                                <SelectItem value="100">100</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div> */}
-
-                          {/* <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Enable Feedback?
-                            </Label>
-                            <Select
-                              value={enableFeedback}
-                              onValueChange={setEnableFeedback}
-                            >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Yes">Yes</SelectItem>
-                                <SelectItem value="No">No</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div> */}
-
-                          {/* <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Enable Action Hub?
-                            </Label>
-                            <Select
-                              value={enableActionHub}
-                              onValueChange={setEnableActionHub}
-                            >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Yes">Yes</SelectItem>
-                                <SelectItem value="No">No</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div> */}
+                        <ToggleSwitch
+                          checked={personalizationEnabled}
+                          onChange={setPersonalizationEnabled}
+                          label="Enable Personalization"
+                        />
+                      </div>
+                    </div>
+                    <div className="pt-6 pb-2 px-2 bg-gray-100 rounded-lg">
+                      <p className=" font-bold mb-2 px-4  text-gray-700">
+                        Stakeholder Engagement
+                      </p>
+                      <div className="space-y-4 bg-white p-2 rounded-lg">
+                        <div className="border-b-2 border-gray-200 pb-2">
+                          <ToggleSwitch
+                            checked={managerEmailEnabled}
+                            onChange={setManagerEmailEnabled}
+                            label="Manager Email Enabled?"
+                            showInfo={true}
+                          />
                         </div>
+                        <ToggleSwitch
+                          checked={accountabilityPartnersEmailEnabled}
+                          onChange={setAccountabilityPartnersEmailEnabled}
+                          label="Accountability Partners Email Enabled?"
+                        />
+                      </div>
+                    </div>
+                    <div className="pt-6 pb-2 px-2 bg-gray-100 rounded-lg">
+                      <p className=" font-bold mb-2 px-4  text-gray-700">
+                        Community Settings
+                      </p>
+                      <div className="space-y-4 bg-white p-2 rounded-lg">
+                        <div className="border-b-2 border-gray-200 pb-2">
+                          <ToggleSwitch
+                            checked={enableCommunity}
+                            onChange={setEnableCommunity}
+                            label="Enable Community?"
+                            showInfo={true}
+                          />
+                        </div>
+                        <ToggleSwitch
+                          checked={showUserEmail}
+                          onChange={setShowUserEmail}
+                          label="Show User Emails"
+                        />
+                      </div>
+                    </div>
+                    <div className="pt-6 pb-2 px-2 bg-gray-100 rounded-lg">
+                      <p className=" font-bold mb-2 px-4  text-gray-700">
+                        Leaderboard Settings
+                      </p>
+                      <div className="space-y-4 bg-white p-2 rounded-lg">
+                        <ToggleSwitch
+                          checked={leaderboardEnabled}
+                          onChange={setLeaderboardEnabled}
+                          label="Enabled Leaderboard"
+                          showInfo={true}
+                        />
                       </div>
                     </div>
 
@@ -813,21 +715,6 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       </div>
                     </div>
 
-                    {/* Toggles Section */}
-                    <div className="space-y-4">
-                      <ToggleSwitch
-                        checked={habitEnabled}
-                        onChange={setHabitEnabled}
-                        label="Enable Habits"
-                        showInfo={true}
-                      />
-                      <ToggleSwitch
-                        checked={personalizationEnabled}
-                        onChange={setPersonalizationEnabled}
-                        label="Enable Personalization"
-                      />
-                    </div>
-
                     {/* Path Colors Section */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-gray-900">
@@ -840,7 +727,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                             className="border border-gray-200 rounded-lg p-4 flex items-center gap-3"
                           >
                             <div
-                              className="w-12 h-12 rounded border border-gray-300 shrink-0"
+                              className="w-16 h-10 rounded border border-gray-300 shrink-0"
                               style={{ backgroundColor: color.color }}
                             />
                             <div className="flex-1">

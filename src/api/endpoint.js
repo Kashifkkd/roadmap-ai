@@ -10,7 +10,8 @@ export const endpoints = {
   getUserById: (clientId) => `api/auth/v1/users/1st90?client_id=${clientId}`,
   getCreatorsByClientId: (clientId) =>
     `api/auth/v1/users/kyper?client_id=${clientId}`,
-  registerClientUser: "api/auth/v1/users/1st90/register",
+  registerClientUser: "api/auth/v1/users/create",
+  updateClientUser: (userId) => `api/auth/v1/users/1st90/${userId}`,
   uploadProfilePicture: "api/auth/v1/upload-profile-picture",
   updateUser: "api/auth/v1/profile/upsert",
   shareComet: (sessionId) => `api/comet/share_comets/${sessionId}`,
@@ -22,4 +23,6 @@ export const endpoints = {
 
   downloadDocument: (documentId) => `api/documents/download/${documentId}`,
   feedbackEmail: (feedback) => `api/comet/feedback_email?feedback=${feedback}`,
+  getCohorts: (clientId) => `api/clients/v1/cohorts?client_id=${clientId}`,
+  getCohortPaths: (cohortId) => `api/clients/v1/cohorts/${cohortId}/paths`,
 };

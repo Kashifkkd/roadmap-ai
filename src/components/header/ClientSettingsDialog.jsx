@@ -34,11 +34,14 @@ import {
 import { getClientDetails } from "@/api/client";
 import { getUserById } from "@/api/User/getUserById";
 import { registerClientUser } from "@/api/User/registerClientUser";
+import { updateClientUser } from "@/api/User/updateClientUser";
 import { getCreatorsByClientId } from "@/api/User/getCreatorsByClientId";
 import { registerUser } from "@/api/register";
+import { getCohorts } from "@/api/cohort/getCohorts";
 import { toast } from "sonner";
 import { useRefreshData, useUpsertClient } from "@/hooks/useQueryData";
 import ClientFormFields from "@/components/common/ClientFormFields";
+import { getCohortPaths } from "@/api/cohort/getCohortPaths";
 
 export default function ClientSettingsDialog({
   open,
@@ -60,6 +63,7 @@ export default function ClientSettingsDialog({
 
   // Add User form state
   const [showAddUserForm, setShowAddUserForm] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -76,6 +80,10 @@ export default function ClientSettingsDialog({
   ]);
   const [currentCometIndex, setCurrentCometIndex] = useState(0);
   const [savingUser, setSavingUser] = useState(false);
+  const [cohorts, setCohorts] = useState([]);
+  const [cohortsLoading, setCohortsLoading] = useState(false);
+  const [cohortPaths, setCohortPaths] = useState([]);
+  const [cohortPathsLoading, setCohortPathsLoading] = useState(false);
 
   // Add Creator form state
   const [showAddCreatorForm, setShowAddCreatorForm] = useState(false);
@@ -174,6 +182,91 @@ export default function ClientSettingsDialog({
     fetchCreators();
   }, [open, activeTab, selectedClient]);
 
+  // Fetch cohort paths when cohort is selected
+  useEffect(() => {
+    const fetchCohortPaths = async () => {
+      if (!open || !showAddUserForm || !selectedClient || !cohort) return;
+
+      const cohortId = Number(cohort);
+      if (!cohortId || isNaN(cohortId)) return;
+
+      setCohortPathsLoading(true);
+      try {
+        const result = await getCohortPaths({ cohortId });
+        const data = result?.response || [];
+        setCohortPaths(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to fetch cohort paths:", error);
+        toast.error("Failed to load cohort paths");
+        setCohortPaths([]);
+      } finally {
+        setCohortPathsLoading(false);
+      }
+    };
+    fetchCohortPaths();
+  }, [open, showAddUserForm, selectedClient, cohort]);
+
+  // Auto add comet assignments for each item in dropdown
+  useEffect(() => {
+    if (cohortPaths.length > 0 && !cohortPathsLoading) {
+      setCometAssignments((prev) => {
+        // Only auto-create if no assignments have values yet
+        const hasValues = prev.some((a) => a.cometType);
+        if (hasValues) return prev;
+
+        const assignments = cohortPaths.map((path, index) => ({
+          id: index + 1,
+          isCurrent: index === 0,
+          cometType: String(path.id),
+        }));
+
+        setCurrentCometIndex(0);
+        return assignments;
+      });
+    }
+  }, [cohortPaths, cohortPathsLoading]);
+
+  // const GetCohortPaths = async () => {
+  //   try {
+  //     const cohortId = 29;
+  //     const result = await getCohortPaths({ cohortId });
+  //     console.log("Cohort paths result:", result);
+  //     return result;
+  //   } catch (error) {
+  //     console.error("Error fetching cohort paths:", error);
+  //     throw error;
+  //   }
+  // };
+
+  // const cohortPaths = GetCohortPaths();
+  // console.log("cohortPaths", cohortPaths);
+
+  // Fetch cohorts for the selected client when Add User form is shown
+  useEffect(() => {
+    const fetchCohorts = async () => {
+      if (!open || !showAddUserForm || !selectedClient) return;
+
+      // const clientId = selectedClient.id || selectedClient.client_id;
+      // if (!clientId) return;
+      const clientId = 48;
+
+      setCohortsLoading(true);
+      try {
+        const res = await getCohorts({ clientId });
+        const data = res?.response || [];
+        setCohorts(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to fetch cohorts for client:", error);
+        toast.error("Failed to load cohorts");
+        setCohorts([]);
+      } finally {
+        setCohortsLoading(false);
+      }
+    };
+
+    fetchCohorts();
+  }, [open, showAddUserForm, selectedClient]);
+
   // Cleanup creator image preview URL when dialog closes
   useEffect(() => {
     return () => {
@@ -208,13 +301,23 @@ export default function ClientSettingsDialog({
       return;
     }
 
-    if (!creatorFirstName || !creatorEmail) {
-      toast.error("First name and email are required");
+    if (!creatorFirstName || !creatorLastName) {
+      toast.error("First name and last name are required");
+      return;
+    }
+
+    if (!creatorEmail) {
+      toast.error("Email is required");
       return;
     }
 
     if (!creatorPassword || !creatorConfirmPassword) {
       toast.error("Password and confirm password are required");
+      return;
+    }
+
+    if (creatorPassword.length <= 7) {
+      toast.error("Password must be more than 7 characters");
       return;
     }
 
@@ -292,15 +395,129 @@ export default function ClientSettingsDialog({
     }
   };
 
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setFirstName(user.first_name || user.firstName || "");
+    setLastName(user.last_name || user.lastName || "");
+    setEmail(user.email || "");
+    setPassword("");
+    setConfirmPassword("");
+    setCohort(user.cohort || "");
+    setEnableSSO(user.enable_sso || user.enableSSO || false);
+
+    // Set manager emails
+    const managerEmailsList = user.manager_emails || user.managerEmails || [];
+    if (managerEmailsList.length > 0) {
+      setManagerEmails(
+        managerEmailsList.map((email, index) => ({
+          id: index + 1,
+          value: email,
+        }))
+      );
+    } else {
+      setManagerEmails([{ id: 1, value: "" }]);
+    }
+
+    // Set accountability partner emails
+    const accountabilityEmailsList =
+      user.accountability_partner_emails ||
+      user.accountabilityPartnerEmails ||
+      [];
+    if (accountabilityEmailsList.length > 0) {
+      setAccountabilityEmails(
+        accountabilityEmailsList.map((email, index) => ({
+          id: index + 1,
+          value: email,
+        }))
+      );
+    } else {
+      setAccountabilityEmails([{ id: 1, value: "" }]);
+    }
+
+    // Set comet assignments (if available)
+    const assignments = [];
+    let assignmentId = 1;
+
+    // Add active path as current comet
+    const activePathId = user.active_path_id;
+    if (activePathId) {
+      assignments.push({
+        id: assignmentId++,
+        isCurrent: true,
+        cometType: String(activePathId),
+      });
+    }
+
+    // Add adhoc paths as non-current comets
+    const adhocPathsList = user.adhoc_paths;
+    if (Array.isArray(adhocPathsList) && adhocPathsList.length > 0) {
+      adhocPathsList.forEach((pathId) => {
+        if (pathId) {
+          assignments.push({
+            id: assignmentId++,
+            isCurrent: false,
+            cometType: String(pathId),
+          });
+        }
+      });
+    }
+
+    if (assignments.length === 0) {
+      assignments.push({ id: 1, isCurrent: true, cometType: "" });
+    }
+
+    setCometAssignments(assignments);
+    setCurrentCometIndex(
+      assignments.findIndex((a) => a.isCurrent) >= 0
+        ? assignments.findIndex((a) => a.isCurrent)
+        : 0
+    );
+
+    setShowAddUserForm(true);
+  };
+
+  const resetUserForm = () => {
+    setEditingUser(null);
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    setCohort("");
+    setEnableSSO(false);
+    setManagerEmails([{ id: 1, value: "" }]);
+    setAccountabilityEmails([{ id: 1, value: "" }]);
+    setCometAssignments([{ id: 1, isCurrent: true, cometType: "" }]);
+    setCurrentCometIndex(0);
+    setCohortPaths([]);
+  };
+
   const handleSaveUser = async () => {
     if (!selectedClient) {
       toast.error("Client not selected");
       return;
     }
 
-    if (!firstName || !email) {
-      toast.error("First name and email are required");
+    if (!firstName || !lastName) {
+      toast.error("First name and last name are required");
       return;
+    }
+
+    if (!email) {
+      toast.error("Email is required");
+      return;
+    }
+
+    // Password validation for new users
+    if (!editingUser) {
+      if (!password) {
+        toast.error("Password is required");
+        return;
+      }
+      if (password.length <= 7) {
+        toast.error("Password must be more than 7 characters");
+        return;
+      }
     }
 
     const clientId = selectedClient.id || selectedClient.client_id;
@@ -309,30 +526,46 @@ export default function ClientSettingsDialog({
       return;
     }
 
-    const payload = {
+    const activeComet = cometAssignments.find((a) => a.isCurrent);
+    const activePathId = activeComet?.cometType
+      ? Number(activeComet.cometType)
+      : "";
+    const adhocPaths = cometAssignments
+      .filter((a) => !a.isCurrent && a.cometType)
+      .map((a) => Number(a.cometType));
+
+    const userPayload = {
+      active_path_id: activePathId,
       client_id: clientId,
-      access_level: 0,
       first_name: firstName,
       last_name: lastName || "",
       email,
-      timezone: "Eastern Time (US & Canada)",
+      access_level: 0,
+      timezone: "UTC",
+      cohort_id: cohort ? Number(cohort) : 0,
+      adhoc_paths: adhocPaths,
       enable_sso: enableSSO,
       enable_ai_notifications: false,
-      manager_emails: managerEmails
-        .map((item) => item.value?.trim())
-        .filter(Boolean),
-      accountability_partner_emails: accountabilityEmails
-        .map((item) => item.value?.trim())
-        .filter(Boolean),
-      path_ids: [],
+      password: password,
+      // manager_emails: "",
+      // accountability_partner_emails: "",
+      // path_ids: [],
+    };
+
+    const payload = {
+      user: userPayload,
     };
 
     setSavingUser(true);
     try {
-      const res = await registerClientUser(payload);
+      const res = editingUser
+        ? await updateClientUser(editingUser.id || editingUser.user_id, payload)
+        : await registerClientUser(payload);
 
       if (res?.response) {
-        toast.success("User added successfully");
+        toast.success(
+          editingUser ? "User updated successfully" : "User added successfully"
+        );
 
         // Refresh user list for this client
         try {
@@ -340,31 +573,26 @@ export default function ClientSettingsDialog({
           const data = listRes?.response || [];
           setUsers(Array.isArray(data) ? data : []);
         } catch (err) {
-          console.error("Failed to refresh users after adding user:", err);
+          console.error("Failed to refresh users after saving user:", err);
         }
 
         // Reset form and close
         setShowAddUserForm(false);
-        setFirstName("");
-        setLastName("");
-        setEmail("");
-        setPassword("");
-        setConfirmPassword("");
-        setCohort("");
-        setCometAssignments([{ id: 1, isCurrent: true, cometType: "" }]);
-        setCurrentCometIndex(0);
+        resetUserForm();
       } else {
         const errorMessage =
-          res?.detail || res?.message || "Failed to add user";
+          res?.detail ||
+          res?.message ||
+          (editingUser ? "Failed to update user" : "Failed to add user");
         toast.error(errorMessage);
       }
     } catch (error) {
-      console.error("Failed to add user:", error);
+      console.error("Failed to save user:", error);
       const errorMessage =
         error?.message ||
         error?.response?.data?.detail ||
         error?.response?.detail ||
-        "Failed to add user";
+        (editingUser ? "Failed to update user" : "Failed to add user");
       toast.error(errorMessage);
     } finally {
       setSavingUser(false);
@@ -506,7 +734,7 @@ export default function ClientSettingsDialog({
                 {activeTab === "users" && (
                   <div>
                     {!showAddUserForm ? (
-                      <div className="overflow-x-auto">
+                      <div className="overflow-x-auto min-h-[400px]">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-lg font-medium text-gray-700">
                             User List
@@ -521,7 +749,10 @@ export default function ClientSettingsDialog({
                             <Button
                               size="md"
                               variant="outline"
-                              onClick={() => setShowAddUserForm(true)}
+                              onClick={() => {
+                                resetUserForm();
+                                setShowAddUserForm(true);
+                              }}
                               className="text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer"
                             >
                               {/* <Plus className="w-5 h-5" /> */}
@@ -626,8 +857,7 @@ export default function ClientSettingsDialog({
                                         <DropdownMenuItem
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            // TODO: Implement edit functionality
-                                            console.log("Edit user:", user);
+                                            handleEditUser(user);
                                           }}
                                           className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
                                         >
@@ -656,27 +886,14 @@ export default function ClientSettingsDialog({
                         {/* Back Button */}
                         <div className="flex items-center justify-between">
                           <h2 className="text-xl font-semibold text-gray-900">
-                            Add User
+                            {editingUser ? "Edit User" : "Add User"}
                           </h2>
                           <Button
                             type="button"
                             variant="ghost"
                             onClick={() => {
                               setShowAddUserForm(false);
-                              // Reset form
-                              setFirstName("");
-                              setLastName("");
-                              setEmail("");
-                              setPassword("");
-                              setConfirmPassword("");
-                              setCohort("");
-                              setEnableSSO(false);
-                              setManagerEmails([]);
-                              setAccountabilityEmails([{ id: 1, value: "" }]);
-                              setCometAssignments([
-                                { id: 1, isCurrent: true, cometType: "" },
-                              ]);
-                              setCurrentCometIndex(0);
+                              resetUserForm();
                             }}
                             className="text-gray-600 hover:text-gray-900"
                           >
@@ -701,6 +918,7 @@ export default function ClientSettingsDialog({
                             <div>
                               <Label className="text-sm font-medium text-gray-700 mb-2 block">
                                 Last Name
+                                <span className="text-red-500">*</span>
                               </Label>
                               <Input
                                 value={lastName}
@@ -724,33 +942,36 @@ export default function ClientSettingsDialog({
 
                         {/* Account Details */}
                         <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                Password<span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-white border border-gray-300"
-                              />
+                          {!editingUser && (
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Password
+                                  <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  type="password"
+                                  value={password}
+                                  onChange={(e) => setPassword(e.target.value)}
+                                  className="w-full bg-white border border-gray-300"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Confirm Password
+                                  <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  type="password"
+                                  value={confirmPassword}
+                                  onChange={(e) =>
+                                    setConfirmPassword(e.target.value)
+                                  }
+                                  className="w-full bg-white border border-gray-300"
+                                />
+                              </div>
                             </div>
-                            <div>
-                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                Confirm Password
-                                <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) =>
-                                  setConfirmPassword(e.target.value)
-                                }
-                                className="w-full bg-white border border-gray-300"
-                              />
-                            </div>
-                          </div>
+                          )}
 
                           {/* Enable SSO Toggle */}
                           <div className="flex items-center justify-between pt-4 mt-2 border-t border-gray-200">
@@ -902,21 +1123,38 @@ export default function ClientSettingsDialog({
                             <Label className="text-sm font-medium text-gray-700 mb-2 block">
                               Cohort
                             </Label>
-                            <Select value={cohort} onValueChange={setCohort}>
+                            <Select
+                              value={cohort}
+                              onValueChange={setCohort}
+                              disabled={cohortsLoading || cohorts.length === 0}
+                            >
                               <SelectTrigger className="w-full bg-white border border-gray-300">
-                                <SelectValue placeholder="Select" />
+                                <SelectValue
+                                  placeholder={
+                                    cohortsLoading
+                                      ? "Loading..."
+                                      : cohorts.length === 0
+                                      ? "No cohorts available"
+                                      : "Select"
+                                  }
+                                />
                               </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="cohort1">
-                                  Cohort 1
-                                </SelectItem>
-                                <SelectItem value="cohort2">
-                                  Cohort 2
-                                </SelectItem>
-                                <SelectItem value="cohort3">
-                                  Cohort 3
-                                </SelectItem>
-                              </SelectContent>
+                              {!cohortsLoading && cohorts.length > 0 && (
+                                <SelectContent>
+                                  {cohorts.map((cohortItem) => {
+                                    const value = cohortItem.id;
+                                    const label = cohortItem.name;
+                                    return (
+                                      <SelectItem
+                                        key={value}
+                                        value={String(value)}
+                                      >
+                                        {label}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              )}
                             </Select>
                           </div>
                         </div>
@@ -982,21 +1220,45 @@ export default function ClientSettingsDialog({
                                       )
                                     );
                                   }}
+                                  disabled={
+                                    cohortPathsLoading ||
+                                    !cohort ||
+                                    cohortPaths.length === 0
+                                  }
                                 >
                                   <SelectTrigger className="flex-1 bg-white border border-gray-300">
-                                    <SelectValue placeholder="Select" />
+                                    <SelectValue
+                                      placeholder={
+                                        !cohort
+                                          ? "Select cohort first"
+                                          : cohortPathsLoading
+                                          ? "Loading..."
+                                          : cohortPaths.length === 0
+                                          ? "No paths available"
+                                          : "Select"
+                                      }
+                                    />
                                   </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="comet1">
-                                      Comet 1
-                                    </SelectItem>
-                                    <SelectItem value="comet2">
-                                      Comet 2
-                                    </SelectItem>
-                                    <SelectItem value="comet3">
-                                      Comet 3
-                                    </SelectItem>
-                                  </SelectContent>
+                                  {!cohortPathsLoading &&
+                                    cohortPaths.length > 0 && (
+                                      <SelectContent
+                                        side="bottom"
+                                        className="max-h-[150px]"
+                                      >
+                                        {cohortPaths.map((path) => {
+                                          const value = path.id;
+                                          const label = path.name;
+                                          return (
+                                            <SelectItem
+                                              key={value}
+                                              value={String(value)}
+                                            >
+                                              {label}
+                                            </SelectItem>
+                                          );
+                                        })}
+                                      </SelectContent>
+                                    )}
                                 </Select>
 
                                 {/* Delete Button */}
@@ -1048,7 +1310,11 @@ export default function ClientSettingsDialog({
                             disabled={savingUser}
                             className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {savingUser ? "Saving..." : "Save User"}
+                            {savingUser
+                              ? "Saving..."
+                              : editingUser
+                              ? "Update User"
+                              : "Save User"}
                           </Button>
                         </div>
                       </div>
@@ -1058,7 +1324,7 @@ export default function ClientSettingsDialog({
                 {activeTab === "creators" && (
                   <div>
                     {!showAddCreatorForm ? (
-                      <div className="overflow-x-auto">
+                      <div className="overflow-x-auto min-h-[400px]">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-lg font-medium text-gray-700">
                             Creator List
@@ -1166,9 +1432,38 @@ export default function ClientSettingsDialog({
                                       "-"}
                                   </td>
                                   <td className="px-4 py-3">
-                                    <button className="text-gray-400 hover:text-gray-600">
-                                      <MoreHorizontal className="w-5 h-5" />
-                                    </button>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button className="text-gray-400 hover:text-gray-600">
+                                          <MoreHorizontal className="w-5 h-5" />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent
+                                        align="start"
+                                        className="w-32 rounded-lg bg-white border border-gray-200 shadow-lg p-1"
+                                      >
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // TODO: Implement edit functionality
+                                            console.log("Edit user:", user);
+                                          }}
+                                          className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
+                                        >
+                                          Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // TODO: Implement delete functionality
+                                            console.log("Delete user:", user);
+                                          }}
+                                          className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1"
+                                        >
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
                                   </td>
                                 </tr>
                               ))}
@@ -1226,6 +1521,7 @@ export default function ClientSettingsDialog({
                             <div>
                               <Label className="text-sm font-medium text-gray-700 mb-2 block">
                                 Last Name
+                                <span className="text-red-500">*</span>
                               </Label>
                               <Input
                                 value={creatorLastName}
@@ -1408,16 +1704,18 @@ export default function ClientSettingsDialog({
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end px-8 py-4 border-t border-gray-200 flex-shrink-0">
-              <Button
-                type="button"
-                onClick={handleSave}
-                disabled={saving || loading}
-                className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? "Saving..." : "Save"}
-              </Button>
-            </div>
+            {activeTab === "general" && (
+              <div className="flex justify-end px-8 py-4 border-t border-gray-200 flex-shrink-0">
+                <Button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving || loading}
+                  className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>

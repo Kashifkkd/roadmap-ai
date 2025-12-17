@@ -242,8 +242,28 @@ export default function Header() {
     const clientsToUse = clients.length > 0 ? clients : [];
     if (clientsToUse.length > 0) {
       if (!selectedClient) {
-        setSelectedClient(clientsToUse[0]);
-        localStorage.setItem("Client id", clientsToUse[0].id);
+        let initialClient = clientsToUse[0];
+
+        try {
+          const storedClientId = localStorage.getItem("Client id");
+          if (storedClientId) {
+            const matchedClient = clientsToUse.find(
+              (c) => String(c.id) === String(storedClientId)
+            );
+            if (matchedClient) {
+              initialClient = matchedClient;
+            }
+          }
+        } catch {
+          
+        }
+
+        setSelectedClient(initialClient);
+        try {
+          localStorage.setItem("Client id", initialClient.id.toString());
+        } catch {
+          // Ignore storage errors
+        }
       } else {
         // Only update if the selected client's data has actually changed
         const updatedClient = clientsToUse.find(
@@ -261,8 +281,13 @@ export default function Header() {
           }
         } else if (!updatedClient && clientsToUse.length > 0) {
           // Selected client no longer exists, select the first one
-          setSelectedClient(clientsToUse[0]);
-          localStorage.setItem("Client id", clientsToUse[0].id);
+          const fallbackClient = clientsToUse[0];
+          setSelectedClient(fallbackClient);
+          try {
+            localStorage.setItem("Client id", fallbackClient.id.toString());
+          } catch {
+            // Ignore storage errors
+          }
         }
       }
     }
