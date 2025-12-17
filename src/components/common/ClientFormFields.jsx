@@ -17,9 +17,17 @@ import { uploadProfile } from "@/api/User/uploadProfile";
 //function to upload image
 const uploadImageFile = async (file) => {
   const uploadResponse = await uploadProfile(file);
-  if (uploadResponse?.response?.ImageUrl) {
-    return uploadResponse.response.ImageUrl;
+
+  // Support both camelCase and snake_case keys from the backend
+  const uploadedUrl =
+    uploadResponse?.response?.ImageUrl ||
+    uploadResponse?.response?.image_url ||
+    uploadResponse?.response?.url;
+
+  if (uploadedUrl) {
+    return uploadedUrl;
   }
+
   throw new Error("Failed to upload image");
 };
 
@@ -214,15 +222,19 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         }
       }
 
-      return {
-        name: clientName,
-        faq_url: website || "",
-        color_code: selectedColorCode || "",
-        ImageUrl: finalImageUrl,
-        background_image_url: finalBackgroundImageUrl,
+      const payload = {
+        name: clientName.trim(),
         enable_foozi: enableFoozi,
         enable_cohorts: enableCohorts,
       };
+
+      if (website.trim()) payload.faq_url = website.trim();
+      if (selectedColorCode) payload.color_code = selectedColorCode;
+      if (finalImageUrl) payload.image_url = finalImageUrl;
+      if (finalBackgroundImageUrl)
+        payload.background_image_url = finalBackgroundImageUrl;
+
+      return payload;
     },
     // Check if form is loading (uploading images)
     isLoading: () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import { Drawer } from "@mui/material";
 import { MessageCircle } from "lucide-react";
 import Image from "next/image";
@@ -9,47 +9,44 @@ import ChatInput from "./ChatInput";
 import SequentialLoader from "./SequentialLoader";
 import TypingText from "./TypingText";
 
-const TypingWelcomeMessage = ({ messages, onTyping }) => {
+const TypingWelcomeMessage = React.memo(({ messages, onTyping }) => {
   const [visibleMessages, setVisibleMessages] = useState([]);
   const [typingMessageIndex, setTypingMessageIndex] = useState(-1);
+  const prevMessagesRef = useRef("");
 
   useEffect(() => {
-    if (messages.length === 0) return;
-
-    setVisibleMessages([]);
-    setTypingMessageIndex(0);
+    const currentMessages = JSON.stringify(messages);
+    if (currentMessages !== prevMessagesRef.current) {
+      prevMessagesRef.current = currentMessages;
+      setVisibleMessages([]);
+      setTypingMessageIndex(messages.length > 0 ? 0 : -1);
+    }
   }, [messages]);
 
   const handleMessageComplete = () => {
-    if (typingMessageIndex >= 0 && typingMessageIndex < messages.length) {
+    if (typingMessageIndex < messages.length) {
       setVisibleMessages((prev) => [...prev, typingMessageIndex]);
       setTypingMessageIndex((prev) => prev + 1);
     }
   };
 
-  const handleTyping = () => {
-    if (onTyping) {
-      onTyping();
-    }
-  };
-
   return (
-    <div className="flex flex-col space-y-2 w-full p-2 bg-[#ECF7F6] rounded-lg">
+    <div className="flex flex-col space-y-2  p-2 mr-6 mb-2 bg-[#ECF7F6] rounded-lg">
       {visibleMessages.map((idx) => (
         <div key={idx} className="bg-[#D9F0EC] rounded-lg p-2">
-          <p className="text-[#399C8D] text-sm leading-relaxed">
+          <p className="text-[#399C8D] text-xs sm:text-sm font-md leading-relaxed">
             {messages[idx]}
           </p>
         </div>
       ))}
       {typingMessageIndex >= 0 && typingMessageIndex < messages.length && (
         <div className="bg-[#D9F0EC] rounded-lg p-2">
-          <p className="text-[#399C8D] text-sm leading-relaxed">
+          <p className="text-[#399C8D] text-xs sm:text-sm font-md leading-relaxed">
             <TypingText
               key={typingMessageIndex}
               text={messages[typingMessageIndex]}
               onComplete={handleMessageComplete}
-              onTyping={handleTyping}
+              onTyping={onTyping}
               cursorColor="bg-[#399C8D]"
               completeDelay={100}
               resetOnChange={false}
@@ -59,7 +56,7 @@ const TypingWelcomeMessage = ({ messages, onTyping }) => {
       )}
     </div>
   );
-};
+});
 
 const welcomeMessageChat = ({ messages, animate = false, onTyping }) => {
   if (animate) {
@@ -72,7 +69,7 @@ const welcomeMessageChat = ({ messages, animate = false, onTyping }) => {
         messages.map((msg, idx) => {
           return (
             <div key={idx} className="bg-[#D9F0EC] rounded-lg p-2">
-              <p className="text-[#399C8D] text-sm leading-relaxed">{msg}</p>
+              <p className="text-[#399C8D] text-xs font-bold">{msg}</p>
             </div>
           );
         })}
@@ -87,13 +84,14 @@ const Chat = ({
   onSuggestionClick,
   inputValue = "",
   onInputChange,
-  welcomeMessage = [],
-  showWelcomeMessage = false,
-  shouldAnimateWelcome = false,
+  // welcomeMessage = [],
+  // showWelcomeMessage = false,
+  // shouldAnimateWelcome = false,
   onSubmit,
   cometManager = false,
   error = null,
 }) => {
+  console.log(messages, "messages>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
   const bottomRef = useRef(null);
   // const scrollContainerRef = useRef(null);
   // const [isBottom, setIsBottom] = useState(false);
@@ -126,8 +124,51 @@ const Chat = ({
     }
   };
 
-  // Check if there are messages
   const hasMessages = messages && messages.length > 0;
+
+  // Memoize message so that it do not re render to prevent re-render when input changes
+  const renderedMessages = useMemo(() => {
+    if (!hasMessages) return null;
+
+    const result = [];
+    let greenMessagesGroup = [];
+    let groupKey = 0;
+
+    messages.forEach((msg, idx) => {
+      if (msg.status === "green") {
+        const content = Array.isArray(msg.content)
+          ? msg.content
+          : [msg.content];
+        greenMessagesGroup.push(...content);
+      } else {
+        if (greenMessagesGroup.length > 0) {
+          result.push(
+            <div key={`green-group-${groupKey}`}>
+              {welcomeMessageChat({
+                messages: greenMessagesGroup,
+                animate: true,
+              })}
+            </div>
+          );
+          greenMessagesGroup = [];
+          groupKey++;
+        }
+        result.push(
+          <ChatMessage key={idx} role={msg.from} text={msg.content} />
+        );
+      }
+    });
+
+    if (greenMessagesGroup.length > 0) {
+      result.push(
+        <div key={`green-group-${groupKey}`}>
+          {welcomeMessageChat({ messages: greenMessagesGroup, animate: true })}
+        </div>
+      );
+    }
+
+    return result;
+  }, [messages]);
 
   return (
     <div className="h-full bg-background flex flex-col border-2 border-[#C7C2F9] rounded-lg overflow-hidden">
@@ -139,12 +180,10 @@ const Chat = ({
         {
           hasMessages ? (
             <div className="max-w-4xl mx-auto w-full">
-              {messages.map((msg, idx) => (
-                <ChatMessage key={idx} role={msg.from} text={msg.content} />
-              ))}
+              {renderedMessages}
 
               {isLoading && <SequentialLoader />}
-              {showWelcomeMessage && (
+              {/* {showWelcomeMessage && (
                 <ChatMessage
                   role="agent"
                   text={welcomeMessageChat({
@@ -159,7 +198,7 @@ const Chat = ({
                     },
                   })}
                 />
-              )}
+              )} */}
             </div>
           ) : cometManager ? (
             <div className="max-w-4xl mx-auto w-full">

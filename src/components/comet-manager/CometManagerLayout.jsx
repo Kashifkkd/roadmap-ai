@@ -107,10 +107,18 @@ export default function CometManagerLayout() {
 
     conversation.forEach((entry) => {
       if (entry.user) {
-        messagesToDisplay.push({ from: "user", content: entry.user });
+        messagesToDisplay.push({
+          from: "user",
+          content: entry.user,
+          status: entry.status,
+        });
       }
       if (entry.agent) {
-        messagesToDisplay.push({ from: "bot", content: entry.agent });
+        messagesToDisplay.push({
+          from: "bot",
+          content: entry.agent,
+          status: entry.status,
+        });
       }
     });
 
@@ -243,15 +251,15 @@ export default function CometManagerLayout() {
   }, [outline]);
 
   // Memoize welcomeMessage to prevent re-renders when auto-save updates
-  const welcomeMessage = useMemo(() => {
-    if (sessionData?.flag?.path_created) {
-      return [
-        "Comet Manager Review the Basic Information and Audience & Objectives sections, based on what you've shared so far.",
-        "Add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",
-        "Configure your Comet in the Experience Design section.",
-      ];
-    }
-  }, [sessionData?.flag?.path_created]);
+  // const welcomeMessage = useMemo(() => {
+  //   if (sessionData?.flag?.path_created) {
+  //     return [
+  //       "Comet Manager Review the Basic Information and Audience & Objectives sections, based on what you've shared so far.",
+  //       "Add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",
+  //       "Configure your Comet in the Experience Design section.",
+  //     ];
+  //   }
+  // }, [sessionData?.flag?.path_created]);
 
   return (
     <div className="flex h-full w-full bg-primary-50 overflow-y-auto">
@@ -265,7 +273,7 @@ export default function CometManagerLayout() {
               // Also set prefillData for backward compatibility if needed
               setPrefillData(updatedSessionData);
             }}
-            welcomeMessage={welcomeMessage}
+            // welcomeMessage={welcomeMessage}
             allMessages={allMessages}
             setAllMessages={setAllMessages}
             sessionData={sessionData}

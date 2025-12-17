@@ -58,10 +58,18 @@ export default function OutlineManagerLayout() {
 
     conversation.forEach((entry) => {
       if (entry.user) {
-        messagesToDisplay.push({ from: "user", content: entry.user });
+        messagesToDisplay.push({
+          from: "user",
+          content: entry.user,
+          status: entry.status,
+        });
       }
       if (entry.agent) {
-        messagesToDisplay.push({ from: "bot", content: entry.agent });
+        messagesToDisplay.push({
+          from: "bot",
+          content: entry.agent,
+          status: entry.status,
+        });
       }
     });
 
@@ -70,11 +78,11 @@ export default function OutlineManagerLayout() {
     }
   }, [sessionData]);
 
-  const welcomeMessage = [
-    "Review the Basic Information and Audience & Objectives sections, based on what you've shared so far.",
-    "Add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",
-    "Configure your Comet in the Experience Design section.",
-  ];
+  // const welcomeMessage = [
+  //   "Review the Basic Information and Audience & Objectives sections, based on what you've shared so far.",
+  //   "Add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",
+  //   "Configure your Comet in the Experience Design section.",
+  // ];
 
   return (
     <div className="flex h-full w-full bg-primary-50">
@@ -84,7 +92,7 @@ export default function OutlineManagerLayout() {
             inputType="outline_updation"
             allMessages={allMessages}
             setAllMessages={setAllMessages}
-            welcomeMessage={welcomeMessage}
+            // welcomeMessage={welcomeMessage}
             onResponseReceived={setPrefillData}
             sessionData={prefillData || sessionData}
             externalLoading={isAskingKyper || isSubmittingStep}

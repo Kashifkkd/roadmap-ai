@@ -42,132 +42,132 @@ export default function ChatWindow({
   }, []);
 
   // Initialize sessionId from localStorage so subscription can start even if other components send messages
-  useEffect(() => {
-    if (sessionId) return;
-    try {
-      const existing = localStorage.getItem("sessionId");
-      if (existing) {
-        setSessionId(existing);
-        previousSessionIdRef.current = existing;
-        // Reset welcome animation check when sessionId is first loaded
-        welcomeAnimationCheckedRef.current = false;
-        welcomeAnimationStateRef.current = false;
-      }
-    } catch {}
-  }, [sessionId]);
+  // useEffect(() => {
+  //   if (sessionId) return;
+  //   try {
+  //     const existing = localStorage.getItem("sessionId");
+  //     if (existing) {
+  //       setSessionId(existing);
+  //       previousSessionIdRef.current = existing;
+  //       // Reset welcome animation check when sessionId is first loaded
+  //       welcomeAnimationCheckedRef.current = false;
+  //       welcomeAnimationStateRef.current = false;
+  //     }
+  //   } catch {}
+  // }, [sessionId]);
 
-  // Clear welcome message flags when sessionId changes (new session)
-  useEffect(() => {
-    const currentSessionId = sessionId || localStorage.getItem("sessionId");
+  // // Clear welcome message flags when sessionId changes (new session)
+  // useEffect(() => {
+  //   const currentSessionId = sessionId || localStorage.getItem("sessionId");
 
-    if (currentSessionId) {
-      // If we have a previous sessionId and it's different, clear old flags
-      if (
-        previousSessionIdRef.current &&
-        currentSessionId !== previousSessionIdRef.current
-      ) {
-        // Session changed - clear all welcome message flags for the old session
-        const pages = ["dashboard", "outline-manager", "comet-manager"];
-        pages.forEach((page) => {
-          localStorage.removeItem(
-            `welcomeMessageShown_${previousSessionIdRef.current}_${page}`
-          );
-        });
-        // Reset the animation check ref when session changes
-        welcomeAnimationCheckedRef.current = false;
-        welcomeAnimationStateRef.current = false;
-      }
+  //   if (currentSessionId) {
+  //     // If we have a previous sessionId and it's different, clear old flags
+  //     if (
+  //       previousSessionIdRef.current &&
+  //       currentSessionId !== previousSessionIdRef.current
+  //     ) {
+  //       // Session changed - clear all welcome message flags for the old session
+  //       const pages = ["dashboard", "outline-manager", "comet-manager"];
+  //       pages.forEach((page) => {
+  //         localStorage.removeItem(
+  //           `welcomeMessageShown_${previousSessionIdRef.current}_${page}`
+  //         );
+  //       });
+  //       // Reset the animation check ref when session changes
+  //       welcomeAnimationCheckedRef.current = false;
+  //       welcomeAnimationStateRef.current = false;
+  //     }
 
-      // Update the ref to track current session
-      if (
-        !previousSessionIdRef.current ||
-        previousSessionIdRef.current !== currentSessionId
-      ) {
-        previousSessionIdRef.current = currentSessionId;
-      }
-    }
-  }, [sessionId]);
+  //     // Update the ref to track current session
+  //     if (
+  //       !previousSessionIdRef.current ||
+  //       previousSessionIdRef.current !== currentSessionId
+  //     ) {
+  //       previousSessionIdRef.current = currentSessionId;
+  //     }
+  //   }
+  // }, [sessionId]);
 
-  useEffect(() => {
-    const flag = sessionData?.flag;
-    const hasFlag =
-      flag?.comet_created || flag?.outline_created || flag?.path_created;
+  // useEffect(() => {
+  //   const flag = sessionData?.flag;
+  //   const hasFlag =
+  //     flag?.comet_created || flag?.outline_created || flag?.path_created;
 
-    if (!hasFlag) {
-      initialMessageCountRef.current = null;
-      welcomeAnimationCheckedRef.current = false;
-      welcomeAnimationStateRef.current = false;
-      setShowWelcomeMessage(false);
-      setShouldAnimateWelcome(false);
-      return;
-    }
+  //   if (!hasFlag) {
+  //     initialMessageCountRef.current = null;
+  //     welcomeAnimationCheckedRef.current = false;
+  //     welcomeAnimationStateRef.current = false;
+  //     setShowWelcomeMessage(false);
+  //     setShouldAnimateWelcome(false);
+  //     return;
+  //   }
 
-    // Track initial message count
-    if (initialMessageCountRef.current === null) {
-      initialMessageCountRef.current = allMessages.length;
-    } else if (initialMessageCountRef.current === 0 && allMessages.length > 0) {
-      initialMessageCountRef.current = allMessages.length;
-    }
+  //   // Track initial message count
+  //   if (initialMessageCountRef.current === null) {
+  //     initialMessageCountRef.current = allMessages.length;
+  //   } else if (initialMessageCountRef.current === 0 && allMessages.length > 0) {
+  //     initialMessageCountRef.current = allMessages.length;
+  //   }
 
-    const isUpdateMode =
-      inputType === "outline_updation" ||
-      inputType === "path_updation" ||
-      inputType === "comet_data_update";
-    const hasNewMessages = allMessages.length > initialMessageCountRef.current;
+  //   const isUpdateMode =
+  //     inputType === "outline_updation" ||
+  //     inputType === "path_updation" ||
+  //     inputType === "comet_data_update";
+  //   const hasNewMessages = allMessages.length > initialMessageCountRef.current;
 
-    const shouldShow = !(isUpdateMode && hasNewMessages);
-    setShowWelcomeMessage(shouldShow);
+  //   const shouldShow = !(isUpdateMode && hasNewMessages);
+  //   setShowWelcomeMessage(shouldShow);
 
-    // Determine if we should animate the welcome message
-    if (shouldShow) {
-      const currentSessionId = sessionId || localStorage.getItem("sessionId");
-      if (!currentSessionId) {
-        setShouldAnimateWelcome(false);
-        return;
-      }
+  //   // Determine if we should animate the welcome message
+  //   if (shouldShow) {
+  //     const currentSessionId = sessionId || localStorage.getItem("sessionId");
+  //     if (!currentSessionId) {
+  //       setShouldAnimateWelcome(false);
+  //       return;
+  //     }
 
-      let pageName = "dashboard";
-      if (inputType === "outline_updation") {
-        pageName = "outline-manager";
-      } else if (inputType === "path_updation") {
-        pageName = "comet-manager";
-      } else if (
-        inputType === "comet_data_update" ||
-        inputType === "comet_data_creation"
-      ) {
-        pageName = "dashboard";
-      }
+  //     let pageName = "dashboard";
+  //     if (inputType === "outline_updation") {
+  //       pageName = "outline-manager";
+  //     } else if (inputType === "path_updation") {
+  //       pageName = "comet-manager";
+  //     } else if (
+  //       inputType === "comet_data_update" ||
+  //       inputType === "comet_data_creation"
+  //     ) {
+  //       pageName = "dashboard";
+  //     }
 
-      // Create a unique key
-      const checkKey = `${currentSessionId}_${pageName}`;
+  //     // Create a unique key
+  //     const checkKey = `${currentSessionId}_${pageName}`;
 
-      // Check if welcome message was already shown for this session and page
-      const welcomeKey = `welcomeMessageShown_${currentSessionId}_${pageName}`;
-      const wasShown = localStorage.getItem(welcomeKey) === "true";
+  //     // Check if welcome message was already shown for this session and page
+  //     const welcomeKey = `welcomeMessageShown_${currentSessionId}_${pageName}`;
+  //     const wasShown = localStorage.getItem(welcomeKey) === "true";
 
-      if (welcomeAnimationCheckedRef.current !== checkKey) {
-        welcomeAnimationCheckedRef.current = checkKey;
+  //     if (welcomeAnimationCheckedRef.current !== checkKey) {
+  //       welcomeAnimationCheckedRef.current = checkKey;
 
-        if (!wasShown) {
-          // First time showing - animate it
-          welcomeAnimationStateRef.current = true;
-          setShouldAnimateWelcome(true);
-          // Mark as shown
-          localStorage.setItem(welcomeKey, "true");
-        } else {
-          // if Already shown before donot animate
-          welcomeAnimationStateRef.current = false;
-          setShouldAnimateWelcome(false);
-        }
-      } else {
-        setShouldAnimateWelcome(welcomeAnimationStateRef.current);
-      }
-    } else {
-      setShouldAnimateWelcome(false);
-      welcomeAnimationCheckedRef.current = false;
-      welcomeAnimationStateRef.current = false;
-    }
-  }, [sessionData, allMessages, inputType, sessionId]);
+  //       if (!wasShown) {
+  //         // First time showing - animate it
+  //         welcomeAnimationStateRef.current = true;
+  //         setShouldAnimateWelcome(true);
+  //         // Mark as shown
+  //         localStorage.setItem(welcomeKey, "true");
+  //       } else {
+  //         // if Already shown before donot animate
+  //         welcomeAnimationStateRef.current = false;
+  //         setShouldAnimateWelcome(false);
+  //       }
+  //     } else {
+  //       setShouldAnimateWelcome(welcomeAnimationStateRef.current);
+  //     }
+  //   } else {
+  //     setShouldAnimateWelcome(false);
+  //     welcomeAnimationCheckedRef.current = false;
+  //     welcomeAnimationStateRef.current = false;
+  //   }
+  // }, [sessionData, allMessages, inputType, sessionId]);
 
   // Function to parse response and extract form data
   const parseResponseForFormData = (responseText) => {
@@ -393,12 +393,23 @@ export default function ChatWindow({
 
             conversation.forEach((entry) => {
               if (entry.user) {
-                allMessages.push({ from: "user", content: entry.user });
+                allMessages.push({
+                  from: "user",
+                  content: entry.user,
+                  status: entry.status,
+                });
               }
               if (entry.agent) {
-                allMessages.push({ from: "bot", content: entry.agent });
+                allMessages.push({
+                  from: "bot",
+                  content: entry.agent,
+                  status: entry.status,
+                });
               }
             });
+
+            console.log("allMessages with status:", allMessages);
+            console.log("conversation:", conversation);
 
             // Update with all messages
             if (allMessages.length > 0) {
@@ -437,9 +448,9 @@ export default function ChatWindow({
       <Chat
         cometManager={cometManager}
         messages={allMessages}
-        showWelcomeMessage={showWelcomeMessage}
-        welcomeMessage={welcomeMessage}
-        shouldAnimateWelcome={shouldAnimateWelcome}
+        // showWelcomeMessage={showWelcomeMessage}
+        // welcomeMessage={welcomeMessage}
+        // shouldAnimateWelcome={shouldAnimateWelcome}
         isLoading={isLoading || isInitialLoading || externalLoading}
         onSuggestionClick={handleSuggestionClick}
         inputValue={inputValue}

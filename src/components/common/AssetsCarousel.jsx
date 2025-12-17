@@ -62,8 +62,8 @@ export default function AssetsCarousel({ assets = [] }) {
       <div className="overflow-hidden h-full" ref={emblaRef}>
         <div className="flex h-full">
           {assets.map((asset, index) => {
-            const imageUrl =
-              asset.s3_url || asset.ImageUrl || asset.imageUrl || asset.url;
+            const image_url =
+              asset.s3_url || asset.ImageUrl || asset.image_url || asset.url;
             const assetName =
               asset.name ||
               asset.prompt_used ||
@@ -75,10 +75,11 @@ export default function AssetsCarousel({ assets = [] }) {
                 key={asset.id || asset.asset_id || index}
                 className="flex-[0_0_100%] min-w-0 h-full"
               >
-                {typeof imageUrl === "string" && imageUrl.startsWith("http") ? (
+                {typeof image_url === "string" &&
+                image_url.startsWith("http") ? (
                   <div className="relative w-full h-full bg-gray-100 overflow-hidden">
                     <img
-                      src={imageUrl}
+                      src={image_url}
                       alt={assetName}
                       className="w-full h-full object-cover"
                     />

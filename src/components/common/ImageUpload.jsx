@@ -227,14 +227,14 @@ export default function ImageUpload({
   // Handle asset selection
   const handleSelectAsset = (asset) => {
     // Use exact API response fields: asset_url, asset_type, id
-    const imageUrl = asset.asset_url;
-    const filename = getFilenameFromUrl(imageUrl);
+    const image_url = asset.asset_url;
+    const filename = getFilenameFromUrl(image_url);
 
     // Format asset to match outline structure: { type: "image", url: "...", alt: "..." }
     const assetToSave = {
       status: "success",
-      ImageUrl: imageUrl,
-      url: imageUrl, // Also include url for compatibility
+      ImageUrl: image_url,
+      url: image_url, // Also include url for compatibility
       asset_id: asset.id,
       id: asset.id,
       type: asset.asset_type,
@@ -350,8 +350,11 @@ export default function ImageUpload({
             </Label>
             <div className="grid grid-cols-3 gap-3">
               {existingAssets.map((asset, index) => {
-                const imageUrl =
-                  asset.s3_url || asset.ImageUrl || asset.imageUrl || asset.url;
+                const image_url =
+                  asset.s3_url ||
+                  asset.ImageUrl ||
+                  asset.image_url ||
+                  asset.url;
                 const assetName =
                   asset.name ||
                   asset.prompt_used ||
@@ -363,10 +366,10 @@ export default function ImageUpload({
                     key={assetId || asset.id || index}
                     className="relative border border-gray-300 rounded-lg overflow-hidden group"
                   >
-                    {typeof imageUrl === "string" &&
-                    imageUrl.startsWith("http") ? (
+                    {typeof image_url === "string" &&
+                    image_url.startsWith("http") ? (
                       <img
-                        src={imageUrl}
+                        src={image_url}
                         alt={assetName}
                         className="w-full h-24 object-cover"
                       />
@@ -547,9 +550,9 @@ export default function ImageUpload({
                     })
                     .map((asset, index) => {
                       // Use exact API response fields
-                      const imageUrl = asset.asset_url;
+                      const image_url = asset.asset_url;
                       const assetName =
-                        getFilenameFromUrl(imageUrl) || `Image ${index + 1}`;
+                        getFilenameFromUrl(image_url) || `Image ${index + 1}`;
 
                       return (
                         <div
@@ -557,10 +560,10 @@ export default function ImageUpload({
                           className="relative border-2 border-gray-200 rounded-lg overflow-hidden group cursor-pointer hover:border-primary transition-colors aspect-square"
                           onClick={() => handleSelectAsset(asset)}
                         >
-                          {typeof imageUrl === "string" &&
-                          imageUrl.startsWith("http") ? (
+                          {typeof image_url === "string" &&
+                          image_url.startsWith("http") ? (
                             <img
-                              src={imageUrl}
+                              src={image_url}
                               alt={assetName}
                               className="w-full h-full object-cover"
                             />

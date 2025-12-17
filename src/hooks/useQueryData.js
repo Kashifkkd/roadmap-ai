@@ -1,18 +1,38 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getClients } from "@/api/client";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { getClients, updateClientDetails } from "@/api/client";
 import { getUser } from "@/api/User/getUser";
 
 // Client Settings hook
-export function useClients(enabled = true) {
+export function useClients(
+  enabled = true,
+  { skip = 0, limit = 5, enabledOnly = true, search = "" } = {}
+) {
   return useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
-      const res = await getClients({ skip: 0, limit: 5, enabledOnly: true });
+      const res = await getClients({ skip, limit, enabledOnly, search });
       return res?.response || [];
     },
     enabled,
+  });
+}
+export function useUpsertClient() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationKey: ["upsertClient"],
+    mutationFn: async (clientData) => {
+      const res = await updateClientDetails(clientData);
+      if (res?.error) {
+        throw new Error(errorMessage || "Unable to save client");
+      }
+      return res?.response || null;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+    },
   });
 }
 

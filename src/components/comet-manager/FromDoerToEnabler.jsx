@@ -44,9 +44,9 @@ const ScreenContentTypePreview = ({
   // Debug: Log assets to see what we're receiving
   console.log("ScreenContentTypePreview assets:", assets);
 
-  const imageUrl =
+  const image_url =
     content?.media?.url ||
-    content?.media?.imageUrl ||
+    content?.media?.image_url ||
     content?.image ||
     FALLBACK_IMAGE_URL;
 
@@ -123,7 +123,7 @@ const ScreenContentTypePreview = ({
               </div>
             ) : (
               <Image
-                src={imageUrl}
+                src={image_url}
                 alt={content?.media?.description || title}
                 fill
                 priority={deviceView === DEVICE_VIEWS.mobile}
@@ -175,7 +175,7 @@ const ScreenContentTypePreview = ({
                   className={`relative w-3/4 max-w-md mx-auto ${imageAspectClass} overflow-hidden  rounded-lg`}
                 >
                   <Image
-                    src={imageUrl}
+                    src={image_url}
                     alt={content?.media?.description || title}
                     fill
                     priority={deviceView === DEVICE_VIEWS.mobile}
@@ -881,7 +881,7 @@ const ActionScreenPreview = ({ deviceView, content }) => {
   const text = content?.text || content?.question || "";
   const toolLink = content?.toolLink || content?.tool || "";
   const reflectionPrompt = content?.reflectionPrompt || "";
-  const imageUrl = content?.media?.url || FALLBACK_IMAGE_URL;
+  const image_url = content?.media?.url || FALLBACK_IMAGE_URL;
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
@@ -915,7 +915,7 @@ const ActionScreenPreview = ({ deviceView, content }) => {
         {/* Image Section
         <div className="relative w-full h-64 overflow-hidden">
           <img
-            src={imageUrl}
+            src={image_url}
             alt={title}
             className="w-full h-full object-cover"
           />
@@ -1078,7 +1078,7 @@ const SocialDiscussionScreenPreview = ({ deviceView, content }) => {
 };
 
 const ContentBlock = ({ reverse = false, deviceView, section }) => {
-  const hasImage = Boolean(section.imageUrl);
+  const hasImage = Boolean(section.image_url);
 
   return (
     <div
@@ -1105,7 +1105,7 @@ const ContentBlock = ({ reverse = false, deviceView, section }) => {
           </div>
           {hasImage && (
             <Image
-              src={section.imageUrl}
+              src={section.image_url}
               alt={section.imageAlt || section.title || "Preview image"}
               fill
               className="object-cover"
@@ -1207,9 +1207,9 @@ export default function FromDoerToEnabler({
 
     const sections = [];
     const title = content.title || content.heading || content.name || "Preview";
-    const imageUrl =
+    const image_url =
       content.media?.url ||
-      content.media?.imageUrl ||
+      content.media?.image_url ||
       content.image ||
       FALLBACK_IMAGE_URL;
     const imageAlt = content.media?.description || title;
@@ -1229,7 +1229,7 @@ export default function FromDoerToEnabler({
         secondaryText: secondaryText || null,
         list: Array.isArray(list) ? list : null,
         meta: Array.isArray(meta) ? meta.filter(Boolean) : null,
-        imageUrl,
+        image_url,
         imageAlt,
       });
     };

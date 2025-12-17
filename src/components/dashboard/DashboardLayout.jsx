@@ -107,10 +107,18 @@ export default function DashboardLayout() {
 
     conversation.forEach((entry) => {
       if (entry.user) {
-        messagesToDisplay.push({ from: "user", content: entry.user });
+        messagesToDisplay.push({
+          from: "user",
+          content: entry.user,
+          status: entry.status,
+        });
       }
       if (entry.agent) {
-        messagesToDisplay.push({ from: "bot", content: entry.agent });
+        messagesToDisplay.push({
+          from: "bot",
+          content: entry.agent,
+          status: entry.status,
+        });
       }
     });
 
@@ -255,11 +263,11 @@ export default function DashboardLayout() {
       </div>
     );
   }
-  const welcomeMessage = [
-    "Review the Basic Information and Audience & Objectives sections, which I drafted based on what you've shared so far.",
-    "Then, add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",
-    "Finally, configure your Comet in the Experience Design section. When you're ready, move to the next step to review your Comet Outline.",
-  ];
+  // const welcomeMessage = [
+  //   "Review the Basic Information and Audience & Objectives sections, which I drafted based on what you've shared so far.",
+  //   "Then, add Source Materials for your Comet. This means any documents that will help me draft the right learning and behavior change journey for your audience.",
+  //   "Finally, configure your Comet in the Experience Design section. When you're ready, move to the next step to review your Comet Outline.",
+  // ];
 
   return (
     <>
@@ -278,7 +286,7 @@ export default function DashboardLayout() {
               inputType={
                 prefillData ? "comet_data_update" : "comet_data_creation"
               }
-              welcomeMessage={welcomeMessage}
+              // welcomeMessage={welcomeMessage}
               initialInput={initialInput}
               userQuestions={userQuestionsParam}
               onResponseReceived={(updatedSessionData) => {

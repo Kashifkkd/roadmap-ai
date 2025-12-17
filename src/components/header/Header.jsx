@@ -133,7 +133,7 @@ export default function Header() {
     data: clients = [],
     isLoading: clientsLoading,
     isError: clientsError,
-  } = useClients(isAuthenticated);
+  } = useClients(isAuthenticated, { skip: 0, limit: 5, enabledOnly: true });
 
   const { data: user } = useUser(isAuthenticated);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
@@ -173,7 +173,7 @@ export default function Header() {
   };
 
   // Use dummy clients if no real clients are available (for UI design purposes)
-  const displayClients = clients.length > 0 ? clients : DUMMY_CLIENTS;
+  const displayClients = clients.length > 0 ? clients : [];
 
   // Mock collaborators data
   const mockCollaborators = [
@@ -239,7 +239,7 @@ export default function Header() {
   }, [isLoginDialogOpen]);
 
   useEffect(() => {
-    const clientsToUse = clients.length > 0 ? clients : DUMMY_CLIENTS;
+    const clientsToUse = clients.length > 0 ? clients : [];
     if (clientsToUse.length > 0) {
       if (!selectedClient) {
         setSelectedClient(clientsToUse[0]);
@@ -253,7 +253,7 @@ export default function Header() {
           // Check if any relevant properties have changed
           const hasChanged =
             updatedClient.name !== selectedClient.name ||
-            updatedClient.ImageUrl !== selectedClient.ImageUrl ||
+            updatedClient.ImageUrl !== selectedClient.image_url ||
             updatedClient.role !== selectedClient.role;
 
           if (hasChanged) {

@@ -25,9 +25,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getClientDetails, updateClientDetails } from "@/api/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { getClientDetails } from "@/api/client";
+import { getUserById } from "@/api/User/getUserById";
+import { registerClientUser } from "@/api/User/registerClientUser";
+import { getCreatorsByClientId } from "@/api/User/getCreatorsByClientId";
+import { registerUser } from "@/api/register";
 import { toast } from "sonner";
-import { useRefreshData } from "@/hooks/useQueryData";
+import { useRefreshData, useUpsertClient } from "@/hooks/useQueryData";
 import ClientFormFields from "@/components/common/ClientFormFields";
 
 export default function ClientSettingsDialog({
@@ -38,9 +48,15 @@ export default function ClientSettingsDialog({
   const { refreshClients } = useRefreshData();
   const [activeTab, setActiveTab] = useState("general");
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const { mutateAsync: upsertClient, isPending: saving } = useUpsertClient();
   const [clientData, setClientData] = useState(null);
   const clientFormRef = useRef(null);
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState(null);
+  const [creators, setCreators] = useState([]);
+  const [creatorsLoading, setCreatorsLoading] = useState(false);
+  const [creatorsError, setCreatorsError] = useState(null);
 
   // Add User form state
   const [showAddUserForm, setShowAddUserForm] = useState(false);
@@ -54,6 +70,7 @@ export default function ClientSettingsDialog({
     { id: 1, isCurrent: true, cometType: "" },
   ]);
   const [currentCometIndex, setCurrentCometIndex] = useState(0);
+  const [savingUser, setSavingUser] = useState(false);
 
   // Add Creator form state
   const [showAddCreatorForm, setShowAddCreatorForm] = useState(false);
@@ -68,6 +85,7 @@ export default function ClientSettingsDialog({
   const [creatorImagePreview, setCreatorImagePreview] = useState(null);
   const [uploadingCreatorImage, setUploadingCreatorImage] = useState(false);
   const creatorImageInputRef = useRef(null);
+  const [savingCreator, setSavingCreator] = useState(false);
 
   // Fetch client details when dialog opens and selectedClient is available
   useEffect(() => {
@@ -95,6 +113,61 @@ export default function ClientSettingsDialog({
 
     fetchClientDetails();
   }, [open, selectedClient]);
+
+  // Fetch users for the selected client when Users tab is active
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!open || activeTab !== "users" || !selectedClient) return;
+
+      const clientId = selectedClient.id || selectedClient.client_id;
+      if (!clientId) return;
+
+      setUsersLoading(true);
+      setUsersError(null);
+      try {
+        const res = await getUserById({ clientId });
+        // Expecting API shape similar to other endpoints: { response, error }
+        const data = res?.response || [];
+        setUsers(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to fetch users for client:", error);
+        setUsersError(error?.message || "Failed to load users for this client");
+        setUsers([]);
+      } finally {
+        setUsersLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [open, activeTab, selectedClient]);
+
+  // Fetch creators for the selected client when Creators tab is active
+  useEffect(() => {
+    const fetchCreators = async () => {
+      if (!open || activeTab !== "creators" || !selectedClient) return;
+
+      const clientId = selectedClient.id || selectedClient.client_id;
+      if (!clientId) return;
+
+      setCreatorsLoading(true);
+      setCreatorsError(null);
+      try {
+        const res = await getCreatorsByClientId({ clientId });
+        const data = res?.response || [];
+        setCreators(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to fetch creators for client:", error);
+        setCreatorsError(
+          error?.message || "Failed to load creators for this client"
+        );
+        setCreators([]);
+      } finally {
+        setCreatorsLoading(false);
+      }
+    };
+
+    fetchCreators();
+  }, [open, activeTab, selectedClient]);
 
   // Cleanup creator image preview URL when dialog closes
   useEffect(() => {
@@ -124,6 +197,169 @@ export default function ClientSettingsDialog({
     creatorImageInputRef.current?.click();
   };
 
+  const handleSaveCreator = async () => {
+    if (!selectedClient) {
+      toast.error("Client not selected");
+      return;
+    }
+
+    if (!creatorFirstName || !creatorEmail) {
+      toast.error("First name and email are required");
+      return;
+    }
+
+    if (!creatorPassword || !creatorConfirmPassword) {
+      toast.error("Password and confirm password are required");
+      return;
+    }
+
+    if (creatorPassword !== creatorConfirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    const clientId = selectedClient.id || selectedClient.client_id;
+    if (!clientId) {
+      toast.error("Client ID not found");
+      return;
+    }
+
+    const payload = {
+      email: creatorEmail,
+      password: creatorPassword,
+      first_name: creatorFirstName,
+      last_name: creatorLastName || "",
+      client_id: clientId,
+      role: creatorRole || "creator",
+      phone: "",
+      timezone: "UTC",
+      metadata: {},
+    };
+
+    setSavingCreator(true);
+    try {
+      const res = await registerUser(payload, { useAuthToken: true });
+
+      if (res?.response) {
+        toast.success("Creator added successfully");
+
+        // Refresh creators list for this client
+        try {
+          const listRes = await getCreatorsByClientId({ clientId });
+          const data = listRes?.response || [];
+          setCreators(Array.isArray(data) ? data : []);
+        } catch (err) {
+          console.error(
+            "Failed to refresh creators after adding creator:",
+            err
+          );
+        }
+
+        // Reset form and close
+        setShowAddCreatorForm(false);
+        setCreatorFirstName("");
+        setCreatorLastName("");
+        setCreatorEmail("");
+        setCreatorPassword("");
+        setCreatorConfirmPassword("");
+        setCreatorRole("");
+        setCreatorClient("");
+        setCreatorImageFile(null);
+        if (creatorImagePreview) {
+          URL.revokeObjectURL(creatorImagePreview);
+        }
+        setCreatorImagePreview(null);
+      } else {
+        const errorMessage =
+          res?.detail || res?.message || "Failed to add creator";
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("Failed to add creator:", error);
+      const errorMessage =
+        error?.message ||
+        error?.response?.data?.detail ||
+        error?.response?.detail ||
+        "Failed to add creator";
+      toast.error(errorMessage);
+    } finally {
+      setSavingCreator(false);
+    }
+  };
+
+  const handleSaveUser = async () => {
+    if (!selectedClient) {
+      toast.error("Client not selected");
+      return;
+    }
+
+    if (!firstName || !email) {
+      toast.error("First name and email are required");
+      return;
+    }
+
+    const clientId = selectedClient.id || selectedClient.client_id;
+    if (!clientId) {
+      toast.error("Client ID not found");
+      return;
+    }
+
+    const payload = {
+      client_id: clientId,
+      access_level: 0,
+      first_name: firstName,
+      last_name: lastName || "",
+      email,
+      timezone: "Eastern Time (US & Canada)",
+      enable_sso: false,
+      enable_ai_notifications: false,
+      path_ids: [],
+    };
+
+    setSavingUser(true);
+    try {
+      const res = await registerClientUser(payload);
+
+      if (res?.response) {
+        toast.success("User added successfully");
+
+        // Refresh user list for this client
+        try {
+          const listRes = await getUserById({ clientId });
+          const data = listRes?.response || [];
+          setUsers(Array.isArray(data) ? data : []);
+        } catch (err) {
+          console.error("Failed to refresh users after adding user:", err);
+        }
+
+        // Reset form and close
+        setShowAddUserForm(false);
+        setFirstName("");
+        setLastName("");
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+        setCohort("");
+        setCometAssignments([{ id: 1, isCurrent: true, cometType: "" }]);
+        setCurrentCometIndex(0);
+      } else {
+        const errorMessage =
+          res?.detail || res?.message || "Failed to add user";
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("Failed to add user:", error);
+      const errorMessage =
+        error?.message ||
+        error?.response?.data?.detail ||
+        error?.response?.detail ||
+        "Failed to add user";
+      toast.error(errorMessage);
+    } finally {
+      setSavingUser(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!selectedClient || !clientData) {
       toast.error("Client data not loaded");
@@ -142,43 +378,38 @@ export default function ClientSettingsDialog({
       return;
     }
 
-    setSaving(true);
     try {
       const formData = await clientFormRef.current.getFormData();
-      if (!formData) {
-        setSaving(false);
-        return;
-      }
+      if (!formData) return;
 
       const payload = {
         id: clientId,
         ...formData,
       };
 
-      const response = await updateClientDetails(payload);
+      const response = await upsertClient(payload);
 
-      if (response?.response && !response.error) {
+      if (response) {
         toast.success("Client details updated successfully");
-        setClientData(response.response);
+        setClientData(response);
         // Refresh clients to update Header automatically
         refreshClients();
         onOpenChange(false);
       } else {
         const errorMessage =
-          response?.response?.detail ||
-          response?.response?.message ||
+          response?.detail ||
+          response?.message ||
           "Failed to update client details";
         toast.error(errorMessage);
       }
     } catch (error) {
       console.error("Failed to update client details:", error);
       const errorMessage =
-        error?.response?.data?.detail ||
         error?.message ||
+        error?.response?.data?.detail ||
+        error?.response?.detail ||
         "Failed to update client details";
       toast.error(errorMessage);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -197,11 +428,7 @@ export default function ClientSettingsDialog({
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="w-8 h-8 animate-spin text-primary-700" />
                 <p className="text-sm font-medium text-gray-700">
-                  {saving
-                    ? "Saving..."
-                    : uploadingImage || uploadingBackgroundImage
-                    ? "Uploading image..."
-                    : "Loading..."}
+                  {saving ? "Saving..." : "Loading..."}
                 </p>
               </div>
             </div>
@@ -319,30 +546,97 @@ export default function ClientSettingsDialog({
                             </tr>
                           </thead>
                           <tbody>
-                            {Array.from({ length: 11 }).map((_, index) => (
-                              <tr
-                                key={index}
-                                className="border-b border-gray-100 hover:bg-gray-50"
-                              >
-                                <td className="px-4 py-3 text-sm text-gray-600">
-                                  First Name
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-600">
-                                  Last Name
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-600">
-                                  Email
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-600">
-                                  Current Comet
-                                </td>
-                                <td className="px-4 py-3">
-                                  <button className="text-gray-400 hover:text-gray-600">
-                                    <MoreVertical className="w-5 h-5" />
-                                  </button>
+                            {usersLoading && (
+                              <tr>
+                                <td
+                                  colSpan={5}
+                                  className="px-4 py-4 text-center text-sm text-gray-500"
+                                >
+                                  Loading users...
                                 </td>
                               </tr>
-                            ))}
+                            )}
+
+                            {usersError && !usersLoading && (
+                              <tr>
+                                <td
+                                  colSpan={5}
+                                  className="px-4 py-4 text-center text-sm text-red-500"
+                                >
+                                  {usersError}
+                                </td>
+                              </tr>
+                            )}
+
+                            {!usersLoading &&
+                              !usersError &&
+                              users.length === 0 && (
+                                <tr>
+                                  <td
+                                    colSpan={5}
+                                    className="px-4 py-4 text-center text-sm text-gray-500"
+                                  >
+                                    No users found for this client.
+                                  </td>
+                                </tr>
+                              )}
+
+                            {!usersLoading &&
+                              !usersError &&
+                              users.length > 0 &&
+                              users.map((user, index) => (
+                                <tr
+                                  key={user.id || index}
+                                  className="border-b border-gray-100 hover:bg-gray-50"
+                                >
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {user.first_name || user.firstName || "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {user.last_name || user.lastName || "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {user.email || "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {user.active_path_name || "-"}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button className="text-gray-400 hover:text-gray-600">
+                                          <MoreHorizontal className="w-5 h-5" />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent
+                                        align="start"
+                                        className="w-32 rounded-lg bg-white border border-gray-200 shadow-lg p-1"
+                                      >
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // TODO: Implement edit functionality
+                                            console.log("Edit user:", user);
+                                          }}
+                                          className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
+                                        >
+                                          Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // TODO: Implement delete functionality
+                                            console.log("Delete user:", user);
+                                          }}
+                                          className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1"
+                                        >
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </td>
+                                </tr>
+                              ))}
                           </tbody>
                         </table>
                       </div>
@@ -584,6 +878,18 @@ export default function ClientSettingsDialog({
                             Assign Comet
                           </Button>
                         </div>
+
+                        {/* Save User Button */}
+                        <div className="flex justify-end pt-4">
+                          <Button
+                            type="button"
+                            onClick={handleSaveUser}
+                            disabled={savingUser}
+                            className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {savingUser ? "Saving..." : "Save User"}
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -636,30 +942,75 @@ export default function ClientSettingsDialog({
                             </tr>
                           </thead>
                           <tbody>
-                            {Array.from({ length: 11 }).map((_, index) => (
-                              <tr
-                                key={index}
-                                className="border-b border-gray-100 hover:bg-gray-50"
-                              >
-                                <td className="px-4 py-3 text-sm text-gray-600">
-                                  First Name
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-600">
-                                  Last Name
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-600">
-                                  Email
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-600">
-                                  Role
-                                </td>
-                                <td className="px-4 py-3">
-                                  <button className="text-gray-400 hover:text-gray-600">
-                                    <MoreHorizontal className="w-5 h-5" />
-                                  </button>
+                            {creatorsLoading && (
+                              <tr>
+                                <td
+                                  colSpan={5}
+                                  className="px-4 py-4 text-center text-sm text-gray-500"
+                                >
+                                  Loading creators...
                                 </td>
                               </tr>
-                            ))}
+                            )}
+
+                            {creatorsError && !creatorsLoading && (
+                              <tr>
+                                <td
+                                  colSpan={5}
+                                  className="px-4 py-4 text-center text-sm text-red-500"
+                                >
+                                  {creatorsError}
+                                </td>
+                              </tr>
+                            )}
+
+                            {!creatorsLoading &&
+                              !creatorsError &&
+                              creators.length === 0 && (
+                                <tr>
+                                  <td
+                                    colSpan={5}
+                                    className="px-4 py-4 text-center text-sm text-gray-500"
+                                  >
+                                    No creators found for this client.
+                                  </td>
+                                </tr>
+                              )}
+
+                            {!creatorsLoading &&
+                              !creatorsError &&
+                              creators.length > 0 &&
+                              creators.map((creator, index) => (
+                                <tr
+                                  key={creator.id || index}
+                                  className="border-b border-gray-100 hover:bg-gray-50"
+                                >
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {creator.first_name ||
+                                      creator.firstName ||
+                                      "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {creator.last_name ||
+                                      creator.lastName ||
+                                      "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {creator.email || "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {creator.role ||
+                                      (Array.isArray(creator.roles) &&
+                                        creator.roles[0]) ||
+                                      "-"}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <button className="text-gray-400 hover:text-gray-600">
+                                      <MoreHorizontal className="w-5 h-5" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
                           </tbody>
                         </table>
                       </div>
@@ -751,8 +1102,10 @@ export default function ClientSettingsDialog({
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="admin">Admin</SelectItem>
-                                  <SelectItem value="editor">Editor</SelectItem>
-                                  <SelectItem value="viewer">Viewer</SelectItem>
+                                  <SelectItem value="superAdmin">
+                                    SuperAdmin
+                                  </SelectItem>
+                                  <SelectItem value="user">User</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -873,6 +1226,18 @@ export default function ClientSettingsDialog({
                               </div>
                             )}
                           </div>
+                        </div>
+
+                        {/* Save Creator Button */}
+                        <div className="flex justify-end pt-4">
+                          <Button
+                            type="button"
+                            onClick={handleSaveCreator}
+                            disabled={savingCreator}
+                            className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {savingCreator ? "Saving..." : "Save Creator"}
+                          </Button>
                         </div>
                       </div>
                     )}

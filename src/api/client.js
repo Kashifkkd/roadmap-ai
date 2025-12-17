@@ -1,7 +1,12 @@
 import { apiService } from "./apiService";
 import { endpoints } from "./endpoint";
 
-export async function getClients({ skip = 0, limit = 5, enabledOnly = true } = {}) {
+export async function getClients({
+  skip = 0,
+  limit = 10,
+  enabledOnly = true,
+  search = "",
+} = {}) {
   const res = await apiService({
     endpoint: `${endpoints.getClients}`,
     method: "GET",
@@ -9,6 +14,7 @@ export async function getClients({ skip = 0, limit = 5, enabledOnly = true } = {
       skip,
       limit,
       enabled_only: enabledOnly,
+      search,
     },
   });
   return res;
@@ -33,5 +39,3 @@ export async function updateClientDetails(clientData) {
   });
   return res;
 }
-
-

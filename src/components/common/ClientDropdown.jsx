@@ -18,9 +18,9 @@ import ClientSettingsDialog from "@/components/header/ClientSettingsDialog";
 import ClientFormFields from "@/components/common/ClientFormFields";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { updateClientDetails } from "@/api/client";
 import { toast } from "sonner";
-import { useRefreshData } from "@/hooks/useQueryData";
+import { useRefreshData, useUpsertClient } from "@/hooks/useQueryData";
+import { getClients } from "@/api/client";
 
 function isValidHttpUrl(string) {
   if (!string) return false;
@@ -42,7 +42,9 @@ export default function ClientDropdown({
   const { refreshClients } = useRefreshData();
   const [isOpen, setIsOpen] = useState(false);
   const [isAllClientsOpen, setIsAllClientsOpen] = useState(false);
+  const [allClients, setAllClients] = useState(clients);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [isClientSettingsDialogOpen, setIsClientSettingsDialogOpen] =
     useState(false);
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
@@ -56,7 +58,7 @@ export default function ClientDropdown({
 
   // Add Client form ref and state
   const clientFormRef = useRef(null);
-  const [saving, setSaving] = useState(false);
+  const { mutateAsync: upsertClient, isPending: saving } = useUpsertClient();
   const [formResetKey, setFormResetKey] = useState(0);
 
   useEffect(() => {
@@ -76,6 +78,10 @@ export default function ClientDropdown({
     // whenever selected client changes, reset its error
     setSelectedImageError(false);
   }, [selectedClient?.id, selectedClient?.ImageUrl]);
+
+  useEffect(() => {
+    setAllClients(clients);
+  }, [clients]);
 
   const handleClientClick = (client) => {
     setIsOpen(false);
@@ -97,16 +103,9 @@ export default function ClientDropdown({
     }));
   };
 
-  // Filter clients based on search query
-  const filteredClients = clients.filter((client) => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase().trim();
-    const clientName = (client?.name || "").toLowerCase();
-    return clientName.includes(query);
-  });
-
-  const handleAllClientsClick = () => {
-    setIsAllClientsOpen(!isAllClientsOpen);
+  const handleAllClientsClick = async () => {
+    const nextOpenState = !isAllClientsOpen;
+    setIsAllClientsOpen(nextOpenState);
     setSearchQuery("");
   };
 
@@ -125,39 +124,65 @@ export default function ClientDropdown({
     }
   }, [isAddClientDialogOpen]);
 
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (!isAllClientsOpen) return;
+
+    const fetchClients = async () => {
+      try {
+        const res = await getClients({
+          skip: 0,
+          limit: 500,
+          enabledOnly: true,
+          search: debouncedSearchQuery,
+        });
+        setAllClients(res?.response || []);
+      } catch (error) {
+        console.error("Failed to load clients", error);
+        toast.error("Unable to load clients");
+      }
+    };
+
+    fetchClients();
+  }, [isAllClientsOpen, debouncedSearchQuery]);
+
   const handleAddClient = async () => {
     if (!clientFormRef.current) return;
 
-    setSaving(true);
     try {
       const formData = await clientFormRef.current.getFormData();
-      if (!formData) {
-        setSaving(false);
-        return;
-      }
+      if (!formData) return;
 
-      const response = await updateClientDetails(formData);
+      // Backend requires an integer id even on create; use 0 for new clients
+      const payload = { id: formData.id ?? 0, ...formData };
 
-      if (response?.response && !response.error) {
+      const response = await upsertClient(payload);
+
+      if (response) {
         toast.success("Client created successfully");
         refreshClients();
         setIsAddClientDialogOpen(false);
       } else {
         const errorMessage =
-          response?.response?.detail ||
-          response?.response?.message ||
-          "Failed to create client";
+          response?.detail || response?.message || "Failed to create client";
         toast.error(errorMessage);
       }
     } catch (error) {
       console.error("Failed to create client:", error);
       const errorMessage =
-        error?.response?.data?.detail ||
         error?.message ||
+        error?.response?.data?.detail ||
+        error?.response?.detail ||
         "Failed to create client";
       toast.error(errorMessage);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -172,10 +197,10 @@ export default function ClientDropdown({
       >
         <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0 overflow-hidden">
           {selectedClient &&
-          isValidHttpUrl(selectedClient.ImageUrl) &&
+          isValidHttpUrl(selectedClient.image_url) &&
           !selectedImageError ? (
             <img
-              src={selectedClient.ImageUrl}
+              src={selectedClient.image_url}
               alt={selectedClient?.name || "Client"}
               className="rounded-full object-cover w-full h-full"
               onError={() => setSelectedImageError(true)}
@@ -206,7 +231,7 @@ export default function ClientDropdown({
       </Button>
 
       {isOpen && !isLoading && !isError && (
-        <div className="absolute top-full mt-2 right-0 w-44 sm:w-48 md:w-56 bg-background rounded-md shadow-xl overflow-visible no-scrollbar z-[60]">
+        <div className="absolute top-full mt-2 right-0 w-44 sm:w-48 md:w-56 bg-background rounded-md shadow-xl overflow-visible no-scrollbar z-60">
           <div className="flex flex-col p-1.5 sm:p-2 gap-1.5 sm:gap-2 max-h-80 overflow-y-auto">
             {clients.length === 0 ? (
               <div className="py-4 sm:py-6 text-center text-xs sm:text-sm text-muted-foreground">
@@ -217,7 +242,7 @@ export default function ClientDropdown({
               clients.map((client) => {
                 const hasImg =
                   client &&
-                  isValidHttpUrl(client.ImageUrl) &&
+                  isValidHttpUrl(client.image_url) &&
                   !imageErrorMap[client.id];
 
                 return (
@@ -229,7 +254,7 @@ export default function ClientDropdown({
                     <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-sm sm:text-base font-semibold text-primary-700 shrink-0 overflow-hidden">
                       {hasImg ? (
                         <img
-                          src={client.ImageUrl}
+                          src={client.image_url}
                           alt={client?.name || "Client"}
                           className="rounded-full object-cover w-full h-full"
                           onError={() => handleListImageError(client.id)}
@@ -264,7 +289,7 @@ export default function ClientDropdown({
               {isAllClientsOpen && (
                 <div
                   ref={allClientsDropdownRef}
-                  className="absolute top-0 left-full ml-4 w-64 bg-background rounded-md shadow-xl overflow-hidden z-[60]"
+                  className="absolute left-full ml-4 w-64 bg-background rounded-md shadow-xl overflow-hidden z-60"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Search Bar */}
@@ -284,18 +309,18 @@ export default function ClientDropdown({
 
                   {/* Clients List */}
                   <div className="flex flex-col p-1.5 gap-1.5 max-h-80 overflow-y-auto">
-                    {filteredClients.length === 0 ? (
+                    {allClients.length === 0 ? (
                       <div className="py-4 text-center text-sm text-muted-foreground">
                         {searchQuery.trim()
                           ? `No clients found matching "${searchQuery}"`
                           : "No clients found"}
                       </div>
                     ) : (
-                      isArrayWithValues(filteredClients) &&
-                      filteredClients.map((client) => {
+                      isArrayWithValues(allClients) &&
+                      allClients.map((client) => {
                         const hasImg =
                           client &&
-                          isValidHttpUrl(client.ImageUrl) &&
+                          isValidHttpUrl(client.image_url) &&
                           !imageErrorMap[client.id];
 
                         return (
@@ -307,7 +332,7 @@ export default function ClientDropdown({
                             <div className="w-7 h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-sm font-semibold text-primary-700 shrink-0 overflow-hidden">
                               {hasImg ? (
                                 <img
-                                  src={client.ImageUrl}
+                                  src={client.image_url}
                                   alt={client?.name || "Client"}
                                   className="rounded-full object-cover w-full h-full"
                                   onError={() =>

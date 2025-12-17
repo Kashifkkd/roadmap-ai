@@ -37,7 +37,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
 
   const [userData, setUserData] = useState(null);
   const [profileUrl, setProfileUrl] = useState(null);
-  const [imageUrl, setImageUrl] = useState(null);
+  const [image_url, setImageUrl] = useState(null);
   const [isPictureDeleted, setIsPictureDeleted] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -159,7 +159,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
       ImageUrl:
         data.ImageUrl !== undefined
           ? data.ImageUrl
-          : imageUrl || profileUrl || "",
+          : image_url || profileUrl || "",
       timezone: data.timezone || userData?.timezone || "",
       ...(password && confirmPassword && password === confirmPassword
         ? {
@@ -212,12 +212,12 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
 
     setIsLoading(true);
     try {
-      console.log("imageUrl", imageUrl);
+      console.log("image_url", image_url);
       const result = await updateProfileData({
         email: userData?.email || "",
         first_name: firstName,
         last_name: lastName,
-        ImageUrl: isPictureDeleted ? "" : imageUrl || "",
+        ImageUrl: isPictureDeleted ? "" : image_url || "",
         timezone: userData?.timezone || "",
         new_password: password,
         new_password_confirm: confirmPassword,
@@ -260,7 +260,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
 
   const avatar = isPictureDeleted
     ? defaultAvatar
-    : imageUrl || userData?.ImageUrl || defaultAvatar;
+    : image_url || userData?.ImageUrl || defaultAvatar;
 
   useEffect(() => {
     if (!open) return;
@@ -311,7 +311,8 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                   </span>
                   <div className="relative flex h-38 w-38 items-center justify-center rounded-full bg-gray-100 ">
                     <div className="relative h-full w-full overflow-hidden rounded-full bg-white">
-                      {isPictureDeleted || !(imageUrl || userData?.ImageUrl) ? (
+                      {isPictureDeleted ||
+                      !(image_url || userData?.ImageUrl) ? (
                         <div className="flex h-full w-full items-center justify-center bg-gray-100 text-4xl font-semibold">
                           {firstName?.charAt(0)?.toUpperCase() ||
                             lastName?.charAt(0)?.toUpperCase() ||
@@ -319,7 +320,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                         </div>
                       ) : (
                         <img
-                          src={imageUrl || userData?.ImageUrl || defaultAvatar}
+                          src={image_url || userData?.ImageUrl || defaultAvatar}
                           alt="Profile preview"
                           className="rounded-full h-full w-full object-cover"
                         />
