@@ -111,6 +111,7 @@ export default function DashboardLayout() {
           from: "user",
           content: entry.user,
           status: entry.status,
+          identifier: entry.identifier,
         });
       }
       if (entry.agent) {
@@ -118,6 +119,7 @@ export default function DashboardLayout() {
           from: "bot",
           content: entry.agent,
           status: entry.status,
+          identifier: entry.identifier,
         });
       }
     });
@@ -286,6 +288,7 @@ export default function DashboardLayout() {
               inputType={
                 prefillData ? "comet_data_update" : "comet_data_creation"
               }
+              pageIdentifier={1}
               // welcomeMessage={welcomeMessage}
               initialInput={initialInput}
               userQuestions={userQuestionsParam}

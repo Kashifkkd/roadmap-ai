@@ -17,6 +17,7 @@ export default function ChatWindow({
   sessionData,
   cometManager = false,
   externalLoading = false,
+  pageIdentifier = 1,
 }) {
   const router = useRouter();
   const processedInitialInputRef = useRef(false);
@@ -397,6 +398,7 @@ export default function ChatWindow({
                   from: "user",
                   content: entry.user,
                   status: entry.status,
+                  identifier: entry.identifier,
                 });
               }
               if (entry.agent) {
@@ -404,6 +406,7 @@ export default function ChatWindow({
                   from: "bot",
                   content: entry.agent,
                   status: entry.status,
+                  identifier: entry.identifier,
                 });
               }
             });
@@ -457,6 +460,7 @@ export default function ChatWindow({
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}
         error={error}
+        pageIdentifier={pageIdentifier}
       />
     </div>
   );

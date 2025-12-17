@@ -7,7 +7,7 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from "react";
-import { X } from "lucide-react";
+import { X, Info, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -33,12 +33,12 @@ const uploadImageFile = async (file) => {
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label }) => (
-  <div className="flex items-center justify-between py-3 border-b border-gray-200">
+  <div className="flex items-center justify-between py-3 border-t border-gray-200">
     <Label className="text-sm font-medium text-gray-700">{label}</Label>
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-700 focus:ring-offset-2 ${
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none  ${
         checked ? "bg-primary-700" : "bg-gray-300"
       }`}
       role="switch"
@@ -69,6 +69,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   const [selectedColorCode, setSelectedColorCode] = useState("");
   const [enableFoozi, setEnableFoozi] = useState(false);
   const [enableCohorts, setEnableCohorts] = useState(false);
+  const [secureLinks, setSecureLinks] = useState(false);
 
   // Image state
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -258,6 +259,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   return (
     <div className="space-y-6">
       {/* Client Name and Website Row */}
+
       <div className="flex flex-col gap-6">
         <div className="w-full">
           <Label className="text-sm font-medium text-gray-700 mb-2 block">
@@ -508,13 +510,82 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
           onChange={setEnableCohorts}
           label="Enable Cohorts"
         />
-        <div className="flex items-center justify-between py-3 border-b border-gray-200">
-          <Label className="text-sm font-medium text-gray-700">
-            Cohort List
-          </Label>
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            type="button"
+            className="border-primary-700 text-primary-700 justify-end"
+          >
+            {/* <Plus className="w-4 h-4" /> */}
+            Add Cohort
+          </Button>
         </div>
+        <Label className="text-sm font-medium text-gray-700 mt-4 block">
+          Cohort List
+        </Label>
+
+        {/* Cohort table */}
+        <div className="mt-2 rounded-md overflow-hidden text-sm text-gray-700">
+          {/* Header */}
+          <div className="grid grid-cols-3 bg-gray-100 font-medium">
+            <div className="px-4 py-2">Cohort Name</div>
+            <div className="px-4 py-2">Cohort Id</div>
+            <div className="px-4 py-2 text-right">Action</div>
+          </div>
+
+          {/* Rows */}
+          {[1, 2, 3, 4, 5].map((row) => (
+            <div
+              key={row}
+              className={`grid grid-cols-3 ${
+                row === 2 ? "bg-gray-50" : "bg-white"
+              }`}
+            >
+              <div className="px-4 py-2 text-gray-700">Cohort Name</div>
+              <div className="px-4 py-2 text-gray-500">Cohort Id</div>
+              <div className="px-6 py-2 text-right flex items-center justify-end">
+                <MoreHorizontal className="w-4 h-4 text-gray-400" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Secure Links toggle */}
+        {/* <div className="mt-4 border-t border-gray-200 pt-3 flex  justify-between"> */}
+        {/* <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">
+              Secure Links (Open links in default browser)
+            </span>
+            <Info
+              className="w-4 h-4 text-gray-400"
+              aria-hidden="true"
+              title="When enabled, links open in the user's default browser."
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setSecureLinks(!secureLinks)}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
+              secureLinks ? "bg-primary-700" : "bg-gray-300"
+            }`}
+            role="switch"
+            aria-checked={secureLinks}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
+                secureLinks ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div> */}
+        <ToggleSwitch
+          checked={secureLinks}
+          onChange={setSecureLinks}
+          label="Secure Links (Open links in default browser)"
+        />
       </div>
     </div>
+    // </div>
   );
 });
 

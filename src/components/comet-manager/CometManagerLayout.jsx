@@ -111,6 +111,7 @@ export default function CometManagerLayout() {
           from: "user",
           content: entry.user,
           status: entry.status,
+          identifier: entry.identifier,
         });
       }
       if (entry.agent) {
@@ -118,6 +119,7 @@ export default function CometManagerLayout() {
           from: "bot",
           content: entry.agent,
           status: entry.status,
+          identifier: entry.identifier,
         });
       }
     });
@@ -267,6 +269,7 @@ export default function CometManagerLayout() {
         <div className="lg:block w-full lg:w-[360px] h-full">
           <ChatWindow
             inputType="path_updation"
+            pageIdentifier={3}
             onResponseReceived={(updatedSessionData) => {
               // Update sessionData state when socket response comes in
               setSessionData(updatedSessionData);

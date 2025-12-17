@@ -62,6 +62,7 @@ export default function OutlineManagerLayout() {
           from: "user",
           content: entry.user,
           status: entry.status,
+          identifier: entry.identifier,
         });
       }
       if (entry.agent) {
@@ -69,6 +70,7 @@ export default function OutlineManagerLayout() {
           from: "bot",
           content: entry.agent,
           status: entry.status,
+          identifier: entry.identifier,
         });
       }
     });
@@ -90,6 +92,7 @@ export default function OutlineManagerLayout() {
         <div className="hidden lg:block w-full lg:w-[360px] h-full">
           <ChatWindow
             inputType="outline_updation"
+            pageIdentifier={2}
             allMessages={allMessages}
             setAllMessages={setAllMessages}
             // welcomeMessage={welcomeMessage}

@@ -64,12 +64,14 @@ const welcomeMessageChat = ({ messages, animate = false, onTyping }) => {
   }
 
   return (
-    <div className="flex flex-col space-y-2 w-full p-2 bg-[#ECF7F6] rounded-lg">
+    <div className="flex flex-col space-y-2  p-2 mr-6 mb-2 bg-[#ECF7F6] rounded-lg">
       {messages.length > 0 &&
         messages.map((msg, idx) => {
           return (
             <div key={idx} className="bg-[#D9F0EC] rounded-lg p-2">
-              <p className="text-[#399C8D] text-xs font-bold">{msg}</p>
+              <p className="text-[#399C8D] text-xs sm:text-sm font-md leading-relaxed">
+                {msg}
+              </p>
             </div>
           );
         })}
@@ -90,6 +92,7 @@ const Chat = ({
   onSubmit,
   cometManager = false,
   error = null,
+  pageIdentifier = 1,
 }) => {
   console.log(messages, "messages>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
   const bottomRef = useRef(null);
@@ -130,45 +133,60 @@ const Chat = ({
   const renderedMessages = useMemo(() => {
     if (!hasMessages) return null;
 
-    const result = [];
-    let greenMessagesGroup = [];
-    let groupKey = 0;
+    // Convert the messages into segments either a green info group or a regular chat message
+    const segments = [];
 
     messages.forEach((msg, idx) => {
-      if (msg.status === "green") {
-        const content = Array.isArray(msg.content)
+      const isGreen = msg.status === "green";
+      const matchesPage =
+        typeof msg.identifier !== "undefined"
+          ? msg.identifier === pageIdentifier
+          : true;
+
+      if (isGreen) {
+        const shouldAnimate = matchesPage;
+        const contentArray = Array.isArray(msg.content)
           ? msg.content
           : [msg.content];
-        greenMessagesGroup.push(...content);
-      } else {
-        if (greenMessagesGroup.length > 0) {
-          result.push(
-            <div key={`green-group-${groupKey}`}>
-              {welcomeMessageChat({
-                messages: greenMessagesGroup,
-                animate: true,
-              })}
-            </div>
-          );
-          greenMessagesGroup = [];
-          groupKey++;
+
+        const lastSegment = segments[segments.length - 1];
+
+       
+        if (
+          lastSegment &&
+          lastSegment.type === "green" &&
+          lastSegment.animate === shouldAnimate
+        ) {
+          lastSegment.messages.push(...contentArray);
+        } else {
+          segments.push({
+            type: "green",
+            animate: shouldAnimate,
+            messages: [...contentArray],
+          });
         }
-        result.push(
-          <ChatMessage key={idx} role={msg.from} text={msg.content} />
-        );
+      } else {
+        // Regular chat message segment
+        segments.push({ type: "chat", msg, idx });
       }
     });
 
-    if (greenMessagesGroup.length > 0) {
-      result.push(
-        <div key={`green-group-${groupKey}`}>
-          {welcomeMessageChat({ messages: greenMessagesGroup, animate: true })}
-        </div>
-      );
-    }
+    return segments.map((segment, Idx) => {
+      if (segment.type === "green") {
+        return (
+          <div key={`green-group-${Idx}`}>
+            {welcomeMessageChat({
+              messages: segment.messages,
+              animate: segment.animate,
+            })}
+          </div>
+        );
+      }
 
-    return result;
-  }, [messages]);
+      const { msg, idx } = segment;
+      return <ChatMessage key={idx} role={msg.from} text={msg.content} />;
+    });
+  }, [messages, hasMessages, pageIdentifier]);
 
   return (
     <div className="h-full bg-background flex flex-col border-2 border-[#C7C2F9] rounded-lg overflow-hidden">

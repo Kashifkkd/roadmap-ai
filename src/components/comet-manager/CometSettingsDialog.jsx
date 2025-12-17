@@ -517,7 +517,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                             </Select>
                           </div>
 
-                          <div className="space-y-2">
+                          {/* <div className="space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Manager Email Enabled?
                             </Label>
@@ -533,9 +533,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 <SelectItem value="No">No</SelectItem>
                               </SelectContent>
                             </Select>
-                          </div>
+                          </div>  */}
 
-                          <div className="space-y-2">
+                          {/* <div className="space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Show User Email?
                             </Label>
@@ -551,9 +551,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 <SelectItem value="No">No</SelectItem>
                               </SelectContent>
                             </Select>
-                          </div>
+                          </div> */}
 
-                          <div className="space-y-2">
+                          {/* <div className="space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Leaderboard Enabled?
                             </Label>
@@ -569,9 +569,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 <SelectItem value="No">No</SelectItem>
                               </SelectContent>
                             </Select>
-                          </div>
+                          </div> */}
 
-                          <div className="space-y-2">
+                          {/* <div className="space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Enable Community?
                             </Label>
@@ -587,9 +587,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 <SelectItem value="No">No</SelectItem>
                               </SelectContent>
                             </Select>
-                          </div>
+                          </div> */}
 
-                          <div className="space-y-2">
+                          {/* <div className="space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Secure Links
                             </Label>
@@ -605,7 +605,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 <SelectItem value="No">No</SelectItem>
                               </SelectContent>
                             </Select>
-                          </div>
+                          </div> */}
                         </div>
 
                         {/* Right Column */}
@@ -629,7 +629,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                             </Select>
                           </div>
 
-                          <div className="space-y-2">
+                          {/* <div className="space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Accountability Partners Email Enabled?
                             </Label>
@@ -647,9 +647,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 <SelectItem value="No">No</SelectItem>
                               </SelectContent>
                             </Select>
-                          </div>
+                          </div> */}
 
-                          <div className="space-y-2">
+                          {/* <div className="space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Enable Calendar Invites?
                             </Label>
@@ -665,9 +665,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 <SelectItem value="No">No</SelectItem>
                               </SelectContent>
                             </Select>
-                          </div>
+                          </div> */}
 
-                          <div className="space-y-2">
+                          {/* <div className="space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Leaderboard Entry Amount
                             </Label>
@@ -684,9 +684,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 <SelectItem value="100">100</SelectItem>
                               </SelectContent>
                             </Select>
-                          </div>
+                          </div> */}
 
-                          <div className="space-y-2">
+                          {/* <div className="space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Enable Feedback?
                             </Label>
@@ -702,9 +702,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 <SelectItem value="No">No</SelectItem>
                               </SelectContent>
                             </Select>
-                          </div>
+                          </div> */}
 
-                          <div className="space-y-2">
+                          {/* <div className="space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Enable Action Hub?
                             </Label>
@@ -720,7 +720,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 <SelectItem value="No">No</SelectItem>
                               </SelectContent>
                             </Select>
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                     </div>

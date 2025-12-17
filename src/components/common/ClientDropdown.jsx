@@ -394,7 +394,7 @@ export default function ClientDropdown({
         open={isAddClientDialogOpen}
         onOpenChange={setIsAddClientDialogOpen}
       >
-        <DialogContent className="max-w-[700px] max-h-[85vh] border-0 bg-transparent p-0 shadow-none overflow-hidden [&>button]:hidden">
+        <DialogContent className="max-w-[700px] max-h-[85vh] border-0 bg-transparent p-0 shadow-none overflow-hidden [&>button]:hidden ">
           <VisuallyHidden>
             <DialogTitle>Add Client</DialogTitle>
           </VisuallyHidden>
@@ -426,20 +426,24 @@ export default function ClientDropdown({
               </div>
 
               {/* Content Area */}
-              <div className="flex-1 overflow-y-auto p-4 rounded-lg bg-white">
-                <ClientFormFields ref={clientFormRef} resetKey={formResetKey} />
-              </div>
-
-              {/* Footer */}
-              <div className="flex justify-end px-6 py-3 border-t border-gray-200 shrink-0">
-                <Button
-                  type="button"
-                  onClick={handleAddClient}
-                  disabled={saving || isDialogLoading}
-                  className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? "Saving..." : "Add Client"}
-                </Button>
+              <div className="p-2 bg-gray-100 rounded-lg m-2 flex flex-col flex-1 min-h-0">
+                <div className="flex-1 p-4 rounded-t-lg bg-white overflow-y-auto">
+                  <ClientFormFields
+                    ref={clientFormRef}
+                    resetKey={formResetKey}
+                  />
+                </div>
+                {/*  Footer */}
+                <div className="flex justify-end px-6 py-3 border-t border-gray-200 shrink-0 bg-white rounded-b-[24px]">
+                  <Button
+                    type="button"
+                    onClick={handleAddClient}
+                    disabled={saving || isDialogLoading}
+                    className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? "Saving..." : "Add Client"}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

@@ -66,6 +66,11 @@ export default function ClientSettingsDialog({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [cohort, setCohort] = useState("");
+  const [enableSSO, setEnableSSO] = useState(false);
+  const [managerEmails, setManagerEmails] = useState([]);
+  const [accountabilityEmails, setAccountabilityEmails] = useState([
+    { id: 1, value: "" },
+  ]);
   const [cometAssignments, setCometAssignments] = useState([
     { id: 1, isCurrent: true, cometType: "" },
   ]);
@@ -311,8 +316,14 @@ export default function ClientSettingsDialog({
       last_name: lastName || "",
       email,
       timezone: "Eastern Time (US & Canada)",
-      enable_sso: false,
+      enable_sso: enableSSO,
       enable_ai_notifications: false,
+      manager_emails: managerEmails
+        .map((item) => item.value?.trim())
+        .filter(Boolean),
+      accountability_partner_emails: accountabilityEmails
+        .map((item) => item.value?.trim())
+        .filter(Boolean),
       path_ids: [],
     };
 
@@ -659,6 +670,9 @@ export default function ClientSettingsDialog({
                               setPassword("");
                               setConfirmPassword("");
                               setCohort("");
+                              setEnableSSO(false);
+                              setManagerEmails([]);
+                              setAccountabilityEmails([{ id: 1, value: "" }]);
                               setCometAssignments([
                                 { id: 1, isCurrent: true, cometType: "" },
                               ]);
@@ -737,6 +751,153 @@ export default function ClientSettingsDialog({
                               />
                             </div>
                           </div>
+
+                          {/* Enable SSO Toggle */}
+                          <div className="flex items-center justify-between pt-4 mt-2 border-t border-gray-200">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Enable SSO
+                            </Label>
+                            <button
+                              type="button"
+                              onClick={() => setEnableSSO((prev) => !prev)}
+                              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
+                                enableSSO ? "bg-primary-700" : "bg-gray-300"
+                              }`}
+                              role="switch"
+                              aria-checked={enableSSO}
+                            >
+                              <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
+                                  enableSSO ? "translate-x-6" : "translate-x-1"
+                                }`}
+                              />
+                            </button>
+                          </div>
+
+                          {/* Manager Email Addresses */}
+                          <div className="pt-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-sm font-medium text-gray-700">
+                                Manager Email Addresses
+                              </Label>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                  const nextId =
+                                    managerEmails.length > 0
+                                      ? Math.max(
+                                          ...managerEmails.map((m) => m.id)
+                                        ) + 1
+                                      : 1;
+                                  setManagerEmails((prev) => [
+                                    ...prev,
+                                    { id: nextId, value: "" },
+                                  ]);
+                                }}
+                                className="border-primary-500 text-primary-700 hover:bg-purple-50 px-3 py-1 h-8 text-xs font-medium"
+                              >
+                                + Add Email
+                              </Button>
+                            </div>
+                            <div className="space-y-2">
+                              {managerEmails.map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Input
+                                    type="email"
+                                    value={item.value}
+                                    onChange={(e) =>
+                                      setManagerEmails((prev) =>
+                                        prev.map((row) =>
+                                          row.id === item.id
+                                            ? { ...row, value: e.target.value }
+                                            : row
+                                        )
+                                      )
+                                    }
+                                    // placeholder="manager@example.com"
+                                    className="flex-1 bg-white border border-gray-300"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setManagerEmails((prev) =>
+                                        prev.filter((row) => row.id !== item.id)
+                                      )
+                                    }
+                                    className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-white" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Accountability Partner Email Addresses */}
+                          <div className="pt-4 space-y-3">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Accountability Partner Email Addresses
+                            </Label>
+                            <div className="space-y-2">
+                              {accountabilityEmails.map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Input
+                                    type="email"
+                                    value={item.value}
+                                    onChange={(e) =>
+                                      setAccountabilityEmails((prev) =>
+                                        prev.map((row) =>
+                                          row.id === item.id
+                                            ? { ...row, value: e.target.value }
+                                            : row
+                                        )
+                                      )
+                                    }
+                                    // placeholder="partner@example.com"
+                                    className="flex-1 bg-white border border-gray-300"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setAccountabilityEmails((prev) =>
+                                        prev.filter((row) => row.id !== item.id)
+                                      )
+                                    }
+                                    className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0"
+                                    disabled={accountabilityEmails.length === 1}
+                                  >
+                                    <Trash2 className="w-4 h-4 text-white" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                const nextId =
+                                  accountabilityEmails.length > 0
+                                    ? Math.max(
+                                        ...accountabilityEmails.map((m) => m.id)
+                                      ) + 1
+                                    : 1;
+                                setAccountabilityEmails((prev) => [
+                                  ...prev,
+                                  { id: nextId, value: "" },
+                                ]);
+                              }}
+                              className="w-full border-purple-300 text-primary-700 hover:bg-purple-50 flex items-center justify-center gap-1 py-2 text-sm font-medium"
+                            >
+                              + Add Email
+                            </Button>
+                          </div>
                           <div>
                             <Label className="text-sm font-medium text-gray-700 mb-2 block">
                               Cohort
@@ -763,7 +924,7 @@ export default function ClientSettingsDialog({
                         {/* Current Comet Assignment */}
                         <div className="space-y-4">
                           <h3 className="text-lg font-medium text-gray-700">
-                            Current Comet
+                            Assigned Comets
                           </h3>
                           <div className="space-y-3">
                             {cometAssignments.map((assignment, index) => (
