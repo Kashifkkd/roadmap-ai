@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Eye,
   EyeOff,
+  Pencil,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/Button";
@@ -30,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { graphqlClient } from "@/lib/graphql-client";
+import { uploadAssetFile } from "@/api/uploadAssets";
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
@@ -67,23 +69,12 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [cometTitle, setCometTitle] = useState("");
   const [description, setDescription] = useState("");
   const [coverImage, setCoverImage] = useState(null);
+  const [pathImageUrl, setPathImageUrl] = useState(null);
 
   // Configuration Settings
   const [learningFrequency, setLearningFrequency] = useState("Daily");
   const [language, setLanguage] = useState("English");
-  const [managerEmailEnabled, setManagerEmailEnabled] = useState("Yes");
-  const [
-    accountabilityPartnersEmailEnabled,
-    setAccountabilityPartnersEmailEnabled,
-  ] = useState("Yes");
-  const [showUserEmail, setShowUserEmail] = useState("Yes");
-  const [enableCalendarInvites, setEnableCalendarInvites] = useState("Yes");
-  const [leaderboardEnabled, setLeaderboardEnabled] = useState("Yes");
   const [leaderboardEntryAmount, setLeaderboardEntryAmount] = useState("25");
-  const [enableCommunity, setEnableCommunity] = useState("Yes");
-  const [enableFeedback, setEnableFeedback] = useState("Yes");
-  const [secureLinks, setSecureLinks] = useState("No");
-  const [enableActionHub, setEnableActionHub] = useState("Yes");
 
   // Kick Off
   const [kickOffDates, setKickOffDates] = useState([
@@ -94,9 +85,17 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [newKickOffDate, setNewKickOffDate] = useState("2025-11-28");
   const [newKickOffTime, setNewKickOffTime] = useState("14:20");
 
-  // Toggles
+  // Toggles (only those present in UI)
   const [habitEnabled, setHabitEnabled] = useState(true);
   const [personalizationEnabled, setPersonalizationEnabled] = useState(true);
+  const [managerEmailEnabled, setManagerEmailEnabled] = useState(false);
+  const [
+    accountabilityPartnersEmailEnabled,
+    setAccountabilityPartnersEmailEnabled,
+  ] = useState(false);
+  const [showUserEmail, setShowUserEmail] = useState(true);
+  const [leaderboardEnabled, setLeaderboardEnabled] = useState(true);
+  const [enableCommunity, setEnableCommunity] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -160,6 +159,42 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         sessionData?.comet_creation_data?.["Basic Information"]?.Description ||
           ""
       );
+
+      // Fetch path_image from response_path
+      const pathImage = sessionData?.response_path?.path_image;
+      if (pathImage) {
+        setPathImageUrl(pathImage);
+      }
+
+      // Fetch toggle switch data from response_path.enabled_attributes
+      const enabledAttributes =
+        sessionData?.response_path?.enabled_attributes || {};
+      if (enabledAttributes) {
+        // Only update toggles that are present in UI
+        if (enabledAttributes.habits !== undefined) {
+          setHabitEnabled(enabledAttributes.habits);
+        }
+        if (enabledAttributes.path_personalization !== undefined) {
+          setPersonalizationEnabled(enabledAttributes.path_personalization);
+        }
+        if (enabledAttributes.manager_email !== undefined) {
+          setManagerEmailEnabled(enabledAttributes.manager_email);
+        }
+        if (enabledAttributes.accountability_email !== undefined) {
+          setAccountabilityPartnersEmailEnabled(
+            enabledAttributes.accountability_email
+          );
+        }
+        if (enabledAttributes.user_email !== undefined) {
+          setShowUserEmail(enabledAttributes.user_email);
+        }
+        if (enabledAttributes.leaderboard !== undefined) {
+          setLeaderboardEnabled(enabledAttributes.leaderboard);
+        }
+        if (enabledAttributes.enable_community !== undefined) {
+          setEnableCommunity(enabledAttributes.enable_community);
+        }
+      }
     }
 
     // Load saved comet settings
@@ -170,6 +205,14 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
       setPersonalizationEnabled(settings.personalization_enabled ?? true);
     }
   }, [open]); // Reload data when dialog open
+
+  useEffect(() => {
+    return () => {
+      if (pathImageUrl && pathImageUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(pathImageUrl);
+      }
+    };
+  }, [pathImageUrl]);
 
   const handleSave = async () => {
     try {
@@ -194,6 +237,31 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         return;
       }
 
+      // Upload cover image
+      let uploadedImageUrl = pathImageUrl;
+      if (coverImage && coverImage instanceof File) {
+        try {
+          const uploadResponse = await uploadAssetFile(
+            coverImage,
+            "image",
+            sessionId,
+            "",
+            "",
+            ""
+          );
+
+          if (uploadResponse?.response) {
+            uploadedImageUrl = uploadResponse.response.s3_url;
+
+            if (uploadedImageUrl) {
+              setPathImageUrl(uploadedImageUrl);
+            }
+          }
+        } catch (error) {
+          console.error("Error uploading cover image:", error);
+        }
+      }
+
       // Update comet creation data for the comet settings
       const updatedCometCreationData = {
         ...(sessionData?.comet_creation_data || {}),
@@ -202,21 +270,33 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
           "Comet Title": cometTitle,
           Description: description,
         },
-        // Settings: {
-        //   ...(sessionData?.comet_creation_data?.Settings || {}),
-        //   "Learning Frequency": learningFrequency,
-        //   "Kick off Date": kickOffDate,
-        //   "Kick off Time": kickOffTime,
-        //   Habit: {
-        //     enabled: habitEnabled,
-        //     text: habitText,
-        //   },
-        //   Personalization: {
-        //     enabled: personalizationEnabled,
-        //     colorLogo: colorLogo ? colorLogo.name : null,
-        //     whiteLogo: whiteLogo ? whiteLogo.name : null,
-        //   },
-        // },
+      };
+
+      // Update response_path with enabled_attributes (only attributes present in UI)
+      const currentResponsePath = sessionData?.response_path || {};
+      const currentEnabledAttributes =
+        currentResponsePath?.enabled_attributes || {};
+
+      const updatedEnabledAttributes = {
+        ...currentEnabledAttributes, // Preserve other attributes
+        // Only update attributes that are present in UI
+        habits: habitEnabled,
+        path_personalization: personalizationEnabled,
+        manager_email: managerEmailEnabled,
+        accountability_email: accountabilityPartnersEmailEnabled,
+        user_email: showUserEmail,
+        leaderboard: leaderboardEnabled,
+        enable_community: enableCommunity,
+      };
+
+      const updatedResponsePath = {
+        ...currentResponsePath,
+        enabled_attributes: updatedEnabledAttributes,
+        ...(uploadedImageUrl && !uploadedImageUrl.startsWith("blob:")
+          ? { path_image: uploadedImageUrl }
+          : pathImageUrl && !pathImageUrl.startsWith("blob:")
+          ? { path_image: pathImageUrl }
+          : {}),
       };
 
       const cometJsonForSave = JSON.stringify({
@@ -224,7 +304,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         input_type: "source_material_based_outliner",
         comet_creation_data: updatedCometCreationData,
         response_outline: sessionData?.response_outline || {},
-        response_path: sessionData?.response_path || {},
+        response_path: updatedResponsePath,
         additional_data: {
           personalization_enabled: personalizationEnabled,
           habit_enabled: habitEnabled,
@@ -239,6 +319,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         const updatedSessionData = {
           ...sessionData,
           comet_creation_data: updatedCometCreationData,
+          response_path: updatedResponsePath,
         };
         localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
 
@@ -262,7 +343,12 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const handleCoverImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (pathImageUrl && pathImageUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(pathImageUrl);
+      }
       setCoverImage(file);
+      const imageUrl = URL.createObjectURL(file);
+      setPathImageUrl(imageUrl);
     }
   };
 
@@ -461,38 +547,78 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           <Label className="text-sm font-medium text-gray-700">
                             Comet Cover Image
                           </Label>
-                          <div className="w-full p-2 bg-gray-100 rounded-lg">
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-white">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleCoverImageUpload}
-                                className="hidden"
-                                id="cover-image-upload"
-                              />
-                              <label
-                                htmlFor="cover-image-upload"
-                                className="cursor-pointer flex flex-col items-center gap-3"
-                              >
-                                <span className="text-sm text-gray-600">
-                                  Upload Image
-                                </span>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="border-primary text-primary hover:bg-primary hover:text-white"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    document
-                                      .getElementById("cover-image-upload")
-                                      ?.click();
-                                  }}
+                          <div className="w-full max-h-[1500px] p-2 bg-gray-100 rounded-lg">
+                            {pathImageUrl ? (
+                              <div className="relative border-2 border-gray-300 rounded-lg overflow-hidden bg-white group">
+                                <img
+                                  src={pathImageUrl}
+                                  alt="Comet Cover"
+                                  className="w-full h-auto max-h-[150px] object-cover"
+                                />
+                                <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                  <button
+                                    type="button"
+                                    className="w-8 h-8 rounded-full bg-purple-200/80 hover:bg-purple-300/90 flex items-center justify-center transition-colors"
+                                    onClick={() => {
+                                      document
+                                        .getElementById("cover-image-upload")
+                                        ?.click();
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4 text-gray-800" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="w-8 h-8 rounded-full bg-orange-200/80 hover:bg-orange-300/90 flex items-center justify-center transition-colors"
+                                    onClick={() => {
+                                      setPathImageUrl(null);
+                                      setCoverImage(null);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-gray-800" />
+                                  </button>
+                                </div>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleCoverImageUpload}
+                                  className="hidden"
+                                  id="cover-image-upload"
+                                />
+                              </div>
+                            ) : (
+                              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-white">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleCoverImageUpload}
+                                  className="hidden"
+                                  id="cover-image-upload"
+                                />
+                                <label
+                                  htmlFor="cover-image-upload"
+                                  className="cursor-pointer flex flex-col items-center gap-3"
                                 >
-                                  <Plus className="h-4 w-4 mr-1" />
-                                  Browse
-                                </Button>
-                              </label>
-                            </div>
+                                  <span className="text-sm text-gray-600">
+                                    Upload Image
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="border-primary text-primary hover:bg-primary hover:text-white"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      document
+                                        .getElementById("cover-image-upload")
+                                        ?.click();
+                                    }}
+                                  >
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Browse
+                                  </Button>
+                                </label>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
