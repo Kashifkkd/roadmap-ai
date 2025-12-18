@@ -74,7 +74,7 @@ export default function ChatInput({
             disabled ? " cursor-not-allowed" : ""
           }`}
         />
-        <div className="absolute bottom-0 left-0 right-0 h-10 bg-background rounded-b-xl" />
+        <div className="absolute bottom-0 left-0 right-0 h-10  rounded-b-xl" />
         <div className="absolute bottom-2 right-2">
           <Button
             variant="default"

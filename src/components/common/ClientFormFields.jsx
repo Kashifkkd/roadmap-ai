@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { toast } from "sonner";
 import { uploadProfile } from "@/api/User/uploadProfile";
+import { getCohorts } from "@/api/cohort/getCohorts";
 
 //function to upload image
 const uploadImageFile = async (file) => {
@@ -85,6 +86,10 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   const [existingBackgroundImageUrl, setExistingBackgroundImageUrl] =
     useState("");
 
+  // Cohort state
+  const [cohorts, setCohorts] = useState([]);
+  const [cohortsLoading, setCohortsLoading] = useState(false);
+
   // Refs
   const imageInputRef = useRef(null);
   const backgroundImageInputRef = useRef(null);
@@ -100,6 +105,32 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       setExistingImageUrl(initialValues.ImageUrl || "");
       setExistingBackgroundImageUrl(initialValues.background_image_url || "");
     }
+  }, [initialValues]);
+
+  // Fetch cohorts
+  useEffect(() => {
+    const fetchCohorts = async () => {
+      if (!initialValues) return;
+
+      // const clientId = initialValues.id || initialValues.client_id;
+      // if (!clientId) return;
+      const clientId = 48;
+
+      setCohortsLoading(true);
+      try {
+        const res = await getCohorts({ clientId });
+        const data = res?.response || [];
+        setCohorts(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to fetch cohorts for client:", error);
+        toast.error("Failed to load cohorts");
+        setCohorts([]);
+      } finally {
+        setCohortsLoading(false);
+      }
+    };
+
+    fetchCohorts();
   }, [initialValues]);
 
   // Reset form when resetKey changes
@@ -534,20 +565,38 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
           </div>
 
           {/* Rows */}
-          {[1, 2, 3, 4, 5].map((row) => (
-            <div
-              key={row}
-              className={`grid grid-cols-3 ${
-                row === 2 ? "bg-gray-50" : "bg-white"
-              }`}
-            >
-              <div className="px-4 py-2 text-gray-700">Cohort Name</div>
-              <div className="px-4 py-2 text-gray-500">Cohort Id</div>
-              <div className="px-6 py-2 text-right flex items-center justify-end">
-                <MoreHorizontal className="w-4 h-4 text-gray-400" />
+          {cohortsLoading ? (
+            <div className="grid grid-cols-3 bg-white">
+              <div className="px-4 py-4 text-center text-gray-500 col-span-3">
+                Loading cohorts...
               </div>
             </div>
-          ))}
+          ) : cohorts.length === 0 ? (
+            <div className="grid grid-cols-3 bg-white">
+              <div className="px-4 py-4 text-center text-gray-500 col-span-3">
+                No cohorts found
+              </div>
+            </div>
+          ) : (
+            cohorts.map((cohort, index) => (
+              <div
+                key={cohort.id || cohort.cohort_id || index}
+                className={`grid grid-cols-3 ${
+                  index % 2 === 1 ? "bg-gray-50" : "bg-white"
+                }`}
+              >
+                <div className="px-4 py-2 text-gray-700">
+                  {cohort.name || cohort.cohort_name || "N/A"}
+                </div>
+                <div className="px-4 py-2 text-gray-500">
+                  {cohort.id || cohort.cohort_id || "N/A"}
+                </div>
+                <div className="px-6 py-2 text-right flex items-center justify-end">
+                  <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Secure Links toggle */}
