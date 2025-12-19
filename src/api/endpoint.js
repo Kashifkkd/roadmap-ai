@@ -25,4 +25,5 @@ export const endpoints = {
   feedbackEmail: (feedback) => `api/comet/feedback_email?feedback=${feedback}`,
   getCohorts: (clientId) => `api/clients/v1/cohorts?client_id=${clientId}`,
   getCohortPaths: (cohortId) => `api/clients/v1/cohorts/${cohortId}/paths`,
+  createCohort: "api/clients/v1/cohorts",
 };

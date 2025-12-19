@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/Label";
 import { toast } from "sonner";
 import { uploadProfile } from "@/api/User/uploadProfile";
 import { getCohorts } from "@/api/cohort/getCohorts";
+import { createCohort } from "@/api/cohort/createCohort";
 
 //function to upload image
 const uploadImageFile = async (file) => {
@@ -89,10 +90,19 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   // Cohort state
   const [cohorts, setCohorts] = useState([]);
   const [cohortsLoading, setCohortsLoading] = useState(false);
+  const [isCohortFormOpen, setIsCohortFormOpen] = useState(false);
+  const [newCohortName, setNewCohortName] = useState("");
+  const [newCohortDescription, setNewCohortDescription] = useState("");
+  const [creatingCohort, setCreatingCohort] = useState(false);
 
   // Refs
   const imageInputRef = useRef(null);
   const backgroundImageInputRef = useRef(null);
+
+  const getClientId = () => {
+    if (!initialValues) return 48;
+    return initialValues.id || initialValues.client_id || 48;
+  };
 
   // Initialize form with initialValues when provided
   useEffect(() => {
@@ -110,11 +120,8 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   // Fetch cohorts
   useEffect(() => {
     const fetchCohorts = async () => {
-      if (!initialValues) return;
-
-      // const clientId = initialValues.id || initialValues.client_id;
-      // if (!clientId) return;
-      const clientId = 48;
+      const clientId = getClientId();
+      if (!clientId) return;
 
       setCohortsLoading(true);
       try {
@@ -167,6 +174,51 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       }
     };
   }, [pendingImagePreview, pendingBackgroundImagePreview]);
+
+  const handleCreateCohort = async () => {
+    const clientId = getClientId();
+
+    if (!clientId) {
+      toast.error("Client id is missing");
+      return;
+    }
+
+    if (!newCohortName.trim()) {
+      toast.error("Cohort name is required");
+      return;
+    }
+
+    try {
+      setCreatingCohort(true);
+      await createCohort({
+        name: newCohortName.trim(),
+        description: newCohortDescription.trim(),
+        clientId,
+      });
+      toast.success("Cohort created successfully");
+      setNewCohortName("");
+      setNewCohortDescription("");
+      setIsCohortFormOpen(false);
+
+      // Refresh cohorts list
+      setCohortsLoading(true);
+      try {
+        const res = await getCohorts({ clientId });
+        const data = res?.response || [];
+        setCohorts(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to refresh cohorts after create:", error);
+        toast.error("Failed to refresh cohorts");
+      } finally {
+        setCohortsLoading(false);
+      }
+    } catch (error) {
+      console.error("Failed to create cohort:", error);
+      toast.error("Failed to create cohort");
+    } finally {
+      setCreatingCohort(false);
+    }
+  };
 
   const handleImageUpload = (event, isBackgroundImage = false) => {
     const file = event.target.files?.[0];
@@ -546,11 +598,78 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
             variant="outline"
             type="button"
             className="border-primary-700 text-primary-700 justify-end"
+            onClick={() => setIsCohortFormOpen(true)}
           >
             {/* <Plus className="w-4 h-4" /> */}
             Add Cohort
           </Button>
         </div>
+        {isCohortFormOpen && (
+          <div className="mt-4 border border-gray-200 rounded-lg bg-white p-4 space-y-3 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-800">
+                New Cohort
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCohortFormOpen(false);
+                  setNewCohortName("");
+                  setNewCohortDescription("");
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-gray-700">
+                  Cohort Name<span className="text-red-500 ml-0.5">*</span>
+                </Label>
+                <Input
+                  value={newCohortName}
+                  onChange={(e) => setNewCohortName(e.target.value)}
+                  placeholder="Enter cohort name"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-gray-700">
+                  Description
+                </Label>
+                <Input
+                  value={newCohortDescription}
+                  onChange={(e) => setNewCohortDescription(e.target.value)}
+                  placeholder="Enter short description"
+                  className="h-9"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-gray-600 hover:text-gray-800"
+                onClick={() => {
+                  setIsCohortFormOpen(false);
+                  setNewCohortName("");
+                  setNewCohortDescription("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="bg-primary-700 hover:bg-primary-800 text-white px-4 py-1.5 rounded-lg disabled:opacity-60"
+                onClick={handleCreateCohort}
+                disabled={creatingCohort}
+              >
+                {creatingCohort ? "Saving..." : "Save Cohort"}
+              </Button>
+            </div>
+          </div>
+        )}
         <Label className="text-sm font-medium text-gray-700 mt-4 block">
           Cohort List
         </Label>

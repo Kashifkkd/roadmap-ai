@@ -151,7 +151,6 @@ const Chat = ({
 
         const lastSegment = segments[segments.length - 1];
 
-       
         if (
           lastSegment &&
           lastSegment.type === "green" &&
@@ -178,6 +177,11 @@ const Chat = ({
             {welcomeMessageChat({
               messages: segment.messages,
               animate: segment.animate,
+              onTyping: () => {
+                if (bottomRef.current) {
+                  bottomRef.current.scrollIntoView({ behavior: "smooth" });
+                }
+              },
             })}
           </div>
         );

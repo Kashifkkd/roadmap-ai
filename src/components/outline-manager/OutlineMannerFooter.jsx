@@ -189,7 +189,7 @@ export default function OutlineMannerFooter() {
     return (
       <div className="fixed inset-x-0 top-[64px] bottom-0 z-50 bg-primary-50">
         <div className="w-full h-full flex items-center justify-center p-2 overflow-auto">
-          <Loader />
+          <Loader inputText="path" />
         </div>
       </div>
     );

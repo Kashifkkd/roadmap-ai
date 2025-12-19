@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 
-const Loader = () => {
+const Loader = ({ inputText }) => {
   const steps = [
     "Reading your documents",
     "Extracting key insights",
@@ -67,8 +67,8 @@ const Loader = () => {
           </h1>
 
           <p className="text-sm sm:text-base text-gray-700 mb-12 text-center max-w-xl">
-            Extracting insights, drafting early ideas, and preparing your Input
-            Screen.
+            Extracting insights, drafting early ideas, and preparing your{" "}
+            {inputText} Screen.
           </p>
 
           <div className="w-full  relative">
