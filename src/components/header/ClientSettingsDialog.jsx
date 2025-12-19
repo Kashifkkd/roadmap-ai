@@ -760,7 +760,7 @@ export default function ClientSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[908px] max-h-[90vh] border-0 bg-transparent p-0 shadow-none overflow-hidden [&>button]:hidden">
         <VisuallyHidden>
-          <DialogTitle>Client Settings</DialogTitle>
+          <DialogTitle>Settings</DialogTitle>
         </VisuallyHidden>
         <div className="rounded-[32px] bg-white overflow-hidden flex flex-col max-h-[90vh] relative">
           {/* Loader */}
@@ -777,9 +777,7 @@ export default function ClientSettingsDialog({
           <div className="flex flex-col flex-1 min-h-0">
             {/* Header */}
             <div className="flex items-center justify-between px-8 pt-6 pb-4 border-b border-gray-200 flex-shrink-0">
-              <h2 className="text-2xl font-semibold text-gray-900">
-                Client Settings
-              </h2>
+              <h2 className="text-2xl font-semibold text-gray-900">Settings</h2>
               <button onClick={() => onOpenChange(false)}>
                 <CircleX className="w-5 h-5 text-gray-600" />
               </button>
