@@ -208,6 +208,21 @@ export default function Header() {
     setIsAuthenticated(isAuth);
   }, [pathname]);
 
+  // Keep auth state in sync across app (login/logout/401) without full refresh
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleAuthChanged = () => {
+      const isAuth = tokenManager.isAuthenticated();
+      setIsAuthenticated(isAuth);
+    };
+
+    window.addEventListener("auth-changed", handleAuthChanged);
+    return () => {
+      window.removeEventListener("auth-changed", handleAuthChanged);
+    };
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -254,9 +269,7 @@ export default function Header() {
               initialClient = matchedClient;
             }
           }
-        } catch {
-          
-        }
+        } catch {}
 
         setSelectedClient(initialClient);
         try {
@@ -319,10 +332,22 @@ export default function Header() {
   const handleHomeButtonClick = () => {
     setIsHomeButtonActive(!isHomeButtonActive);
   };
+  const handleMailto = () => {
+    const to = "hello@1st90.com";
+    const subject = "Kyper Feedback";
+
+    const mailto = `mailto:${to}?subject=${encodeURIComponent(subject)}`;
+
+    // Most reliable way to open mail client
+    window.location.href = mailto;
+  };
 
   const handleFeedbackClick = () => {
+    handleMailto();
     setIsFeedbackActive(!isFeedbackActive);
-    setIsFeedbackDialogOpen(true);
+    setIsFeedbackDialogOpen(false);
+    // console.log("Feedback clicked");
+    // alert("Feedback clicked");
   };
 
   const handleFeedbackClose = () => {
@@ -1212,7 +1237,7 @@ export default function Header() {
 
                       <div className="hidden sm:flex flex-col justify-start">
                         <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
-                          {user?.first_name || user?.last_name || "User"}
+                          {user?.first_name || user?.last_name}
                         </span>
                         {isSuperAdmin() && (
                           <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
@@ -1267,7 +1292,7 @@ export default function Header() {
 
                       <div className="hidden sm:flex flex-col justify-start">
                         <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
-                          {user?.first_name || user?.last_name || "User"}
+                          {user?.first_name || user?.last_name}
                         </span>
                         {isSuperAdmin() && (
                           <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">

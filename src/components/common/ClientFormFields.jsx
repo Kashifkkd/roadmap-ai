@@ -112,7 +112,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       setSelectedColorCode(initialValues.color_code || "");
       setEnableFoozi(initialValues.enable_foozi || false);
       setEnableCohorts(initialValues.enable_cohorts || false);
-      setExistingImageUrl(initialValues.ImageUrl || "");
+      setExistingImageUrl(initialValues.image_url || "");
       setExistingBackgroundImageUrl(initialValues.background_image_url || "");
     }
   }, [initialValues]);
@@ -370,7 +370,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         {/* General Image Upload */}
         <div>
           <Label className="text-sm font-medium text-gray-700 mb-3 block">
-            Image (Upload PNG)
+            Transparent Image(Upload PNG)
           </Label>
           <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
             {imagePreview ? (

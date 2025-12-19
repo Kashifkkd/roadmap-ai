@@ -35,6 +35,8 @@ import { getClientDetails } from "@/api/client";
 import { getUserById } from "@/api/User/getUserById";
 import { registerClientUser } from "@/api/User/registerClientUser";
 import { updateClientUser } from "@/api/User/updateClientUser";
+import { updateCreator } from "@/api/User/updateCreator";
+import { getCreatorDetails } from "@/api/User/getCreatorDetails";
 import { getCreatorsByClientId } from "@/api/User/getCreatorsByClientId";
 import { registerUser } from "@/api/register";
 import { getCohorts } from "@/api/cohort/getCohorts";
@@ -87,6 +89,7 @@ export default function ClientSettingsDialog({
 
   // Add Creator form state
   const [showAddCreatorForm, setShowAddCreatorForm] = useState(false);
+  const [editingCreator, setEditingCreator] = useState(null);
   const [creatorFirstName, setCreatorFirstName] = useState("");
   const [creatorLastName, setCreatorLastName] = useState("");
   const [creatorEmail, setCreatorEmail] = useState("");
@@ -139,7 +142,6 @@ export default function ClientSettingsDialog({
       setUsersError(null);
       try {
         const res = await getUserById({ clientId });
-        // Expecting API shape similar to other endpoints: { response, error }
         const data = res?.response || [];
         setUsers(Array.isArray(data) ? data : []);
       } catch (error) {
@@ -295,6 +297,67 @@ export default function ClientSettingsDialog({
     creatorImageInputRef.current?.click();
   };
 
+  const handleEditCreator = async (creator) => {
+    const creatorId = creator.id || creator.user_id;
+    if (!creatorId) {
+      toast.error("Creator ID not found");
+      return;
+    }
+
+    setShowAddCreatorForm(true);
+
+    // Fetch full creator details from API
+    try {
+      const response = await getCreatorDetails(creatorId);
+      const fullCreatorData = response?.response || response || creator;
+      console.log("Fetched creator details:", fullCreatorData);
+
+      setEditingCreator(fullCreatorData);
+      setCreatorFirstName(
+        fullCreatorData.first_name || fullCreatorData.firstName || ""
+      );
+      setCreatorLastName(
+        fullCreatorData.last_name || fullCreatorData.lastName || ""
+      );
+      setCreatorEmail(fullCreatorData.email || "");
+      setCreatorPassword("");
+      setCreatorConfirmPassword("");
+      setCreatorRole(fullCreatorData.role || "");
+      setCreatorClient(
+        fullCreatorData.client_id ? String(fullCreatorData.client_id) : ""
+      );
+      setCreatorImageFile(null);
+      setCreatorImagePreview(null);
+    } catch (error) {
+      console.error("Failed to fetch creator details:", error);
+      toast.error("Failed to load creator details");
+      setEditingCreator(creator);
+      setCreatorFirstName(creator.first_name || "");
+      setCreatorLastName(creator.last_name || "");
+      setCreatorEmail(creator.email || "");
+      setCreatorRole(creator.role || "");
+      setCreatorClient(creator.client_id ? String(creator.client_id) : "");
+      setCreatorImageFile(null);
+      setCreatorImagePreview(null);
+    }
+  };
+
+  const resetCreatorForm = () => {
+    setEditingCreator(null);
+    setCreatorFirstName("");
+    setCreatorLastName("");
+    setCreatorEmail("");
+    setCreatorPassword("");
+    setCreatorConfirmPassword("");
+    setCreatorRole("");
+    setCreatorClient("");
+    setCreatorImageFile(null);
+    if (creatorImagePreview) {
+      URL.revokeObjectURL(creatorImagePreview);
+    }
+    setCreatorImagePreview(null);
+  };
+
   const handleSaveCreator = async () => {
     if (!selectedClient) {
       toast.error("Client not selected");
@@ -311,19 +374,31 @@ export default function ClientSettingsDialog({
       return;
     }
 
-    if (!creatorPassword || !creatorConfirmPassword) {
-      toast.error("Password and confirm password are required");
-      return;
-    }
+    if (!editingCreator) {
+      if (!creatorPassword || !creatorConfirmPassword) {
+        toast.error("Password and confirm password are required");
+        return;
+      }
 
-    if (creatorPassword.length <= 7) {
-      toast.error("Password must be more than 7 characters");
-      return;
-    }
+      if (creatorPassword.length <= 7) {
+        toast.error("Password must be more than 7 characters");
+        return;
+      }
 
-    if (creatorPassword !== creatorConfirmPassword) {
-      toast.error("Passwords do not match");
-      return;
+      if (creatorPassword !== creatorConfirmPassword) {
+        toast.error("Passwords do not match");
+        return;
+      }
+    } else if (creatorPassword && creatorPassword.length > 0) {
+      if (creatorPassword.length <= 7) {
+        toast.error("Password must be more than 7 characters");
+        return;
+      }
+
+      if (creatorPassword !== creatorConfirmPassword) {
+        toast.error("Passwords do not match");
+        return;
+      }
     }
 
     const clientId = selectedClient.id || selectedClient.client_id;
@@ -332,24 +407,50 @@ export default function ClientSettingsDialog({
       return;
     }
 
-    const payload = {
-      email: creatorEmail,
-      password: creatorPassword,
-      first_name: creatorFirstName,
-      last_name: creatorLastName || "",
-      client_id: clientId,
-      role: creatorRole || "creator",
-      phone: "",
-      timezone: "UTC",
-      metadata: {},
-    };
-
     setSavingCreator(true);
     try {
-      const res = await registerUser(payload, { useAuthToken: true });
+      let res;
+      if (editingCreator) {
+        const payload = {
+          first_name: creatorFirstName,
+          last_name: creatorLastName || "",
+          timezone: "UTC",
+          enabled: true,
+          role: creatorRole || "creator",
+          client_id: clientId,
+          accessible_client_ids: [clientId],
+        };
 
-      if (res?.response) {
-        toast.success("Creator added successfully");
+        if (creatorPassword) {
+          payload.password = creatorPassword;
+        }
+
+        res = await updateCreator(
+          editingCreator.id || editingCreator.user_id,
+          payload
+        );
+      } else {
+        // Create new creator
+        const payload = {
+          email: creatorEmail,
+          password: creatorPassword,
+          first_name: creatorFirstName,
+          last_name: creatorLastName || "",
+          client_id: clientId,
+          role: creatorRole || "creator",
+          phone: "",
+          timezone: "UTC",
+          metadata: {},
+        };
+        res = await registerUser(payload, { useAuthToken: true });
+      }
+
+      if (res?.response || res) {
+        toast.success(
+          editingCreator
+            ? "Creator updated successfully"
+            : "Creator added successfully"
+        );
 
         // Refresh creators list for this client
         try {
@@ -358,37 +459,30 @@ export default function ClientSettingsDialog({
           setCreators(Array.isArray(data) ? data : []);
         } catch (err) {
           console.error(
-            "Failed to refresh creators after adding creator:",
+            "Failed to refresh creators after saving creator:",
             err
           );
         }
 
         // Reset form and close
         setShowAddCreatorForm(false);
-        setCreatorFirstName("");
-        setCreatorLastName("");
-        setCreatorEmail("");
-        setCreatorPassword("");
-        setCreatorConfirmPassword("");
-        setCreatorRole("");
-        setCreatorClient("");
-        setCreatorImageFile(null);
-        if (creatorImagePreview) {
-          URL.revokeObjectURL(creatorImagePreview);
-        }
-        setCreatorImagePreview(null);
+        resetCreatorForm();
       } else {
         const errorMessage =
-          res?.detail || res?.message || "Failed to add creator";
+          res?.detail ||
+          res?.message ||
+          (editingCreator
+            ? "Failed to update creator"
+            : "Failed to add creator");
         toast.error(errorMessage);
       }
     } catch (error) {
-      console.error("Failed to add creator:", error);
+      console.error("Failed to save creator:", error);
       const errorMessage =
         error?.message ||
         error?.response?.data?.detail ||
         error?.response?.detail ||
-        "Failed to add creator";
+        (editingCreator ? "Failed to update creator" : "Failed to add creator");
       toast.error(errorMessage);
     } finally {
       setSavingCreator(false);
@@ -396,6 +490,7 @@ export default function ClientSettingsDialog({
   };
 
   const handleEditUser = (user) => {
+    console.log("user", user);
     setEditingUser(user);
     setFirstName(user.first_name || user.firstName || "");
     setLastName(user.last_name || user.lastName || "");
@@ -403,7 +498,7 @@ export default function ClientSettingsDialog({
     setPassword("");
     setConfirmPassword("");
     setCohort(user.cohort || "");
-    setEnableSSO(user.enable_sso || user.enableSSO || false);
+    setEnableSSO(user.is_sso);
 
     // Set manager emails
     const managerEmailsList = user.manager_emails || user.managerEmails || [];
@@ -508,7 +603,6 @@ export default function ClientSettingsDialog({
       return;
     }
 
-    // Password validation for new users
     if (!editingUser) {
       if (!password) {
         toast.error("Password is required");
@@ -529,32 +623,40 @@ export default function ClientSettingsDialog({
     const activeComet = cometAssignments.find((a) => a.isCurrent);
     const activePathId = activeComet?.cometType
       ? Number(activeComet.cometType)
-      : "";
+      : null;
     const adhocPaths = cometAssignments
       .filter((a) => !a.isCurrent && a.cometType)
       .map((a) => Number(a.cometType));
 
-    const userPayload = {
-      active_path_id: activePathId,
+    const pathIds = [];
+    if (activePathId) {
+      pathIds.push(activePathId);
+    }
+    adhocPaths.forEach((id) => {
+      if (id && !pathIds.includes(id)) {
+        pathIds.push(id);
+      }
+    });
+
+    const userData = {
       client_id: clientId,
+      access_level: 0,
       first_name: firstName,
       last_name: lastName || "",
       email,
-      access_level: 0,
-      timezone: "UTC",
-      cohort_id: cohort ? Number(cohort) : 0,
-      adhoc_paths: adhocPaths,
-      enable_sso: enableSSO,
+      path_ids: pathIds,
+      active_path_id: activePathId || null,
+      cohort_id: cohort ? Number(cohort) : null,
+      adhoc_paths: adhocPaths.length > 0 ? adhocPaths : [],
+      is_sso: enableSSO,
       enable_ai_notifications: false,
-      password: password,
-      // manager_emails: "",
-      // accountability_partner_emails: "",
-      // path_ids: [],
+      timezone: "UTC",
     };
+    if (password) {
+      userData.password = password;
+    }
 
-    const payload = {
-      user: userPayload,
-    };
+    const payload = editingUser ? userData : { user: userData };
 
     setSavingUser(true);
     try {
@@ -1413,14 +1515,10 @@ export default function ClientSettingsDialog({
                                   className="border-b border-gray-100 hover:bg-gray-50"
                                 >
                                   <td className="px-4 py-3 text-sm text-gray-600">
-                                    {creator.first_name ||
-                                      creator.firstName ||
-                                      "-"}
+                                    {creator.first_name || "-"}
                                   </td>
                                   <td className="px-4 py-3 text-sm text-gray-600">
-                                    {creator.last_name ||
-                                      creator.lastName ||
-                                      "-"}
+                                    {creator.last_name || "-"}
                                   </td>
                                   <td className="px-4 py-3 text-sm text-gray-600">
                                     {creator.email || "-"}
@@ -1445,8 +1543,7 @@ export default function ClientSettingsDialog({
                                         <DropdownMenuItem
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            // TODO: Implement edit functionality
-                                            console.log("Edit user:", user);
+                                            handleEditCreator(creator);
                                           }}
                                           className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
                                         >
@@ -1475,26 +1572,14 @@ export default function ClientSettingsDialog({
                         {/* Back Button */}
                         <div className="flex items-center justify-between">
                           <h2 className="text-xl font-semibold text-gray-900">
-                            Add Creator
+                            {editingCreator ? "Edit Creator" : "Add Creator"}
                           </h2>
                           <Button
                             type="button"
                             variant="ghost"
                             onClick={() => {
                               setShowAddCreatorForm(false);
-                              // Reset form
-                              setCreatorFirstName("");
-                              setCreatorLastName("");
-                              setCreatorEmail("");
-                              setCreatorPassword("");
-                              setCreatorConfirmPassword("");
-                              setCreatorRole("");
-                              setCreatorClient("");
-                              setCreatorImageFile(null);
-                              if (creatorImagePreview) {
-                                URL.revokeObjectURL(creatorImagePreview);
-                              }
-                              setCreatorImagePreview(null);
+                              resetCreatorForm();
                             }}
                             className="text-gray-600 hover:text-gray-900"
                           >
@@ -1543,7 +1628,8 @@ export default function ClientSettingsDialog({
                                 onChange={(e) =>
                                   setCreatorEmail(e.target.value)
                                 }
-                                className="w-full bg-white border border-gray-300"
+                                disabled={editingCreator} // Email cannot be changed when editing
+                                className="w-full bg-white border border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
                               />
                             </div>
                             <div>
@@ -1571,35 +1657,68 @@ export default function ClientSettingsDialog({
 
                         {/* Account Details */}
                         <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                Password<span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                type="password"
-                                value={creatorPassword}
-                                onChange={(e) =>
-                                  setCreatorPassword(e.target.value)
-                                }
-                                className="w-full bg-white border border-gray-300"
-                              />
+                          {!editingCreator && (
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Password
+                                  <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  type="password"
+                                  value={creatorPassword}
+                                  onChange={(e) =>
+                                    setCreatorPassword(e.target.value)
+                                  }
+                                  className="w-full bg-white border border-gray-300"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Confirm Password
+                                  <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  type="password"
+                                  value={creatorConfirmPassword}
+                                  onChange={(e) =>
+                                    setCreatorConfirmPassword(e.target.value)
+                                  }
+                                  className="w-full bg-white border border-gray-300"
+                                />
+                              </div>
                             </div>
-                            <div>
-                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                Confirm Password
-                                <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                type="password"
-                                value={creatorConfirmPassword}
-                                onChange={(e) =>
-                                  setCreatorConfirmPassword(e.target.value)
-                                }
-                                className="w-full bg-white border border-gray-300"
-                              />
+                          )}
+                          {editingCreator && (
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Password
+                                </Label>
+                                <Input
+                                  type="password"
+                                  value={creatorPassword}
+                                  onChange={(e) =>
+                                    setCreatorPassword(e.target.value)
+                                  }
+                                  className="w-full bg-white border border-gray-300"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Confirm Password
+                                </Label>
+                                <Input
+                                  type="password"
+                                  value={creatorConfirmPassword}
+                                  onChange={(e) =>
+                                    setCreatorConfirmPassword(e.target.value)
+                                  }
+                                  className="w-full bg-white border border-gray-300"
+                                />
+                              </div>
                             </div>
-                          </div>
+                          )}
                           <div>
                             <Label className="text-sm font-medium text-gray-700 mb-2 block">
                               Client
@@ -1693,7 +1812,11 @@ export default function ClientSettingsDialog({
                             disabled={savingCreator}
                             className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {savingCreator ? "Saving..." : "Save Creator"}
+                            {savingCreator
+                              ? "Saving..."
+                              : editingCreator
+                              ? "Update Creator"
+                              : "Save Creator"}
                           </Button>
                         </div>
                       </div>
