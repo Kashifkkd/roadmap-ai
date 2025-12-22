@@ -83,7 +83,7 @@ export default function ScreenCard({
                     : "text-gray-700"
                 }`}
               >
-                Content Screen
+                {screen.screenContents?.contentType || "Content"} Screen
               </div>
               <div
                 className={`flex flex-col items-start bg-white p-2 mt-0.5 shrink-0 

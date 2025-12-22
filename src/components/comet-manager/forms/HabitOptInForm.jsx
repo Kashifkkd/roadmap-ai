@@ -78,6 +78,22 @@ export default function HabitOptInForm({
             onBlur={onFieldBlur}
           />
         </div>
+        <div>
+          <Label className="block text-sm font-medium text-gray-700 mb-2"></Label>
+          <RichTextArea
+            label="Description"
+            value={formData.description || ""}
+            onChange={(value) => updateField("description", value)}
+            onSelectionChange={(selectionInfo) =>
+              onRichTextSelection?.(
+                "habitsDescription",
+                selectionInfo,
+                formData.description
+              )
+            }
+            onBlur={onRichTextBlur}
+          />
+        </div>
 
         <ImageUpload
           label="Habit Image"

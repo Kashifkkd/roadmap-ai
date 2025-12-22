@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { SectionHeader, TextField, RichTextArea } from "./FormFields";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
-import { Link as LinkIcon, Check, X, Loader2 } from "lucide-react";
+import { Link as LinkIcon, Check, X, Loader2, Trash2 } from "lucide-react";
 import ImageUpload from "@/components/common/ImageUpload";
 import { uploadAssetFile } from "@/api/uploadAssets";
 
@@ -32,10 +32,59 @@ export default function ContentForm({
   // Get existing assets from screen
   const existingAssets = screen?.assets || [];
 
+  // get existing media audio or video
+  const existingMediaAsset = useMemo(() => {
+    const mediaUrl = formData.mediaUrl || formData.media?.url;
+
+    if (mediaUrl) {
+      return existingAssets.find(
+        (asset) =>
+          asset.url === mediaUrl ||
+          asset.ImageUrl === mediaUrl ||
+          asset.videoUrl === mediaUrl ||
+          asset.audioUrl === mediaUrl
+      );
+    }
+    return existingAssets.find(
+      (asset) => asset.type === "video" || asset.type === "audio"
+    );
+  }, [existingAssets, formData.mediaUrl, formData.media]);
+
+  useEffect(() => {
+    if (existingMediaAsset) {
+      const mediaName =
+        existingMediaAsset.name ||
+        existingMediaAsset.alt ||
+        existingMediaAsset.url?.split("/").pop() ||
+        "Uploaded media";
+      setUploadedMedia(mediaName);
+    } else {
+      setUploadedMedia(null);
+    }
+  }, [existingMediaAsset]);
+
   const handleRemoveAsset = (index) => {
     if (removeScreenAsset) {
       removeScreenAsset(index);
     }
+  };
+
+  // Handle removing uploaded media
+  const handleRemoveMedia = () => {
+    const mediaIndex = existingAssets.findIndex(
+      (asset) =>
+        asset.type === "video" ||
+        asset.type === "audio" ||
+        asset.url === formData.mediaUrl ||
+        asset.ImageUrl === formData.mediaUrl
+    );
+    if (mediaIndex >= 0 && removeScreenAsset) {
+      removeScreenAsset(mediaIndex);
+    }
+    // Clear media URL
+    updateField("mediaUrl", "");
+    updateField("mediaType", "");
+    setUploadedMedia(null);
   };
 
   return (
@@ -148,7 +197,7 @@ export default function ContentForm({
 
                       // Upload asset with all necessary fields
                       try {
-                        await uploadAssetFile(
+                        const uploadResponse = await uploadAssetFile(
                           file,
                           assetType,
                           sessionId || "",
@@ -156,8 +205,49 @@ export default function ContentForm({
                           stepId || "",
                           screenId || ""
                         );
-                        setUploadedMedia(file.name);
-                        console.log("Media uploaded successfully");
+
+                        if (uploadResponse?.response) {
+                          const mediaUrl = uploadResponse.response.s3_url;
+
+                          if (mediaUrl) {
+                            const assetData = {
+                              status: "success",
+                              s3_url: mediaUrl,
+                              url: mediaUrl,
+                              videoUrl:
+                                assetType === "video" ? mediaUrl : undefined,
+                              audioUrl:
+                                assetType === "audio" ? mediaUrl : undefined,
+                              asset_id:
+                                uploadResponse.response.id ||
+                                uploadResponse.response.asset_id,
+                              id:
+                                uploadResponse.response.id ||
+                                uploadResponse.response.asset_id,
+                              asset_type: assetType,
+                              type: assetType,
+                              name: file.name,
+                              alt: file.name,
+                            };
+
+                            // Update screen assets in session data
+                            if (updateScreenAssets) {
+                              updateScreenAssets([assetData]);
+                            }
+
+                            updateField("mediaUrl", mediaUrl);
+
+                            updateField("mediaType", assetType);
+                          }
+
+                          setUploadedMedia(file.name);
+                          console.log("Media uploaded successfully", {
+                            mediaUrl,
+                            assetData: uploadResponse.response,
+                          });
+                        } else {
+                          throw new Error("Invalid upload response");
+                        }
                       } catch (error) {
                         setUploadErrorMedia("Upload failed. Please try again.");
                         console.error("Error uploading media:", error);
@@ -190,11 +280,25 @@ export default function ContentForm({
                       <X className="h-4 w-4" />
                       <span>{uploadErrorMedia}</span>
                     </div>
-                  ) : uploadedMedia ? (
-                    <div className="flex items-center gap-2 text-sm text-green-600">
-                      <Check className="h-4 w-4" />
-                      <span className="font-medium">Uploaded:</span>
-                      <span className="text-gray-700">{uploadedMedia}</span>
+                  ) : uploadedMedia && existingMediaAsset ? (
+                    <div className="flex items-center justify-between gap-2 text-sm">
+                      <div className="flex items-center gap-2 text-green-600 flex-1">
+                        <Check className="h-4 w-4 shrink-0" />
+                        <span className="font-medium">Uploaded:</span>
+                        <span className="text-gray-700 truncate">
+                          {uploadedMedia}
+                        </span>
+                        <span className="text-xs text-gray-500 shrink-0">
+                          ({existingMediaAsset.type || "media"})
+                        </span>
+                      </div>
+                      <button
+                        onClick={handleRemoveMedia}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors shrink-0"
+                        title="Remove media"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   ) : null}
                 </div>

@@ -10,6 +10,7 @@ import ReflectionForm from "./forms/ReflectionForm";
 import ActionsForm from "./forms/ActionsForm";
 import SocialDiscussionForm from "./forms/SocialDiscussionForm";
 import AssessmentForm from "./forms/AssessmentForm";
+import NotificationsForm from "./forms/NotificationsForm";
 import AskKyperPopup from "@/components/create-comet/AskKyperPopup";
 import { graphqlClient } from "@/lib/graphql-client";
 
@@ -72,6 +73,7 @@ const getFormValuesFromScreen = (screen) => {
     values.heading = content.heading || "";
     values.body = content.body || "";
     values.mediaUrl = content.media?.url || "";
+    values.mediaType = content.media?.type || "";
     values.contentFullBleed = content.blend_mode ?? false;
     values.media = content.media || {};
   }
@@ -130,6 +132,7 @@ const getFormValuesFromScreen = (screen) => {
       typeof content.habit_image === "string"
         ? content.habit_image
         : content.habit_image?.url || content.habit_image?.ImageUrl || "";
+    values.description = content.habit_image?.description || "";
     values.enabled = content.enabled ?? false;
     values.habits = content.habits || [];
   }
@@ -142,6 +145,15 @@ const getFormValuesFromScreen = (screen) => {
   if (contentType === "assessment") {
     values.title = content.title || "";
     values.questions = content.questions || [];
+  }
+
+  if (contentType === "notifications") {
+    values.title = content.heading || "";
+    values.message = content.body || "";
+    values.icon =
+      typeof content.icon === "string"
+        ? content.icon
+        : content.icon?.url || content.icon?.ImageUrl || "";
   }
 
   return values;
@@ -220,6 +232,11 @@ export default function DynamicForm({
                   currentScreen.screenContents.content.media = {};
                 }
                 currentScreen.screenContents.content.media.url = value;
+              } else if (field === "mediaType") {
+                if (!currentScreen.screenContents.content.media) {
+                  currentScreen.screenContents.content.media = {};
+                }
+                currentScreen.screenContents.content.media.type = value;
               } else if (field === "contentFullBleed") {
                 currentScreen.screenContents.content.blend_mode = value;
               }
@@ -349,9 +366,32 @@ export default function DynamicForm({
             } else if (contentType === "habits") {
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
-              else if (field === "habit_image") {
-                // habit_image is stored as a string URL
-                currentScreen.screenContents.content.habit_image = value;
+              else if (field === "description") {
+                if (
+                  !currentScreen.screenContents.content.habit_image ||
+                  typeof currentScreen.screenContents.content.habit_image ===
+                    "string"
+                ) {
+                  currentScreen.screenContents.content.habit_image = {
+                    url: currentScreen.screenContents.content.habit_image || "",
+                    description: "",
+                  };
+                }
+                currentScreen.screenContents.content.habit_image.description =
+                  extractPlainTextFromDelta(value);
+              } else if (field === "habit_image") {
+                if (
+                  !currentScreen.screenContents.content.habit_image ||
+                  typeof currentScreen.screenContents.content.habit_image ===
+                    "string"
+                ) {
+                  currentScreen.screenContents.content.habit_image = {
+                    url: value,
+                    description: "",
+                  };
+                } else {
+                  currentScreen.screenContents.content.habit_image.url = value;
+                }
               } else if (field === "enabled") {
                 currentScreen.screenContents.content.enabled = value;
               } else if (field === "habits") {
@@ -390,6 +430,28 @@ export default function DynamicForm({
                   );
                 } else {
                   currentScreen.screenContents.content.habits = value;
+                }
+              }
+            } else if (contentType === "notifications") {
+              if (field === "heading") {
+                currentScreen.screenContents.content.heading = value;
+              } else if (field === "message") {
+                const messageValue = extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.message = messageValue;
+                // Also update body for backward compatibility
+                if (!currentScreen.screenContents.content.body) {
+                  currentScreen.screenContents.content.body = messageValue;
+                }
+              } else if (field === "icon") {
+                if (
+                  !currentScreen.screenContents.content.icon ||
+                  typeof currentScreen.screenContents.content.icon === "string"
+                ) {
+                  currentScreen.screenContents.content.icon = {
+                    url: value,
+                  };
+                } else {
+                  currentScreen.screenContents.content.icon.url = value;
                 }
               }
             }
@@ -600,6 +662,8 @@ export default function DynamicForm({
         assessmentQuestions: "questions",
         habitsTitle: "title",
         habitsText: "habits[].text",
+        notificationsTitle: "title",
+        notificationsMessage: "message",
       };
 
       const mappedField =
@@ -891,6 +955,21 @@ export default function DynamicForm({
     if (screenType === "assessment" || contentType === "assessment") {
       return (
         <AssessmentForm
+          {...formProps}
+          askKyperHandlers={{
+            onTextFieldSelect: handleTextFieldSelect,
+            onFieldBlur: handleFieldBlur,
+            onRichTextSelection: handleRichTextSelection,
+            onRichTextBlur: handleFieldBlur,
+          }}
+        />
+      );
+    }
+
+    //7-Notifications
+    if (screenType === "notifications" || contentType === "notifications") {
+      return (
+        <NotificationsForm
           {...formProps}
           askKyperHandlers={{
             onTextFieldSelect: handleTextFieldSelect,

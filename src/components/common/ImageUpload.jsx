@@ -143,7 +143,7 @@ export default function ImageUpload({
         // Normalize asset data to always have ImageUrl
         const assetToSave = {
           status: response.status || "success",
-          ImageUrl: response.ImageUrl || response.url,
+          ImageUrl: response.image_url || response.url,
           asset_id: response.asset_id || response.id,
           style: response.style,
           prompt_used: response.prompt_used,
@@ -349,53 +349,57 @@ export default function ImageUpload({
               Saved Images
             </Label>
             <div className="grid grid-cols-3 gap-3">
-              {existingAssets.map((asset, index) => {
-                const image_url =
-                  asset.s3_url ||
-                  asset.ImageUrl ||
-                  asset.image_url ||
-                  asset.url;
-                const assetName =
-                  asset.name ||
-                  asset.prompt_used ||
-                  asset.file ||
-                  `Image ${index + 1}`;
-                const assetId = asset.id || asset.asset_id;
-                return (
-                  <div
-                    key={assetId || asset.id || index}
-                    className="relative border border-gray-300 rounded-lg overflow-hidden group"
-                  >
-                    {typeof image_url === "string" &&
-                    image_url.startsWith("http") ? (
-                      <img
-                        src={image_url}
-                        alt={assetName}
-                        className="w-full h-24 object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-24 bg-gray-100 flex items-center justify-center text-xs text-gray-500 p-2 text-center">
-                        {assetName}
-                      </div>
-                    )}
-                    {onRemoveAsset && (
-                      <button
-                        type="button"
-                        onClick={() => onRemoveAsset(index)}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                        title="Remove image"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    )}
-                    {assetId && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1">
-                        ID: {assetId}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {existingAssets
+                .filter((asset) => {
+                  return asset.asset_type === "image";
+                })
+                .map((asset, index) => {
+                  const image_url =
+                    asset.s3_url ||
+                    asset.ImageUrl ||
+                    asset.image_url ||
+                    asset.url;
+                  const assetName =
+                    asset.name ||
+                    asset.prompt_used ||
+                    asset.file ||
+                    `Image ${index + 1}`;
+                  const assetId = asset.id || asset.asset_id;
+                  return (
+                    <div
+                      key={assetId || asset.id || index}
+                      className="relative border border-gray-300 rounded-lg overflow-hidden group"
+                    >
+                      {typeof image_url === "string" &&
+                      image_url.startsWith("http") ? (
+                        <img
+                          src={image_url}
+                          alt={assetName}
+                          className="w-full h-24 object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-24 bg-gray-100 flex items-center justify-center text-xs text-gray-500 p-2 text-center">
+                          {assetName}
+                        </div>
+                      )}
+                      {onRemoveAsset && (
+                        <button
+                          type="button"
+                          onClick={() => onRemoveAsset(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                          title="Remove image"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                      {assetId && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1">
+                          ID: {assetId}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           </div>
         )}
