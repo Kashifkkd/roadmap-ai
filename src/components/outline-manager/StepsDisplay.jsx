@@ -884,6 +884,108 @@ const StepsDisplay = ({
                         )} */}
                       </div>
                     )}
+                    {step?.description && (
+                      <div
+                        className="flex gap-3 px-3 py-4 bg-white rounded-xl relative"
+                        data-step-index={index}
+                        data-field-type="description"
+                      >
+                        <div className="shrink-0 mt-1">
+                          <Image
+                            src="/tool.svg"
+                            alt="Tool"
+                            width={24}
+                            height={24}
+                          />
+                        </div>
+                        <div className="flex-1 pr-8">
+                          <p className="font-medium text-gray-900 mb-1">
+                            Description
+                          </p>
+                          {editingField === `${index}-description` ? (
+                            <div className="space-y-2">
+                              <textarea
+                                ref={inputRef}
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="w-full min-h-20 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                rows={3}
+                              />
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={() =>
+                                    handleSaveEdit(index, "description")
+                                  }
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={handleCancelEdit}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-gray-700 text-sm leading-relaxed select-text cursor-text">
+                              {step.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {step?.habit_description && (
+                      <div
+                        className="flex gap-3 px-3 py-4 bg-white rounded-xl relative"
+                        data-step-index={index}
+                        data-field-type="habit_description"
+                      >
+                        <div className="shrink-0 mt-1">
+                          <Image
+                            src="/tool.svg"
+                            alt="Tool"
+                            width={24}
+                            height={24}
+                          />
+                        </div>
+                        <div className="flex-1 pr-8">
+                          <p className="font-medium text-gray-900 mb-1">
+                            Habit Description
+                          </p>
+                          {editingField === `${index}-habit_description` ? (
+                            <div className="space-y-2">
+                              <textarea
+                                ref={inputRef}
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="w-full min-h-20 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                rows={3}
+                              />
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={() =>
+                                    handleSaveEdit(index, "habit_description")
+                                  }
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={handleCancelEdit}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-gray-700 text-sm leading-relaxed select-text cursor-text">
+                              {step.habit_description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
