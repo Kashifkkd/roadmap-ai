@@ -77,13 +77,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [leaderboardEntryAmount, setLeaderboardEntryAmount] = useState("25");
 
   // Kick Off
-  const [kickOffDates, setKickOffDates] = useState([
-    { date: "2025-11-12", time: "12:30" },
-    { date: "2025-11-12", time: "12:30" },
-    { date: "2025-11-12", time: "12:30" },
-  ]);
-  const [newKickOffDate, setNewKickOffDate] = useState("2025-11-28");
-  const [newKickOffTime, setNewKickOffTime] = useState("14:20");
+  const [kickOffDates, setKickOffDates] = useState([]);
+  const [newKickOffDate, setNewKickOffDate] = useState("");
+  const [newKickOffTime, setNewKickOffTime] = useState("");
 
   // Toggles (only those present in UI)
   const [habitEnabled, setHabitEnabled] = useState(true);
@@ -358,8 +354,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         ...kickOffDates,
         { date: newKickOffDate, time: newKickOffTime },
       ]);
-      setNewKickOffDate("2025-11-28");
-      setNewKickOffTime("14:20");
+      setNewKickOffDate("");
+      setNewKickOffTime("");
     }
   };
 

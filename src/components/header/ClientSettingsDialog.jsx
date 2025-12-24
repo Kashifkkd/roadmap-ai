@@ -35,6 +35,7 @@ import { getClientDetails } from "@/api/client";
 import { getUserById } from "@/api/User/getUserById";
 import { registerClientUser } from "@/api/User/registerClientUser";
 import { updateClientUser } from "@/api/User/updateClientUser";
+import { deleteClientUser } from "@/api/User/deleteClientUser";
 import { updateCreator } from "@/api/User/updateCreator";
 import { getCreatorDetails } from "@/api/User/getCreatorDetails";
 import { getCreatorsByClientId } from "@/api/User/getCreatorsByClientId";
@@ -102,6 +103,53 @@ export default function ClientSettingsDialog({
   const [uploadingCreatorImage, setUploadingCreatorImage] = useState(false);
   const creatorImageInputRef = useRef(null);
   const [savingCreator, setSavingCreator] = useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [creatorSearchTerm, setCreatorSearchTerm] = useState("");
+
+  const normalizeSearchTerm = (term) => term.trim().toLowerCase();
+  const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value);
+
+  const textIncludesSearch = (text, search) =>
+    text && search ? text.toLowerCase().includes(search) : false;
+
+  const normalizedUserSearch = normalizeSearchTerm(userSearchTerm);
+  const filteredUsers =
+    normalizedUserSearch && Array.isArray(users)
+      ? users.filter((user) => {
+          const firstName = user.first_name || user.firstName || "";
+          const lastName = user.last_name || user.lastName || "";
+          const email = user.email || "";
+          const activePathName = user.active_path_name || "";
+
+          return (
+            textIncludesSearch(firstName, normalizedUserSearch) ||
+            textIncludesSearch(lastName, normalizedUserSearch) ||
+            textIncludesSearch(email, normalizedUserSearch) ||
+            textIncludesSearch(activePathName, normalizedUserSearch)
+          );
+        })
+      : users;
+
+  const normalizedCreatorSearch = normalizeSearchTerm(creatorSearchTerm);
+  const filteredCreators =
+    normalizedCreatorSearch && Array.isArray(creators)
+      ? creators.filter((creator) => {
+          const firstName = creator.first_name || "";
+          const lastName = creator.last_name || "";
+          const email = creator.email || "";
+          const role =
+            creator.role ||
+            (Array.isArray(creator.roles) && creator.roles[0]) ||
+            "";
+
+          return (
+            textIncludesSearch(firstName, normalizedCreatorSearch) ||
+            textIncludesSearch(lastName, normalizedCreatorSearch) ||
+            textIncludesSearch(email, normalizedCreatorSearch) ||
+            textIncludesSearch(role, normalizedCreatorSearch)
+          );
+        })
+      : creators;
 
   // Fetch client details when dialog opens and selectedClient is available
   useEffect(() => {
@@ -603,6 +651,11 @@ export default function ClientSettingsDialog({
       return;
     }
 
+    if (!isValidEmail(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
     if (!editingUser) {
       if (!password) {
         toast.error("Password is required");
@@ -698,6 +751,53 @@ export default function ClientSettingsDialog({
       toast.error(errorMessage);
     } finally {
       setSavingUser(false);
+    }
+  };
+
+  const handleDeleteUser = async (user) => {
+    if (!selectedClient) {
+      toast.error("Client not selected");
+      return;
+    }
+
+    const userId = user.id || user.user_id;
+    if (!userId) {
+      toast.error("User ID not found");
+      return;
+    }
+    try {
+      const res = await deleteClientUser(userId);
+
+      if (res?.success || res?.response) {
+        toast.success("User deleted successfully");
+
+        // Refresh user list for this client
+        const clientId = selectedClient.id || selectedClient.client_id;
+        if (clientId) {
+          try {
+            const listRes = await getUserById({ clientId });
+            const data = listRes?.response || [];
+            setUsers(Array.isArray(data) ? data : []);
+          } catch (err) {
+            console.error("Failed to refresh users after deleting user:", err);
+          }
+        }
+      } else {
+        const errorMessage =
+          res?.detail ||
+          res?.message ||
+          res?.error?.message ||
+          "Failed to delete user";
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      const errorMessage =
+        error?.message ||
+        error?.response?.data?.detail ||
+        error?.response?.detail ||
+        "Failed to delete user";
+      toast.error(errorMessage);
     }
   };
 
@@ -843,8 +943,12 @@ export default function ClientSettingsDialog({
                           <div className="flex items-center gap-1">
                             <input
                               type="text"
-                              placeholder="Search"
+                              placeholder="Search by name or email"
                               className="w-1/2 border border-gray-300 rounded-lg p-1"
+                              value={userSearchTerm}
+                              onChange={(e) =>
+                                setUserSearchTerm(e.target.value)
+                              }
                             />
                             <Button
                               size="md"
@@ -926,7 +1030,21 @@ export default function ClientSettingsDialog({
                             {!usersLoading &&
                               !usersError &&
                               users.length > 0 &&
-                              users.map((user, index) => (
+                              filteredUsers.length === 0 && (
+                                <tr>
+                                  <td
+                                    colSpan={5}
+                                    className="px-4 py-4 text-center text-sm text-gray-500"
+                                  >
+                                    No users match this search.
+                                  </td>
+                                </tr>
+                              )}
+
+                            {!usersLoading &&
+                              !usersError &&
+                              filteredUsers.length > 0 &&
+                              filteredUsers.map((user, index) => (
                                 <tr
                                   key={user.id || index}
                                   className="border-b border-gray-100 hover:bg-gray-50"
@@ -966,8 +1084,7 @@ export default function ClientSettingsDialog({
                                         <DropdownMenuItem
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            // TODO: Implement delete functionality
-                                            console.log("Delete user:", user);
+                                            handleDeleteUser(user);
                                           }}
                                           className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1"
                                         >
@@ -1030,6 +1147,7 @@ export default function ClientSettingsDialog({
                           <div>
                             <Label className="text-sm font-medium text-gray-700 mb-2 block">
                               Email
+                              <span className="text-red-500">*</span>
                             </Label>
                             <Input
                               type="email"
@@ -1275,7 +1393,7 @@ export default function ClientSettingsDialog({
                                   type="button"
                                   className="w-9 h-9 rounded-lg bg-gray-200 text-gray-600 font-medium text-sm flex items-center justify-center shrink-0"
                                 >
-                                  {assignment.id}
+                                  {index + 1}
                                 </button>
 
                                 {/* Current Comet Selector */}
@@ -1433,8 +1551,12 @@ export default function ClientSettingsDialog({
                           <div className="flex items-center gap-1">
                             <input
                               type="text"
-                              placeholder="Search"
+                              placeholder="Search by name, email, or role"
                               className="w-full border border-gray-300 rounded-lg p-1"
+                              value={creatorSearchTerm}
+                              onChange={(e) =>
+                                setCreatorSearchTerm(e.target.value)
+                              }
                             />
                             <Button
                               size="md"
@@ -1507,7 +1629,21 @@ export default function ClientSettingsDialog({
                             {!creatorsLoading &&
                               !creatorsError &&
                               creators.length > 0 &&
-                              creators.map((creator, index) => (
+                              filteredCreators.length === 0 && (
+                                <tr>
+                                  <td
+                                    colSpan={5}
+                                    className="px-4 py-4 text-center text-sm text-gray-500"
+                                  >
+                                    No creators match your search.
+                                  </td>
+                                </tr>
+                              )}
+
+                            {!creatorsLoading &&
+                              !creatorsError &&
+                              filteredCreators.length > 0 &&
+                              filteredCreators.map((creator, index) => (
                                 <tr
                                   key={creator.id || index}
                                   className="border-b border-gray-100 hover:bg-gray-50"

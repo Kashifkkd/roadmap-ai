@@ -15,6 +15,12 @@ import { toast } from "sonner";
 import { uploadProfile } from "@/api/User/uploadProfile";
 import { getCohorts } from "@/api/cohort/getCohorts";
 import { createCohort } from "@/api/cohort/createCohort";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 //function to upload image
 const uploadImageFile = async (file) => {
@@ -218,6 +224,15 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
     } finally {
       setCreatingCohort(false);
     }
+  };
+
+  // Only show dialogs for Edit/Delete actions (no data changes)
+  const handleEditCohortDialog = (cohort) => {
+    console.log("cohort");
+  };
+
+  const handleDeleteCohortDialog = (cohort) => {
+    console.log("cohort");
   };
 
   const handleImageUpload = (event, isBackgroundImage = false) => {
@@ -711,7 +726,36 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   {cohort.id || cohort.cohort_id || "N/A"}
                 </div>
                 <div className="px-6 py-2 text-right flex items-center justify-end">
-                  <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="text-gray-400 hover:text-gray-600">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-32 rounded-lg bg-white border border-gray-200 shadow-lg p-1"
+                    >
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditCohortDialog(cohort);
+                        }}
+                        className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
+                      >
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCohortDialog(cohort);
+                        }}
+                        className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1"
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             ))
