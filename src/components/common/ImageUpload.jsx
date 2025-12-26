@@ -350,20 +350,12 @@ export default function ImageUpload({
             </Label>
             <div className="grid grid-cols-3 gap-3">
               {existingAssets
-                .filter((asset) => {
-                  return asset.asset_type === "image";
-                })
+                .filter(
+                  (asset) =>
+                    asset.ImageUrl && !asset.audioUrl && !asset.videoUrl
+                )
                 .map((asset, index) => {
-                  const image_url =
-                    asset.s3_url ||
-                    asset.ImageUrl ||
-                    asset.image_url ||
-                    asset.url;
-                  const assetName =
-                    asset.name ||
-                    asset.prompt_used ||
-                    asset.file ||
-                    `Image ${index + 1}`;
+                  const image_url = asset.ImageUrl;
                   const assetId = asset.id || asset.asset_id;
                   return (
                     <div
@@ -374,12 +366,12 @@ export default function ImageUpload({
                       image_url.startsWith("http") ? (
                         <img
                           src={image_url}
-                          alt={assetName}
+                          alt={assetId}
                           className="w-full h-24 object-cover"
                         />
                       ) : (
                         <div className="w-full h-24 bg-gray-100 flex items-center justify-center text-xs text-gray-500 p-2 text-center">
-                          {assetName}
+                          {assetId}
                         </div>
                       )}
                       {onRemoveAsset && (

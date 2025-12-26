@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { uploadProfile } from "@/api/User/uploadProfile";
 import { getCohorts } from "@/api/cohort/getCohorts";
 import { createCohort } from "@/api/cohort/createCohort";
+import { updateCohort } from "@/api/cohort/updateCohort";
+import { deleteCohort } from "@/api/cohort/deleteCohort";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -97,9 +99,11 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   const [cohorts, setCohorts] = useState([]);
   const [cohortsLoading, setCohortsLoading] = useState(false);
   const [isCohortFormOpen, setIsCohortFormOpen] = useState(false);
+  const [editingCohort, setEditingCohort] = useState(null);
   const [newCohortName, setNewCohortName] = useState("");
   const [newCohortDescription, setNewCohortDescription] = useState("");
   const [creatingCohort, setCreatingCohort] = useState(false);
+  const [deletingCohort, setDeletingCohort] = useState(false);
 
   // Refs
   const imageInputRef = useRef(null);
@@ -181,6 +185,23 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
     };
   }, [pendingImagePreview, pendingBackgroundImagePreview]);
 
+  const refreshCohortsList = async () => {
+    const clientId = getClientId();
+    if (!clientId) return;
+
+    setCohortsLoading(true);
+    try {
+      const res = await getCohorts({ clientId });
+      const data = res?.response || [];
+      setCohorts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to refresh cohorts:", error);
+      toast.error("Failed to refresh cohorts");
+    } finally {
+      setCohortsLoading(false);
+    }
+  };
+
   const handleCreateCohort = async () => {
     const clientId = getClientId();
 
@@ -204,35 +225,98 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       toast.success("Cohort created successfully");
       setNewCohortName("");
       setNewCohortDescription("");
+      setEditingCohort(null);
       setIsCohortFormOpen(false);
 
       // Refresh cohorts list
-      setCohortsLoading(true);
-      try {
-        const res = await getCohorts({ clientId });
-        const data = res?.response || [];
-        setCohorts(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Failed to refresh cohorts after create:", error);
-        toast.error("Failed to refresh cohorts");
-      } finally {
-        setCohortsLoading(false);
-      }
+      await refreshCohortsList();
     } catch (error) {
       console.error("Failed to create cohort:", error);
-      toast.error("Failed to create cohort");
+      const errorMessage =
+        error?.message ||
+        error?.response?.data?.detail ||
+        "Failed to create cohort";
+      toast.error(errorMessage);
     } finally {
       setCreatingCohort(false);
     }
   };
 
-  // Only show dialogs for Edit/Delete actions (no data changes)
-  const handleEditCohortDialog = (cohort) => {
-    console.log("cohort");
+  const handleUpdateCohort = async () => {
+    if (!editingCohort) {
+      toast.error("No cohort selected for editing");
+      return;
+    }
+
+    const cohortId = editingCohort.id || editingCohort.cohort_id;
+    if (!cohortId) {
+      toast.error("Cohort ID is missing");
+      return;
+    }
+
+    if (!newCohortName.trim()) {
+      toast.error("Cohort name is required");
+      return;
+    }
+
+    try {
+      setCreatingCohort(true);
+      await updateCohort({
+        cohortId,
+        name: newCohortName.trim(),
+        description: newCohortDescription.trim(),
+      });
+      toast.success("Cohort updated successfully");
+      setNewCohortName("");
+      setNewCohortDescription("");
+      setEditingCohort(null);
+      setIsCohortFormOpen(false);
+
+      // Refresh cohorts list
+      await refreshCohortsList();
+    } catch (error) {
+      console.error("Failed to update cohort:", error);
+      const errorMessage =
+        error?.message ||
+        error?.response?.data?.detail ||
+        "Failed to update cohort";
+      toast.error(errorMessage);
+    } finally {
+      setCreatingCohort(false);
+    }
   };
 
-  const handleDeleteCohortDialog = (cohort) => {
-    console.log("cohort");
+  const handleEditCohortDialog = (cohort) => {
+    setEditingCohort(cohort);
+    setNewCohortName(cohort.name || cohort.cohort_name || "");
+    setNewCohortDescription(cohort.description || "");
+    setIsCohortFormOpen(true);
+  };
+
+  const handleDeleteCohortDialog = async (cohort) => {
+    const cohortId = cohort.id || cohort.cohort_id;
+    if (!cohortId) {
+      toast.error("Cohort ID is missing");
+      return;
+    }
+
+    try {
+      setDeletingCohort(true);
+      await deleteCohort({ cohortId });
+      toast.success("Cohort deleted successfully");
+
+      // Refresh cohorts list
+      await refreshCohortsList();
+    } catch (error) {
+      console.error("Failed to delete cohort:", error);
+      const errorMessage =
+        error?.message ||
+        error?.response?.data?.detail ||
+        "Failed to delete cohort";
+      toast.error(errorMessage);
+    } finally {
+      setDeletingCohort(false);
+    }
   };
 
   const handleImageUpload = (event, isBackgroundImage = false) => {
@@ -613,7 +697,12 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
             variant="outline"
             type="button"
             className="border-primary-700 text-primary-700 justify-end"
-            onClick={() => setIsCohortFormOpen(true)}
+            onClick={() => {
+              setEditingCohort(null);
+              setNewCohortName("");
+              setNewCohortDescription("");
+              setIsCohortFormOpen(true);
+            }}
           >
             {/* <Plus className="w-4 h-4" /> */}
             Add Cohort
@@ -623,7 +712,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
           <div className="mt-4 border border-gray-200 rounded-lg bg-white p-4 space-y-3 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-gray-800">
-                New Cohort
+                {editingCohort ? "Edit Cohort" : "New Cohort"}
               </span>
               <button
                 type="button"
@@ -631,6 +720,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   setIsCohortFormOpen(false);
                   setNewCohortName("");
                   setNewCohortDescription("");
+                  setEditingCohort(null);
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -670,6 +760,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   setIsCohortFormOpen(false);
                   setNewCohortName("");
                   setNewCohortDescription("");
+                  setEditingCohort(null);
                 }}
               >
                 Cancel
@@ -677,10 +768,16 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
               <Button
                 type="button"
                 className="bg-primary-700 hover:bg-primary-800 text-white px-4 py-1.5 rounded-lg disabled:opacity-60"
-                onClick={handleCreateCohort}
+                onClick={
+                  editingCohort ? handleUpdateCohort : handleCreateCohort
+                }
                 disabled={creatingCohort}
               >
-                {creatingCohort ? "Saving..." : "Save Cohort"}
+                {creatingCohort
+                  ? "Saving..."
+                  : editingCohort
+                  ? "Update Cohort"
+                  : "Save Cohort"}
               </Button>
             </div>
           </div>
@@ -750,9 +847,10 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                           e.stopPropagation();
                           handleDeleteCohortDialog(cohort);
                         }}
-                        className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1"
+                        disabled={deletingCohort}
+                        className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Delete
+                        {deletingCohort ? "Deleting..." : "Delete"}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

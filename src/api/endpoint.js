@@ -28,4 +28,6 @@ export const endpoints = {
   getCohorts: (clientId) => `api/clients/v1/cohorts?client_id=${clientId}`,
   getCohortPaths: (cohortId) => `api/clients/v1/cohorts/${cohortId}/paths`,
   createCohort: "api/clients/v1/cohorts",
+  updateCohort: (cohortId) => `api/clients/v1/cohorts/${cohortId}`,
+  deleteCohort: (cohortId) => `api/clients/v1/cohorts/${cohortId}`,
 };
