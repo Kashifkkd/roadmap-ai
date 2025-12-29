@@ -217,7 +217,10 @@ export default function ClientSettingsDialog({
       try {
         const res = await getCreatorsByClientId({ clientId });
         const data = res?.response || [];
-        setCreators(Array.isArray(data) ? data : []);
+        const filteredData = Array.isArray(data)
+          ? data.filter((creator) => creator.enabled === true)
+          : [];
+        setCreators(filteredData);
       } catch (error) {
         console.error("Failed to fetch creators for client:", error);
         setCreatorsError(
@@ -504,7 +507,10 @@ export default function ClientSettingsDialog({
         try {
           const listRes = await getCreatorsByClientId({ clientId });
           const data = listRes?.response || [];
-          setCreators(Array.isArray(data) ? data : []);
+          const filteredData = Array.isArray(data)
+            ? data.filter((creator) => creator.enabled === true)
+            : [];
+          setCreators(filteredData);
         } catch (err) {
           console.error(
             "Failed to refresh creators after saving creator:",
@@ -537,6 +543,45 @@ export default function ClientSettingsDialog({
     }
   };
 
+  const handleDeleteCreator = async (creator) => {
+    if (!selectedClient) {
+      toast.error("Client not selected");
+      return;
+    }
+    const clientId = selectedClient.id || selectedClient.client_id;
+    if (!clientId) {
+      toast.error("Client ID not found");
+      return;
+    }
+    const creatorId = creator.id || creator.user_id;
+    if (!creatorId) {
+      toast.error("Creator ID not found");
+      return;
+    }
+    try {
+      const res = await updateCreator(creatorId, { enabled: false });
+      if (res?.success || res?.response) {
+        toast.success("Creator deleted successfully");
+        // Refresh creators list for this client
+        try {
+          const listRes = await getCreatorsByClientId({ clientId });
+          const data = listRes?.response || [];
+          const filteredData = Array.isArray(data)
+            ? data.filter((creator) => creator.enabled === true)
+            : [];
+          setCreators(filteredData);
+        } catch (err) {
+          console.error(
+            "Failed to refresh creators after deleting creator:",
+            err
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Failed to delete creator:", error);
+      toast.error("Failed to delete creator");
+    }
+  };
   const handleEditUser = (user) => {
     console.log("user", user);
     setEditingUser(user);
@@ -1686,8 +1731,7 @@ export default function ClientSettingsDialog({
                                         <DropdownMenuItem
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            // TODO: Implement delete functionality
-                                            console.log("Delete user:", user);
+                                            handleDeleteCreator(creator);
                                           }}
                                           className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1"
                                         >

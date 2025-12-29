@@ -9,7 +9,15 @@ import {
   Search,
   CircleX,
   Loader2,
+  MoreHorizontal,
+  MoreVertical,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -20,7 +28,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { toast } from "sonner";
 import { useRefreshData, useUpsertClient } from "@/hooks/useQueryData";
-import { getClients } from "@/api/client";
+import { deleteClient, getClients } from "@/api/client";
 
 function isValidHttpUrl(string) {
   if (!string) return false;
@@ -48,6 +56,7 @@ export default function ClientDropdown({
   const [isClientSettingsDialogOpen, setIsClientSettingsDialogOpen] =
     useState(false);
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
+  const [clientForSettings, setClientForSettings] = useState(null);
   const dropdownRef = useRef(null);
   const allClientsDropdownRef = useRef(null);
   const allClientsButtonRef = useRef(null);
@@ -183,6 +192,15 @@ export default function ClientDropdown({
         error?.response?.detail ||
         "Failed to create client";
       toast.error(errorMessage);
+    }
+  };
+  const handleDeleteClient = async (clientId) => {
+    const response = await deleteClient(clientId);
+    if (response?.success) {
+      toast.success("Client deleted successfully");
+      refreshClients();
+    } else {
+      toast.error("Failed to delete client");
     }
   };
 
@@ -324,31 +342,96 @@ export default function ClientDropdown({
                           !imageErrorMap[client.id];
 
                         return (
-                          <Button
+                          <div
                             key={client?.id || client?.name}
-                            onClick={() => handleAllClientsClientClick(client)}
-                            className="flex justify-start items-center gap-2 px-3 py-2 bg-background border-none shadow-none rounded text-left hover:bg-primary-50 active:bg-gray-100 cursor-pointer"
+                            className="flex items-center gap-2 px-3 py-2 bg-background border-none shadow-none rounded text-left hover:bg-primary-50 active:bg-gray-100"
                           >
-                            <div className="w-7 h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-sm font-semibold text-primary-700 shrink-0 overflow-hidden">
-                              {hasImg ? (
-                                <img
-                                  src={client.image_url}
-                                  alt={client?.name || "Client"}
-                                  className="rounded-full object-cover w-full h-full"
-                                  onError={() =>
-                                    handleListImageError(client.id)
-                                  }
-                                />
-                              ) : (
-                                <span className="text-sm font-semibold text-primary-700">
-                                  {getClientInitial(client)}
-                                </span>
-                              )}
+                            <div
+                              onClick={() =>
+                                handleAllClientsClientClick(client)
+                              }
+                              className="flex items-center gap-2 flex-1 cursor-pointer"
+                            >
+                              <div className="w-7 h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-sm font-semibold text-primary-700 shrink-0 overflow-hidden ">
+                                {hasImg ? (
+                                  <img
+                                    src={client.image_url}
+                                    alt={client?.name || "Client"}
+                                    className="rounded-full object-cover w-full h-full"
+                                    onError={() =>
+                                      handleListImageError(client.id)
+                                    }
+                                  />
+                                ) : (
+                                  <span className="text-sm font-semibold text-primary-700">
+                                    {getClientInitial(client)}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-sm font-semibold text-gray-900 truncate">
+                                {client?.name}
+                              </span>
                             </div>
-                            <span className="text-sm font-semibold text-gray-900 truncate">
-                              {client?.name}
-                            </span>
-                          </Button>
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => e.stopPropagation()}
+                            >
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-gray-400 hover:text-gray-600 ml-auto"
+                                  >
+                                    <MoreVertical className="w-5 h-5" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="start"
+                                  className="w-32 rounded-lg bg-white border border-gray-200 shadow-lg p-1 z-70"
+                                  onPointerDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                >
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      console.log(
+                                        "Setting onClick fired",
+                                        client
+                                      );
+                                      const selectedClient = client;
+                                      setIsAllClientsOpen(false);
+                                      setIsOpen(false);
+                                      setClientForSettings(selectedClient);
+                                      setIsClientSettingsDialogOpen(true);
+                                    }}
+                                    className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-primary-50"
+                                  >
+                                    Setting
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      console.log(
+                                        "Deactivate onClick fired",
+                                        client
+                                      );
+                                      const clientId = client.id;
+                                      setIsAllClientsOpen(false);
+                                      setIsOpen(false);
+                                      handleDeleteClient(clientId);
+                                    }}
+                                    className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1"
+                                  >
+                                    Deactivate
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
                         );
                       })
                     )}
@@ -385,8 +468,13 @@ export default function ClientDropdown({
       )}
       <ClientSettingsDialog
         open={isClientSettingsDialogOpen}
-        onOpenChange={setIsClientSettingsDialogOpen}
-        selectedClient={selectedClient}
+        onOpenChange={(open) => {
+          setIsClientSettingsDialogOpen(open);
+          if (!open) {
+            setClientForSettings(null);
+          }
+        }}
+        selectedClient={clientForSettings || selectedClient}
       />
 
       {/* Add Client Dialog */}

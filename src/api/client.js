@@ -39,3 +39,11 @@ export async function updateClientDetails(clientData) {
   });
   return res;
 }
+
+export async function deleteClient(clientId) {
+  const res = await apiService({
+    endpoint: endpoints.deleteClient(clientId),
+    method: "DELETE",
+  });
+  return res;
+}

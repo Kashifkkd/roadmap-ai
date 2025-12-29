@@ -72,7 +72,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [pathImageUrl, setPathImageUrl] = useState(null);
 
   // Configuration Settings
-  const [learningFrequency, setLearningFrequency] = useState("Daily");
+  const [learningFrequency, setLearningFrequency] = useState("");
   const [language, setLanguage] = useState("English");
   const [leaderboardEntryAmount, setLeaderboardEntryAmount] = useState("25");
 
@@ -82,8 +82,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [newKickOffTime, setNewKickOffTime] = useState("");
 
   // Toggles (only those present in UI)
-  const [habitEnabled, setHabitEnabled] = useState(true);
-  const [personalizationEnabled, setPersonalizationEnabled] = useState(true);
+  const [habitEnabled, setHabitEnabled] = useState(false);
+  const [personalizationEnabled, setPersonalizationEnabled] = useState(false);
   const [managerEmailEnabled, setManagerEmailEnabled] = useState(false);
   const [
     accountabilityPartnersEmailEnabled,
@@ -139,13 +139,16 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
     },
   ]);
 
+  const [brandColors, setBrandColors] = useState([]);
+  const [newColorName, setNewColorName] = useState("");
+  const [newColorHex, setNewColorHex] = useState("#000000");
+
   useEffect(() => {
     if (!open) return;
 
     const data = localStorage.getItem("sessionData");
     if (data) {
       const sessionData = JSON.parse(data);
-      // console.log("sessionData", sessionData);
       setCometTitle(
         sessionData?.comet_creation_data?.["Basic Information"]?.[
           "Comet Title"
@@ -162,17 +165,42 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         setPathImageUrl(pathImage);
       }
 
+      // Fetch colours from backend and transform to display format
+      const colours =
+        sessionData?.response_path?.colours || sessionData?.colours || {};
+      if (colours && Object.keys(colours).length > 0) {
+        const transformedColors = Object.entries(colours).map(
+          ([key, value]) => ({
+            name: key.charAt(0).toUpperCase() + key.slice(1),
+            hex: value,
+            color: value,
+          })
+        );
+        setBrandColors(transformedColors);
+      }
+
       // Fetch toggle switch data from response_path.enabled_attributes
       const enabledAttributes =
         sessionData?.response_path?.enabled_attributes || {};
+
+      const additionalData = sessionData?.additional_data || {};
+      if (additionalData.personalization_enabled !== undefined) {
+        setPersonalizationEnabled(additionalData.personalization_enabled);
+      }
+      if (additionalData.habit_enabled !== undefined) {
+        setHabitEnabled(additionalData.habit_enabled);
+      }
       if (enabledAttributes) {
         // Only update toggles that are present in UI
-        if (enabledAttributes.habits !== undefined) {
-          setHabitEnabled(enabledAttributes.habits);
+        if (enabledAttributes.engagement_frequency !== undefined) {
+          setLearningFrequency(enabledAttributes.engagement_frequency);
         }
-        if (enabledAttributes.path_personalization !== undefined) {
-          setPersonalizationEnabled(enabledAttributes.path_personalization);
+        if (enabledAttributes.habit_enabled !== undefined) {
+          setHabitEnabled(enabledAttributes.habit_enabled);
         }
+        // if (enabledAttributes.path_personalization !== undefined) {
+        //   setPersonalizationEnabled(enabledAttributes.path_personalization);
+        // }
         if (enabledAttributes.manager_email !== undefined) {
           setManagerEmailEnabled(enabledAttributes.manager_email);
         }
@@ -276,7 +304,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
       const updatedEnabledAttributes = {
         ...currentEnabledAttributes, // Preserve other attributes
         // Only update attributes that are present in UI
-        habits: habitEnabled,
+        engagement_frequency: learningFrequency,
+        habit_enabled: habitEnabled,
         path_personalization: personalizationEnabled,
         manager_email: managerEmailEnabled,
         accountability_email: accountabilityPartnersEmailEnabled,
@@ -285,9 +314,17 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         enable_community: enableCommunity,
       };
 
+      // Transform brandColors back to the format expected by backend (object with lowercase keys)
+      const coloursObject = brandColors.reduce((acc, color) => {
+        const key = color.name.toLowerCase();
+        acc[key] = color.hex;
+        return acc;
+      }, {});
+
       const updatedResponsePath = {
         ...currentResponsePath,
         enabled_attributes: updatedEnabledAttributes,
+        colours: coloursObject,
         ...(uploadedImageUrl && !uploadedImageUrl.startsWith("blob:")
           ? { path_image: uploadedImageUrl }
           : pathImageUrl && !pathImageUrl.startsWith("blob:")
@@ -363,14 +400,26 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
     setKickOffDates(kickOffDates.filter((_, i) => i !== index));
   };
 
-  const brandColors = [
-    { name: "Title", hex: "#654845", color: "#8B5CF6" }, // Purple
-    { name: "Title", hex: "#654845", color: "#84CC16" }, // Lime Green
-    { name: "Title", hex: "#654845", color: "#F97316" }, // Orange
-    { name: "Title", hex: "#654845", color: "#14B8A6" }, // Teal
-    { name: "Title", hex: "#654845", color: "#EC4899" }, // Magenta
-    { name: "Title", hex: "#654845", color: "#16A34A" }, // Dark Green
-  ];
+  const handleAddColor = () => {
+    if (newColorName.trim() && newColorHex) {
+      const colorName = newColorName.trim().toLowerCase();
+      // Check if color name already exists
+      if (brandColors.some((c) => c.name.toLowerCase() === colorName)) {
+        alert("A color with this name already exists");
+        return;
+      }
+      const newColor = {
+        name:
+          newColorName.trim().charAt(0).toUpperCase() +
+          newColorName.trim().slice(1),
+        hex: newColorHex,
+        color: newColorHex,
+      };
+      setBrandColors([...brandColors, newColor]);
+      setNewColorName("");
+      setNewColorHex("#000000");
+    }
+  };
 
   // Formated time
   const formatTimeForDisplay = (time24) => {
@@ -636,9 +685,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="Daily">Daily</SelectItem>
-                                  <SelectItem value="Weekly">Weekly</SelectItem>
-                                  <SelectItem value="Monthly">
+                                  <SelectItem value="daily">Daily</SelectItem>
+                                  <SelectItem value="weekly">Weekly</SelectItem>
+                                  <SelectItem value="monthly">
                                     Monthly
                                   </SelectItem>
                                 </SelectContent>
@@ -842,21 +891,21 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       <h3 className="text-lg font-semibold text-gray-900">
                         Path Colors
                       </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                         {brandColors.map((color, index) => (
                           <div
                             key={index}
-                            className="border border-gray-200 rounded-lg p-4 flex items-center gap-3"
+                            className="border border-gray-200 rounded-lg p-3 sm:p-4 flex items-center gap-2 sm:gap-3 min-w-0"
                           >
                             <div
-                              className="w-16 h-10 rounded border border-gray-300 shrink-0"
+                              className="w-12 h-8 sm:w-16 sm:h-10 rounded border border-gray-300 shrink-0"
                               style={{ backgroundColor: color.color }}
                             />
-                            <div className="flex-1">
-                              <div className="text-sm font-medium text-gray-700">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs sm:text-sm font-medium text-gray-700 truncate">
                                 {color.name}
                               </div>
-                              <div className="text-xs text-gray-500">
+                              <div className="text-xs text-gray-500 truncate">
                                 {color.hex}
                               </div>
                             </div>
@@ -866,6 +915,56 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                             />
                           </div>
                         ))}
+                      </div>
+
+                      {/* Add Color Form */}
+                      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">
+                          Add New Color
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Color Name
+                            </Label>
+                            <Input
+                              value={newColorName}
+                              onChange={(e) => setNewColorName(e.target.value)}
+                              className="w-full rounded-lg border-gray-300"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Color Hex
+                            </Label>
+                            <div className="flex gap-2">
+                              <Input
+                                type="color"
+                                value={newColorHex}
+                                onChange={(e) => setNewColorHex(e.target.value)}
+                                className="w-16 h-10 rounded-lg border-gray-300 cursor-pointer"
+                              />
+                              <Input
+                                value={newColorHex}
+                                onChange={(e) => setNewColorHex(e.target.value)}
+                                placeholder="#000000"
+                                className="flex-1 rounded-lg border-gray-300"
+                                pattern="^#[0-9A-Fa-f]{6}$"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex justify-end mt-3">
+                          <Button
+                            variant="outline"
+                            onClick={handleAddColor}
+                            className="text-primary hover:text-primary-dark rounded-lg px-4 py-2"
+                            disabled={!newColorName.trim() || !newColorHex}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Color
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
