@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { graphqlClient } from "@/lib/graphql-client";
 import { uploadAssetFile } from "@/api/uploadAssets";
+import UserManagement from "@/components/common/UserManagement";
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
@@ -452,11 +453,11 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   if (!open) return null;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
-      <div className="w-full max-w-[998px] max-h-[90vh] md:max-h-[530px] p-1.5 sm:p-2 border-0 bg-white rounded-[20px] sm:rounded-[28px] shadow-[0_20px_70px_rgba(30,30,50,0.2)] flex flex-col overflow-hidden">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4 lg:p-6">
+      <div className="w-full max-w-[998px] lg:max-w-[1200px] xl:max-w-[1400px] max-h-[90vh] md:max-h-[75vh] lg:max-h-[80vh] p-1.5 sm:p-2 lg:p-3 border-0 bg-white rounded-[20px] sm:rounded-[28px] lg:rounded-[32px] shadow-[0_20px_70px_rgba(30,30,50,0.2)] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-3 sm:px-4 md:px-5 py-3 sm:py-4 md:py-5 border-gray-200">
-          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900">
+        <div className="flex items-center justify-between px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 py-3 sm:py-4 md:py-5 lg:py-6 border-gray-200">
+          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-gray-900">
             Comet Settings
           </h2>
           <button
@@ -467,9 +468,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
           </button>
         </div>
 
-        <div className="flex flex-col md:flex-row flex-1 overflow-hidden p-1.5 sm:p-2 bg-gray-100 rounded-lg gap-1.5 sm:gap-2">
+        <div className="flex flex-col md:flex-row flex-1 overflow-hidden p-1.5 sm:p-2 lg:p-3 bg-gray-100 rounded-lg gap-1.5 sm:gap-2 lg:gap-3">
           {/* Navigation Panel - Left Side */}
-          <div className="md:w-60 bg-white rounded-lg border-gray-200 px-2 sm:px-3 md:px-5 py-3 sm:py-4 md:py-6 space-y-2 overflow-x-auto md:overflow-x-visible">
+          <div className="md:w-60 lg:w-64 xl:w-72 bg-white rounded-lg border-gray-200 px-2 sm:px-3 md:px-5 lg:px-6 py-3 sm:py-4 md:py-6 lg:py-6 space-y-2 overflow-x-auto md:overflow-x-visible">
             <div className="flex md:flex-col gap-2 min-w-max md:min-w-0">
               <button
                 onClick={() => {
@@ -477,7 +478,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                   setSelectedUser(null);
                   setShowAddUserForm(false);
                 }}
-                className={`w-full flex items-center gap-2 md:gap-3 rounded-sm px-2.5 sm:px-3 md:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-[15px] font-medium transition-all whitespace-nowrap ${
+                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
                   activeTab === "comet-info"
                     ? "bg-primary text-white shadow-md"
                     : "text-gray-700 hover:bg-white/60"
@@ -485,9 +486,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
               >
                 <FileText
                   size={18}
-                  className={
+                  className={`lg:w-5 lg:h-5 ${
                     activeTab === "comet-info" ? "text-white" : "text-gray-500"
-                  }
+                  }`}
                 />
                 <span className="hidden md:inline">Comet Info</span>
                 <span className="md:hidden">Info</span>
@@ -499,7 +500,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                   setSelectedUser(null);
                   setShowAddUserForm(false);
                 }}
-                className={`w-full flex items-center gap-2 md:gap-3 rounded-sm px-2.5 sm:px-3 md:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-[15px] font-medium transition-all whitespace-nowrap ${
+                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
                   activeTab === "users"
                     ? "bg-primary text-white shadow-md"
                     : "text-gray-700 hover:bg-white/60"
@@ -507,9 +508,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
               >
                 <Users
                   size={18}
-                  className={
+                  className={`lg:w-5 lg:h-5 ${
                     activeTab === "users" ? "text-white" : "text-gray-500"
-                  }
+                  }`}
                 />
                 Users
               </button>
@@ -520,7 +521,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                   setSelectedUser(null);
                   setShowAddUserForm(false);
                 }}
-                className={`w-full flex items-center gap-2 md:gap-3 rounded-sm px-2.5 sm:px-3 md:px-4 py-2.5 sm:py-3 text-xs sm:text-sm md:text-[15px] font-medium transition-all whitespace-nowrap ${
+                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
                   activeTab === "analytics"
                     ? "bg-primary text-white shadow-md"
                     : "text-gray-700 hover:bg-white/60"
@@ -528,9 +529,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
               >
                 <BarChart3
                   size={18}
-                  className={
+                  className={`lg:w-5 lg:h-5 ${
                     activeTab === "analytics" ? "text-white" : "text-gray-500"
-                  }
+                  }`}
                 />
                 Analytics
               </button>
@@ -541,7 +542,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
           <div className="flex-1 bg-white rounded-lg flex flex-col overflow-hidden">
             {activeTab === "comet-info" && (
               <div className="overflow-y-auto h-full flex flex-col">
-                <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 lg:px-7 py-3 sm:py-4 md:py-6">
+                <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-3 sm:py-4 md:py-6 lg:py-8">
                   <div className="space-y-4 md:space-y-5">
                     {/* Comet Title */}
                     <div className="bg-gray-100 p-2 pt-6 rounded-lg ">
@@ -971,11 +972,11 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                 </div>
 
                 {/* Save button */}
-                <div className="border-t-3 rounded-b-lg border-gray-100 px-3 sm:px-4 md:px-6 lg:px-7 py-2 sm:py-2.5 flex justify-end">
+                <div className="border-t-3 rounded-b-lg border-gray-100 px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-2 sm:py-2.5 lg:py-3 flex justify-end">
                   <Button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="bg-primary hover:bg-primary-dark px-6 sm:px-8 md:px-10 py-2 rounded-lg text-sm font-medium w-full sm:w-auto min-w-[120px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-primary hover:bg-primary-dark px-6 sm:px-8 md:px-10 lg:px-12 py-2 lg:py-2.5 rounded-lg text-sm lg:text-base font-medium w-full sm:w-auto min-w-[120px] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSaving ? "Saving..." : "Save"}
                   </Button>
@@ -984,537 +985,14 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
             )}
 
             {activeTab === "users" && (
-              <div className="flex flex-col h-full overflow-hidden">
-                {showAddUserForm ? (
-                  // Add User Form View
-                  <div className="flex-1 overflow-y-auto">
-                    <div className="p-4 space-y-6">
-                      {/* Header with Back Button */}
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => {
-                            setShowAddUserForm(false);
-                            setFirstName("");
-                            setLastName("");
-                            setEmail("");
-                            setCurrentComet("");
-                            setPassword("");
-                            setConfirmPassword("");
-                          }}
-                          className="text-gray-600 hover:text-gray-900"
-                        >
-                          <ArrowLeft className="h-5 w-5" />
-                        </button>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Add User
-                        </h3>
-                      </div>
-
-                      {/* Add User Form */}
-                      <div className="space-y-4">
-                        {/* First Name */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">
-                            First Name
-                            <span className="text-red-500 ml-1">*</span>
-                          </Label>
-                          <Input
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                            placeholder="Enter first name"
-                            className="w-full rounded-lg border-gray-300"
-                          />
-                        </div>
-
-                        {/* Last Name */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">
-                            Last Name
-                          </Label>
-                          <Input
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                            placeholder="Enter last name"
-                            className="w-full rounded-lg border-gray-300"
-                          />
-                        </div>
-
-                        {/* Email */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">
-                            Email
-                          </Label>
-                          <Input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Enter email"
-                            className="w-full rounded-lg border-gray-300"
-                          />
-                        </div>
-
-                        {/* Current Comet */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">
-                            Current Comet
-                            <span className="text-red-500 ml-1">*</span>
-                          </Label>
-                          <Select
-                            value={currentComet}
-                            onValueChange={setCurrentComet}
-                          >
-                            <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="comet1">Comet 1</SelectItem>
-                              <SelectItem value="comet2">Comet 2</SelectItem>
-                              <SelectItem value="comet3">Comet 3</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Password */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">
-                            Password
-                            <span className="text-red-500 ml-1">*</span>
-                          </Label>
-                          <div className="relative">
-                            <Input
-                              type={showPassword ? "text" : "password"}
-                              value={password}
-                              onChange={(e) => setPassword(e.target.value)}
-                              placeholder="Enter password"
-                              className="w-full rounded-lg border-gray-300 pr-10"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                            >
-                              {showPassword ? (
-                                <EyeOff className="h-5 w-5" />
-                              ) : (
-                                <Eye className="h-5 w-5" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Confirm Password */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">
-                            Confirm Password
-                            <span className="text-red-500 ml-1">*</span>
-                          </Label>
-                          <div className="relative">
-                            <Input
-                              type={showConfirmPassword ? "text" : "password"}
-                              value={confirmPassword}
-                              onChange={(e) =>
-                                setConfirmPassword(e.target.value)
-                              }
-                              placeholder="Confirm password"
-                              className="w-full rounded-lg border-gray-300 pr-10"
-                            />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setShowConfirmPassword(!showConfirmPassword)
-                              }
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                            >
-                              {showConfirmPassword ? (
-                                <EyeOff className="h-5 w-5" />
-                              ) : (
-                                <Eye className="h-5 w-5" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Form Actions */}
-                        <div className="flex gap-2 pt-4">
-                          <Button
-                            onClick={() => {
-                              // TODO: Add user creation logic here
-                              console.log("Add user:", {
-                                firstName,
-                                lastName,
-                                email,
-                                currentComet,
-                                password,
-                              });
-                              // Reset form
-                              setShowAddUserForm(false);
-                              setFirstName("");
-                              setLastName("");
-                              setEmail("");
-                              setCurrentComet("");
-                              setPassword("");
-                              setConfirmPassword("");
-                            }}
-                            className="bg-primary hover:bg-primary-dark px-4 py-2 rounded-lg"
-                          >
-                            Add User
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              setShowAddUserForm(false);
-                              setFirstName("");
-                              setLastName("");
-                              setEmail("");
-                              setCurrentComet("");
-                              setPassword("");
-                              setConfirmPassword("");
-                            }}
-                            className="px-4 py-2 rounded-lg"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : selectedUser ? (
-                  // Split view: User list on left, User details on right
-                  <div className="flex flex-1 overflow-hidden gap-2">
-                    {/* Left: User List */}
-                    <div className="w-1/2 flex flex-col border-r border-gray-200 pr-2">
-                      <div className="flex-1 overflow-y-auto">
-                        <div className="space-y-4 p-4">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            User List
-                          </h3>
-
-                          {/* Search and Controls */}
-                          <div className="flex items-center gap-3">
-                            <div className="relative flex-1">
-                              <Search
-                                size={18}
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                              />
-                              <Input
-                                type="text"
-                                placeholder="Search"
-                                value={userSearchQuery}
-                                onChange={(e) =>
-                                  setUserSearchQuery(e.target.value)
-                                }
-                                className="pl-10 rounded-lg border-gray-300"
-                              />
-                            </div>
-                            <ToggleSwitch
-                              checked={makeAvailableToAll}
-                              onChange={setMakeAvailableToAll}
-                              label="Make Available to all users"
-                            />
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setActiveTab("users");
-                                setShowAddUserForm(true);
-                                setSelectedUser(null);
-                              }}
-                              className="bg-primary text-white hover:bg-primary-dark border-primary px-4 py-2 rounded-lg whitespace-nowrap"
-                            >
-                              <Plus className="h-4 w-4 mr-1" />
-                              Add User
-                            </Button>
-                          </div>
-
-                          {/* User Table */}
-                          <div className="border border-gray-200 rounded-lg overflow-hidden">
-                            <table className="w-full border-collapse">
-                              <thead>
-                                <tr className="bg-gray-100">
-                                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                                    User Name
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                                    Email
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                                    Kickoff
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                                    Action
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {users
-                                  .filter(
-                                    (user) =>
-                                      user.name
-                                        .toLowerCase()
-                                        .includes(
-                                          userSearchQuery.toLowerCase()
-                                        ) ||
-                                      user.email
-                                        .toLowerCase()
-                                        .includes(userSearchQuery.toLowerCase())
-                                  )
-                                  .map((user) => (
-                                    <tr
-                                      key={user.id}
-                                      className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                                        selectedUser?.id === user.id
-                                          ? "bg-primary/10"
-                                          : ""
-                                      }`}
-                                    >
-                                      <td className="px-4 py-3">
-                                        <button
-                                          onClick={() => setSelectedUser(user)}
-                                          className="text-blue-600 hover:text-blue-800 underline text-sm"
-                                        >
-                                          {user.name}
-                                        </button>
-                                      </td>
-                                      <td className="px-4 py-3 text-sm text-gray-600">
-                                        {user.email}
-                                      </td>
-                                      <td className="px-4 py-3 text-sm text-gray-600">
-                                        {user.kickoff}
-                                      </td>
-                                      <td className="px-4 py-3">
-                                        <button className="text-gray-400 hover:text-gray-600">
-                                          <MoreVertical className="w-5 h-5" />
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right: User Details */}
-                    <div className="w-1/2 flex flex-col overflow-y-auto">
-                      <div className="p-4 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            User Details
-                          </h3>
-                          <button
-                            onClick={() => setSelectedUser(null)}
-                            className="text-gray-500 hover:text-gray-700"
-                          >
-                            <CircleX className="h-5 w-5" />
-                          </button>
-                        </div>
-
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              User Name
-                            </Label>
-                            <Input
-                              value={selectedUser.name}
-                              onChange={(e) =>
-                                setSelectedUser({
-                                  ...selectedUser,
-                                  name: e.target.value,
-                                })
-                              }
-                              className="w-full rounded-lg border-gray-300"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Email
-                            </Label>
-                            <Input
-                              type="email"
-                              value={selectedUser.email}
-                              onChange={(e) =>
-                                setSelectedUser({
-                                  ...selectedUser,
-                                  email: e.target.value,
-                                })
-                              }
-                              className="w-full rounded-lg border-gray-300"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Kickoff
-                            </Label>
-                            <Select
-                              value={selectedUser.kickoff}
-                              onValueChange={(value) =>
-                                setSelectedUser({
-                                  ...selectedUser,
-                                  kickoff: value,
-                                })
-                              }
-                            >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Yes">Yes</SelectItem>
-                                <SelectItem value="No">No</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="flex gap-2 pt-4">
-                            <Button
-                              onClick={() => {
-                                setUsers(
-                                  users.map((u) =>
-                                    u.id === selectedUser.id ? selectedUser : u
-                                  )
-                                );
-                                setSelectedUser(null);
-                              }}
-                              className="bg-primary hover:bg-primary-dark px-4 py-2 rounded-lg"
-                            >
-                              Save Changes
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => setSelectedUser(null)}
-                              className="px-4 py-2 rounded-lg"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  // Full view: User List only
-                  <div className="flex-1 overflow-y-auto">
-                    <div className="space-y-4 p-4">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        User List
-                      </h3>
-
-                      {/* Search and Controls */}
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <div className="relative flex-1 min-w-[200px]">
-                          <Search
-                            size={18}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                          />
-                          <Input
-                            type="text"
-                            placeholder="Search"
-                            value={userSearchQuery}
-                            onChange={(e) => setUserSearchQuery(e.target.value)}
-                            className="pl-10 rounded-lg border-gray-300"
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Label className="text-sm font-medium text-gray-800 whitespace-nowrap">
-                            Make Available to all users
-                          </Label>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setMakeAvailableToAll(!makeAvailableToAll)
-                            }
-                            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-                              makeAvailableToAll ? "bg-primary" : "bg-gray-300"
-                            }`}
-                            role="switch"
-                            aria-checked={makeAvailableToAll}
-                          >
-                            <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
-                                makeAvailableToAll
-                                  ? "translate-x-6"
-                                  : "translate-x-1"
-                              }`}
-                            />
-                          </button>
-                        </div>
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setActiveTab("users");
-                            setShowAddUserForm(true);
-                            setSelectedUser(null);
-                          }}
-                          className="bg-primary text-white hover:bg-primary-dark border-primary px-4 py-2 rounded-lg whitespace-nowrap"
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add User
-                        </Button>
-                      </div>
-
-                      {/* User Table */}
-                      <div className="border border-gray-200 rounded-lg overflow-hidden">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="bg-gray-100">
-                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                                User Name
-                              </th>
-                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                                Email
-                              </th>
-                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                                Kickoff
-                              </th>
-                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                                Action
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {users
-                              .filter(
-                                (user) =>
-                                  user.name
-                                    .toLowerCase()
-                                    .includes(userSearchQuery.toLowerCase()) ||
-                                  user.email
-                                    .toLowerCase()
-                                    .includes(userSearchQuery.toLowerCase())
-                              )
-                              .map((user) => (
-                                <tr
-                                  key={user.id}
-                                  className="border-b border-gray-100 hover:bg-gray-50"
-                                >
-                                  <td className="px-4 py-3">
-                                    <button
-                                      onClick={() => setSelectedUser(user)}
-                                      className="text-blue-600 hover:text-blue-800  text-sm"
-                                    >
-                                      {user.name}
-                                    </button>
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-gray-600">
-                                    {user.email}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-gray-600">
-                                    {user.kickoff}
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <button className="text-gray-400 hover:text-gray-600">
-                                      <MoreVertical className="w-5 h-5" />
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              <div className="overflow-y-auto h-full flex flex-col">
+                <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-3 sm:py-4 md:py-6 lg:py-8">
+                  <UserManagement
+                    clientId={localStorage.getItem("Client id")}
+                    open={open}
+                    isActive={activeTab === "users"}
+                  />
+                </div>
               </div>
             )}
 
