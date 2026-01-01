@@ -5,6 +5,8 @@ class GraphQLClient {
     this.baseURL = "https://kyper-stage.1st90.com/graphql";
   }
 
+  
+
   async request(query, variables = {}) {
     let token = null;
     if (typeof window !== "undefined") {
@@ -56,9 +58,11 @@ class GraphQLClient {
   }
 
   async createSession() {
+    const clientId = localStorage.getItem("Client id");
+    console.log("clientId", clientId);
     const query = `
       mutation {
-        createSession {
+        createSession(clientId: "${clientId}") {
           sessionId
           cometJson
         }
