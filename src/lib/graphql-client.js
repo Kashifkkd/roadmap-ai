@@ -62,7 +62,7 @@ class GraphQLClient {
     console.log("clientId", clientId);
     const query = `
       mutation {
-        createSession(clientId: "${clientId}") {
+        createSession(clientId: ${clientId}) {
           sessionId
           cometJson
         }
