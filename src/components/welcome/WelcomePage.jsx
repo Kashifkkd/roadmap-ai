@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import Stars from "@/components/icons/Stars";
 import ChatMessage from "@/components/chat/ChatMessage";
+import Vector from  '@/components/images/vector.svg';
 
 const SUGGESTIONS = [
   "Create a go-to microlearning experience for new managers",
@@ -228,11 +229,26 @@ export default function WelcomePage() {
                 }}
               />
             </div> */}
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               {/* <h1 className="text-4xl font-bold text-primary-900">Welcome!</h1> */}
-              <h2 className="text-3xl font-semibold text-primary-900 font-serif">
-                Let's build your next Comet together...
-              </h2>
+              {/* <Image src={Vector} alt="line" className="absolute right-70 top-[27px]  w-26" />
+              <h2 className="text-3xl font-semibold text-primary-900 font-serif relative h-10">
+                Let's build your next Comet together.
+              </h2> */}
+
+              <h2 className="text-3xl font-semibold text-primary-900 font-serif relative">
+  Let's build your next{" "}
+  <span className="relative inline-block">
+    Comet
+    <Image
+      src={Vector}
+      alt="underline"
+      className="absolute left-0 -bottom-2 w-full"
+    />
+  </span>{" "}
+  together.
+</h2>
+
               <p className="text-md max-w-2xl mx-auto text-primary-900">
                 You can type your idea below, or pick one of the suggestions to
                 get started.
@@ -297,7 +313,7 @@ export default function WelcomePage() {
                         messages.length === 0 ? "pl-10" : "pl-3"
                       } pr-3 ${
                         messages.length > 0 ? "pt-2.5 pb-2.5" : "pt-3 pb-3"
-                      } text-md shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text overflow-y-auto`}
+                      } text-lg shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text overflow-y-auto`}
                       rows={1}
                       style={{
                         minHeight:
@@ -371,7 +387,7 @@ export default function WelcomePage() {
 
           {/* Empty State Section */}
           <div className="flex flex-row items-center  text-center justify-between bg-white rounded-xl border border-primary-200 max-w-3xl  p-3  mx-auto">
-            <h4 className="text-md font-medium text-[#352F6E]">
+            <h4 className="text-md font-medium text-[#352F6E] mb-2">
               Or, begin with a blank canvas and shape your Comet step by step.
             </h4>
             <Button

@@ -26,7 +26,7 @@ const Comet = ({
         return;
       }
 
-      await onCometClick(session_id);
+      await onCometClick(session_id ,status);
     } catch (error) {
       console.error("Comet click error", err.message);
     } finally {

@@ -15,7 +15,7 @@ export default function AllCometsContainer({ cometSessions }) {
   }, [cometSessions]);
 
   const router = useRouter();
-  const handleCometClick = async (session_id) => {
+  const handleCometClick = async (session_id,status) => {
     try {
       if (!session_id) {
         console.error("Invalid session id");
@@ -40,7 +40,12 @@ export default function AllCometsContainer({ cometSessions }) {
       console.log("Fetched session details:", result);
       
       localStorage.setItem("sessionData", JSON.stringify(result));
-      router.push("/comet-manager");
+      localStorage.setItem("sessionId", session_id);
+      if(status==='draft'){
+        router.push("/dashboard");
+      }else{
+        router.push("/comet-manager");
+      }
       console.log("Session details:", result);
     } catch (err) {
       console.error("Error fetching comet session:", err.message);

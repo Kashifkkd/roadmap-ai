@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, MoreHorizontal, Trash2, Plus } from "lucide-react";
+import { X, MoreHorizontal, Trash2, Plus, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -68,18 +68,18 @@ export default function UserManagement({ clientId, open, isActive }) {
   const filteredUsers =
     normalizedUserSearch && Array.isArray(users)
       ? users.filter((user) => {
-          const firstName = user.first_name || user.firstName || "";
-          const lastName = user.last_name || user.lastName || "";
-          const email = user.email || "";
-          const activePathName = user.active_path_name || "";
+        const firstName = user.first_name || user.firstName || "";
+        const lastName = user.last_name || user.lastName || "";
+        const email = user.email || "";
+        const activePathName = user.active_path_name || "";
 
-          return (
-            textIncludesSearch(firstName, normalizedUserSearch) ||
-            textIncludesSearch(lastName, normalizedUserSearch) ||
-            textIncludesSearch(email, normalizedUserSearch) ||
-            textIncludesSearch(activePathName, normalizedUserSearch)
-          );
-        })
+        return (
+          textIncludesSearch(firstName, normalizedUserSearch) ||
+          textIncludesSearch(lastName, normalizedUserSearch) ||
+          textIncludesSearch(email, normalizedUserSearch) ||
+          textIncludesSearch(activePathName, normalizedUserSearch)
+        );
+      })
       : users;
 
   // Fetch users when component is active
@@ -601,10 +601,14 @@ export default function UserManagement({ clientId, open, isActive }) {
         <div className="flex-1 overflow-y-auto space-y-6">
           {/* Back Button */}
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
+              <ArrowLeft onClick={() => {
+                setShowAddUserForm(false);
+                resetUserForm();
+              }} className="w-5 h-5 cursor-pointer" />
               {editingUser ? "Edit User" : "Add User"}
             </h2>
-            <Button
+            {/* <Button
               type="button"
               variant="ghost"
               onClick={() => {
@@ -614,7 +618,7 @@ export default function UserManagement({ clientId, open, isActive }) {
               className="text-gray-600 hover:text-gray-900"
             >
               <X className="w-5 h-5" />
-            </Button>
+            </Button> */}
           </div>
 
           {/* Personal Information */}
@@ -696,16 +700,14 @@ export default function UserManagement({ clientId, open, isActive }) {
               <button
                 type="button"
                 onClick={() => setEnableSSO((prev) => !prev)}
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
-                  enableSSO ? "bg-primary-700" : "bg-gray-300"
-                }`}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${enableSSO ? "bg-primary-700" : "bg-gray-300"
+                  }`}
                 role="switch"
                 aria-checked={enableSSO}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
-                    enableSSO ? "translate-x-6" : "translate-x-1"
-                  }`}
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${enableSSO ? "translate-x-6" : "translate-x-1"
+                    }`}
                 />
               </button>
             </div>
@@ -837,8 +839,8 @@ export default function UserManagement({ clientId, open, isActive }) {
                       cohortsLoading
                         ? "Loading..."
                         : cohorts.length === 0
-                        ? "No cohorts available"
-                        : "Select"
+                          ? "No cohorts available"
+                          : "Select"
                     }
                   />
                 </SelectTrigger>
@@ -887,18 +889,16 @@ export default function UserManagement({ clientId, open, isActive }) {
                         }))
                       );
                     }}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${
-                      assignment.isCurrent
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${assignment.isCurrent
                         ? "bg-green-50 border-green-500"
                         : "bg-gray-50 border-gray-300"
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`w-4 h-4 rounded-full ${
-                        assignment.isCurrent
+                      className={`w-4 h-4 rounded-full ${assignment.isCurrent
                           ? "bg-green-500"
                           : "bg-white border-2 border-gray-400"
-                      }`}
+                        }`}
                     />
                     <span className="text-sm font-medium text-gray-700">
                       Current Comet
@@ -927,10 +927,10 @@ export default function UserManagement({ clientId, open, isActive }) {
                           !cohort
                             ? "Select cohort first"
                             : cohortPathsLoading
-                            ? "Loading..."
-                            : cohortPaths.length === 0
-                            ? "No paths available"
-                            : "Select"
+                              ? "Loading..."
+                              : cohortPaths.length === 0
+                                ? "No paths available"
+                                : "Select"
                         }
                       />
                     </SelectTrigger>
@@ -998,8 +998,8 @@ export default function UserManagement({ clientId, open, isActive }) {
               {savingUser
                 ? "Saving..."
                 : editingUser
-                ? "Update User"
-                : "Save User"}
+                  ? "Update User"
+                  : "Save User"}
             </Button>
           </div>
         </div>
