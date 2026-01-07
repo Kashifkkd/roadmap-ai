@@ -297,7 +297,7 @@ export default function WelcomePage() {
                         messages.length === 0 ? "pl-10" : "pl-3"
                       } pr-3 ${
                         messages.length > 0 ? "pt-2.5 pb-2.5" : "pt-3 pb-3"
-                      } text-lg shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text overflow-y-auto`}
+                      } text-md shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text overflow-y-auto`}
                       rows={1}
                       style={{
                         minHeight:
@@ -371,7 +371,7 @@ export default function WelcomePage() {
 
           {/* Empty State Section */}
           <div className="flex flex-row items-center  text-center justify-between bg-white rounded-xl border border-primary-200 max-w-3xl  p-3  mx-auto">
-            <h4 className="text-md font-medium text-[#352F6E] mb-2">
+            <h4 className="text-md font-medium text-[#352F6E]">
               Or, begin with a blank canvas and shape your Comet step by step.
             </h4>
             <Button

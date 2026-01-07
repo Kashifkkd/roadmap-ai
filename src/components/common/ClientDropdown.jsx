@@ -297,7 +297,7 @@ export default function ClientDropdown({
               className="px-4 py-2 hover:bg-primary-50 rounded-md items-center flex justify-between cursor-pointer relative"
               onClick={handleAllClientsClick}
             >
-              <button className="w-full flex items-center ">
+              <button className="w-full flex items-center gap-2">
                 <Users className="w-4 h-4 mr-2" />
                 All Clients
               </button>

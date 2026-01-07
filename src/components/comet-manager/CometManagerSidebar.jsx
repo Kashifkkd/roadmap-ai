@@ -929,7 +929,7 @@ export default function CometManagerSidebar({
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center p-2 gap-2">
                               <span className="text-md font-semibold">
-                                {category.name}
+                                {category.name} 
                               </span>
                             </div>
                             {/* <span

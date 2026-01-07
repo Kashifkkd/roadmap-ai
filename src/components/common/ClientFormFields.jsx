@@ -18,7 +18,7 @@ import { createCohort } from "@/api/cohort/createCohort";
 import { updateCohort } from "@/api/cohort/updateCohort";
 import { deleteCohort } from "@/api/cohort/deleteCohort";
 import { getCohortPaths } from "@/api/cohort/getCohortPaths";
-import {getClientPaths} from "@/api/cohort/getCohortPaths";
+import { getClientPaths } from "@/api/cohort/getCohortPaths";
 import { updateCohortPaths } from "@/api/cohort/updateCohortPaths";
 import {
   DropdownMenu,
@@ -104,7 +104,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   const [isCohortFormOpen, setIsCohortFormOpen] = useState(false);
   const [editingCohort, setEditingCohort] = useState(null);
   const [newCohortName, setNewCohortName] = useState("");
-  const [newCohortDescription, setNewCohortDescription] = useState("");
+  // const [newCohortDescription, setNewCohortDescription] = useState("");
   const [creatingCohort, setCreatingCohort] = useState(false);
   const [deletingCohort, setDeletingCohort] = useState(false);
 
@@ -232,12 +232,12 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       setCreatingCohort(true);
       await createCohort({
         name: newCohortName.trim(),
-        description: newCohortDescription.trim(),
+        // description: newCohortDescription.trim(),
         clientId,
       });
       toast.success("Cohort created successfully");
       setNewCohortName("");
-      setNewCohortDescription("");
+      // setNewCohortDescription("");
       setEditingCohort(null);
       setIsCohortFormOpen(false);
 
@@ -277,11 +277,11 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       await updateCohort({
         cohortId,
         name: newCohortName.trim(),
-        description: newCohortDescription.trim(),
+        // description: newCohortDescription.trim(),
       });
       toast.success("Cohort updated successfully");
       setNewCohortName("");
-      setNewCohortDescription("");
+      // setNewCohortDescription("");
       setEditingCohort(null);
       setIsCohortFormOpen(false);
 
@@ -402,7 +402,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   const handleEditCohortDialog = (cohort) => {
     setEditingCohort(cohort);
     setNewCohortName(cohort.name || cohort.cohort_name || "");
-    setNewCohortDescription(cohort.description || "");
+    // setNewCohortDescription(cohort.description || "");
     setIsCohortFormOpen(true);
   };
 
@@ -582,7 +582,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         {/* General Image Upload */}
         <div>
           <Label className="text-sm font-medium text-gray-700 mb-3 block">
-           White-on-transparent Logo (Upload PNG)
+            White-on-transparent Logo (Upload PNG)
           </Label>
           <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
             {imagePreview ? (
@@ -805,7 +805,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
           onChange={setEnableCohorts}
           label="Enable Cohorts"
         />
-        <div className="flex justify-end">
+        <div className={`flex justify-end ${!enableCohorts && "mb-4"}`}>
           <Button
             variant="outline"
             type="button"
@@ -813,7 +813,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
             onClick={() => {
               setEditingCohort(null);
               setNewCohortName("");
-              setNewCohortDescription("");
+              // setNewCohortDescription("");
               setIsCohortFormOpen(true);
             }}
           >
@@ -832,7 +832,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                 onClick={() => {
                   setIsCohortFormOpen(false);
                   setNewCohortName("");
-                  setNewCohortDescription("");
+                  // setNewCohortDescription("");
                   setEditingCohort(null);
                 }}
                 className="text-gray-400 hover:text-gray-600"
@@ -852,7 +852,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   className="h-9"
                 />
               </div>
-              <div className="space-y-1.5">
+              {/* <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-gray-700">
                   Description
                 </Label>
@@ -862,7 +862,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   placeholder="Enter short description"
                   className="h-9"
                 />
-              </div>
+              </div> */}
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button
@@ -872,7 +872,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                 onClick={() => {
                   setIsCohortFormOpen(false);
                   setNewCohortName("");
-                  setNewCohortDescription("");
+                  // setNewCohortDescription("");
                   setEditingCohort(null);
                 }}
               >
@@ -895,92 +895,96 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
             </div>
           </div>
         )}
-        <Label className="text-sm font-medium text-gray-700 mt-4 block">
-          Cohort List
-        </Label>
+        {enableCohorts && (
+          <div className="mb-4">
+            <Label className="text-sm font-medium text-gray-700 mt-4 block">
+              Cohort List
+            </Label>
 
-        {/* Cohort table */}
-        <div className="mt-2 rounded-md overflow-hidden text-sm text-gray-700">
-          {/* Header */}
-          <div className="grid grid-cols-3 bg-gray-100 font-medium">
-            <div className="px-4 py-2">Cohort Name</div>
-            <div className="px-4 py-2">Cohort Id</div>
-            <div className="px-4 py-2 text-right">Action</div>
+            {/* Cohort table */}
+            <div className="mt-2 rounded-md overflow-hidden text-sm text-gray-700">
+              {/* Header */}
+              <div className="grid grid-cols-3 bg-gray-100 font-medium">
+                <div className="px-4 py-2">Cohort Name</div>
+                <div className="px-4 py-2">Cohort Id</div>
+                <div className="px-4 py-2 text-right">Action</div>
+              </div>
+
+              {/* Rows */}
+              {cohortsLoading ? (
+                <div className="grid grid-cols-3 bg-white">
+                  <div className="px-4 py-4 text-center text-gray-500 col-span-3">
+                    Loading cohorts...
+                  </div>
+                </div>
+              ) : cohorts.length === 0 ? (
+                <div className="grid grid-cols-3 bg-white">
+                  <div className="px-4 py-4 text-center text-gray-500 col-span-3">
+                    No cohorts found
+                  </div>
+                </div>
+              ) : (
+                cohorts.map((cohort, index) => (
+                  <div
+                    key={cohort.id || cohort.cohort_id || index}
+                    className={`grid grid-cols-3 ${
+                      index % 2 === 1 ? "bg-gray-50" : "bg-white"
+                    }`}
+                  >
+                    <div className="px-4 py-2 text-gray-700">
+                      {cohort.name || cohort.cohort_name || "N/A"}
+                    </div>
+                    <div className="px-4 py-2 text-gray-500">
+                      {cohort.id || cohort.cohort_id || "N/A"}
+                    </div>
+                    <div className="px-6 py-2 text-right flex items-center justify-end">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="text-gray-400 hover:text-gray-600">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-32 rounded-lg bg-white border border-gray-200 shadow-lg p-1"
+                        >
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditCohortDialog(cohort);
+                            }}
+                            className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
+                          >
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddPathDialog(cohort, getClientId());
+                            }}
+                            className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
+                          >
+                            Add Comet
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCohortDialog(cohort);
+                            }}
+                            disabled={deletingCohort}
+                            className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {deletingCohort ? "Deleting..." : "Delete"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-
-          {/* Rows */}
-          {cohortsLoading ? (
-            <div className="grid grid-cols-3 bg-white">
-              <div className="px-4 py-4 text-center text-gray-500 col-span-3">
-                Loading cohorts...
-              </div>
-            </div>
-          ) : cohorts.length === 0 ? (
-            <div className="grid grid-cols-3 bg-white">
-              <div className="px-4 py-4 text-center text-gray-500 col-span-3">
-                No cohorts found
-              </div>
-            </div>
-          ) : (
-            cohorts.map((cohort, index) => (
-              <div
-                key={cohort.id || cohort.cohort_id || index}
-                className={`grid grid-cols-3 ${
-                  index % 2 === 1 ? "bg-gray-50" : "bg-white"
-                }`}
-              >
-                <div className="px-4 py-2 text-gray-700">
-                  {cohort.name || cohort.cohort_name || "N/A"}
-                </div>
-                <div className="px-4 py-2 text-gray-500">
-                  {cohort.id || cohort.cohort_id || "N/A"}
-                </div>
-                <div className="px-6 py-2 text-right flex items-center justify-end">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="text-gray-400 hover:text-gray-600">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      className="w-32 rounded-lg bg-white border border-gray-200 shadow-lg p-1"
-                    >
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditCohortDialog(cohort);
-                        }}
-                        className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
-                      >
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddPathDialog(cohort, getClientId());
-                        }}
-                        className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
-                      >
-                        Add Comet
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteCohortDialog(cohort);
-                        }}
-                        disabled={deletingCohort}
-                        className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {deletingCohort ? "Deleting..." : "Delete"}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        )}
 
         {/* Cohort Paths Dialog */}
         {isPathDialogOpen && (

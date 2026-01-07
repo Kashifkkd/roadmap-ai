@@ -36,4 +36,5 @@ export const endpoints = {
   createCohort: "api/clients/v1/cohorts",
   updateCohort: (cohortId) => `api/clients/v1/cohorts/${cohortId}`,
   deleteCohort: (cohortId) => `api/clients/v1/cohorts/${cohortId}`,
+  uploadTool: "api/n8n/upload_tool_file"
 };

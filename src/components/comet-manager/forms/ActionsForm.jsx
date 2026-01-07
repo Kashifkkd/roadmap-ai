@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Info } from "lucide-react";
+import UploadTool from "@/components/common/UploadTool";
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
@@ -40,6 +41,11 @@ export default function ActionsForm({
   formData,
   updateField,
   askKyperHandlers = {},
+  sessionId = "",
+  chapterId = "",
+  stepId = "",
+  screenId = "",
+  screen = {},
 }) {
   const {
     onTextFieldSelect,
@@ -49,6 +55,13 @@ export default function ActionsForm({
   } = askKyperHandlers;
 
   console.log("formData >>>", formData);
+
+  // Handle tool upload success
+  const handleToolUploadSuccess = (toolData) => {
+    if (toolData?.url) {
+      updateField("toolLink", toolData.url);
+    }
+  };
 
   return (
     <div className="bg-gray-100 rounded-lg p-2">
@@ -82,6 +95,17 @@ export default function ActionsForm({
 
         {/* Tool Link */}
         <div className="mb-6">
+          <UploadTool
+            label="Upload Tool File"
+            sessionId={sessionId}
+            pathId={screen?.pathId || ""}
+            chapterId={chapterId}
+            stepId={stepId}
+            screenId={screenId}
+            screenContentId={screen?.screenContents?.id || ""}
+            toolName={formData.title || "Tool"}
+            onUploadSuccess={handleToolUploadSuccess}
+          />
           <Label className="block text-sm font-medium text-gray-700 mb-2">
             Tool Link
           </Label>
