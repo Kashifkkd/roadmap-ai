@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import Stars from "@/components/icons/Stars";
 import ChatMessage from "@/components/chat/ChatMessage";
-import Vector from  '@/components/images/vector.svg';
+import Vector from "@/components/images/vector.svg";
 
 const SUGGESTIONS = [
   "Create a go-to microlearning experience for new managers",
@@ -237,17 +237,17 @@ export default function WelcomePage() {
               </h2> */}
 
               <h2 className="text-3xl font-semibold text-primary-900 font-serif relative">
-  Let's build your next{" "}
-  <span className="relative inline-block">
-    Comet
-    <Image
-      src={Vector}
-      alt="underline"
-      className="absolute left-0 -bottom-2 w-full"
-    />
-  </span>{" "}
-  together.
-</h2>
+                Let's build your next{" "}
+                <span className="relative inline-block">
+                  Comet
+                  <Image
+                    src={Vector}
+                    alt="underline"
+                    className="absolute left-0 -bottom-2 w-full"
+                  />
+                </span>{" "}
+                together.
+              </h2>
 
               <p className="text-md max-w-2xl mx-auto text-primary-900">
                 You can type your idea below, or pick one of the suggestions to
@@ -387,7 +387,7 @@ export default function WelcomePage() {
 
           {/* Empty State Section */}
           <div className="flex flex-row items-center  text-center justify-between bg-white rounded-xl border border-primary-200 max-w-3xl  p-3  mx-auto">
-            <h4 className="text-md font-medium text-[#352F6E] mb-2">
+            <h4 className="text-md font-medium text-[#352F6E]">
               Or, begin with a blank canvas and shape your Comet step by step.
             </h4>
             <Button
