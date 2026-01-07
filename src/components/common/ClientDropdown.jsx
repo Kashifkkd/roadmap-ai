@@ -299,7 +299,7 @@ export default function ClientDropdown({
             >
               <button className="w-full flex items-center ">
                 <Users className="w-4 h-4 mr-2" />
-                All Client
+                All Clients
               </button>
               <ChevronRight className="w-5 h-5" />
 

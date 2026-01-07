@@ -24,6 +24,7 @@ export const endpoints = {
 
   getClientDetails: (clientId) =>
     `api/clients/v1/client_details/?client_id=${clientId}`,
+  getRecentClients: "api/clients/v1/recent",
   updateClient: "api/clients/v1/upsert/client/",
   deleteClient:(clientId)=>`api/clients/v1/delete/${clientId}`,
 
@@ -31,6 +32,7 @@ export const endpoints = {
   feedbackEmail: (feedback) => `api/comet/feedback_email?feedback=${feedback}`,
   getCohorts: (clientId) => `api/clients/v1/cohorts?client_id=${clientId}`,
   getCohortPaths: (cohortId) => `api/clients/v1/cohorts/${cohortId}/paths`,
+    getClientPaths: (clientId) => `api/clients/v1/clients/${clientId}/paths`,
   createCohort: "api/clients/v1/cohorts",
   updateCohort: (cohortId) => `api/clients/v1/cohorts/${cohortId}`,
   deleteCohort: (cohortId) => `api/clients/v1/cohorts/${cohortId}`,

@@ -18,6 +18,7 @@ import { createCohort } from "@/api/cohort/createCohort";
 import { updateCohort } from "@/api/cohort/updateCohort";
 import { deleteCohort } from "@/api/cohort/deleteCohort";
 import { getCohortPaths } from "@/api/cohort/getCohortPaths";
+import {getClientPaths} from "@/api/cohort/getCohortPaths";
 import { updateCohortPaths } from "@/api/cohort/updateCohortPaths";
 import {
   DropdownMenu,
@@ -298,7 +299,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
     }
   };
 
-  const handleAddPathDialog = async (cohort) => {
+  const handleAddPathDialog = async (cohort, clientId) => {
     const cohortId = cohort.id || cohort.cohort_id;
     if (!cohortId) {
       toast.error("Cohort ID is missing");
@@ -313,7 +314,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
     setPathEnabled(true);
 
     try {
-      const result = await getCohortPaths({ cohortId });
+      const result = await getClientPaths({ clientId });
       const data = result?.response || [];
       const paths = Array.isArray(data) ? data : [];
 
@@ -581,7 +582,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         {/* General Image Upload */}
         <div>
           <Label className="text-sm font-medium text-gray-700 mb-3 block">
-            Transparent Image(Upload PNG)
+           White-on-transparent Logo (Upload PNG)
           </Label>
           <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
             {imagePreview ? (
@@ -957,11 +958,11 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleAddPathDialog(cohort);
+                          handleAddPathDialog(cohort, getClientId());
                         }}
                         className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
                       >
-                        Add Path
+                        Add Comet
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={(e) => {
@@ -987,8 +988,8 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-gray-800">
                 {pathsLoading
-                  ? "Loading Paths..."
-                  : `Select Paths for ${
+                  ? "Loading Comet..."
+                  : `Select Comet for ${
                       pathDialogCohort?.name ||
                       pathDialogCohort?.cohort_name ||
                       "Cohort"
@@ -1010,17 +1011,17 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
             </div>
 
             <p className="text-xs text-gray-500">
-              Select up to 5 paths for this cohort. Currently selected:{" "}
-              {selectedPathIds.size}/5
+              Select comets for this cohort. Currently selected:{" "}
+              {selectedPathIds.size}
             </p>
 
             {pathsLoading ? (
               <div className="py-8 text-center text-gray-500 text-sm">
-                Loading paths...
+                Loading comets...
               </div>
             ) : availablePaths.length === 0 ? (
               <div className="py-8 text-center text-gray-500 text-sm">
-                No paths available
+                No comets available
               </div>
             ) : (
               <div className="space-y-2 max-h-[300px] overflow-y-auto">
@@ -1115,7 +1116,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                 onClick={handleSavePaths}
                 disabled={savingPaths || pathsLoading}
               >
-                {savingPaths ? "Saving..." : "Update Paths"}
+                {savingPaths ? "Saving..." : "Update Comets"}
               </Button>
             </div>
           </div>

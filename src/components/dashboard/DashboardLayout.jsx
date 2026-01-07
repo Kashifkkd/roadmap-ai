@@ -223,6 +223,23 @@ export default function DashboardLayout() {
       const messageText =
         initialInput || formData.cometTitle || "Create a new comet";
 
+      // Initialize enabled_attributes object
+      const enabled_attributes = {
+        ...(parsedSessionData?.response_path?.enabled_attributes || {}),
+        path_personalization: formData.personalizationEnabled || false,
+        habit_enabled: formData.habitEnabled || false,
+        habit_description: formData.habitText || "",
+      };
+
+      // Ensure response_path exists before assigning enabled_attributes
+      if (!parsedSessionData) {
+        parsedSessionData = {};
+      }
+      if (!parsedSessionData.response_path) {
+        parsedSessionData.response_path = {};
+      }
+      parsedSessionData.response_path.enabled_attributes = enabled_attributes;
+
       console.log(formData);
 
       const cometJsonForMessage = JSON.stringify({
@@ -230,7 +247,7 @@ export default function DashboardLayout() {
         input_type: "outline_creation",
         comet_creation_data: formattedCometData,
         response_outline: {},
-        response_path: {},
+        response_path: parsedSessionData?.response_path || {},
         additional_data: {
           personalization_enabled: formData.personalizationEnabled || false,
           habit_enabled: formData.habitEnabled || false,

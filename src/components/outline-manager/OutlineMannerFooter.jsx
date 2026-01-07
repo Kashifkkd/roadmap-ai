@@ -157,7 +157,7 @@ export default function OutlineMannerFooter() {
             parsedSessionData?.additional_data?.habit_description || "",
         },
         response_outline: parsedSessionData?.response_outline || {},
-        response_path: {},
+        response_path: parsedSessionData?.response_path || {},
         chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
         to_modify: {},
       });

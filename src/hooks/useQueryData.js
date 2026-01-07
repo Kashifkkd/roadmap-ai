@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { getClients, updateClientDetails } from "@/api/client";
+import { getClients, updateClientDetails, getRecentClients, getClientDetails } from "@/api/client";
 import { getUser } from "@/api/User/getUser";
 
 // Client Settings hook
@@ -33,6 +33,31 @@ export function useUpsertClient() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
     },
+  });
+}
+
+// Recent Clients hook
+export function useRecentClients(enabled = true) {
+  return useQuery({
+    queryKey: ["recentClients"],
+    queryFn: async () => {
+      const res = await getRecentClients();
+      return res?.response || [];
+    },
+    enabled,
+  });
+}
+
+// Client Details hook
+export function useClientDetails(clientId, enabled = true) {
+  return useQuery({
+    queryKey: ["clientDetails", clientId],
+    queryFn: async () => {
+      if (!clientId) return null;
+      const res = await getClientDetails(clientId);
+      return res?.response || null;
+    },
+    enabled: enabled && !!clientId,
   });
 }
 

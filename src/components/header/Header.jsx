@@ -21,7 +21,7 @@ import {
 import { tokenManager } from "@/lib/api-client";
 import Image from "next/image";
 import ClientDropdown from "@/components/common/ClientDropdown";
-import { useClients, useUser } from "@/hooks/useQueryData";
+import { useRecentClients, useUser, useClientDetails } from "@/hooks/useQueryData";
 import { shareComet } from "@/api/shareComet";
 import { publishComet } from "@/api/publishComet";
 import { downloadDocument } from "@/api/downloadDocument";
@@ -128,14 +128,23 @@ export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
 
-  // TanStack Query for clients and user
+  // TanStack Query for recent clients and user
   const {
     data: clients = [],
     isLoading: clientsLoading,
     isError: clientsError,
-  } = useClients(isAuthenticated, { skip: 0, limit: 5, enabledOnly: true });
+  } = useRecentClients(isAuthenticated);
 
   const { data: user } = useUser(isAuthenticated);
+
+  // Determine which client ID to use: localStorage first, then user.client_id
+  const [clientIdToUse, setClientIdToUse] = useState(null);
+
+  // Fetch client details for the selected client ID
+  const {
+    data: clientDetails,
+    isLoading: clientDetailsLoading,
+  } = useClientDetails(clientIdToUse, isAuthenticated && !!clientIdToUse);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isHomeButtonActive, setIsHomeButtonActive] = useState(false);
   const [activeButton, setActiveButton] = useState(null);
@@ -172,7 +181,7 @@ export default function Header() {
     return client.role === "Super Admin";
   };
 
-  // Use dummy clients if no real clients are available (for UI design purposes)
+  // Use recent clients for dropdown list
   const displayClients = clients.length > 0 ? clients : [];
 
   // Mock collaborators data
@@ -253,59 +262,73 @@ export default function Header() {
     }
   }, [isLoginDialogOpen]);
 
+  // Determine client ID to use: localStorage first, then user.client_id
   useEffect(() => {
-    const clientsToUse = clients.length > 0 ? clients : [];
-    if (clientsToUse.length > 0) {
-      if (!selectedClient) {
-        let initialClient = clientsToUse[0];
+    if (!isAuthenticated || !user) return;
 
+    try {
+      let clientIdFromStorage = localStorage.getItem("Client id");
+      
+      // If no Client id in localStorage, use user.client_id as fallback
+      if (!clientIdFromStorage && user?.client_id) {
+        clientIdFromStorage = String(user.client_id);
+        // Save it to localStorage for future use
         try {
-          const storedClientId = localStorage.getItem("Client id");
-          if (storedClientId) {
-            const matchedClient = clientsToUse.find(
-              (c) => String(c.id) === String(storedClientId)
-            );
-            if (matchedClient) {
-              initialClient = matchedClient;
-            }
-          }
-        } catch {}
-
-        setSelectedClient(initialClient);
-        try {
-          localStorage.setItem("Client id", initialClient.id.toString());
+          localStorage.setItem("Client id", clientIdFromStorage);
         } catch {
           // Ignore storage errors
         }
-      } else {
-        // Only update if the selected client's data has actually changed
-        const updatedClient = clientsToUse.find(
-          (c) => c.id === selectedClient.id
-        );
-        if (updatedClient && updatedClient !== selectedClient) {
-          // Check if any relevant properties have changed
-          const hasChanged =
-            updatedClient.name !== selectedClient.name ||
-            updatedClient.ImageUrl !== selectedClient.image_url ||
-            updatedClient.role !== selectedClient.role;
+      }
 
-          if (hasChanged) {
-            setSelectedClient(updatedClient);
+      if (clientIdFromStorage) {
+        setClientIdToUse(clientIdFromStorage);
+      }
+    } catch (error) {
+      console.error("Error determining client ID:", error);
+    }
+  }, [isAuthenticated, user]);
+
+  // Set selected client when client details are fetched
+  useEffect(() => {
+    if (clientDetails) {
+      // Only update if we don't have a selected client or if the IDs don't match
+      if (!selectedClient || String(selectedClient?.id) !== String(clientDetails?.id)) {
+        setSelectedClient(clientDetails);
+        // Update localStorage to keep it in sync
+        try {
+          if (clientDetails.id) {
+            localStorage.setItem("Client id", String(clientDetails.id));
+            if (clientDetails.name) {
+              localStorage.setItem("ClientName", String(clientDetails.name));
+            }
           }
-        } else if (!updatedClient && clientsToUse.length > 0) {
-          // Selected client no longer exists, select the first one
-          const fallbackClient = clientsToUse[0];
-          setSelectedClient(fallbackClient);
-          try {
-            localStorage.setItem("Client id", fallbackClient.id.toString());
-          } catch {
-            // Ignore storage errors
-          }
+        } catch {
+          // Ignore storage errors
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clients]);
+  }, [clientDetails, selectedClient]);
+
+  // Fallback: if no client details but we have recent clients, use first one
+  useEffect(() => {
+    if (
+      !clientDetailsLoading &&
+      !clientDetails &&
+      !selectedClient &&
+      clients.length > 0 &&
+      isAuthenticated
+    ) {
+      // If we couldn't fetch client details, fallback to first recent client
+      const fallbackClient = clients[0];
+      setSelectedClient(fallbackClient);
+      setClientIdToUse(String(fallbackClient.id));
+      try {
+        localStorage.setItem("Client id", String(fallbackClient.id));
+      } catch {
+        // Ignore storage errors
+      }
+    }
+  }, [clientDetails, clientDetailsLoading, selectedClient, clients, isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -496,6 +519,7 @@ export default function Header() {
 
   const handleClientSelect = (client) => {
     setSelectedClient(client);
+    setClientIdToUse(String(client.id));
 
     localStorage.setItem("Client id", client.id.toString());
     localStorage.setItem("ClientName", client.name.toString());
@@ -1572,3 +1596,4 @@ export default function Header() {
     </>
   );
 }
+

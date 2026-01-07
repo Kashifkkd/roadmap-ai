@@ -11,3 +11,15 @@ export const getCohortPaths = async ({ cohortId }) => {
     method: "GET",
   });
 };
+
+export const getClientPaths = async ({ clientId }) => {
+  if (!clientId) {
+    throw new Error("clientId is required");
+  }
+
+  return await apiService({
+    endpoint: endpoints.getClientPaths(clientId),
+    method: "GET",
+  });
+};
+

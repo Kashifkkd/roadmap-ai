@@ -28,6 +28,14 @@ export async function getClientDetails(clientId) {
   return res;
 }
 
+export async function getRecentClients() {
+  const res = await apiService({
+    endpoint: endpoints.getRecentClients,
+    method: "GET",
+  });
+  return res;
+}
+
 export async function updateClientDetails(clientData) {
   const res = await apiService({
     endpoint: endpoints.updateClient,
