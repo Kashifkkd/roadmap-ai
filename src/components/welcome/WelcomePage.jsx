@@ -231,7 +231,7 @@ export default function WelcomePage() {
             <div className="space-y-2">
               {/* <h1 className="text-4xl font-bold text-primary-900">Welcome!</h1> */}
               <h2 className="text-3xl font-semibold text-primary-900 font-serif">
-                Let's build your next Comet together.
+                Let's build your next Comet together...
               </h2>
               <p className="text-md max-w-2xl mx-auto text-primary-900">
                 You can type your idea below, or pick one of the suggestions to
