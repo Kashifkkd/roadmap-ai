@@ -12,6 +12,7 @@ import {
   Info,
   Trash2,
   Plus,
+  ArrowLeft
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -83,21 +84,21 @@ export default function ClientSettingsDialog({
   const filteredCreators =
     normalizedCreatorSearch && Array.isArray(creators)
       ? creators.filter((creator) => {
-          const firstName = creator.first_name || "";
-          const lastName = creator.last_name || "";
-          const email = creator.email || "";
-          const role =
-            creator.role ||
-            (Array.isArray(creator.roles) && creator.roles[0]) ||
-            "";
+        const firstName = creator.first_name || "";
+        const lastName = creator.last_name || "";
+        const email = creator.email || "";
+        const role =
+          creator.role ||
+          (Array.isArray(creator.roles) && creator.roles[0]) ||
+          "";
 
-          return (
-            textIncludesSearch(firstName, normalizedCreatorSearch) ||
-            textIncludesSearch(lastName, normalizedCreatorSearch) ||
-            textIncludesSearch(email, normalizedCreatorSearch) ||
-            textIncludesSearch(role, normalizedCreatorSearch)
-          );
-        })
+        return (
+          textIncludesSearch(firstName, normalizedCreatorSearch) ||
+          textIncludesSearch(lastName, normalizedCreatorSearch) ||
+          textIncludesSearch(email, normalizedCreatorSearch) ||
+          textIncludesSearch(role, normalizedCreatorSearch)
+        );
+      })
       : creators;
 
   // Fetch client details when dialog opens and selectedClient is available
@@ -977,8 +978,8 @@ export default function ClientSettingsDialog({
                             {savingCreator
                               ? "Saving..."
                               : editingCreator
-                              ? "Update Creator"
-                              : "Save Creator"}
+                                ? "Update Creator"
+                                : "Save Creator"}
                           </Button>
                         </div>
                       </div>

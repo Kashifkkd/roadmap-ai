@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Camera, Eye, EyeOff, CircleX, Trash2, Loader2 } from "lucide-react";
@@ -37,9 +37,9 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
 
   const [userData, setUserData] = useState(null);
   const [profileUrl, setProfileUrl] = useState(null);
-  const [image_url, setImageUrl] = useState(null);
   const [isPictureDeleted, setIsPictureDeleted] = useState(false);
   const fileInputRef = useRef(null);
+  const newImageUrl = useRef(null);
 
   useEffect(() => {
     if (!open) return;
@@ -62,10 +62,10 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
       // First upload the file to get the URL
       const uploadResponse = await uploadProfile(file);
       if (uploadResponse.response) {
-        const url = uploadResponse.response.ImageUrl;
+        const url = uploadResponse.response.image_url;
         if (url) {
-          setImageUrl(url);
           setProfileUrl(url);
+          newImageUrl.current = url;
           setIsPictureDeleted(false);
         }
       }
@@ -80,8 +80,8 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
 
   const handleDeletePicture = () => {
     setProfileUrl(null);
-    setImageUrl(null);
     setIsPictureDeleted(true);
+    newImageUrl.current = null
   };
 
   const validateCurrentPassword = (value) => {
@@ -152,14 +152,13 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
   };
 
   const updateProfileData = async (data) => {
+    
     const payload = {
       email: data.email || userData?.email || "",
       first_name: data.first_name || firstName,
       last_name: data.last_name || lastName,
-      ImageUrl:
-        data.ImageUrl !== undefined
-          ? data.ImageUrl
-          : image_url || profileUrl || "",
+      image_url:
+        data.ImageUrl ,
       timezone: data.timezone || userData?.timezone || "",
       ...(password && confirmPassword && password === confirmPassword
         ? {
@@ -171,6 +170,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     };
 
     const response = await updateProfile(payload);
+
     if (response.response) {
       setUserData(response.response);
       // Refresh user to update Header automatically
@@ -183,7 +183,9 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     return { success: false };
   };
 
+
   const handleSave = async () => {
+ 
     // Validate first name before saving
     if (!firstName || firstName.trim() === "") {
       setFirstNameError("First name is required");
@@ -212,12 +214,11 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
 
     setIsLoading(true);
     try {
-      console.log("image_url", image_url);
       const result = await updateProfileData({
         email: userData?.email || "",
         first_name: firstName,
         last_name: lastName,
-        ImageUrl: isPictureDeleted ? "" : image_url || "",
+        ImageUrl: isPictureDeleted ? "" : newImageUrl.current || profileUrl,
         timezone: userData?.timezone || "",
         new_password: password,
         new_password_confirm: confirmPassword,
@@ -260,15 +261,16 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
 
   const avatar = isPictureDeleted
     ? defaultAvatar
-    : image_url || userData?.ImageUrl || defaultAvatar;
+    : profileUrl || userData?.ImageUrl || defaultAvatar;
 
   useEffect(() => {
     if (!open) return;
+
     if (userData) {
       setFirstName(userData.first_name || "");
       setLastName(userData.last_name || "");
-      if (userData.avatar || userData.profile_picture) {
-        setProfileUrl(userData.avatar || userData.profile_picture);
+      if (userData.avatar || userData.image_url) {
+        setProfileUrl(userData.avatar || userData.image_url);
       }
     }
     setCurrentPassword("");
@@ -280,7 +282,6 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
     setFirstNameError("");
     setIsLoading(false);
     setIsPictureDeleted(false);
-    setImageUrl(null);
   }, [open, userData]);
 
   return (
@@ -312,7 +313,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                   <div className="relative flex h-38 w-38 items-center justify-center rounded-full bg-gray-100 ">
                     <div className="relative h-full w-full overflow-hidden rounded-full bg-white">
                       {isPictureDeleted ||
-                      !(image_url || userData?.ImageUrl) ? (
+                      !(newImageUrl.current || profileUrl) ? (
                         <div className="flex h-full w-full items-center justify-center bg-gray-100 text-4xl font-semibold">
                           {firstName?.charAt(0)?.toUpperCase() ||
                             lastName?.charAt(0)?.toUpperCase() ||
@@ -320,7 +321,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                         </div>
                       ) : (
                         <img
-                          src={image_url || userData?.ImageUrl || defaultAvatar}
+                          src={ newImageUrl.current || profileUrl || defaultAvatar}
                           alt="Profile preview"
                           className="rounded-full h-full w-full object-cover"
                         />

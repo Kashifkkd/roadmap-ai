@@ -5,7 +5,7 @@ import { ChevronDown, Search } from "lucide-react";
 import Image from "next/image";
 import React, { useState, useEffect } from "react";
 
-export default function CometFilter() {
+export default function CometFilter({handleChange , sessionName}) {
   const [clientName, setClientName] = useState("");
 
   useEffect(() => {
@@ -37,6 +37,8 @@ export default function CometFilter() {
               <input
                 type="text"
                 placeholder="Search"
+                value={sessionName}
+                onChange={(e)=>handleChange(e.target.value)}
                 className="font-inter w-full border-none font-normal text-gray-500  text-sm leading-5 tracking-normal focus:outline-none"
               />
             </div>

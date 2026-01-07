@@ -534,14 +534,17 @@ export default function Header() {
     );
   };
 
+  const session=typeof window !== 'undefined'
+    ? localStorage.getItem('sessionData')
+    : null;
   useEffect(() => {
-    const sessionData = JSON.parse(localStorage.getItem("sessionData") || "{}");
+    const sessionData = JSON.parse( session || "{}");
     try {
       setText(
         sessionData?.comet_creation_data?.["Basic Information"]?.["Comet Title"]
       );
     } catch {}
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     if (!isPreviewMode && activeModeButton === "preview") {
