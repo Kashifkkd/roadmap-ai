@@ -40,6 +40,7 @@ export default function AllCometsContainer({ cometSessions }) {
       console.log("Fetched session details:", result);
       
       localStorage.setItem("sessionData", JSON.stringify(result));
+      localStorage.setItem("sessionId", session_id);
       router.push("/comet-manager");
       console.log("Session details:", result);
     } catch (err) {
