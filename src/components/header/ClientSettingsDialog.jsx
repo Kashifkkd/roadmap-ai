@@ -12,7 +12,7 @@ import {
   Info,
   Trash2,
   Plus,
-  ArrowLeft
+  ArrowLeft,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -33,10 +33,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getClientDetails } from "@/api/client";
+import { getClients } from "@/api/client";
 import { updateCreator } from "@/api/User/updateCreator";
 import { getCreatorDetails } from "@/api/User/getCreatorDetails";
 import { getCreatorsByClientId } from "@/api/User/getCreatorsByClientId";
 import { registerUser } from "@/api/register";
+import { uploadProfile } from "@/api/User/uploadProfile";
 import { toast } from "sonner";
 import { useRefreshData, useUpsertClient } from "@/hooks/useQueryData";
 import ClientFormFields from "@/components/common/ClientFormFields";
@@ -73,6 +75,8 @@ export default function ClientSettingsDialog({
   const creatorImageInputRef = useRef(null);
   const [savingCreator, setSavingCreator] = useState(false);
   const [creatorSearchTerm, setCreatorSearchTerm] = useState("");
+  const [clientsList, setClientsList] = useState([]);
+  const [clientsListLoading, setClientsListLoading] = useState(false);
 
   const normalizeSearchTerm = (term) => term.trim().toLowerCase();
   const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value);
@@ -84,21 +88,21 @@ export default function ClientSettingsDialog({
   const filteredCreators =
     normalizedCreatorSearch && Array.isArray(creators)
       ? creators.filter((creator) => {
-        const firstName = creator.first_name || "";
-        const lastName = creator.last_name || "";
-        const email = creator.email || "";
-        const role =
-          creator.role ||
-          (Array.isArray(creator.roles) && creator.roles[0]) ||
-          "";
+          const firstName = creator.first_name || "";
+          const lastName = creator.last_name || "";
+          const email = creator.email || "";
+          const role =
+            creator.role ||
+            (Array.isArray(creator.roles) && creator.roles[0]) ||
+            "";
 
-        return (
-          textIncludesSearch(firstName, normalizedCreatorSearch) ||
-          textIncludesSearch(lastName, normalizedCreatorSearch) ||
-          textIncludesSearch(email, normalizedCreatorSearch) ||
-          textIncludesSearch(role, normalizedCreatorSearch)
-        );
-      })
+          return (
+            textIncludesSearch(firstName, normalizedCreatorSearch) ||
+            textIncludesSearch(lastName, normalizedCreatorSearch) ||
+            textIncludesSearch(email, normalizedCreatorSearch) ||
+            textIncludesSearch(role, normalizedCreatorSearch)
+          );
+        })
       : creators;
 
   // Fetch client details when dialog opens and selectedClient is available
@@ -158,6 +162,28 @@ export default function ClientSettingsDialog({
 
     fetchCreators();
   }, [open, activeTab, selectedClient]);
+
+  // Fetch clients list for creator form dropdown
+  useEffect(() => {
+    const fetchClientsList = async () => {
+      if (!open || activeTab !== "creators" || !showAddCreatorForm) return;
+
+      setClientsListLoading(true);
+      try {
+        const res = await getClients({ limit: 1000, enabledOnly: true });
+        const data = res?.response || [];
+        setClientsList(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to fetch clients:", error);
+        toast.error("Failed to load clients");
+        setClientsList([]);
+      } finally {
+        setClientsListLoading(false);
+      }
+    };
+
+    fetchClientsList();
+  }, [open, activeTab, showAddCreatorForm]);
 
   // Cleanup creator image preview URL when dialog closes
   useEffect(() => {
@@ -291,14 +317,45 @@ export default function ClientSettingsDialog({
       }
     }
 
-    const clientId = selectedClient.id || selectedClient.client_id;
+    // Use creatorClient if selected, otherwise fall back to selectedClient
+    const clientId = creatorClient
+      ? Number(creatorClient)
+      : selectedClient?.id || selectedClient?.client_id;
+
     if (!clientId) {
-      toast.error("Client ID not found");
+      toast.error("Please select a client");
       return;
     }
 
     setSavingCreator(true);
     try {
+      let imageUrl = null;
+
+      // Upload image if a file was selected
+      if (creatorImageFile) {
+        setUploadingCreatorImage(true);
+        try {
+          const uploadResponse = await uploadProfile(creatorImageFile);
+          // Support both camelCase and snake_case keys from the backend
+          imageUrl =
+            uploadResponse?.response?.ImageUrl ||
+            uploadResponse?.response?.image_url ||
+            uploadResponse?.response?.url;
+
+          if (!imageUrl) {
+            throw new Error("Failed to get image URL from upload response");
+          }
+        } catch (error) {
+          console.error("Error uploading creator image:", error);
+          toast.error("Failed to upload image. Please try again.");
+          setSavingCreator(false);
+          setUploadingCreatorImage(false);
+          return;
+        } finally {
+          setUploadingCreatorImage(false);
+        }
+      }
+
       let res;
       if (editingCreator) {
         const payload = {
@@ -313,6 +370,10 @@ export default function ClientSettingsDialog({
 
         if (creatorPassword) {
           payload.password = creatorPassword;
+        }
+
+        if (imageUrl) {
+          payload.image_url = imageUrl;
         }
 
         res = await updateCreator(
@@ -332,6 +393,11 @@ export default function ClientSettingsDialog({
           timezone: "UTC",
           metadata: {},
         };
+
+        if (imageUrl) {
+          payload.image_url = imageUrl;
+        }
+
         res = await registerUser(payload, { useAuthToken: true });
       }
 
@@ -483,7 +549,7 @@ export default function ClientSettingsDialog({
         <VisuallyHidden>
           <DialogTitle>Settings</DialogTitle>
         </VisuallyHidden>
-        <div className="rounded-[32px] bg-white overflow-hidden flex flex-col max-h-[90vh] lg:max-h-[85vh] xl:max-h-[90vh]  relative">
+        <div className="rounded-[32px] bg-white overflow-hidden flex flex-col h-[90vh] max-h-[90vh] relative">
           {/* Loader */}
           {isLoading && (
             <div className="absolute inset-0 z-50 bg-white/80 flex items-center justify-center rounded-[32px]">
@@ -572,7 +638,7 @@ export default function ClientSettingsDialog({
                 {activeTab === "creators" && (
                   <div>
                     {!showAddCreatorForm ? (
-                      <div className="overflow-x-auto h-[400px] xl:h-[80vh]">
+                      <div className="h-full flex flex-col">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-lg font-medium text-gray-700">
                             Creator List
@@ -599,388 +665,406 @@ export default function ClientSettingsDialog({
                             </Button>
                           </div>
                         </div>
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="bg-[#E8F4F3]">
-                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                                First Name
-                              </th>
-                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                                Last Name
-                              </th>
-                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                                Email
-                              </th>
-                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                                Role
-                              </th>
+                        <div className="flex-1 overflow-auto">
+                          <table className="w-full border-collapse">
+                            <thead>
+                              <tr className="bg-[#E8F4F3]">
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                                  First Name
+                                </th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                                  Last Name
+                                </th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                                  Email
+                                </th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                                  Role
+                                </th>
 
-                              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                                Action
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {creatorsLoading && (
-                              <tr>
-                                <td
-                                  colSpan={5}
-                                  className="px-4 py-4 text-center text-sm text-gray-500"
-                                >
-                                  Loading creators...
-                                </td>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                                  Action
+                                </th>
                               </tr>
-                            )}
-
-                            {creatorsError && !creatorsLoading && (
-                              <tr>
-                                <td
-                                  colSpan={5}
-                                  className="px-4 py-4 text-center text-sm text-red-500"
-                                >
-                                  {creatorsError}
-                                </td>
-                              </tr>
-                            )}
-
-                            {!creatorsLoading &&
-                              !creatorsError &&
-                              creators.length === 0 && (
+                            </thead>
+                            <tbody>
+                              {creatorsLoading && (
                                 <tr>
                                   <td
                                     colSpan={5}
                                     className="px-4 py-4 text-center text-sm text-gray-500"
                                   >
-                                    No creators found for this client.
+                                    Loading creators...
                                   </td>
                                 </tr>
                               )}
 
-                            {!creatorsLoading &&
-                              !creatorsError &&
-                              creators.length > 0 &&
-                              filteredCreators.length === 0 && (
+                              {creatorsError && !creatorsLoading && (
                                 <tr>
                                   <td
                                     colSpan={5}
-                                    className="px-4 py-4 text-center text-sm text-gray-500"
+                                    className="px-4 py-4 text-center text-sm text-red-500"
                                   >
-                                    No creators match your search.
+                                    {creatorsError}
                                   </td>
                                 </tr>
                               )}
 
-                            {!creatorsLoading &&
-                              !creatorsError &&
-                              filteredCreators.length > 0 &&
-                              filteredCreators.map((creator, index) => (
-                                <tr
-                                  key={creator.id || index}
-                                  className="border-b border-gray-100 hover:bg-gray-50"
-                                >
-                                  <td className="px-4 py-3 text-sm text-gray-600">
-                                    {creator.first_name || "-"}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-gray-600">
-                                    {creator.last_name || "-"}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-gray-600">
-                                    {creator.email || "-"}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-gray-600">
-                                    {creator.role ||
-                                      (Array.isArray(creator.roles) &&
-                                        creator.roles[0]) ||
-                                      "-"}
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <button className="text-gray-400 hover:text-gray-600">
-                                          <MoreHorizontal className="w-5 h-5" />
-                                        </button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent
-                                        align="start"
-                                        className="w-32 rounded-lg bg-white border border-gray-200 shadow-lg p-1"
-                                      >
-                                        <DropdownMenuItem
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleEditCreator(creator);
-                                          }}
-                                          className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
+                              {!creatorsLoading &&
+                                !creatorsError &&
+                                creators.length === 0 && (
+                                  <tr>
+                                    <td
+                                      colSpan={5}
+                                      className="px-4 py-4 text-center text-sm text-gray-500"
+                                    >
+                                      No creators found for this client.
+                                    </td>
+                                  </tr>
+                                )}
+
+                              {!creatorsLoading &&
+                                !creatorsError &&
+                                creators.length > 0 &&
+                                filteredCreators.length === 0 && (
+                                  <tr>
+                                    <td
+                                      colSpan={5}
+                                      className="px-4 py-4 text-center text-sm text-gray-500"
+                                    >
+                                      No creators match your search.
+                                    </td>
+                                  </tr>
+                                )}
+
+                              {!creatorsLoading &&
+                                !creatorsError &&
+                                filteredCreators.length > 0 &&
+                                filteredCreators.map((creator, index) => (
+                                  <tr
+                                    key={creator.id || index}
+                                    className="border-b border-gray-100 hover:bg-gray-50"
+                                  >
+                                    <td className="px-4 py-3 text-sm text-gray-600">
+                                      {creator.first_name || "-"}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">
+                                      {creator.last_name || "-"}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">
+                                      {creator.email || "-"}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">
+                                      {creator.role ||
+                                        (Array.isArray(creator.roles) &&
+                                          creator.roles[0]) ||
+                                        "-"}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <button className="text-gray-400 hover:text-gray-600">
+                                            <MoreHorizontal className="w-5 h-5" />
+                                          </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent
+                                          align="start"
+                                          className="w-32 rounded-lg bg-white border border-gray-200 shadow-lg p-1"
                                         >
-                                          Edit
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteCreator(creator);
-                                          }}
-                                          className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1"
-                                        >
-                                          Delete
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  </td>
-                                </tr>
-                              ))}
-                          </tbody>
-                        </table>
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleEditCreator(creator);
+                                            }}
+                                            className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
+                                          >
+                                            Edit
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteCreator(creator);
+                                            }}
+                                            className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1"
+                                          >
+                                            Delete
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     ) : (
-                      <div className="space-y-6">
-                        {/* Back Button */}
-                        <div className="flex items-center justify-between">
-                          <h2 className="text-xl font-semibold text-gray-900">
-                            {editingCreator ? "Edit Creator" : "Add Creator"}
-                          </h2>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={() => {
-                              setShowAddCreatorForm(false);
-                              resetCreatorForm();
-                            }}
-                            className="text-gray-600 hover:text-gray-900"
-                          >
-                            <X className="w-5 h-5" />
-                          </Button>
-                        </div>
+                      <div className="h-full flex flex-col overflow-y-auto">
+                        <div className="space-y-6">
+                          {/* Back Button */}
+                          <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-semibold text-gray-900">
+                              {editingCreator ? "Edit Creator" : "Add Creator"}
+                            </h2>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              onClick={() => {
+                                setShowAddCreatorForm(false);
+                                resetCreatorForm();
+                              }}
+                              className="text-gray-600 hover:text-gray-900"
+                            >
+                              <X className="w-5 h-5" />
+                            </Button>
+                          </div>
 
-                        {/* Personal Information */}
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                First Name
-                                <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                value={creatorFirstName}
-                                onChange={(e) =>
-                                  setCreatorFirstName(e.target.value)
-                                }
-                                className="w-full bg-white border border-gray-300"
-                              />
+                          {/* Personal Information */}
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  First Name
+                                  <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  value={creatorFirstName}
+                                  onChange={(e) =>
+                                    setCreatorFirstName(e.target.value)
+                                  }
+                                  className="w-full bg-white border border-gray-300"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Last Name
+                                  <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  value={creatorLastName}
+                                  onChange={(e) =>
+                                    setCreatorLastName(e.target.value)
+                                  }
+                                  className="w-full bg-white border border-gray-300"
+                                />
+                              </div>
                             </div>
-                            <div>
-                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                Last Name
-                                <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                value={creatorLastName}
-                                onChange={(e) =>
-                                  setCreatorLastName(e.target.value)
-                                }
-                                className="w-full bg-white border border-gray-300"
-                              />
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Email
+                                </Label>
+                                <Input
+                                  type="email"
+                                  value={creatorEmail}
+                                  onChange={(e) =>
+                                    setCreatorEmail(e.target.value)
+                                  }
+                                  disabled={editingCreator} // Email cannot be changed when editing
+                                  className="w-full bg-white border border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Role
+                                </Label>
+                                <Select
+                                  value={creatorRole}
+                                  onValueChange={setCreatorRole}
+                                >
+                                  <SelectTrigger className="w-full bg-white border border-gray-300">
+                                    <SelectValue placeholder="Select" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="superadmin">
+                                      SuperAdmin
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+
+                          {/* Account Details */}
+                          <div className="space-y-4">
+                            {!editingCreator && (
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                    Password
+                                    <span className="text-red-500">*</span>
+                                  </Label>
+                                  <Input
+                                    type="password"
+                                    value={creatorPassword}
+                                    onChange={(e) =>
+                                      setCreatorPassword(e.target.value)
+                                    }
+                                    className="w-full bg-white border border-gray-300"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                    Confirm Password
+                                    <span className="text-red-500">*</span>
+                                  </Label>
+                                  <Input
+                                    type="password"
+                                    value={creatorConfirmPassword}
+                                    onChange={(e) =>
+                                      setCreatorConfirmPassword(e.target.value)
+                                    }
+                                    className="w-full bg-white border border-gray-300"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                            {editingCreator && (
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                    Password
+                                  </Label>
+                                  <Input
+                                    type="password"
+                                    value={creatorPassword}
+                                    onChange={(e) =>
+                                      setCreatorPassword(e.target.value)
+                                    }
+                                    className="w-full bg-white border border-gray-300"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                    Confirm Password
+                                  </Label>
+                                  <Input
+                                    type="password"
+                                    value={creatorConfirmPassword}
+                                    onChange={(e) =>
+                                      setCreatorConfirmPassword(e.target.value)
+                                    }
+                                    className="w-full bg-white border border-gray-300 "
+                                  />
+                                </div>
+                              </div>
+                            )}
                             <div>
                               <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                Email
-                              </Label>
-                              <Input
-                                type="email"
-                                value={creatorEmail}
-                                onChange={(e) =>
-                                  setCreatorEmail(e.target.value)
-                                }
-                                disabled={editingCreator} // Email cannot be changed when editing
-                                className="w-full bg-white border border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                Role
+                                Client
                               </Label>
                               <Select
-                                value={creatorRole}
-                                onValueChange={setCreatorRole}
+                                value={creatorClient}
+                                onValueChange={setCreatorClient}
+                                disabled={clientsListLoading}
                               >
-                                <SelectTrigger className="w-full bg-white border border-gray-300">
-                                  <SelectValue placeholder="Select" />
+                                <SelectTrigger className="w-full bg-white ">
+                                  <SelectValue
+                                    placeholder={
+                                      clientsListLoading
+                                        ? "Loading clients..."
+                                        : "Select client"
+                                    }
+                                  />
                                 </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="admin">Admin</SelectItem>
-                                  <SelectItem value="superAdmin">
-                                    SuperAdmin
-                                  </SelectItem>
-                                  <SelectItem value="user">User</SelectItem>
-                                </SelectContent>
+                                {!clientsListLoading &&
+                                  clientsList.length > 0 && (
+                                    <SelectContent>
+                                      {clientsList.map((client) => (
+                                        <SelectItem
+                                          key={client.id || client.client_id}
+                                          value={String(
+                                            client.id || client.client_id
+                                          )}
+                                        >
+                                          {client.name ||
+                                            client.client_name ||
+                                            "Unnamed Client"}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  )}
                               </Select>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Account Details */}
-                        <div className="space-y-4">
-                          {!editingCreator && (
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                  Password
-                                  <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                  type="password"
-                                  value={creatorPassword}
-                                  onChange={(e) =>
-                                    setCreatorPassword(e.target.value)
-                                  }
-                                  className="w-full bg-white border border-gray-300"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                  Confirm Password
-                                  <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                  type="password"
-                                  value={creatorConfirmPassword}
-                                  onChange={(e) =>
-                                    setCreatorConfirmPassword(e.target.value)
-                                  }
-                                  className="w-full bg-white border border-gray-300"
-                                />
-                              </div>
-                            </div>
-                          )}
-                          {editingCreator && (
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                  Password
-                                </Label>
-                                <Input
-                                  type="password"
-                                  value={creatorPassword}
-                                  onChange={(e) =>
-                                    setCreatorPassword(e.target.value)
-                                  }
-                                  className="w-full bg-white border border-gray-300"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                  Confirm Password
-                                </Label>
-                                <Input
-                                  type="password"
-                                  value={creatorConfirmPassword}
-                                  onChange={(e) =>
-                                    setCreatorConfirmPassword(e.target.value)
-                                  }
-                                  className="w-full bg-white border border-gray-300"
-                                />
-                              </div>
-                            </div>
-                          )}
-                          <div>
+                          {/* Image Upload Section */}
+                          <div className="space-y-4">
                             <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                              Client
+                              Upload Image
                             </Label>
-                            <Select
-                              value={creatorClient}
-                              onValueChange={setCreatorClient}
-                            >
-                              <SelectTrigger className="w-full bg-white border border-gray-300">
-                                <SelectValue placeholder="Select" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="client1">
-                                  Client 1
-                                </SelectItem>
-                                <SelectItem value="client2">
-                                  Client 2
-                                </SelectItem>
-                                <SelectItem value="client3">
-                                  Client 3
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        {/* Image Upload Section */}
-                        <div className="space-y-4">
-                          <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                            Upload Image
-                          </Label>
-                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 bg-gray-100">
-                            {creatorImagePreview ? (
-                              <div className="relative w-full h-[200px] rounded-lg overflow-hidden">
-                                <img
-                                  src={creatorImagePreview}
-                                  alt="Creator preview"
-                                  className="w-full h-full object-contain rounded-lg"
-                                />
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (creatorImagePreview) {
-                                      URL.revokeObjectURL(creatorImagePreview);
-                                    }
-                                    setCreatorImageFile(null);
-                                    setCreatorImagePreview(null);
-                                  }}
-                                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 z-10"
-                                  title="Remove image"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ) : (
-                              <div
-                                onClick={handleCreatorImageClick}
-                                className="border-2 border-dashed border-gray-300 rounded-lg gap-2 flex flex-col items-center justify-center bg-white cursor-pointer relative min-h-[100px]"
-                              >
-                                <input
-                                  ref={creatorImageInputRef}
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={handleCreatorImageUpload}
-                                  className="hidden"
-                                />
-                                <div className="text-gray-500 text-sm mb-2">
-                                  {uploadingCreatorImage
-                                    ? "Uploading..."
-                                    : "Upload Image"}
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 bg-gray-100">
+                              {creatorImagePreview ? (
+                                <div className="relative w-full h-[200px] rounded-lg overflow-hidden">
+                                  <img
+                                    src={creatorImagePreview}
+                                    alt="Creator preview"
+                                    className="w-full h-full object-contain rounded-lg"
+                                  />
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (creatorImagePreview) {
+                                        URL.revokeObjectURL(
+                                          creatorImagePreview
+                                        );
+                                      }
+                                      setCreatorImageFile(null);
+                                      setCreatorImagePreview(null);
+                                    }}
+                                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 z-10"
+                                    title="Remove image"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
                                 </div>
-                                <Button
-                                  type="button"
-                                  disabled={uploadingCreatorImage}
-                                  className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                              ) : (
+                                <div
+                                  onClick={handleCreatorImageClick}
+                                  className="border-2 border-dashed border-gray-300 rounded-lg gap-2 flex flex-col items-center justify-center bg-white cursor-pointer relative min-h-[100px]"
                                 >
-                                  {uploadingCreatorImage
-                                    ? "Uploading..."
-                                    : "+ Browse"}
-                                </Button>
-                              </div>
-                            )}
+                                  <input
+                                    ref={creatorImageInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleCreatorImageUpload}
+                                    className="hidden"
+                                  />
+                                  <div className="text-gray-500 text-sm mb-2">
+                                    {uploadingCreatorImage
+                                      ? "Uploading..."
+                                      : "Upload Image"}
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    disabled={uploadingCreatorImage}
+                                    className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                                  >
+                                    {uploadingCreatorImage
+                                      ? "Uploading..."
+                                      : "+ Browse"}
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Save Creator Button */}
-                        <div className="flex justify-end pt-4">
-                          <Button
-                            type="button"
-                            onClick={handleSaveCreator}
-                            disabled={savingCreator}
-                            className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {savingCreator
-                              ? "Saving..."
-                              : editingCreator
+                          {/* Save Creator Button */}
+                          <div className="flex justify-end pt-4">
+                            <Button
+                              type="button"
+                              onClick={handleSaveCreator}
+                              disabled={savingCreator}
+                              className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {savingCreator
+                                ? "Saving..."
+                                : editingCreator
                                 ? "Update Creator"
                                 : "Save Creator"}
-                          </Button>
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )}

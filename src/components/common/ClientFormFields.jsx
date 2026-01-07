@@ -80,6 +80,18 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   const [clientName, setClientName] = useState("");
   const [website, setWebsite] = useState("");
   const [selectedColorCode, setSelectedColorCode] = useState("");
+  const [brandColors, setBrandColors] = useState({
+    stat1: "#7367F0",
+    stat2: "#41B3A2",
+    stat3: "#CF1662",
+    stat4: "#FFDC2F",
+    stat5: "#00A885",
+    theme: "#006C55",
+    header: "#006C57",
+    highlight: "#006C58",
+    themeheader: "#006C59",
+    highlightheader: "#006C56",
+  });
   const [enableFoozi, setEnableFoozi] = useState(false);
   const [enableCohorts, setEnableCohorts] = useState(false);
   const [secureLinks, setSecureLinks] = useState(false);
@@ -132,7 +144,39 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
     if (initialValues) {
       setClientName(initialValues.name || initialValues.client_name || "");
       setWebsite(initialValues.faq_url || "");
-      setSelectedColorCode(initialValues.color_code || "");
+
+      // Initialize brand colors from initialValues - support both nested and flat structure
+      setBrandColors({
+        stat1:
+          initialValues.stat1 || initialValues.brand_colors?.stat1 || "#7367F0",
+        stat2:
+          initialValues.stat2 || initialValues.brand_colors?.stat2 || "#41B3A2",
+        stat3:
+          initialValues.stat3 || initialValues.brand_colors?.stat3 || "#CF1662",
+        stat4:
+          initialValues.stat4 || initialValues.brand_colors?.stat4 || "#FFDC2F",
+        stat5:
+          initialValues.stat5 || initialValues.brand_colors?.stat5 || "#00A885",
+        theme:
+          initialValues.theme || initialValues.brand_colors?.theme || "#006C55",
+        header:
+          initialValues.header ||
+          initialValues.brand_colors?.header ||
+          "#006C57",
+        highlight:
+          initialValues.highlight ||
+          initialValues.brand_colors?.highlight ||
+          "#006C58",
+        themeheader:
+          initialValues.themeheader ||
+          initialValues.brand_colors?.themeheader ||
+          "#006C59",
+        highlightheader:
+          initialValues.highlightheader ||
+          initialValues.brand_colors?.highlightheader ||
+          "#006C56",
+      });
+
       setEnableFoozi(initialValues.enable_foozi || false);
       setEnableCohorts(initialValues.enable_cohorts || false);
       setExistingImageUrl(initialValues.image_url || "");
@@ -169,6 +213,18 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       setClientName("");
       setWebsite("");
       setSelectedColorCode("");
+      setBrandColors({
+        stat1: "#7367F0",
+        stat2: "#41B3A2",
+        stat3: "#CF1662",
+        stat4: "#FFDC2F",
+        stat5: "#00A885",
+        theme: "#006C55",
+        header: "#006C57",
+        highlight: "#006C58",
+        themeheader: "#006C59",
+        highlightheader: "#006C56",
+      });
       setEnableFoozi(false);
       setEnableCohorts(false);
       setPendingImageFile(null);
@@ -522,13 +578,21 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         name: clientName.trim(),
         enable_foozi: enableFoozi,
         enable_cohorts: enableCohorts,
+        stat1: brandColors.stat1,
+        stat2: brandColors.stat2,
+        stat3: brandColors.stat3,
+        stat4: brandColors.stat4,
+        stat5: brandColors.stat5,
+        theme: brandColors.theme,
+        header: brandColors.header,
+        highlight: brandColors.highlight,
+        themeheader: brandColors.themeheader,
+        highlightheader: brandColors.highlightheader,
       };
 
       if (website.trim()) payload.faq_url = website.trim();
-      if (selectedColorCode) payload.color_code = selectedColorCode;
-      if (finalImageUrl) payload.image_url = finalImageUrl;
-      if (finalBackgroundImageUrl)
-        payload.background_image_url = finalBackgroundImageUrl;
+      if (finalImageUrl) payload.background_image_url = finalImageUrl;
+      if (finalBackgroundImageUrl) payload.image_url = finalBackgroundImageUrl;
 
       return payload;
     },
@@ -545,6 +609,18 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       return true;
     },
   }));
+  const colorCodes = [
+    { code: "#7367F0", name: "Stat1", key: "stat1" },
+    { code: "#41B3A2", name: "Stat2", key: "stat2" },
+    { code: "#CF1662", name: "Stat3", key: "stat3" },
+    { code: "#FFDC2F", name: "Stat4", key: "stat4" },
+    { code: "#00A885", name: "Stat5", key: "stat5" },
+    { code: "#006C55", name: "Theme", key: "theme" },
+    { code: "#006C57", name: "Header", key: "header" },
+    { code: "#006C58", name: "Highlight", key: "highlight" },
+    { code: "#006C59", name: "Theme Header", key: "themeheader" },
+    { code: "#006C56", name: "Highlight Header", key: "highlightheader" },
+  ];
 
   // Determine which preview to show (pending or existing)
   const imagePreview = pendingImagePreview || existingImageUrl;
@@ -703,95 +779,54 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         <Label className="text-sm font-medium text-gray-700 mb-4 block">
           Brand Colors
         </Label>
-        <div className="grid grid-cols-2  gap-4">
-          {/* Color Swatch 1 - Purple */}
-          <div
-            onClick={() => setSelectedColorCode("#7367F0")}
-            className={`flex gap-3 p-2 border w-full h-full rounded-lg bg-white cursor-pointer transition-all ${
-              selectedColorCode === "#7367F0"
-                ? "border-primary-700 border-2 shadow-md"
-                : "border-gray-200 hover:border-gray-300"
-            }`}
-          >
-            <div className="w-16 h-10 rounded-md bg-[#7367F0]"></div>
-            <div className="gap-1 flex flex-col">
-              <div className="text-sm font-medium text-gray-700">Title</div>
-              <div className="text-xs text-gray-500">#7367F0</div>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+          {colorCodes.map((color) => {
+            const displayColor = brandColors[color.key];
 
-          <div
-            onClick={() => setSelectedColorCode("#41B3A2")}
-            className={`flex items-center gap-3 p-2 border max-h-[54px] rounded-lg bg-white cursor-pointer transition-all ${
-              selectedColorCode === "#41B3A2"
-                ? "border-primary-700 border-2 shadow-md"
-                : "border-gray-200 hover:border-gray-300"
-            }`}
-          >
-            <div className="w-16 h-10 rounded-lg bg-[#41B3A2]"></div>
-            <div className="flex-1">
-              <div className="text-sm font-medium text-gray-700">Title</div>
-              <div className="text-xs text-gray-500">#41B3A2</div>
-            </div>
-          </div>
-
-          <div
-            onClick={() => setSelectedColorCode("#CF1662")}
-            className={`flex gap-3 p-2 border items-center max-h-[54px] rounded-lg bg-white cursor-pointer transition-all ${
-              selectedColorCode === "#CF1662"
-                ? "border-primary-700 border-2 shadow-md"
-                : "border-gray-200 hover:border-gray-300"
-            }`}
-          >
-            <div className="w-16 h-10 rounded-md bg-[#CF1662]"></div>
-            <div className="gap-1 flex flex-col">
-              <div className="text-sm font-medium text-gray-700">Title</div>
-              <div className="text-xs text-gray-500">#CF1662</div>
-            </div>
-          </div>
-
-          <div
-            onClick={() => setSelectedColorCode("#FFDC2F")}
-            className={`flex items-center gap-3 p-2 max-h-[54px] border rounded-lg bg-white cursor-pointer transition-all ${
-              selectedColorCode === "#FFDC2F"
-                ? "border-primary-700 border-2 shadow-md"
-                : "border-gray-200 hover:border-gray-300"
-            }`}
-          >
-            <div className="w-16 h-10 rounded-md bg-[#FFDC2F]"></div>
-            <div className="gap-1 flex flex-col">
-              <div className="text-sm font-medium text-gray-700">Title</div>
-              <div className="text-xs text-gray-500">#FFDC2F</div>
-            </div>
-          </div>
-          <div
-            onClick={() => setSelectedColorCode("#00A885")}
-            className={`flex items-center gap-3 p-2 border rounded-lg bg-white cursor-pointer transition-all ${
-              selectedColorCode === "#00A885"
-                ? "border-primary-700 border-2 shadow-md"
-                : "border-gray-200 hover:border-gray-300"
-            }`}
-          >
-            <div className="w-16 h-10 rounded-lg bg-[#00A885]"></div>
-            <div className="flex-1">
-              <div className="text-sm font-medium text-gray-700">Title</div>
-              <div className="text-xs text-gray-500">#00A885</div>
-            </div>
-          </div>
-          <div
-            onClick={() => setSelectedColorCode("#006C55")}
-            className={`flex items-center gap-3 max-h-[54px] p-2 border rounded-lg bg-white cursor-pointer transition-all ${
-              selectedColorCode === "#006C55"
-                ? "border-primary-700 border-2 shadow-md"
-                : "border-gray-200 hover:border-gray-300"
-            }`}
-          >
-            <div className="w-16 h-10 rounded-lg bg-[#006C55]"></div>
-            <div className="flex-1">
-              <div className="text-sm font-medium text-gray-700">Title</div>
-              <div className="text-xs text-gray-500">#006C55</div>
-            </div>
-          </div>
+            return (
+              <div
+                key={color.key}
+                className={`flex items-center gap-2 border rounded-lg p-2 cursor-pointer transition-all ${
+                  selectedColorCode === color.key
+                    ? "border-primary-700 border-2 shadow-md"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+                onClick={() => {
+                  setSelectedColorCode(color.key);
+                }}
+              >
+                <div className="relative w-12 h-8 sm:w-16 sm:h-10 shrink-0 overflow-hidden">
+                  <div className="relative w-16 h-10 rounded-sm overflow-hidden">
+                    <input
+                      type="color"
+                      value={displayColor}
+                      onChange={(e) => {
+                        setBrandColors((prev) => ({
+                          ...prev,
+                          [color.key]: e.target.value,
+                        }));
+                        setSelectedColorCode(color.key);
+                      }}
+                      className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <div
+                      className="w-full h-full rounded-sm"
+                      style={{ backgroundColor: displayColor }}
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-700">
+                    {color.name}
+                  </span>
+                  <span className="text-sm font-medium text-gray-700">
+                    {displayColor}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
       <div className="space-y-0">
@@ -805,54 +840,56 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
           onChange={setEnableCohorts}
           label="Enable Cohorts"
         />
-        <div className={`flex justify-end ${!enableCohorts && "mb-4"}`}>
-          <Button
-            variant="outline"
-            type="button"
-            className="border-primary-700 text-primary-700 justify-end"
-            onClick={() => {
-              setEditingCohort(null);
-              setNewCohortName("");
-              // setNewCohortDescription("");
-              setIsCohortFormOpen(true);
-            }}
-          >
-            {/* <Plus className="w-4 h-4" /> */}
-            Add Cohort
-          </Button>
-        </div>
-        {isCohortFormOpen && (
-          <div className="mt-4 border border-gray-200 rounded-lg bg-white p-4 space-y-3 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-800">
-                {editingCohort ? "Edit Cohort" : "New Cohort"}
-              </span>
-              <button
+        {enableCohorts && (
+          <div className="mb-4">
+            <div className={`flex justify-end ${!enableCohorts && "mb-4"}`}>
+              <Button
+                variant="outline"
                 type="button"
+                className="border-primary-700 text-primary-700 justify-end"
                 onClick={() => {
-                  setIsCohortFormOpen(false);
+                  setEditingCohort(null);
                   setNewCohortName("");
                   // setNewCohortDescription("");
-                  setEditingCohort(null);
+                  setIsCohortFormOpen(true);
                 }}
-                className="text-gray-400 hover:text-gray-600"
               >
-                <X className="w-4 h-4" />
-              </button>
+                {/* <Plus className="w-4 h-4" /> */}
+                Add Cohort
+              </Button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-gray-700">
-                  Cohort Name<span className="text-red-500 ml-0.5">*</span>
-                </Label>
-                <Input
-                  value={newCohortName}
-                  onChange={(e) => setNewCohortName(e.target.value)}
-                  placeholder="Enter cohort name"
-                  className="h-9"
-                />
-              </div>
-              {/* <div className="space-y-1.5">
+            {isCohortFormOpen && (
+              <div className="mt-4 border border-gray-200 rounded-lg bg-white p-4 space-y-3 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-800">
+                    {editingCohort ? "Edit Cohort" : "New Cohort"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCohortFormOpen(false);
+                      setNewCohortName("");
+                      // setNewCohortDescription("");
+                      setEditingCohort(null);
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-gray-700">
+                      Cohort Name<span className="text-red-500 ml-0.5">*</span>
+                    </Label>
+                    <Input
+                      value={newCohortName}
+                      onChange={(e) => setNewCohortName(e.target.value)}
+                      placeholder="Enter cohort name"
+                      className="h-9"
+                    />
+                  </div>
+                  {/* <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-gray-700">
                   Description
                 </Label>
@@ -863,40 +900,39 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   className="h-9"
                 />
               </div> */}
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-gray-600 hover:text-gray-800"
-                onClick={() => {
-                  setIsCohortFormOpen(false);
-                  setNewCohortName("");
-                  // setNewCohortDescription("");
-                  setEditingCohort(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                className="bg-primary-700 hover:bg-primary-800 text-white px-4 py-1.5 rounded-lg disabled:opacity-60"
-                onClick={
-                  editingCohort ? handleUpdateCohort : handleCreateCohort
-                }
-                disabled={creatingCohort}
-              >
-                {creatingCohort
-                  ? "Saving..."
-                  : editingCohort
-                  ? "Update Cohort"
-                  : "Save Cohort"}
-              </Button>
-            </div>
-          </div>
-        )}
-        {enableCohorts && (
-          <div className="mb-4">
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-gray-600 hover:text-gray-800"
+                    onClick={() => {
+                      setIsCohortFormOpen(false);
+                      setNewCohortName("");
+                      // setNewCohortDescription("");
+                      setEditingCohort(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    className="bg-primary-700 hover:bg-primary-800 text-white px-4 py-1.5 rounded-lg disabled:opacity-60"
+                    onClick={
+                      editingCohort ? handleUpdateCohort : handleCreateCohort
+                    }
+                    disabled={creatingCohort}
+                  >
+                    {creatingCohort
+                      ? "Saving..."
+                      : editingCohort
+                      ? "Update Cohort"
+                      : "Save Cohort"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <Label className="text-sm font-medium text-gray-700 mt-4 block">
               Cohort List
             </Label>
