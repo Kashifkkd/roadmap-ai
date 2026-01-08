@@ -51,8 +51,7 @@ export default function AllComet() {
   }
 
   const fetchCometSessions = async ({ clientId, token }) => {
-    if (!clientId || !token)
-      throw new Error("Missing client ID or access token");
+   
     const res = await fetch(
       `https://kyper-stage.1st90.com/api/comet/sessions?clientId=${encodeURIComponent(
         clientId
@@ -116,13 +115,7 @@ export default function AllComet() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="w-screen h-screen flex justify-center items-center">
-        Error: {error}
-      </div>
-    );
-  }
+
 
   // if (noComet) {
   //   return (

@@ -399,7 +399,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       if (newSet.has(pathId)) {
         newSet.delete(pathId);
       } else {
-        if (newSet.size >= 5) {
+        if (newSet.size >= 25) {
           setPathIdsError("You can select up to 5 paths only");
           toast.error("You can select up to 5 paths only");
           return prev;
@@ -424,7 +424,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
 
     const selectedIds = Array.from(selectedPathIds);
 
-    if (selectedIds.length > 5) {
+    if (selectedIds.length > 25) {
       setPathIdsError("You can select up to 5 paths only");
       toast.error("You can select up to 5 paths only");
       return;
@@ -1111,8 +1111,8 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
               <p className="text-xs text-red-500">{pathIdsError}</p>
             )}
 
-            {/* Enabled Toggle */}
-            <div className="flex items-center justify-between py-2 border-t border-gray-200">
+           
+            {/* <div className="flex items-center justify-between py-2 border-t border-gray-200">
               <Label className="text-sm font-medium text-gray-700">
                 Enable Paths
               </Label>
@@ -1132,7 +1132,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   }`}
                 />
               </button>
-            </div>
+            </div> */}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button
