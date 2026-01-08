@@ -1,7 +1,8 @@
 import React from "react";
 import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
 
-const Loader = ({ inputText }) => {
+const Loader = ({ inputText, onBack, backLabel = "Back" }) => {
   const steps = [
     "Reading your documents",
     "Extracting key insights",
@@ -45,7 +46,16 @@ const Loader = ({ inputText }) => {
   const animationDuration = steps.length * 1;
 
   return (
-    <div className="w-full h-full flex flex-col rounded-2xl p-2 bg-white">
+    <div className="w-full h-full flex flex-col rounded-2xl p-2 bg-white relative">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="absolute top-4 left-4 z-20 flex items-center gap-2 px-4 py-2 text-primary-700 hover:bg-primary-100 rounded-lg transition-colors bg-white/90 backdrop-blur-sm shadow-sm"
+        >
+          <ArrowLeft size={16} />
+          <span>{backLabel}</span>
+        </button>
+      )}
       <div className="w-full pt-14 h-full flex flex-col items-center rounded-lg px-2 sm:px-2 md:px-6 border border-[#C7C2F9]">
         <div className="flex flex-col items-center justify-center max-w-2xl mx-auto px-4 rounded mt-10">
           {/* Logo */}

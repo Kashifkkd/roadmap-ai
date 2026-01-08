@@ -658,7 +658,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         {/* General Image Upload */}
         <div>
           <Label className="text-sm font-medium text-gray-700 mb-3 block">
-            White-on-transparent Logo (Upload PNG)
+            White-on-transparent Logo
           </Label>
           <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
             {imagePreview ? (
@@ -717,7 +717,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         {/* Color Logo */}
         <div>
           <Label className="text-sm font-medium text-gray-700 mb-3 block">
-            Color Logo (Upload PNG)
+            Color Logo
           </Label>
           <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
             {backgroundImagePreview ? (

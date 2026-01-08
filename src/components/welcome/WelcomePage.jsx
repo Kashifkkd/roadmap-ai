@@ -331,7 +331,7 @@ export default function WelcomePage() {
                   <div className="w-full border-t border-gray-200"></div> */}
 
                   {/* Action Bar */}
-                  <div className="w-full flex flex-row justify-between items-center gap-2 px-3 py-2">
+                  <div className="w-full flex flex-row justify-between items-center gap-2 px-3 py-3">
                     <Button
                       variant="default"
                       className={`cursor-pointer flex items-center gap-2 ${

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import CreateComet from "@/components/create-comet";
 import ChatWindow from "@/components/chat/ChatWindow";
 // import ProgressbarLoader from "@/components/loader";
@@ -272,12 +273,20 @@ export default function DashboardLayout() {
     }
   };
 
+  const handleBackFromLoading = () => {
+    router.push("/dashboard");
+    setIsGeneratingOutline(false);
+  };
+
   if (isGeneratingOutline) {
     return (
       <div className="fixed inset-x-0 top-[64px] bottom-0 z-50 bg-primary-50">
         <div className="w-full h-full flex items-center justify-center p-2 overflow-auto">
-          {/* <ProgressbarLoader /> */}
-          <Loader inputText="outline" />
+          <Loader
+            inputText="outline"
+            onBack={handleBackFromLoading}
+            backLabel="Back to Dashboard"
+          />
         </div>
       </div>
     );

@@ -185,11 +185,20 @@ export default function OutlineMannerFooter() {
     }
   };
 
+  const handleBackFromLoading = () => {
+    router?.push("/outline-manager");
+    setIsGenerating(false);
+  };
+
   if (isGenerating) {
     return (
       <div className="fixed inset-x-0 top-[64px] bottom-0 z-50 bg-primary-50">
         <div className="w-full h-full flex items-center justify-center p-2 overflow-auto">
-          <Loader inputText="Comet" />
+          <Loader
+            inputText="Comet"
+            onBack={handleBackFromLoading}
+            backLabel="Back to Outline Manager"
+          />
         </div>
       </div>
     );

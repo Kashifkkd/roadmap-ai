@@ -21,7 +21,11 @@ import {
 import { tokenManager } from "@/lib/api-client";
 import Image from "next/image";
 import ClientDropdown from "@/components/common/ClientDropdown";
-import { useRecentClients, useUser, useClientDetails } from "@/hooks/useQueryData";
+import {
+  useRecentClients,
+  useUser,
+  useClientDetails,
+} from "@/hooks/useQueryData";
 import { shareComet } from "@/api/shareComet";
 import { publishComet } from "@/api/publishComet";
 import { downloadDocument } from "@/api/downloadDocument";
@@ -128,6 +132,94 @@ export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
 
+  const [feedbackButtonPosition, setFeedbackButtonPosition] = useState({
+    left: 24,
+    bottom: 24,
+  });
+
+  const feedbackButtonRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const handleFloatingFeedbackClick = (e) => {
+    // Prevent click after drag
+    if (isDraggingRef.current) return;
+
+    const to = "hello@1st90.com";
+    const subject = "Kyper Feedback";
+    window.location.href = `mailto:${to}?subject=${encodeURIComponent(
+      subject
+    )}`;
+  };
+
+  // Floating Feedback Button Component
+  const FloatingFeedbackButton = () => {
+    const handlePointerDown = (e) => {
+      e.preventDefault();
+      isDraggingRef.current = true;
+
+      const rect = feedbackButtonRef.current?.getBoundingClientRect();
+      if (rect) {
+        dragOffsetRef.current = {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+        };
+      }
+
+      document.addEventListener("pointermove", handlePointerMove);
+      document.addEventListener("pointerup", handlePointerUp);
+    };
+
+    const handlePointerMove = (e) => {
+      if (!isDraggingRef.current) return;
+
+      const BUTTON_SIZE = 56;
+
+      let newLeft = e.clientX - dragOffsetRef.current.x;
+      let newTop = e.clientY - dragOffsetRef.current.y;
+
+      newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - BUTTON_SIZE));
+      newTop = Math.max(0, Math.min(newTop, window.innerHeight - BUTTON_SIZE));
+
+      setFeedbackButtonPosition({
+        left: newLeft,
+        bottom: window.innerHeight - newTop - BUTTON_SIZE,
+      });
+    };
+
+    const handlePointerUp = () => {
+      // Small delay to prevent click from firing immediately after drag
+      setTimeout(() => {
+        isDraggingRef.current = false;
+      }, 100);
+
+      document.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("pointerup", handlePointerUp);
+    };
+
+    return (
+      <div
+        ref={feedbackButtonRef}
+        className="fixed z-50"
+        style={{
+          left: `${feedbackButtonPosition.left}px`,
+          bottom: `${feedbackButtonPosition.bottom}px`,
+        }}
+      >
+        <button
+          onPointerDown={handlePointerDown}
+          onClick={handleFloatingFeedbackClick}
+          className="w-10 h-10 rounded-full border-2 border-[#e7fffe] bg-[#e7fffe] hover:bg-[#D9F0EC] shadow-lg flex items-center justify-center transition-all cursor-grab "
+          style={{
+            touchAction: "none",
+            userSelect: "none",
+          }}
+        >
+          <Image src="/Dialog 2.svg" alt="Feedback" width={24} height={24} />
+        </button>
+      </div>
+    );
+  };
+
   // TanStack Query for recent clients and user
   const {
     data: clients = [],
@@ -141,10 +233,8 @@ export default function Header() {
   const [clientIdToUse, setClientIdToUse] = useState(null);
 
   // Fetch client details for the selected client ID
-  const {
-    data: clientDetails,
-    isLoading: clientDetailsLoading,
-  } = useClientDetails(clientIdToUse, isAuthenticated && !!clientIdToUse);
+  const { data: clientDetails, isLoading: clientDetailsLoading } =
+    useClientDetails(clientIdToUse, isAuthenticated && !!clientIdToUse);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isHomeButtonActive, setIsHomeButtonActive] = useState(false);
   const [activeButton, setActiveButton] = useState(null);
@@ -185,23 +275,23 @@ export default function Header() {
   const displayClients = clients.length > 0 ? clients : [];
 
   // Mock collaborators data
-  const mockCollaborators = [
-    {
-      id: 1,
-      name: "John Smith",
-      ImageUrl: "/profile.png",
-    },
-    {
-      id: 2,
-      name: "Jane Doe",
-      ImageUrl: "/profile.png",
-    },
-    {
-      id: 3,
-      name: "Mike Johnson",
-      ImageUrl: "/profile.png",
-    },
-  ];
+  // const mockCollaborators = [
+  //   {
+  //     id: 1,
+  //     name: "John Smith",
+  //     ImageUrl: "/profile.png",
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "Jane Doe",
+  //     ImageUrl: "/profile.png",
+  //   },
+  //   {
+  //     id: 3,
+  //     name: "Mike Johnson",
+  //     ImageUrl: "/profile.png",
+  //   },
+  // ];
 
   const navItems = [
     { name: "Dashboard", path: "/" },
@@ -268,7 +358,7 @@ export default function Header() {
 
     try {
       let clientIdFromStorage = localStorage.getItem("Client id");
-      
+
       // If no Client id in localStorage, use user.client_id as fallback
       if (!clientIdFromStorage && user?.client_id) {
         clientIdFromStorage = String(user.client_id);
@@ -292,7 +382,10 @@ export default function Header() {
   useEffect(() => {
     if (clientDetails) {
       // Only update if we don't have a selected client or if the IDs don't match
-      if (!selectedClient || String(selectedClient?.id) !== String(clientDetails?.id)) {
+      if (
+        !selectedClient ||
+        String(selectedClient?.id) !== String(clientDetails?.id)
+      ) {
         setSelectedClient(clientDetails);
         // Update localStorage to keep it in sync
         try {
@@ -328,7 +421,13 @@ export default function Header() {
         // Ignore storage errors
       }
     }
-  }, [clientDetails, clientDetailsLoading, selectedClient, clients, isAuthenticated]);
+  }, [
+    clientDetails,
+    clientDetailsLoading,
+    selectedClient,
+    clients,
+    isAuthenticated,
+  ]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -352,8 +451,11 @@ export default function Header() {
     setActiveButton(buttonName);
   };
 
-  const handleHomeButtonClick = () => {
-    setIsHomeButtonActive(!isHomeButtonActive);
+  const handleGoHome = () => {
+    setIsUserMenuOpen(false);
+    setIsMobileMenuOpen(false);
+    setIsHomeButtonActive(false);
+    router.push("/");
   };
   const handleMailto = () => {
     const to = "hello@1st90.com";
@@ -534,11 +636,10 @@ export default function Header() {
     );
   };
 
-  const session=typeof window !== 'undefined'
-    ? localStorage.getItem('sessionData')
-    : null;
+  const session =
+    typeof window !== "undefined" ? localStorage.getItem("sessionData") : null;
   useEffect(() => {
-    const sessionData = JSON.parse( session || "{}");
+    const sessionData = JSON.parse(session || "{}");
     try {
       setText(
         sessionData?.comet_creation_data?.["Basic Information"]?.["Comet Title"]
@@ -681,63 +782,33 @@ export default function Header() {
     return name.charAt(0).toUpperCase() || "?";
   };
 
-  const Collaborators = () => (
-    <div className="flex items-center">
-      {mockCollaborators.map((collaborator, index) => (
-        <div
-          key={collaborator.id}
-          className="relative w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full border-2 border-white overflow-hidden bg-gray-100"
-          style={{
-            marginLeft: index > 0 ? "-16px" : "0",
-            zIndex: mockCollaborators.length - index,
-          }}
-          title={collaborator.name}
-        >
-          <Image
-            src={
-              collaborator.ImageUrl && collaborator.ImageUrl.trim() !== ""
-                ? collaborator.ImageUrl
-                : "/profile.png"
-            }
-            alt={collaborator.name || "Collaborator"}
-            width={36}
-            height={36}
-            className="object-cover w-full h-full"
-          />
-        </div>
-      ))}
-    </div>
-  );
-
-  const FeedbackButton = ({
-    compact = false,
-    isActive = false,
-    onClick = () => {},
-  }) => (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-1 sm:gap-2 rounded-md border transition-colors hover:cursor-pointer ${
-        isActive
-          ? "bg-[#F5F5F5] text-[#399C8D] border-[#399C8D]"
-          : "bg-[#ECF7F6] hover:bg-[#D9F0EC] hover:text-[#399C8D] border-transparent"
-      } ${compact ? "px-2 py-1" : "px-2 sm:px-3 py-1.5 sm:py-2"}`}
-    >
-      <Image
-        src="/Dialog 2.svg"
-        alt="Feedback"
-        width={18}
-        height={18}
-        className="sm:w-5 sm:h-5 h"
-        style={{ width: "auto", height: "auto" }}
-      />
-
-      {!compact && (
-        <span className="hidden sm:inline text-xs sm:text-sm font-medium">
-          Feedback
-        </span>
-      )}
-    </button>
-  );
+  // const Collaborators = () => (
+  //   <div className="flex items-center">
+  //     {mockCollaborators.map((collaborator, index) => (
+  //       <div
+  //         key={collaborator.id}
+  //         className="relative w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full border-2 border-white overflow-hidden bg-gray-100"
+  //         style={{
+  //           marginLeft: index > 0 ? "-16px" : "0",
+  //           zIndex: mockCollaborators.length - index,
+  //         }}
+  //         title={collaborator.name}
+  //       >
+  //         <Image
+  //           src={
+  //             collaborator.ImageUrl && collaborator.ImageUrl.trim() !== ""
+  //               ? collaborator.ImageUrl
+  //               : "/profile.png"
+  //           }
+  //           alt={collaborator.name || "Collaborator"}
+  //           width={36}
+  //           height={36}
+  //           className="object-cover w-full h-full"
+  //         />
+  //       </div>
+  //     ))}
+  //   </div>
+  // );
 
   const InviteButton = () => (
     <button
@@ -757,12 +828,6 @@ export default function Header() {
 
   const RightSectionGeneric = () => (
     <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 my-1">
-      <div>
-        <FeedbackButton
-          isActive={isFeedbackActive}
-          onClick={handleFeedbackClick}
-        />
-      </div>
       <button
         onClick={handleDownloadClick}
         className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-sm border transition-colors duration-200 shrink-0 ${
@@ -779,9 +844,9 @@ export default function Header() {
           className="sm:w-5 sm:h-5"
         />
       </button>
-      <div className="hidden lg:flex">
+      {/* <div className="hidden lg:flex">
         <Collaborators />
-      </div>
+      </div> */}
       <div>
         <InviteButton />
       </div>
@@ -917,12 +982,6 @@ export default function Header() {
         </button>
       )}
 
-      <div className="hidden lg:block">
-        <FeedbackButton
-          isActive={isFeedbackActive}
-          onClick={handleFeedbackClick}
-        />
-      </div>
       <button
         onClick={handleDownloadClick}
         className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-sm border transition-colors duration-200 shrink-0 ${
@@ -940,9 +999,9 @@ export default function Header() {
         />
       </button>
 
-      <div className="hidden lg:flex">
+      {/* <div className="hidden lg:flex">
         <Collaborators />
-      </div>
+      </div> */}
       <div className="hidden md:block">
         <InviteButton />
       </div>
@@ -998,7 +1057,10 @@ export default function Header() {
                               ? "bg-primary text-white"
                               : "bg-white text-gray-900 hover:bg-primary-100"
                           } `}
-                          onClick={() => handleButtonClick("home")}
+                          onClick={() => {
+                            handleButtonClick("home");
+                            handleGoHome();
+                          }}
                         >
                           <Image
                             src="/home.svg"
@@ -1149,7 +1211,7 @@ export default function Header() {
                   />
                   {!isHome && (
                     <div
-                      onClick={handleHomeButtonClick}
+                      onClick={handleGoHome}
                       className={`hidden lg:flex w-9 h-9 cursor-pointer rounded-sm items-center justify-center shrink-0 transition-colors duration-200 border ${
                         isHomeButtonActive
                           ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
@@ -1226,7 +1288,7 @@ export default function Header() {
                         )}
                         {!isHome && (
                           <div
-                            onClick={handleHomeButtonClick}
+                            onClick={handleGoHome}
                             className={`hidden lg:flex w-9 h-9 cursor-pointer rounded-sm items-center justify-center shrink-0 -ml-12 transition-colors duration-200 border ${
                               isHomeButtonActive
                                 ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
@@ -1596,7 +1658,7 @@ export default function Header() {
         onOpenChange={setIsClientSettingsDialogOpen}
         selectedClient={selectedClient}
       />
+      <FloatingFeedbackButton />
     </>
   );
 }
-
