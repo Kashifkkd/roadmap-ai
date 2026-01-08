@@ -2,12 +2,13 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { ArrowUp, Paperclip, Search, ArrowDown } from "lucide-react";
+import { ArrowUp, Paperclip, Search } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import Stars from "@/components/icons/Stars";
 import ChatMessage from "@/components/chat/ChatMessage";
 import Vector from "@/components/images/vector.svg";
+import { graphqlClient } from "@/lib/graphql-client";
 
 const SUGGESTIONS = [
   "Create a go-to microlearning experience for new managers",
@@ -18,13 +19,6 @@ const SUGGESTIONS = [
   "Add reinforcement & application to a training",
 ];
 
-// Static questions that appear on the right side (bot questions)
-const QUESTIONS = [
-  "That sounds great! Let’s start shaping this into a learning experience. Can you tell me a bit more about your audience-what’s their role, experience level, and which department or function they belong to?",
-  "Thanks that helps me understand the audience. Now, why are you creating this Comet? You can include the organizational context, for example, is this part of a new sales transformation, or a follow-up to a recent training or workshop? Also, what outcomes do you want to achieve both in learning and behavior change?",
-  "Perfect. That’s everything I need for now. Let me generate your initial Comet setup this will take just a moment.",
-];
-
 export default function WelcomePage() {
   const [inputText, setInputText] = useState("");
   const [isDisabled, setIsDisabled] = useState(false);
@@ -33,13 +27,15 @@ export default function WelcomePage() {
   const textareaRef = useRef(null);
   const router = useRouter();
 
-  const [questionIndex, setQuestionIndex] = useState(-1); // -1 = no question shown, 0-2 = question index
-  const [answers, setAnswers] = useState([]);
-  const [initialInput, setInitialInput] = useState("");
-  const [messages, setMessages] = useState([]); // Store chat messages for display
+  const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // GraphQL session state (same as ChatWindow)
+  const [sessionId, setSessionId] = useState(null);
+  const [sessionData, setSessionData] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleSuggestionSelect = (suggestion) => {
     setInputText(suggestion);
@@ -63,108 +59,203 @@ export default function WelcomePage() {
     }
   }, [messages.length, isExpanded]);
 
+  // Cleanup WebSocket connections on unmount (same as ChatWindow line 39-43)
+  useEffect(() => {
+    return () => {
+      graphqlClient.cleanup();
+    };
+  }, []);
+
   const handleMessageTypingComplete = () => {
     setIsAnimating(false);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!inputText.trim() || isDisabled || isAnimating) return;
-
-    setIsDisabled(true);
-    const userInput = inputText.trim();
-    setInputText("");
-
-    // First time - user types anything
-    if (questionIndex === -1) {
-      setInitialInput(userInput);
-
-      setMessages([
-        { from: "user", content: userInput },
-        { from: "bot", content: QUESTIONS[0] },
-      ]);
-      setIsAnimating(true);
-
-      setQuestionIndex(0);
-      setIsExpanded(true);
-      setIsDisabled(false);
-      return;
-    }
-
-    const currentQuestionText = QUESTIONS[questionIndex];
-    const questionAnswer = { question: currentQuestionText, answer: userInput };
-    const allAnswers = [...answers, questionAnswer];
-    setAnswers(allAnswers);
-
-    setMessages((prev) => [...prev, { from: "user", content: userInput }]);
-
-    if (questionIndex === QUESTIONS.length - 2) {
-      // Add confirmation message first
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            from: "bot",
-            content:
-              "Perfect. That's everything I need for now. Let me generate your initial Comet setup — this will take just a moment.",
-          },
-        ]);
-        setIsAnimating(true);
-      }, 200);
-
-      // Show loading message after a short delay
+  // Handle form submission - FIXED: Setup subscription BEFORE sending message
+  const handleSubmit = async (text) => {
+    try {
       setIsLoading(true);
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            from: "bot",
-            content:
-              "Analyzing source materials and preparing your Input Screen…",
-          },
-        ]);
-        setIsAnimating(true);
-      }, 3000);
+      setError(null);
+      let currentSessionId = sessionId;
 
-      const userQuestionsParam = encodeURIComponent(JSON.stringify(allAnswers));
-      const initialInputParam = encodeURIComponent(initialInput);
+      // Step 1: Create session
+      console.log("📝 Creating session...");
+      const sessionResponse = await graphqlClient.createSession();
+      currentSessionId = sessionResponse.createSession.sessionId;
+      localStorage.setItem("sessionId", currentSessionId);
+      console.log("✅ Session created:", currentSessionId);
 
-      // Create session if needed
-      // try {
-      //   const { graphqlClient } = await import("@/lib/graphql-client");
-      //   let sessionId = localStorage.getItem("sessionId");
-      //   if (!sessionId) {
-      //     const sessionResponse = await graphqlClient.createSession();
-      //     sessionId = sessionResponse.createSession.sessionId;
-      //     localStorage.setItem("sessionId", sessionId);
-      //   }
-      // } catch (error) {
-      //   console.error("Error creating session:", error);
-      // }
+      // Step 2: Setup subscription FIRST (before sending message)
+      console.log("🔌 Setting up subscription BEFORE sending message...");
+      await graphqlClient.subscribeToSessionUpdates(
+        currentSessionId,
+        (receivedSessionData) => {
+          console.log("📨 Session update received:", receivedSessionData);
 
-      setTimeout(() => {
-        router.push(
-          `/dashboard?initialInput=${initialInputParam}&userQuestions=${userQuestionsParam}`
-        );
-      }, 4000);
+          // Store in localStorage
+          localStorage.setItem("sessionData", JSON.stringify(receivedSessionData));
+          setSessionData(receivedSessionData);
+
+          // Update messages from chatbot_conversation
+          if (receivedSessionData.chatbot_conversation) {
+            const conversation = receivedSessionData.chatbot_conversation;
+            const allMessages = [];
+
+            conversation.forEach((entry) => {
+              if (entry.user) {
+                allMessages.push({
+                  from: "user",
+                  content: entry.user,
+                  status: entry.status,
+                  identifier: entry.identifier,
+                });
+              }
+              if (entry.agent) {
+                allMessages.push({
+                  from: "bot",
+                  content: entry.agent,
+                  status: entry.status,
+                  identifier: entry.identifier,
+                });
+              }
+            });
+
+            console.log("💬 All messages:", allMessages);
+            console.log("📋 Conversation:", conversation);
+
+            // Update with all messages
+            if (allMessages.length > 0) {
+              setMessages(allMessages);
+              setIsAnimating(true);
+            }
+            setIsLoading(false);
+          }
+        },
+        (error) => {
+          console.error("❌ Subscription error:", error);
+          setError(error.message);
+        }
+      );
+      console.log("✅ Subscription ready!");
+
+      // Step 3: Build payload
+      const existingConversation = sessionData?.chatbot_conversation || [];
+      const chatbotConversation = [...existingConversation, { user: text }];
+
+      const cometJsonForMessage = JSON.stringify({
+        session_id: currentSessionId,
+        input_type: "comet_data_creation",
+        comet_creation_data: sessionData?.comet_creation_data || {},
+        response_outline: sessionData?.response_outline || {},
+        response_path: sessionData?.response_path || {},
+        additional_data: {
+          personalization_enabled:
+            sessionData?.additional_data?.personalization_enabled || false,
+          habit_enabled: sessionData?.additional_data?.habit_enabled || false,
+          habit_description:
+            sessionData?.additional_data?.habit_description || "",
+        },
+        chatbot_conversation: chatbotConversation,
+        to_modify: {},
+      });
+
+      // Step 4: NOW send message (subscription is ready)
+      console.log("📤 Sending message NOW (subscription is ready)...");
+      await graphqlClient.sendMessage(cometJsonForMessage);
+      console.log("✅ Message sent!");
+
+      // Add user message to UI
+      setMessages((prev) => [...prev, { from: "user", content: text }]);
+      setIsExpanded(true);
+      setInputText("");
+
+      // Set sessionId for tracking (subscription is already set up)
+      setSessionId(currentSessionId);
+    } catch (error) {
+      console.error("Error creating session:", error);
+      setError(error.message);
+      setIsLoading(false);
+    }
+  };
+
+  // Subscription useEffect - DISABLED (now handled directly in handleSubmit)
+  // This was causing a timing issue where the message would be sent before subscription was ready
+  /*
+  useEffect(() => {
+    if (!sessionId) {
+      console.log("No sessionId yet, skipping subscription");
       return;
     }
 
-    const nextIndex = questionIndex + 1;
-    setQuestionIndex(nextIndex);
+    console.log("Setting up subscription for sessionId:", sessionId);
+    let cleanup;
+    const subscribeToUpdates = async () => {
+      cleanup = await graphqlClient.subscribeToSessionUpdates(
+        sessionId,
+        (receivedSessionData) => {
+          console.log("📨 Session update received:", receivedSessionData);
 
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          from: "bot",
-          content: QUESTIONS[nextIndex],
+          // Store in localStorage 
+          localStorage.setItem("sessionData", JSON.stringify(receivedSessionData));
+          setSessionData(receivedSessionData);
+
+          // Update messages from chatbot_conversation 
+          if (receivedSessionData.chatbot_conversation) {
+            const conversation = receivedSessionData.chatbot_conversation;
+            const allMessages = [];
+
+            conversation.forEach((entry) => {
+              if (entry.user) {
+                allMessages.push({
+                  from: "user",
+                  content: entry.user,
+                  status: entry.status,
+                  identifier: entry.identifier,
+                });
+              }
+              if (entry.agent) {
+                allMessages.push({
+                  from: "bot",
+                  content: entry.agent,
+                  status: entry.status,
+                  identifier: entry.identifier,
+                });
+              }
+            });
+
+            console.log("All messages:", allMessages);
+            console.log("Conversation:", conversation);
+
+            // Update with all messages
+            if (allMessages.length > 0) {
+              setMessages(allMessages);
+              setIsAnimating(true);
+            }
+            setIsLoading(false);
+          }
         },
-      ]);
-      setIsAnimating(true);
-    }, 300);
+        (error) => {
+          console.error("Subscription error:", error);
+          setError(error.message);
+        }
+      );
+    };
 
+    subscribeToUpdates();
+
+    return () => {
+      if (cleanup) {
+        cleanup();
+      }
+    };
+  }, [sessionId]); // Triggers when sessionId changes
+  */
+
+  const handleSubmitWrapper = async (e) => {
+    e.preventDefault();
+    if (!inputText.trim() || isDisabled || isAnimating) return;
+    
+    setIsDisabled(true);
+    await handleSubmit(inputText.trim());
     setIsDisabled(false);
   };
 
@@ -175,16 +266,11 @@ export default function WelcomePage() {
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      // Expand on Enter if not already expanded
       if (!isExpanded && !inputText.trim()) {
         setIsExpanded(true);
-        setTimeout(() => {
-          if (textareaRef.current) {
-            textareaRef.current.focus();
-          }
-        }, 0);
+        setTimeout(() => textareaRef.current?.focus(), 0);
       } else {
-        handleSubmit(e);
+        handleSubmitWrapper(e);
       }
     }
   };
@@ -193,17 +279,7 @@ export default function WelcomePage() {
     setIsAttachActive(!isAttachActive);
   };
 
-  const handleExpandTextarea = () => {
-    setIsExpanded(true);
-
-    setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-      }
-    }, 0);
-  };
-
-  // Auto-resize textarea based on content
+  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -217,25 +293,7 @@ export default function WelcomePage() {
       <main className="px-6 pt-20 max-w-4xl mx-auto">
         <div className="max-w-4xl mx-auto text-center space-y-10">
           <div className="text-primary-900">
-            {/* <div className="flex items-center justify-center">
-              <Image
-                src="/logo2.svg"
-                alt="Kyper Logo"
-                width={80}
-                height={80}
-                className="rounded-full animate-spin"
-                style={{
-                  animation: "spin 8s linear infinite",
-                }}
-              />
-            </div> */}
             <div className="space-y-2 relative">
-              {/* <h1 className="text-4xl font-bold text-primary-900">Welcome!</h1> */}
-              {/* <Image src={Vector} alt="line" className="absolute right-70 top-[27px]  w-26" />
-              <h2 className="text-3xl font-semibold text-primary-900 font-serif relative h-10">
-                Let's build your next Comet together.
-              </h2> */}
-
               <h2 className="text-3xl font-semibold text-primary-900 font-serif relative">
                 Let's build your next{" "}
                 <span className="relative inline-block">
@@ -256,7 +314,14 @@ export default function WelcomePage() {
             </div>
           </div>
 
-          {/* Input Section with Chat Messages Inside */}
+          {/* Error display */}
+          {error && (
+            <div className="max-w-3xl mx-auto p-3 bg-red-100 text-red-700 rounded-lg">
+              Error: {error}
+            </div>
+          )}
+
+          {/* Input Section */}
           <div className="space-y-4">
             <div className="relative w-full max-w-3xl mx-auto rounded-xl border-primary-200 p-1.5 bg-[#E3E1FC] bg-[linear-gradient(147deg,rgba(227, 225, 252, 1) 0%, rgba(248, 247, 254, 1) 100%)]">
               <div
@@ -266,7 +331,7 @@ export default function WelcomePage() {
                     : ""
                 }`}
               >
-                {/* Chat Messages Area - Show when messages exist */}
+                {/* Chat Messages */}
                 {messages.length > 0 && (
                   <div className="flex-1 overflow-y-auto p-4 pb-2 space-y-3 min-h-0">
                     {messages.map((msg, idx) => (
@@ -285,13 +350,12 @@ export default function WelcomePage() {
                   </div>
                 )}
 
-                {/* Input Area - Always at bottom */}
+                {/* Input Area */}
                 <div
                   className={`relative w-full bg-white rounded-xl border border-primary-300 shadow-sm ${
                     messages.length > 0 ? "mt-auto" : ""
                   }`}
                 >
-                  {/* Input Field Section */}
                   <div className="relative w-full">
                     {messages.length === 0 && (
                       <Search className="w-5 h-5 text-placeholder-gray-500 absolute left-4 top-4 z-10 pointer-events-none" />
@@ -300,8 +364,8 @@ export default function WelcomePage() {
                       ref={textareaRef}
                       placeholder={
                         isLoading
-                          ? "Analyzing and preparing your Input Screen..."
-                          : questionIndex >= 0 || messages.length > 0
+                          ? "Waiting for response..."
+                          : messages.length > 0
                           ? "Type your answer here..."
                           : "I'll guide you step by step - just tell me what you want to create."
                       }
@@ -327,9 +391,6 @@ export default function WelcomePage() {
                     />
                   </div>
 
-                  {/* Separator Line
-                  <div className="w-full border-t border-gray-200"></div> */}
-
                   {/* Action Bar */}
                   <div className="w-full flex flex-row justify-between items-center gap-2 px-3 py-3">
                     <Button
@@ -347,7 +408,7 @@ export default function WelcomePage() {
                     </Button>
 
                     <button
-                      onClick={(e) => handleSubmit(e)}
+                      onClick={(e) => handleSubmitWrapper(e)}
                       disabled={
                         isDisabled ||
                         !inputText.trim() ||
@@ -363,8 +424,8 @@ export default function WelcomePage() {
               </div>
             </div>
 
-            {/* Suggestion Buttons - Only show if no question is shown */}
-            {questionIndex === -1 && (
+            {/* Suggestions */}
+            {messages.length === 0 && (
               <div className="w-full max-w-3xl mx-auto">
                 <h3 className="text-primary-900 text-lg font-medium mb-4 text-start">
                   Here are some suggested prompts to get you started
@@ -375,7 +436,7 @@ export default function WelcomePage() {
                       key={index}
                       onClick={() => handleSuggestionSelect(suggestion)}
                       disabled={isDisabled}
-                      className="px-2 py-2 text-sm rounded-md bg-white text-primary-600 font-medium  hover:bg-primary-600 hover:text-white  cursor-pointer"
+                      className="px-2 py-2 text-sm rounded-md bg-white text-primary-600 font-medium hover:bg-primary-600 hover:text-white cursor-pointer"
                     >
                       {suggestion}
                     </button>
@@ -385,8 +446,8 @@ export default function WelcomePage() {
             )}
           </div>
 
-          {/* Empty State Section */}
-          <div className="flex flex-row items-center  text-center justify-between bg-white rounded-xl border border-primary-200 max-w-3xl  p-3  mx-auto">
+          {/* Create New Comet */}
+          <div className="flex flex-row items-center text-center justify-between bg-white rounded-xl border border-primary-200 max-w-3xl p-3 mx-auto">
             <h4 className="text-md font-medium text-[#352F6E]">
               Or, begin with a blank canvas and shape your Comet step by step.
             </h4>
@@ -402,7 +463,6 @@ export default function WelcomePage() {
           </div>
         </div>
       </main>
-      {/* </section> */}
     </div>
   );
 }
