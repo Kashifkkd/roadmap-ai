@@ -39,7 +39,10 @@ export default function StatusButton({ status }) {
       <span
         className={`font-inter font-medium text-md leading-4 ${current.text}`}
       >
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+       {typeof status === "string" && status.length > 0
+  ? status.charAt(0).toUpperCase() + status.slice(1)
+  : ""}
+
       </span>
     </div>
   );
