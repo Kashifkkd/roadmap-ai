@@ -13,10 +13,10 @@ export default function DashboardLayout() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const suggestion = searchParams.get("suggestion");
-  const initialInput = searchParams.get("initialInput");
+  // const initialInput = searchParams.get("initialInput");
   const userQuestionsParam = searchParams.get("userQuestions");
 
-  const isNewCometRef = useRef(!!initialInput);
+  // const isNewCometRef = useRef(!!initialInput);
 
   // State for session data
   const [sessionData, setSessionData] = useState(null);
@@ -36,41 +36,31 @@ export default function DashboardLayout() {
     };
   }, []);
 
+  // Initialize sessionId and sessionData from localStorage on mount
   useEffect(() => {
-    if (!initialInput) return;
-
-    setAllMessages([]);
-    setSessionData(null);
-    setPrefillData(null);
-
-    try {
-      const raw = localStorage.getItem("sessionData");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed) {
-          // Remove previous chatbot conversation and flags
-          if (parsed.chatbot_conversation) {
-            delete parsed.chatbot_conversation;
-          }
-          if (parsed.flag) {
-            delete parsed.flag;
-          }
-          localStorage.setItem("sessionData", JSON.stringify(parsed));
-        }
-      }
-    } catch {}
-  }, [initialInput]);
-
-  useEffect(() => {
-    const storedSessionData =
-      typeof window !== "undefined"
-        ? localStorage.getItem("sessionData")
-        : null;
-
-    if (storedSessionData && !sessionData) {
-      setSessionData(JSON.parse(storedSessionData));
+    // Load sessionId
+    const storedSessionId = localStorage.getItem("sessionId");
+    if (storedSessionId) {
+      setSessionId(storedSessionId);
+    } else {
+      console.log("No sessionId found in localStorage");
     }
-  }, [sessionData]);
+
+    // Load sessionData
+    const storedSessionData = localStorage.getItem("sessionData");
+    if (storedSessionData) {
+      try {
+        const parsed = JSON.parse(storedSessionData);
+        console.log("Found existing sessionData:", parsed);
+        setSessionData(parsed);
+        setPrefillData(parsed);
+      } catch (e) {
+        console.error("Error parsing sessionData:", e);
+      }
+    } else {
+      console.log(" No sessionData found in localStorage");
+    }
+  }, []); // Run only once on mount
 
   useEffect(() => {
     if (!sessionData?.chatbot_conversation) return;
@@ -167,19 +157,21 @@ export default function DashboardLayout() {
       setError(null);
 
       // Check if sessionId already exists in localStorage
-      let newSessionId = localStorage.getItem("sessionId");
+      let currentSessionId = sessionId || localStorage.getItem("sessionId");
       let cometJson;
 
-      // If no sessionId exists, create a new session
-      if (!newSessionId) {
+      // Only create new session if one doesn't exist
+      if (!currentSessionId) {
         const sessionResponse = await graphqlClient.createSession();
-        newSessionId = sessionResponse.createSession.sessionId;
+        currentSessionId = sessionResponse.createSession.sessionId;
         cometJson = sessionResponse.createSession.cometJson;
-        localStorage.setItem("sessionId", newSessionId);
+        localStorage.setItem("sessionId", currentSessionId);
         setSessionData(JSON.parse(cometJson));
+      } else {
+        console.log("Reusing existing session:", currentSessionId);
       }
 
-      setSessionId(newSessionId);
+      setSessionId(currentSessionId);
       if (cometJson) {
         setSessionData(JSON.parse(cometJson));
       }
@@ -221,8 +213,7 @@ export default function DashboardLayout() {
       } catch {}
 
       const chatbotConversation = parsedSessionData?.chatbot_conversation || [];
-      const messageText =
-        initialInput || formData.cometTitle || "Create a new comet";
+      const messageText = formData.cometTitle || "Generate outline";
 
       // Initialize enabled_attributes object
       const enabled_attributes = {
@@ -243,8 +234,12 @@ export default function DashboardLayout() {
 
       console.log(formData);
 
+      const executionId = Math.floor(Math.random() * 10000).toString();
+      const traceId = crypto.randomUUID().replace(/-/g, "");
+      const receivedAt = new Date().toISOString();
+
       const cometJsonForMessage = JSON.stringify({
-        session_id: newSessionId,
+        session_id: currentSessionId,
         input_type: "outline_creation",
         comet_creation_data: formattedCometData,
         response_outline: {},
@@ -255,7 +250,17 @@ export default function DashboardLayout() {
           habit_description: formData.habitText || "",
         },
         chatbot_conversation: [...chatbotConversation, { user: messageText }],
-        to_modify: {},
+        to_modify: parsedSessionData?.to_modify ?? {},
+        source_material_uid: null,
+        execution_id: executionId,
+        retry_count: 0,
+        error_history: [],
+        is_retry: false,
+        metadata: JSON.stringify({
+          trace_id: traceId,
+          received_at: receivedAt,
+          execution_id: executionId,
+        }),
       });
 
       const messageResponse = await graphqlClient.sendMessage(
@@ -310,14 +315,11 @@ export default function DashboardLayout() {
           {/* Chat Window - Hidden on small screens, Desktop: 360px width */}
           <div className="lg:block w-full lg:w-[360px] h-full lg:h-full">
             <ChatWindow
-              cometManager={!!initialInput}
-              inputType={
-                prefillData ? "comet_data_update" : "comet_data_creation"
-              }
+              cometManager={false}
+              inputType="comet_data_update"
               pageIdentifier={1}
-              // welcomeMessage={welcomeMessage}
-              initialInput={initialInput}
-              userQuestions={userQuestionsParam}
+              initialInput={null}
+              userQuestions={null}
               onResponseReceived={(updatedSessionData) => {
                 setSessionData(updatedSessionData);
                 setPrefillData(updatedSessionData);
@@ -333,8 +335,8 @@ export default function DashboardLayout() {
           <div className="w-full lg:flex-1 h-full lg:h-full">
             <CreateComet
               suggestion={suggestion}
-              initialInput={initialInput}
-              isNewComet={isNewCometRef.current}
+              initialInput={null}
+              isNewComet={false}
               cometData={null}
               sessionId={sessionId}
               prefillData={prefillData || sessionData}
