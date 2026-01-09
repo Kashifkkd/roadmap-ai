@@ -265,13 +265,17 @@ export default function ChatWindow({
         currentSessionId = localStorage.getItem("sessionId");
       }
 
-      // if (!currentSessionId) {
-      const sessionResponse = await graphqlClient.createSession();
-      currentSessionId = sessionResponse.createSession.sessionId;
-      localStorage.setItem("sessionId", currentSessionId);
-      // Notify source material card
-      window.dispatchEvent(new Event("sessionIdChanged"));
-      // }
+      // Only create new session if one doesn't exist
+      if (!currentSessionId) {
+        const sessionResponse = await graphqlClient.createSession();
+        currentSessionId = sessionResponse.createSession.sessionId;
+        localStorage.setItem("sessionId", currentSessionId);
+        // Notify source material card
+        window.dispatchEvent(new Event("sessionIdChanged"));
+        console.log("New session created:", currentSessionId);
+      } else {
+        console.log("Using existing session:", currentSessionId);
+      }
 
       setSessionId(currentSessionId);
 
@@ -329,21 +333,34 @@ export default function ChatWindow({
       const chatbotConversation = [...existingConversation, ...newEntries];
       console.log("chatbotConversation>>>>>>>>>>", chatbotConversation);
 
+      // build complete payload
+      const executionId = Math.floor(Math.random() * 10000).toString();
+      const traceId = crypto.randomUUID().replace(/-/g, "");
+      const receivedAt = new Date().toISOString();
+
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: inputType,
-        comet_creation_data: sessionData?.comet_creation_data || {},
-        response_outline: sessionData?.response_outline || {},
-        response_path: sessionData?.response_path || {},
-        additional_data: {
-          personalization_enabled:
-            sessionData?.additional_data?.personalization_enabled || false,
-          habit_enabled: sessionData?.additional_data?.habit_enabled || false,
-          habit_description:
-            sessionData?.additional_data?.habit_description || "",
+        comet_creation_data: sessionData?.comet_creation_data ?? {},
+        response_outline: sessionData?.response_outline ?? {},
+        response_path: sessionData?.response_path ?? {},
+        additional_data: sessionData?.additional_data ?? {
+          personalization_enabled: false,
+          habit_enabled: false,
+          habit_description: "",
         },
         chatbot_conversation: chatbotConversation,
-        to_modify: {},
+        to_modify: sessionData?.to_modify ?? {},
+        source_material_uid: null,
+        execution_id: executionId,
+        retry_count: 0,
+        error_history: [],
+        is_retry: false,
+        metadata: JSON.stringify({
+          trace_id: traceId,
+          received_at: receivedAt,
+          execution_id: executionId,
+        }),
       });
 
       await graphqlClient.sendMessage(cometJsonForMessage);
@@ -359,6 +376,10 @@ export default function ChatWindow({
   };
 
   useEffect(() => {
+    if (!sessionId) {
+      return;
+    }
+
     let cleanup;
     const subscribeToUpdates = async () => {
       cleanup = await graphqlClient.subscribeToSessionUpdates(

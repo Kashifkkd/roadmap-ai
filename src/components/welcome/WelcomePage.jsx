@@ -1,14 +1,18 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { ArrowUp, Paperclip, Search } from "lucide-react";
+import { ArrowUp, Paperclip, Search, X, FileText } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import Stars from "@/components/icons/Stars";
 import ChatMessage from "@/components/chat/ChatMessage";
+import ThinkingIndicator from "@/components/chat/ThinkingIndicator";
 import Vector from "@/components/images/vector.svg";
 import { graphqlClient } from "@/lib/graphql-client";
+import { apiService } from "@/api/apiService";
+import { endpoints } from "@/api/endpoint";
+import { toast } from "sonner";
 
 const SUGGESTIONS = [
   "Create a go-to microlearning experience for new managers",
@@ -25,6 +29,7 @@ export default function WelcomePage() {
   const [isAttachActive, setIsAttachActive] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
   const router = useRouter();
 
   const [messages, setMessages] = useState([]);
@@ -32,10 +37,14 @@ export default function WelcomePage() {
   const [isAnimating, setIsAnimating] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // GraphQL session state 
+  // GraphQL session state
   const [sessionId, setSessionId] = useState(null);
   const [sessionData, setSessionData] = useState(null);
   const [error, setError] = useState(null);
+
+  const [attachedFile, setAttachedFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [sourceMaterialUid, setSourceMaterialUid] = useState(null);
 
   const handleSuggestionSelect = (suggestion) => {
     setInputText(suggestion);
@@ -59,117 +68,160 @@ export default function WelcomePage() {
     }
   }, [messages.length, isExpanded]);
 
-  // Cleanup WebSocket connections on unmount 
+  // Cleanup WebSocket connections on unmount
   useEffect(() => {
     return () => {
       graphqlClient.cleanup();
     };
   }, []);
 
+  const [cometCreated, setCometCreated] = useState(false);
+
+  useEffect(() => {
+    if (sessionData?.flag?.comet_created && !cometCreated) {
+      setCometCreated(true);
+    }
+  }, [sessionData, cometCreated]);
+
   const handleMessageTypingComplete = () => {
     setIsAnimating(false);
   };
 
-  // Handle form submission 
+  // Handle form submission
   const handleSubmit = async (text) => {
     try {
       setIsLoading(true);
       setError(null);
       let currentSessionId = sessionId;
+      let isFirstMessage = !currentSessionId;
+      let uploadedFileUid = null;
 
-      // Create session
-      console.log("Creating session...");
-      const sessionResponse = await graphqlClient.createSession();
-      currentSessionId = sessionResponse.createSession.sessionId;
-      localStorage.setItem("sessionId", currentSessionId);
-      console.log("Session created:", currentSessionId);
+      // Only create session if this is the first message
+      if (!currentSessionId) {
+        const sessionResponse = await graphqlClient.createSession();
+        currentSessionId = sessionResponse.createSession.sessionId;
+        localStorage.setItem("sessionId", currentSessionId);
+        console.log("✅ Session created:", currentSessionId);
 
-      //  Setup subscription 
-      console.log("Setting up subscription BEFORE sending message...");
-      await graphqlClient.subscribeToSessionUpdates(
-        currentSessionId,
-        (receivedSessionData) => {
-          console.log("Session update received:", receivedSessionData);
-
-          // Store in localStorage
-          localStorage.setItem("sessionData", JSON.stringify(receivedSessionData));
-          setSessionData(receivedSessionData);
-
-          // Update messages from chatbot_conversation
-          if (receivedSessionData.chatbot_conversation) {
-            const conversation = receivedSessionData.chatbot_conversation;
-            const allMessages = [];
-
-            conversation.forEach((entry) => {
-              if (entry.user) {
-                allMessages.push({
-                  from: "user",
-                  content: entry.user,
-                  status: entry.status,
-                  identifier: entry.identifier,
-                });
-              }
-              if (entry.agent) {
-                allMessages.push({
-                  from: "bot",
-                  content: entry.agent,
-                  status: entry.status,
-                  identifier: entry.identifier,
-                });
-              }
-            });
-
-            console.log("All messages:", allMessages);
-            console.log("Conversation:", conversation);
-
-            // Update with all messages
-            if (allMessages.length > 0) {
-              setMessages(allMessages);
-              setIsAnimating(true);
-            }
-            setIsLoading(false);
-          }
-        },
-        (error) => {
-          console.error("Subscription error:", error);
-          setError(error.message);
+        if (attachedFile) {
+          uploadedFileUid = await uploadAttachedFile(currentSessionId);
+          setAttachedFile(null); // Clear attached file after upload
         }
-      );
-      console.log("Subscription ready!");
 
-      //  Build payload
+        // Setup subscription only for first message
+        await graphqlClient.subscribeToSessionUpdates(
+          currentSessionId,
+          (receivedSessionData) => {
+            localStorage.setItem(
+              "sessionData",
+              JSON.stringify(receivedSessionData)
+            );
+            setSessionData(receivedSessionData);
+
+            // Update chatbot_conversation
+            if (receivedSessionData.chatbot_conversation) {
+              const conversation = receivedSessionData.chatbot_conversation;
+              const allMessages = [];
+              let shouldNavigate = false;
+
+              // Only show messages without identifier
+              conversation.forEach((entry) => {
+                // Skip messages with identifier
+                if (entry.identifier) return;
+
+                if (entry.user && entry.user.trim()) {
+                  allMessages.push({
+                    from: "user",
+                    content: entry.user,
+                  });
+                }
+                if (entry.agent) {
+                  allMessages.push({
+                    from: "bot",
+                    content: entry.agent,
+                  });
+
+                  // Check if this is the "Comet data created" message
+                  if (entry.agent.includes("Comet data created successfully")) {
+                    shouldNavigate = true;
+                  }
+                }
+              });
+
+              // Update with filtered messages
+              if (allMessages.length > 0) {
+                setMessages(allMessages);
+                setIsAnimating(true);
+              }
+              setIsLoading(false);
+
+              // Navigate to dashboard after showing "Comet data created" message
+              if (shouldNavigate) {
+                setCometCreated(true);
+                setTimeout(() => {
+                  router.push("/dashboard");
+                }, 4000);
+              }
+            }
+          },
+          (error) => {
+            console.error("Subscription error:", error);
+            setError(error.message);
+          }
+        );
+      } else {
+        console.log("Using existing session:", currentSessionId);
+
+        // Upload attached file for existing session
+        if (attachedFile) {
+          uploadedFileUid = await uploadAttachedFile(currentSessionId);
+        }
+      }
+
+      // Step 3: Build payload with all required fields using helper
       const existingConversation = sessionData?.chatbot_conversation || [];
       const chatbotConversation = [...existingConversation, { user: text }];
+
+      const executionId = Math.floor(Math.random() * 10000).toString();
+      const traceId = crypto.randomUUID().replace(/-/g, "");
+      const receivedAt = new Date().toISOString();
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: "comet_data_creation",
-        comet_creation_data: sessionData?.comet_creation_data || {},
-        response_outline: sessionData?.response_outline || {},
-        response_path: sessionData?.response_path || {},
-        additional_data: {
-          personalization_enabled:
-            sessionData?.additional_data?.personalization_enabled || false,
-          habit_enabled: sessionData?.additional_data?.habit_enabled || false,
-          habit_description:
-            sessionData?.additional_data?.habit_description || "",
+        comet_creation_data: sessionData?.comet_creation_data ?? {},
+        response_outline: sessionData?.response_outline ?? {},
+        response_path: sessionData?.response_path ?? {},
+        additional_data: sessionData?.additional_data ?? {
+          personalization_enabled: false,
+          habit_enabled: false,
+          habit_description: "",
         },
         chatbot_conversation: chatbotConversation,
-        to_modify: {},
+        to_modify: sessionData?.to_modify ?? {},
+        source_material_uid: uploadedFileUid || sourceMaterialUid || null,
+        execution_id: executionId,
+        retry_count: 0,
+        error_history: [],
+        is_retry: false,
+        metadata: JSON.stringify({
+          trace_id: traceId,
+          received_at: receivedAt,
+          execution_id: executionId,
+        }),
       });
 
-      // send message 
-      console.log("Sending message NOW (subscription is ready)...");
       await graphqlClient.sendMessage(cometJsonForMessage);
-      console.log("✅ Message sent!");
 
       // Add user message to UI
       setMessages((prev) => [...prev, { from: "user", content: text }]);
       setIsExpanded(true);
       setInputText("");
 
-      // Set sessionId for tracking (subscription is already set up)
-      setSessionId(currentSessionId);
+      // Set sessionId for tracking
+      if (isFirstMessage) {
+        setSessionId(currentSessionId);
+      }
     } catch (error) {
       console.error("Error creating session:", error);
       setError(error.message);
@@ -177,83 +229,10 @@ export default function WelcomePage() {
     }
   };
 
-  // Subscription useEffect - DISABLED (now handled directly in handleSubmit)
-  // This was causing a timing issue where the message would be sent before subscription was ready
-  /*
-  useEffect(() => {
-    if (!sessionId) {
-      console.log("No sessionId yet, skipping subscription");
-      return;
-    }
-
-    console.log("Setting up subscription for sessionId:", sessionId);
-    let cleanup;
-    const subscribeToUpdates = async () => {
-      cleanup = await graphqlClient.subscribeToSessionUpdates(
-        sessionId,
-        (receivedSessionData) => {
-          console.log("📨 Session update received:", receivedSessionData);
-
-          // Store in localStorage 
-          localStorage.setItem("sessionData", JSON.stringify(receivedSessionData));
-          setSessionData(receivedSessionData);
-
-          // Update messages from chatbot_conversation 
-          if (receivedSessionData.chatbot_conversation) {
-            const conversation = receivedSessionData.chatbot_conversation;
-            const allMessages = [];
-
-            conversation.forEach((entry) => {
-              if (entry.user) {
-                allMessages.push({
-                  from: "user",
-                  content: entry.user,
-                  status: entry.status,
-                  identifier: entry.identifier,
-                });
-              }
-              if (entry.agent) {
-                allMessages.push({
-                  from: "bot",
-                  content: entry.agent,
-                  status: entry.status,
-                  identifier: entry.identifier,
-                });
-              }
-            });
-
-            console.log("All messages:", allMessages);
-            console.log("Conversation:", conversation);
-
-            // Update with all messages
-            if (allMessages.length > 0) {
-              setMessages(allMessages);
-              setIsAnimating(true);
-            }
-            setIsLoading(false);
-          }
-        },
-        (error) => {
-          console.error("Subscription error:", error);
-          setError(error.message);
-        }
-      );
-    };
-
-    subscribeToUpdates();
-
-    return () => {
-      if (cleanup) {
-        cleanup();
-      }
-    };
-  }, [sessionId]); // Triggers when sessionId changes
-  */
-
   const handleSubmitWrapper = async (e) => {
     e.preventDefault();
     if (!inputText.trim() || isDisabled || isAnimating) return;
-    
+
     setIsDisabled(true);
     await handleSubmit(inputText.trim());
     setIsDisabled(false);
@@ -274,9 +253,82 @@ export default function WelcomePage() {
       }
     }
   };
+  const uploadFile = useCallback(async (file, currentSessionId) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("session_id", currentSessionId);
+
+      const result = await apiService({
+        endpoint: endpoints.uploadSourceMaterial,
+        method: "POST",
+        data: formData,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (result.error) {
+        console.error("Error uploading file:", result.error);
+        toast.error(`Failed to upload ${file.name}`);
+        return null;
+      } else {
+        console.log("File uploaded successfully:", result.response);
+        // Return the UID from the response
+        return result.response?.uuid || null;
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast.error(`Failed to upload ${file.name}`);
+      return null;
+    }
+  }, []);
+
+  // Upload attached file and store UID
+  const uploadAttachedFile = useCallback(
+    async (currentSessionId) => {
+      if (!attachedFile) return null;
+
+      setIsUploading(true);
+      try {
+        const uuid = await uploadFile(attachedFile, currentSessionId);
+
+        if (uuid) {
+          toast.success("File uploaded successfully");
+          setSourceMaterialUid(uid);
+        }
+
+        return uuid;
+      } catch (error) {
+        console.error("Error uploading file:", error);
+        return false;
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [attachedFile, uploadFile]
+  );
+
+  // Handle file selection (single file only)
+  const handleFileSelect = (event) => {
+    const selectedFile = event.target.files[0];
+
+    if (selectedFile) {
+      setAttachedFile(selectedFile);
+    }
+
+    event.target.value = "";
+  };
+
+  // Remove attached file
+  const handleRemoveFile = () => {
+    setAttachedFile(null);
+    setSourceMaterialUid(null);
+  };
 
   const handleAttach = () => {
-    setIsAttachActive(!isAttachActive);
+    // Trigger file input click
+    fileInputRef.current?.click();
   };
 
   // Auto-resize textarea
@@ -346,6 +398,7 @@ export default function WelcomePage() {
                         onTypingComplete={handleMessageTypingComplete}
                       />
                     ))}
+                    {isLoading && <ThinkingIndicator />}
                     <div ref={messagesEndRef} />
                   </div>
                 )}
@@ -363,7 +416,9 @@ export default function WelcomePage() {
                     <textarea
                       ref={textareaRef}
                       placeholder={
-                        isLoading
+                        cometCreated
+                          ? "Comet created! Click 'Continue to Dashboard' below."
+                          : isLoading
                           ? "Waiting for response..."
                           : messages.length > 0
                           ? "Type your answer here..."
@@ -372,7 +427,9 @@ export default function WelcomePage() {
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      disabled={isDisabled || isLoading || isAnimating}
+                      disabled={
+                        isDisabled || isLoading || isAnimating || cometCreated
+                      }
                       className={`w-full ${
                         messages.length === 0 ? "pl-10" : "pl-3"
                       } pr-3 ${
@@ -391,17 +448,45 @@ export default function WelcomePage() {
                     />
                   </div>
 
+                  {/* Attached File Preview */}
+                  {attachedFile && (
+                    <div className="px-3 pt-2 flex flex-wrap gap-2">
+                      <div className="flex items-center gap-2 bg-primary-50 text-primary-700 px-2 py-1 rounded-lg text-sm">
+                        <FileText className="w-4 h-4" />
+                        <span className="max-w-[150px] truncate">
+                          {attachedFile.name}
+                        </span>
+                        <button
+                          onClick={handleRemoveFile}
+                          className="hover:text-red-500 transition-colors"
+                          disabled={isLoading || isUploading}
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Hidden File Input  */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+
                   {/* Action Bar */}
                   <div className="w-full flex flex-row justify-between items-center gap-2 px-3 py-3">
                     <Button
                       variant="default"
                       className={`cursor-pointer flex items-center gap-2 ${
-                        isAttachActive
+                        attachedFile
                           ? "text-white bg-primary-600"
                           : "text-white bg-primary hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
                       }`}
                       onClick={handleAttach}
-                      disabled={isLoading}
+                      disabled={isLoading || cometCreated || isUploading}
                     >
                       <Paperclip className="w-4 h-4" />
                       <span>Attach</span>
@@ -413,7 +498,9 @@ export default function WelcomePage() {
                         isDisabled ||
                         !inputText.trim() ||
                         isLoading ||
-                        isAnimating
+                        isAnimating ||
+                        cometCreated ||
+                        isUploading
                       }
                       className="p-2 bg-primary text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors flex items-center justify-center w-8 h-8"
                     >
@@ -446,21 +533,40 @@ export default function WelcomePage() {
             )}
           </div>
 
-          {/* Create New Comet */}
-          <div className="flex flex-row items-center text-center justify-between bg-white rounded-xl border border-primary-200 max-w-3xl p-3 mx-auto">
-            <h4 className="text-md font-medium text-[#352F6E]">
-              Or, begin with a blank canvas and shape your Comet step by step.
-            </h4>
-            <Button
-              variant="default"
-              className="flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50"
-              onClick={handleCreateNewComet}
-              disabled={isDisabled}
-            >
-              <Stars />
-              <span>Create New Comet</span>
-            </Button>
-          </div>
+          {/* Create New Comet / Continue to Dashboard */}
+          {!cometCreated ? (
+            <div className="flex flex-row items-center text-center justify-between bg-white rounded-xl border border-primary-200 max-w-3xl p-3 mx-auto">
+              <h4 className="text-md font-medium text-[#352F6E]">
+                Or, begin with a blank canvas and shape your Comet step by step.
+              </h4>
+              <Button
+                variant="default"
+                className="flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50"
+                onClick={handleCreateNewComet}
+                disabled={isDisabled}
+              >
+                <Stars />
+                <span>Create New Comet</span>
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center text-center bg-white rounded-xl border border-primary-200 max-w-3xl p-6 mx-auto space-y-4">
+              <h4 className="text-lg font-semibold text-[#352F6E]">
+                🎉 Your Comet outline is ready!
+              </h4>
+              <p className="text-sm text-gray-600">
+                Continue to the dashboard to review and customize your Comet.
+              </p>
+              <Button
+                variant="default"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white hover:bg-primary/90"
+                onClick={handleCreateNewComet}
+              >
+                <Stars />
+                <span>Continue to Dashboard</span>
+              </Button>
+            </div>
+          )}
         </div>
       </main>
     </div>
