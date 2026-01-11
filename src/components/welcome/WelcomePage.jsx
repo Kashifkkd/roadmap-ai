@@ -85,7 +85,16 @@ export default function WelcomePage() {
 
   const handleMessageTypingComplete = () => {
     setIsAnimating(false);
+
+    requestAnimationFrame(() => {
+      textareaRef.current.focus();
+    });
   };
+  useEffect(() => {
+    if (!isLoading && !isAnimating && !cometCreated) {
+      textareaRef.current?.focus();
+    }
+  }, [isLoading, isAnimating, cometCreated]);
 
   // Handle form submission
   const handleSubmit = async (text) => {
@@ -236,6 +245,9 @@ export default function WelcomePage() {
     setIsDisabled(true);
     await handleSubmit(inputText.trim());
     setIsDisabled(false);
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
   };
 
   const handleCreateNewComet = () => {
@@ -434,7 +446,7 @@ export default function WelcomePage() {
                         messages.length === 0 ? "pl-10" : "pl-3"
                       } pr-3 ${
                         messages.length > 0 ? "pt-2.5 pb-2.5" : "pt-3 pb-3"
-                      } text-lg shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text overflow-y-auto`}
+                      } text-md shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text overflow-y-auto`}
                       rows={1}
                       style={{
                         minHeight:
