@@ -144,7 +144,7 @@ export default function OutlineMannerFooter() {
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
-        input_type: "path_creation",
+        input_type: "initial_chapter_creation",
         // comet_creation_data: parsedSessionData?.comet_creation_data || {},
         comet_creation_data: parsedSessionData?.comet_creation_data || {},
         additional_data: {
