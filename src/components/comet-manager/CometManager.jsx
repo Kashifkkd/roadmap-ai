@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   File,
   Eye,
@@ -25,6 +26,8 @@ import {
   FileIcon,
   Paperclip,
 } from "lucide-react";
+import { graphqlClient } from "@/lib/graphql-client";
+import Loader from "@/components/loader2";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -199,6 +202,105 @@ export default function CometManager({
   const [activeTab, setActiveTab] = useState(0); // Track active tab: 0=Steps, 1=Sources, 2=Assets
   const { isCometSettingsOpen, setIsCometSettingsOpen } = useCometSettings();
   const selectedScreenRef = useRef(null);
+
+  // Next Chapter state
+  const router = useRouter();
+  const [isGeneratingNextChapter, setIsGeneratingNextChapter] = useState(false);
+  const [nextChapterError, setNextChapterError] = useState(null);
+
+  // Subscription for next chapter
+  useEffect(() => {
+    if (!isGeneratingNextChapter || !sessionId) return;
+
+    let cleanup;
+    const subscribe = async () => {
+      cleanup = await graphqlClient.subscribeToSessionUpdates(
+        sessionId,
+        (updatedSessionData) => {
+          try {
+            localStorage.setItem(
+              "sessionData",
+              JSON.stringify(updatedSessionData)
+            );
+          } catch {}
+          window.location.reload();
+        },
+        (err) => {
+          console.error("Subscription error:", err);
+          setNextChapterError(err?.message || "Subscription failed");
+          setIsGeneratingNextChapter(false);
+        }
+      );
+    };
+
+    subscribe();
+
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, [isGeneratingNextChapter, sessionId]);
+
+  // Handle Next Chapter click
+  const handleNextChapter = async () => {
+    try {
+      setNextChapterError(null);
+      setIsGeneratingNextChapter(true);
+
+      // Ensure session exists
+      let currentSessionId = sessionId || localStorage.getItem("sessionId");
+      if (!currentSessionId) {
+        const sessionResponse = await graphqlClient.createSession();
+        currentSessionId = sessionResponse.createSession.sessionId;
+        localStorage.setItem("sessionId", currentSessionId);
+        const cometJson = sessionResponse.createSession.cometJson;
+        if (cometJson) {
+          try {
+            localStorage.setItem(
+              "sessionData",
+              JSON.stringify(JSON.parse(cometJson))
+            );
+          } catch {}
+        }
+      }
+
+      // Get parsed session data
+      let parsedSessionData = null;
+      try {
+        const raw = localStorage.getItem("sessionData");
+        if (raw) parsedSessionData = JSON.parse(raw);
+      } catch {}
+
+      const cometJsonForMessage = JSON.stringify({
+        session_id: currentSessionId,
+        input_type: "continued_chapter_creation",
+        comet_creation_data: parsedSessionData?.comet_creation_data || {},
+        additional_data: {
+          personalization_enabled:
+            parsedSessionData?.additional_data?.personalization_enabled ||
+            false,
+          habit_enabled:
+            parsedSessionData?.additional_data?.habit_enabled || false,
+          habit_description:
+            parsedSessionData?.additional_data?.habit_description || "",
+        },
+        response_outline: parsedSessionData?.response_outline || {},
+        response_path: parsedSessionData?.response_path || {},
+        chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
+        to_modify: {},
+      });
+
+      await graphqlClient.sendMessage(cometJsonForMessage);
+      console.log("Next Chapter - cometJsonForMessage sent");
+    } catch (error) {
+      console.error("Error in handleNextChapter:", error);
+      setNextChapterError(error?.message || "Unexpected error");
+      setIsGeneratingNextChapter(false);
+    }
+  };
+
+  const handleBackFromLoading = () => {
+    setIsGeneratingNextChapter(false);
+  };
 
   // Derive selectedScreen from screens array using selectedScreenId - always has latest data
   const selectedScreen = useMemo(() => {
@@ -1090,7 +1192,35 @@ export default function CometManager({
               </div>
             </div>
           </div>
+
+          {/* Footer Navigation */}
+          <div className="border-t p-4 bg-background w-full rounded-b-xl shrink-0">
+            <div className="flex items-center justify-end">
+              <Button
+                variant="default"
+                className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
+                onClick={handleNextChapter}
+                disabled={isGeneratingNextChapter}
+              >
+                <span>Next Chapter</span>
+                <ChevronRight size={16} />
+              </Button>
+            </div>
+          </div>
         </>
+      )}
+
+      {/* Loader  */}
+      {isGeneratingNextChapter && (
+        <div className="fixed inset-x-0 top-[64px] bottom-0 z-50 bg-primary-50">
+          <div className="w-full h-full flex items-center justify-center p-2 overflow-auto">
+            <Loader
+              inputText="Next Chapter"
+              onBack={handleBackFromLoading}
+              backLabel="Back to Comet Manager"
+            />
+          </div>
+        </div>
       )}
       {/* Add Screen Popup */}
       <AddScreenPopup
