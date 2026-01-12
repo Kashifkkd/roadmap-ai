@@ -93,6 +93,24 @@ export default function ActionsForm({
           />
         </div>
 
+        {/* Tool Name */}
+        <div className="mb-6">
+          <Label className="block text-sm font-medium text-gray-700 mb-2">
+            Tool Name
+          </Label>
+          <Input
+            type="text"
+            value={formData.toolName || ""}
+            onChange={(e) => updateField("toolName", e.target.value)}
+            placeholder="Enter tool name"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+            onSelect={(event) =>
+              onTextFieldSelect?.("actionToolName", event, formData.toolName)
+            }
+            onBlur={onFieldBlur}
+          />
+        </div>
+
         {/* Tool Link */}
         <div className="mb-6">
           <UploadTool
@@ -103,7 +121,7 @@ export default function ActionsForm({
             stepId={stepId}
             screenId={screenId}
             screenContentId={screen?.screenContents?.id || ""}
-            toolName={formData.title || "Tool"}
+            toolName={formData.toolName || formData.title || "Tool"}
             onUploadSuccess={handleToolUploadSuccess}
           />
           <Label className="block text-sm font-medium text-gray-700 mb-2">
@@ -122,27 +140,29 @@ export default function ActionsForm({
           />
         </div>
 
-        {/* Tool Prompt */}
-        <div className="mb-6">
-          <Label className="block text-sm font-medium text-gray-700 mb-2">
-            Tool Prompt
-          </Label>
-          <Textarea
-            value={formData.reflectionPrompt || ""}
-            onChange={(e) => updateField("reflectionPrompt", e.target.value)}
-            rows={4}
-            placeholder="Enter prompt for tool creation..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white resize-none"
-            onSelect={(event) =>
-              onTextFieldSelect?.(
-                "actionReflectionPrompt",
-                event,
-                formData.reflectionPrompt
-              )
-            }
-            onBlur={onFieldBlur}
-          />
-        </div>
+        {/* Reflection Prompt - only visible when hasReflectionQuestion is true */}
+        {formData.hasReflectionQuestion && (
+          <div className="mb-6">
+            <Label className="block text-sm font-medium text-gray-700 mb-2">
+              Reflection Prompt
+            </Label>
+            <Textarea
+              value={formData.reflectionPrompt || ""}
+              onChange={(e) => updateField("reflectionPrompt", e.target.value)}
+              rows={4}
+              placeholder="Enter reflection prompt..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white resize-none"
+              onSelect={(event) =>
+                onTextFieldSelect?.(
+                  "actionReflectionPrompt",
+                  event,
+                  formData.reflectionPrompt
+                )
+              }
+              onBlur={onFieldBlur}
+            />
+          </div>
+        )}
 
         {/* Toggle switches */}
         <div className="mb-4 pt-6 border-t border-gray-300">
@@ -160,17 +180,18 @@ export default function ActionsForm({
             />
 
             <ToggleSwitch
-              checked={formData.has_reflection_question ?? false}
-              onChange={(value) =>
-                updateField("has_reflection_question", value)
-              }
+              checked={formData.hasReflectionQuestion ?? false}
+              onChange={(value) => updateField("hasReflectionQuestion", value)}
               label="Users are prompted with a reflection question when completing this action"
               showInfo={true}
             />
           </div>
 
-          {formData.has_reflection_question && (
+          {formData.hasReflectionQuestion && (
             <div className="mb-4 mt-4 ml-6">
+              <Label className="block text-sm font-medium text-gray-700 mb-2">
+                Reflection Question
+              </Label>
               <Input
                 type="text"
                 value={formData.reflection_question || ""}

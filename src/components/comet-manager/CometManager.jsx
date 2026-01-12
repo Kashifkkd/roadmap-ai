@@ -27,7 +27,6 @@ import {
   Paperclip,
 } from "lucide-react";
 import { graphqlClient } from "@/lib/graphql-client";
-import Loader from "@/components/loader2";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -296,10 +295,6 @@ export default function CometManager({
       setNextChapterError(error?.message || "Unexpected error");
       setIsGeneratingNextChapter(false);
     }
-  };
-
-  const handleBackFromLoading = () => {
-    setIsGeneratingNextChapter(false);
   };
 
   // Derive selectedScreen from screens array using selectedScreenId - always has latest data
@@ -1210,18 +1205,6 @@ export default function CometManager({
         </>
       )}
 
-      {/* Loader  */}
-      {isGeneratingNextChapter && (
-        <div className="fixed inset-x-0 top-[64px] bottom-0 z-50 bg-primary-50">
-          <div className="w-full h-full flex items-center justify-center p-2 overflow-auto">
-            <Loader
-              inputText="Next Chapter"
-              onBack={handleBackFromLoading}
-              backLabel="Back to Comet Manager"
-            />
-          </div>
-        </div>
-      )}
       {/* Add Screen Popup */}
       <AddScreenPopup
         isOpen={showAddPopup}

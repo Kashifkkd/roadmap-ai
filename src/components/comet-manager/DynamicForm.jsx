@@ -11,6 +11,7 @@ import ActionsForm from "./forms/ActionsForm";
 import SocialDiscussionForm from "./forms/SocialDiscussionForm";
 import AssessmentForm from "./forms/AssessmentForm";
 import NotificationsForm from "./forms/NotificationsForm";
+import MiniAppForm from "./forms/MiniAppForm";
 import AskKyperPopup from "@/components/create-comet/AskKyperPopup";
 import { graphqlClient } from "@/lib/graphql-client";
 
@@ -119,8 +120,9 @@ const getFormValuesFromScreen = (screen) => {
     values.text = content.text || "";
     values.canSchedule = content.canSchedule ?? false;
     values.canCompleteNow = content.canCompleteNow ?? false;
-    values.has_reflection_question = content.has_reflection_question ?? false;
+    values.hasReflectionQuestion = content.hasReflectionQuestion ?? false;
     values.toolLink = content.toolLink || "";
+    values.toolName = content.toolName || "";
     values.reflectionPrompt = content.reflectionPrompt || "";
     values.reflection_question = content.reflection_question || "";
   }
@@ -154,6 +156,11 @@ const getFormValuesFromScreen = (screen) => {
       typeof content.icon === "string"
         ? content.icon
         : content.icon?.url || content.icon?.ImageUrl || "";
+  }
+
+  if (contentType === "miniapp" || contentType === "miniApp") {
+    // For miniApp, the content itself is HTML string
+    values.htmlContent = typeof content === "string" ? content : "";
   }
 
   return values;
@@ -251,11 +258,13 @@ export default function DynamicForm({
                 currentScreen.screenContents.content.canSchedule = value;
               } else if (field === "canCompleteNow") {
                 currentScreen.screenContents.content.canCompleteNow = value;
-              } else if (field === "has_reflection_question") {
-                currentScreen.screenContents.content.has_reflection_question =
+              } else if (field === "hasReflectionQuestion") {
+                currentScreen.screenContents.content.hasReflectionQuestion =
                   value;
               } else if (field === "toolLink") {
                 currentScreen.screenContents.content.toolLink = value;
+              } else if (field === "toolName") {
+                currentScreen.screenContents.content.toolName = value;
               } else if (field === "reflectionPrompt") {
                 currentScreen.screenContents.content.reflectionPrompt = value;
               } else if (field === "reflection_question") {
@@ -979,6 +988,16 @@ export default function DynamicForm({
           }}
         />
       );
+    }
+
+    //8-MiniApp (HTML content in iframe)
+    if (
+      screenType === "miniapp" ||
+      contentType === "miniapp" ||
+      screen?.screenType === "miniApp" ||
+      screen?.screenContents?.contentType === "miniApp"
+    ) {
+      return <MiniAppForm {...formProps} />;
     }
 
     return (
