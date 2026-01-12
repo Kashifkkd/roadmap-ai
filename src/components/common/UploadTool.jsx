@@ -42,18 +42,23 @@ export default function UploadTool({
       if (uploadResponse?.success && uploadResponse?.response) {
         const toolData = {
           status: "success",
-          url: uploadResponse.response.s3_url || uploadResponse.response.presigned_url || uploadResponse.response.s3_path,
+          url:
+            uploadResponse.response.s3_url ||
+            uploadResponse.response.presigned_url ||
+            uploadResponse.response.s3_path,
           name: uploadResponse.response.name || file.name,
           id: uploadResponse.response.id,
         };
-        
+
         if (onUploadSuccess) {
           onUploadSuccess(toolData);
         }
-        
+
         setUploadedTool(file.name);
       } else {
-        setUploadErrorTool(uploadResponse?.message || "Upload failed. Please try again.");
+        setUploadErrorTool(
+          uploadResponse?.message || "Upload failed. Please try again."
+        );
       }
     } catch (error) {
       setUploadErrorTool("Upload failed. Please try again.");

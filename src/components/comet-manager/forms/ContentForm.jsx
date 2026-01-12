@@ -207,7 +207,7 @@ export default function ContentForm({
                         );
 
                         if (uploadResponse?.response) {
-                          const mediaUrl = uploadResponse.response.s3_url;
+                          const mediaUrl = uploadResponse.response.url;
 
                           if (mediaUrl) {
                             const assetData = {
@@ -236,15 +236,12 @@ export default function ContentForm({
                             }
 
                             updateField("mediaUrl", mediaUrl);
-
                             updateField("mediaType", assetType);
+                          } else {
+                            throw new Error("No media URL in response");
                           }
 
                           setUploadedMedia(file.name);
-                          console.log("Media uploaded successfully", {
-                            mediaUrl,
-                            assetData: uploadResponse.response,
-                          });
                         } else {
                           throw new Error("Invalid upload response");
                         }
