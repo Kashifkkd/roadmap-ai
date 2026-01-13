@@ -267,9 +267,6 @@ export default function DynamicForm({
                 currentScreen.screenContents.content.toolName = value;
               } else if (field === "reflectionPrompt") {
                 currentScreen.screenContents.content.reflectionPrompt = value;
-              } else if (field === "reflection_question") {
-                currentScreen.screenContents.content.reflection_question =
-                  value;
               }
 
               // Update the screen in the array
