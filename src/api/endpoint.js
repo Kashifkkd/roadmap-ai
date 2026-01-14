@@ -26,15 +26,17 @@ export const endpoints = {
     `api/clients/v1/client_details/?client_id=${clientId}`,
   getRecentClients: "api/clients/v1/recent",
   updateClient: "api/clients/v1/upsert/client/",
-  deleteClient:(clientId)=>`api/clients/v1/delete/${clientId}`,
+  deleteClient: (clientId) => `api/clients/v1/delete/${clientId}`,
 
   downloadDocument: (documentId) => `api/documents/download/${documentId}`,
   feedbackEmail: (feedback) => `api/comet/feedback_email?feedback=${feedback}`,
   getCohorts: (clientId) => `api/clients/v1/cohorts?client_id=${clientId}`,
   getCohortPaths: (cohortId) => `api/clients/v1/cohorts/${cohortId}/paths`,
-    getClientPaths: (clientId) => `api/clients/v1/clients/${clientId}/paths`,
+  getClientPaths: (clientId) => `api/clients/v1/clients/${clientId}/paths`,
   createCohort: "api/clients/v1/cohorts",
   updateCohort: (cohortId) => `api/clients/v1/cohorts/${cohortId}`,
   deleteCohort: (cohortId) => `api/clients/v1/cohorts/${cohortId}`,
-  uploadTool: "api/n8n/upload_tool_file"
+  uploadTool: "api/n8n/upload_tool_file",
+  generateStepImages: "api/generative-ai/v2/generate-step-images",
+  replaceStepImage: (stepId) => `api/comet/step/replace-image/${stepId}`,
 };

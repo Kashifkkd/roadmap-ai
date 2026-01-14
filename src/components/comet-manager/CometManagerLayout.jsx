@@ -53,7 +53,6 @@ export default function CometManagerLayout() {
     }
   }, [sessionData?.response_path, sessionData?.session_id]);
 
-  console.log("allMessages", allMessages);
 
   useEffect(() => {
     const storedSessionData =

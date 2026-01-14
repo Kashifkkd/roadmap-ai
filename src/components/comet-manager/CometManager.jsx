@@ -58,6 +58,7 @@ import FromDoerToEnabler from "./FromDoerToEnabler";
 import PDFPreview from "./PDFPreview";
 import ImagePreview from "./ImagePreview";
 import CometSettingsDialog from "./CometSettingsDialog";
+import GenerateStepImageButton from "./GenerateStepImageButton";
 import {
   Drawer,
   DrawerContent,
@@ -175,6 +176,8 @@ export default function CometManager({
     outline,
     setOutline,
   } = useCometManager(sessionData);
+
+  console.log("chapters>>", chapters);
 
   useEffect(() => {
     if (onOutlineChange && outline !== null) {
@@ -1055,18 +1058,24 @@ export default function CometManager({
                             </span> */}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {selectedScreen.thumbnail ? (
-                            <img
-                              src={selectedScreen.thumbnail}
-                              alt={selectedScreen.title || "Untitled Chapter"}
-                              className="w-10 h-10 rounded-lg object-cover"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center">
-                              {/* <FileImage className="w-5 h-5 text-muted-foreground" /> */}
-                            </div>
-                          )}
+                        <div className="flex ">
+                          <GenerateStepImageButton
+                            sessionId={sessionId}
+                            chapterUid={selectedScreen?.chapterId}
+                            stepUid={selectedScreen?.stepUid}
+                            stepImageUrl={selectedScreen?.stepImageUrl}
+                            pathId={0}
+                            onSuccess={(response) => {
+                              console.log("Step image generated:", response);
+                            }}
+                            onError={(error) => {
+                              console.error(
+                                "Step image generation failed:",
+                                error
+                              );
+                            }}
+                          />
+                          
                         </div>
                       </div>
                     )}
