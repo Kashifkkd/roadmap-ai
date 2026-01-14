@@ -9,13 +9,10 @@ export function useCometManager(sessionData = null) {
   const [outline, setOutline] = useState(null);
   const [selectedStepId, setSelectedStepId] = useState(null);
 
-  console.log(">>>session Data", sessionData);
-
   // Initialize outline from sessionData
   useEffect(() => {
     if (sessionData && sessionData.response_path) {
       setOutline(sessionData.response_path);
-      
 
       // Set initial selected step
       const pathChapters = sessionData.response_path.chapters || [];
@@ -119,6 +116,9 @@ export function useCometManager(sessionData = null) {
         const stepTitle = step.title || step.name || `Step ${stepIndex + 1}`;
         const stepScreens = stepItem.screens || [];
 
+        //  step uuid
+        const stepUid = step.uuid || null;
+        const stepImageUrl = step.image || null;
         stepScreens.forEach((screen, screenIndex) => {
           const screenId = screen.id || `screen-${screenCounter}`;
 
@@ -151,6 +151,8 @@ export function useCometManager(sessionData = null) {
             id: screenId,
             chapterId: chapterId,
             stepId: stepId,
+            stepUid: stepUid, // Step uuid
+            stepImageUrl: stepImageUrl,
             thumbnail: thumbnail,
             title: screenTitle,
             formData: formData,

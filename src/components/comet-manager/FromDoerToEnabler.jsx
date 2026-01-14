@@ -1194,11 +1194,6 @@ export default function FromDoerToEnabler({
   const screenContents = selectedScreen?.screenContents ?? null;
   const content = screenContents?.content ?? null;
   const contentType = screenContents?.contentType;
-  console.log("contentType>>>>>>>>>>>>.", contentType);
-  console.log(
-    "FromDoerToEnabler selectedScreen assets:",
-    selectedScreen?.assets
-  );
 
   const contentSections = useMemo(() => {
     if (!contentType || !content) {

@@ -180,11 +180,11 @@ export default function DynamicForm({
   // No local state - derive form values directly from screen
   const formData = useMemo(() => {
     const values = getFormValuesFromScreen(screen);
-    console.log("🟢 FormData derived from screen:", {
-      heading: values.heading,
-      body: values.body?.substring(0, 50) + "...",
-      screenContent: screen?.screenContents?.content,
-    });
+    // console.log("🟢 FormData derived from screen:", {
+    //   heading: values.heading,
+    //   body: values.body?.substring(0, 50) + "...",
+    //   screenContent: screen?.screenContents?.content,
+    // });
     return values;
   }, [screen]);
 
@@ -730,7 +730,6 @@ export default function DynamicForm({
     const contentType = (
       screen?.screenContents?.contentType || ""
     ).toLowerCase();
-    console.log("contentType>>", contentType);
     // Extract IDs for asset upload
     const sessionId =
       sessionData?.session_id ||
