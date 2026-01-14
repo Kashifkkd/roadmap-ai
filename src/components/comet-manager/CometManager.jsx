@@ -445,6 +445,7 @@ export default function CometManager({
       ).length + 1;
     const screenId = `#screen_${chapterNum}_${stepNum}_${screenNum}`;
     const screenContentId = `#screen_content_${chapterNum}_${stepNum}_${screenNum}`;
+    const screenUuid = crypto.randomUUID();
 
     // Get position - count screens in the same step
     const position =
@@ -476,6 +477,7 @@ export default function CometManager({
 
       newScreen = {
         id: screenId,
+        uuid: screenUuid,
         screenType: "action",
         position: position,
         screenContents: {
@@ -516,6 +518,7 @@ export default function CometManager({
       const contentTitle = "";
       newScreen = {
         id: screenId,
+        uuid: screenUuid,
         screenType: "content",
         position: position,
         screenContents: {
@@ -551,6 +554,7 @@ export default function CometManager({
       const mcqTitle = "";
       newScreen = {
         id: screenId,
+        uuid: screenUuid,
         screenType: "multiple_choice",
         position: position,
         screenContents: {
@@ -587,6 +591,7 @@ export default function CometManager({
       const forceRankTitle = "";
       newScreen = {
         id: screenId,
+        uuid: screenUuid,
         screenType: "force_question",
         position: position,
         screenContents: {
@@ -621,6 +626,7 @@ export default function CometManager({
       const linearTitle = "";
       newScreen = {
         id: screenId,
+        uuid: screenUuid,
         screenType: "linear_poll",
         position: position,
         screenContents: {
@@ -657,6 +663,7 @@ export default function CometManager({
       const assessmentTitle = "";
       newScreen = {
         id: screenId,
+        uuid: screenUuid,
         screenType: "assessment",
         position: position,
         screenContents: {
@@ -685,6 +692,7 @@ export default function CometManager({
       const reflectionTitle = "";
       newScreen = {
         id: screenId,
+        uuid: screenUuid,
         screenType: "reflection",
         position: position,
         screenContents: {
@@ -714,6 +722,7 @@ export default function CometManager({
       const discussionTitle = "";
       newScreen = {
         id: screenId,
+        uuid: screenUuid,
         screenType: "discussion",
         position: position,
         screenContents: {
@@ -743,6 +752,7 @@ export default function CometManager({
       const habitsTitle = "";
       newScreen = {
         id: screenId,
+        uuid: screenUuid,
         screenType: "habits",
         position: position,
         screenContents: {
@@ -778,6 +788,7 @@ export default function CometManager({
       // Default structure for unknown screen types (fallback)
       newScreen = {
         id: screenId,
+        uuid: screenUuid,
         screenType: screenType.id,
         position: position,
         screenContents: {
