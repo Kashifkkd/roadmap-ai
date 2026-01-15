@@ -53,19 +53,14 @@ export default function CometManagerLayout() {
 
 
   useEffect(() => {
-    const storedSessionData =
-      typeof window !== "undefined"
-        ? localStorage.getItem("sessionData")
-        : null;
+  if (typeof window === "undefined") return;
 
-    if (storedSessionData && !sessionData) {
-      setSessionData(JSON.parse(storedSessionData));
-    }
-    // sample data for testing
-    // if (!storedSessionData && !sessionData) {
-    //   setSessionData(temp2[0]);
-    // }
-  }, [sessionData]);
+  const stored = localStorage.getItem("sessionData");
+  if (stored && !sessionData) {
+    setSessionData(JSON.parse(stored));
+  }
+}, []);
+
 
   // Load ALL chat messages from sessionData.chatbot_conversation
   useEffect(() => {
@@ -285,6 +280,7 @@ export default function CometManagerLayout() {
         <div className="w-full lg:w-3/4 h-full">
           <CometManager
             sessionData={sessionData}
+            setSessionData={setSessionData}
             prefillData={prefillData}
             setAllMessages={setAllMessages}
             isPreviewMode={isPreviewMode}

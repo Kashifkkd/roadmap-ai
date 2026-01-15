@@ -153,6 +153,7 @@ const EASE_CATEGORIES = ["Engagement", "Aha", "Support", "Execution"];
 
 export default function CometManager({
   sessionData,
+  setSessionData = () => {},
   setAllMessages,
   isPreviewMode,
   setIsPreviewMode,
@@ -214,6 +215,7 @@ export default function CometManager({
 
     let cleanup;
     const subscribe = async () => {
+      console.log("Subscribing to session updates for next chapter...");
       cleanup = await graphqlClient.subscribeToSessionUpdates(
         sessionId,
         (updatedSessionData) => {
@@ -222,8 +224,8 @@ export default function CometManager({
               "sessionData",
               JSON.stringify(updatedSessionData)
             );
+            setSessionData(updatedSessionData);
           } catch {}
-          window.location.reload();
         },
         (err) => {
           console.error("Subscription error:", err);
