@@ -15,10 +15,10 @@ export const uploadToolfile = async (
   formData.append("file", file);
   formData.append("session_id", sessionId);
   formData.append("path_id", pathId);
-  formData.append("chapter_id", chapterId);
-  formData.append("step_id", stepId);
-  formData.append("screen_id", screenId);
-  formData.append("screen_content_id", screenContentId);
+  formData.append("chapter_uid", chapterId);
+  formData.append("step_uid", stepId);
+  formData.append("screen_uid", screenId);
+  formData.append("screen_content_uid", screenContentId);
   formData.append("name", toolName);
 
   return await apiService({

@@ -87,7 +87,7 @@ export default function WelcomePage() {
     setIsAnimating(false);
 
     requestAnimationFrame(() => {
-      textareaRef.current.focus();
+      textareaRef.current?.focus();
     });
   };
   useEffect(() => {

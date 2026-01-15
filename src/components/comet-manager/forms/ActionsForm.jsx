@@ -45,6 +45,9 @@ export default function ActionsForm({
   chapterId = "",
   stepId = "",
   screenId = "",
+  chapterUuid = "",
+  stepUuid = "",
+  screenUuid = "",
   screen = {},
 }) {
   const {
@@ -117,10 +120,10 @@ export default function ActionsForm({
             label="Upload Tool File"
             sessionId={sessionId}
             pathId={screen?.pathId || ""}
-            chapterId={chapterId}
-            stepId={stepId}
-            screenId={screenId}
-            screenContentId={screen?.screenContents?.id || ""}
+            chapterId={chapterUuid || chapterId || ""}
+            stepId={stepUuid || stepId || ""}
+            screenId={screenUuid || screenId || ""}
+            screenContentId={screen?.screenContents?.uuid || ""}
             toolName={formData.toolName || formData.title || "Tool"}
             onUploadSuccess={handleToolUploadSuccess}
           />
@@ -186,7 +189,7 @@ export default function ActionsForm({
               showInfo={true}
             />
           </div>
-           {/* {formData.hasReflectionQuestion && (
+          {/* {formData.hasReflectionQuestion && (
             <div className="mb-4 mt-4 ml-6">
               <Label className="block text-sm font-medium text-gray-700 mb-2">
                 Reflection Question

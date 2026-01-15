@@ -17,6 +17,9 @@ export default function ContentForm({
   chapterId = "",
   stepId = "",
   screenId = "",
+  chapterUuid = "",
+  stepUuid = "",
+  screenUuid = "",
 }) {
   const {
     onTextFieldSelect,
@@ -32,7 +35,39 @@ export default function ContentForm({
   // Get existing assets from screen
   const existingAssets = screen?.assets || [];
 
-  // get existing media audio or video
+  // Helper function to determine asset type from file
+  const getAssetType = (file) => {
+    const fileType = file.type.toLowerCase();
+
+    if (fileType.startsWith("image/")) return "image";
+    if (fileType.startsWith("video/")) return "video";
+    if (fileType.startsWith("audio/")) return "audio";
+    if (fileType === "application/pdf") return "pdf";
+    if (
+      fileType === "application/vnd.ms-powerpoint" ||
+      fileType ===
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    )
+      return "ppt";
+    if (
+      fileType === "application/vnd.ms-excel" ||
+      fileType ===
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+      return "excel";
+    if (
+      fileType === "application/msword" ||
+      fileType ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+      return "doc";
+    if (fileType.startsWith("text/")) return "text";
+    if (fileType.startsWith("application/")) return "document";
+
+    // Default to "file" for any other type
+    return "file";
+  };
+
   const existingMediaAsset = useMemo(() => {
     const mediaUrl = formData.mediaUrl || formData.media?.url;
 
@@ -45,8 +80,16 @@ export default function ContentForm({
           asset.audioUrl === mediaUrl
       );
     }
+    // Find any media asset
     return existingAssets.find(
-      (asset) => asset.type === "video" || asset.type === "audio"
+      (asset) =>
+        asset.type === "video" ||
+        asset.type === "audio" ||
+        asset.type === "image" ||
+        asset.type === "pdf" ||
+        asset.type === "ppt" ||
+        asset.type === "document" ||
+        asset.type === "file"
     );
   }, [existingAssets, formData.mediaUrl, formData.media]);
 
@@ -75,6 +118,11 @@ export default function ContentForm({
       (asset) =>
         asset.type === "video" ||
         asset.type === "audio" ||
+        asset.type === "image" ||
+        asset.type === "pdf" ||
+        asset.type === "ppt" ||
+        asset.type === "document" ||
+        asset.type === "file" ||
         asset.url === formData.mediaUrl ||
         asset.ImageUrl === formData.mediaUrl
     );
@@ -144,9 +192,9 @@ export default function ContentForm({
             <ImageUpload
               label="Upload Image/Icon"
               sessionId={sessionId}
-              chapterId={chapterId}
-              stepId={stepId}
-              screenId={screenId}
+              chapterId={chapterUuid || chapterId}
+              stepId={stepUuid || stepId}
+              screenId={screenUuid || screenId}
               onUploadSuccess={(assetData) => {
                 if (updateScreenAssets) {
                   updateScreenAssets([assetData]);
@@ -172,13 +220,12 @@ export default function ContentForm({
           {/* Upload Media Section */}
           <div className="mb-4">
             <Label className="block text-sm font-medium text-gray-700 mb-2">
-              Upload Media
+              Upload Media/File
             </Label>
             <div className="relative p-2 bg-gray-100 rounded-lg hover:border-primary transition-colors mb-4">
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 mb-2 bg-white">
                 <Input
                   type="file"
-                  accept="video/*,audio/*"
                   onChange={async (e) => {
                     const file =
                       e.target.files && e.target.files[0]
@@ -191,9 +238,7 @@ export default function ContentForm({
                       updateField("contentMediaFile", file);
 
                       // Determine asset type based on file type
-                      const assetType = file.type.startsWith("video/")
-                        ? "video"
-                        : "audio";
+                      const assetType = getAssetType(file);
 
                       // Upload asset with all necessary fields
                       try {
@@ -201,9 +246,9 @@ export default function ContentForm({
                           file,
                           assetType,
                           sessionId || "",
-                          chapterId || "",
-                          stepId || "",
-                          screenId || ""
+                          chapterUuid || chapterId || "",
+                          stepUuid || stepId || "",
+                          screenUuid || screenId || ""
                         );
 
                         if (uploadResponse?.response) {
@@ -218,6 +263,8 @@ export default function ContentForm({
                                 assetType === "video" ? mediaUrl : undefined,
                               audioUrl:
                                 assetType === "audio" ? mediaUrl : undefined,
+                              ImageUrl:
+                                assetType === "image" ? mediaUrl : undefined,
                               asset_id:
                                 uploadResponse.response.id ||
                                 uploadResponse.response.asset_id,
@@ -230,13 +277,20 @@ export default function ContentForm({
                               alt: file.name,
                             };
 
-                            // Update screen assets in session data
-                            if (updateScreenAssets) {
-                              updateScreenAssets([assetData]);
-                            }
-
+                            // Update form fields
                             updateField("mediaUrl", mediaUrl);
                             updateField("mediaType", assetType);
+
+                            // update screen assets in session data
+                            setTimeout(() => {
+                              if (updateScreenAssets) {
+                                console.log(
+                                  "Adding asset to screen assets:",
+                                  assetData
+                                );
+                                updateScreenAssets([assetData]);
+                              }
+                            }, 100);
                           } else {
                             throw new Error("No media URL in response");
                           }
@@ -256,9 +310,7 @@ export default function ContentForm({
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 <div className="flex flex-col items-center justify-center text-center cursor-pointer">
-                  <p className="text-sm text-gray-600 mb-4">
-                    Upload Video/Audio
-                  </p>
+                  <p className="text-sm text-gray-600 mb-4">Upload File</p>
                   <span className="bg-primary text-white hover:bg-primary-700 px-4 py-2 text-sm rounded-lg inline-flex items-center gap-2 cursor-pointer">
                     + Browse
                   </span>
@@ -313,7 +365,15 @@ export default function ContentForm({
                 <Input
                   type="url"
                   value={formData.mediaUrl || ""}
-                  onChange={(e) => updateField("mediaUrl", e.target.value)}
+                  onChange={(e) => {
+                    const url = e.target.value;
+                    updateField("mediaUrl", url);
+                    if (url && url.trim() !== "") {
+                      updateField("mediaType", "link");
+                    } else {
+                      updateField("mediaType", "");
+                    }
+                  }}
                   placeholder="Or paste your link here"
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 />

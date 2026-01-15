@@ -177,8 +177,6 @@ export default function CometManager({
     setOutline,
   } = useCometManager(sessionData);
 
-  console.log("chapters>>", chapters);
-
   useEffect(() => {
     if (onOutlineChange && outline !== null) {
       onOutlineChange(outline);
@@ -1075,7 +1073,6 @@ export default function CometManager({
                               );
                             }}
                           />
-                          
                         </div>
                       </div>
                     )}
@@ -1089,7 +1086,7 @@ export default function CometManager({
                             <div className="flex items-start gap-2 sm:gap-2 px-1">
                               {screens.map((screen, index) => (
                                 <div
-                                  key={screen.id}
+                                  key={screen.uuid || `${screen.id}-${index}`}
                                   ref={
                                     index === currentScreen
                                       ? selectedScreenRef

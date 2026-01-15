@@ -303,7 +303,6 @@ export default function CreateComet({
           if (experienceDesign["Focus"]) {
             // Map text values to form values
             const focusValue = experienceDesign["Focus"];
-            console.log("focusValue >>>>>>>>", focusValue);
             const lowerFocus = focusValue.toLowerCase();
             if (
               lowerFocus.includes("teaching new things") ||
@@ -360,7 +359,6 @@ export default function CreateComet({
               experienceDesign["Special Instructions"]
             );
         }
-        console.log("prefillData >>>>>>>>", prefillData);
 
         if (prefillData.comet_creation_data["Source Materials"]) {
         }

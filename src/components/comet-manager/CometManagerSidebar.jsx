@@ -256,7 +256,6 @@ export default function CometManagerSidebar({
     try {
       const materials = await getSourceMaterials(sessionId);
       setSourceMaterials(materials);
-      console.log(">>> materials", materials);
     } catch (error) {
       console.error("Failed to fetch source materials:", error);
       setSourcesError(error.message || "Failed to load source materials");
