@@ -1,13 +1,14 @@
 import { wsGraphQLClient } from "./ws-graphql-client";
+import { refreshAccessToken } from "./token-refresh";
 
 class GraphQLClient {
   constructor() {
     this.baseURL = "https://kyper-stage.1st90.com/graphql";
   }
 
-  
 
-  async request(query, variables = {}) {
+
+  async request(query, variables = {}, isRetry = false) {
     let token = null;
     if (typeof window !== "undefined") {
       try {
@@ -25,7 +26,7 @@ class GraphQLClient {
     // if (!token) {
     //   throw new Error("No authentication token found");
     // }
-    
+
     const response = await fetch(this.baseURL, {
       method: "POST",
       headers: {
@@ -40,9 +41,10 @@ class GraphQLClient {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
-        if (typeof window !== "undefined") {
-          window.location.href = "/";
+      if (response.status === 401 && !isRetry) {
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          return this.request(query, variables, true);
         }
       }
       throw new Error(`HTTP error! status: ${response.status}`);
