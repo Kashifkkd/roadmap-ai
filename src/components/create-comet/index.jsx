@@ -155,8 +155,9 @@ export default function CreateComet({
                   "targetAudience",
                   audienceObjectives["Target Audience"]
                 );
-              if (audienceObjectives["Learning Objectives"]) {
-                const objectives = audienceObjectives["Learning Objectives"];
+              if (audienceObjectives["Learning and Behaviour Objectives"]) {
+                const objectives =
+                  audienceObjectives["Learning and Behaviour Objectives"];
                 const objectivesArray = Array.isArray(objectives)
                   ? objectives
                   : typeof objectives === "string"
@@ -288,14 +289,11 @@ export default function CreateComet({
         if (audienceObjectives) {
           if (audienceObjectives["Target Audience"])
             setValue("targetAudience", audienceObjectives["Target Audience"]);
-          if (audienceObjectives["Learning Objectives"]) {
-            const objectives = audienceObjectives["Learning Objectives"];
-            const objectivesArray = Array.isArray(objectives)
-              ? objectives
-              : typeof objectives === "string"
-              ? objectives.split("\n").filter((obj) => obj.trim())
-              : [objectives];
-            setValue("learningObjectives", objectivesArray);
+          if (audienceObjectives["Learning and Behaviour Objectives"]) {
+            const objectives =
+              audienceObjectives["Learning and Behaviour Objectives"];
+
+            setValue("learningObjectives", objectives);
           }
         }
 
