@@ -37,12 +37,9 @@ export default function SourceMaterialCard({
     };
   }, []);
 
-  console.log(">>> sessionId", sessionId, "isNewComet", isNewComet);
-
   const fetchSourceMaterials = useCallback(async () => {
     try {
       const materials = await getSourceMaterials(sessionId);
-      console.log(">>> materials", materials);
 
       if (materials && materials.length > 0) {
         const uploadedMaterials = materials.map((material) => ({

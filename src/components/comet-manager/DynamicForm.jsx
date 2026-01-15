@@ -188,8 +188,6 @@ export default function DynamicForm({
     return values;
   }, [screen]);
 
-  console.log("screen>>", screen);
-
   const [focusedField, setFocusedField] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
   const [askContext, setAskContext] = useState(null);
@@ -269,8 +267,15 @@ export default function DynamicForm({
                 currentScreen.screenContents.content.reflectionPrompt = value;
               }
 
-              // Update the screen in the array
-              stepItem.screens[screenIndex] = currentScreen;
+              stepItem.screens[screenIndex] = {
+                ...currentScreen,
+                screenContents: {
+                  ...currentScreen.screenContents,
+                  content: {
+                    ...currentScreen.screenContents.content,
+                  },
+                },
+              };
             } else if (contentType === "mcq") {
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
@@ -469,6 +474,20 @@ export default function DynamicForm({
               currentScreen.title =
                 currentScreen.screenContents.content.heading;
             }
+
+            // Explicitly preserve assets when updating screen
+
+            const existingAssets = currentScreen.assets || [];
+            stepItem.screens[screenIndex] = {
+              ...currentScreen,
+              screenContents: {
+                ...currentScreen.screenContents,
+                content: {
+                  ...currentScreen.screenContents.content,
+                },
+              },
+              assets: existingAssets, // Preserve assets
+            };
 
             return newOutline;
           }
@@ -740,6 +759,19 @@ export default function DynamicForm({
     const chapterId = screen?.chapterId || "";
     const stepId = screen?.stepId || "";
 
+    // Extract UUIDs for asset upload
+    const screenUuid = screen?.uuid || "";
+    const stepUuid = screen?.stepUid || "";
+    // Find chapter UUID from outline
+    let chapterUuid = "";
+    const outline = sessionData?.response_path;
+    if (outline?.chapters && chapterId) {
+      const chapter = outline.chapters.find(
+        (ch) => String(ch.id) === String(chapterId)
+      );
+      chapterUuid = chapter?.uuid || "";
+    }
+
     // Function to update screen assets
     const updateScreenAssets = (assets) => {
       const screenId = screen?.id;
@@ -831,6 +863,9 @@ export default function DynamicForm({
       chapterId,
       stepId,
       screenId,
+      chapterUuid,
+      stepUuid,
+      screenUuid,
     };
 
     //1-Content

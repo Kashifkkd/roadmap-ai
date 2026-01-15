@@ -51,7 +51,6 @@ export default function DashboardLayout() {
     if (storedSessionData) {
       try {
         const parsed = JSON.parse(storedSessionData);
-        console.log("Found existing sessionData:", parsed);
         setSessionData(parsed);
         setPrefillData(parsed);
       } catch (e) {
@@ -204,9 +203,6 @@ export default function DashboardLayout() {
           "Special Instructions": formData.specialInstructions || "",
         },
       };
-      console.log("habitEnabled", formData.habitEnabled);
-      console.log("habitText", formData.habitText);
-      console.log("personalizationEnabled", formData.personalizationEnabled);
 
       let parsedSessionData = null;
       try {

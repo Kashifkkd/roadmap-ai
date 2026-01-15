@@ -10,39 +10,33 @@ export const uploadAssetFile = async (
   sessionId = "",
   chapterId = "",
   stepId = "",
-  screenId = ""
+  screenId = "",
+  link = ""
 ) => {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("asset_type", assetType);
-  formData.append("session_id", sessionId);
+  formData.append("link", link || "");
+  formData.append("asset_type", assetType || "");
+  formData.append("session_id", sessionId || "");
 
-  
-  const normalizeId = (id) => {
-    if (id === undefined || id === null || id === "") return null;
-    const numeric = Number(id);
-    return Number.isNaN(numeric) ? null : numeric;
-  };
-
-  const normalizedChapterId = normalizeId(chapterId);
-  const normalizedStepId = normalizeId(stepId);
-  const normalizedScreenId = normalizeId(screenId);
-
-  if (normalizedChapterId !== null) {
-    formData.append("chapter_id", String(normalizedChapterId));
+  // Append UIDs as strings (API expects string format)
+  if (chapterId && chapterId !== "") {
+    formData.append("chapter_uid", String(chapterId));
   }
-  if (normalizedStepId !== null) {
-    formData.append("step_id", String(normalizedStepId));
+  if (stepId && stepId !== "") {
+    formData.append("step_uid", String(stepId));
   }
-  if (normalizedScreenId !== null) {
-    formData.append("screen_id", String(normalizedScreenId));
+  if (screenId && screenId !== "") {
+    formData.append("screen_uid", String(screenId));
   }
 
   console.log("Uploading asset file with:", {
     sessionId,
-    chapterId: normalizedChapterId,
-    stepId: normalizedStepId,
-    screenId: normalizedScreenId,
+    chapterId,
+    stepId,
+    screenId,
+    link,
+    assetType,
   });
 
   return await apiService({

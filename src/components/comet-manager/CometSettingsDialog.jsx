@@ -272,6 +272,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
             sessionId,
             "",
             "",
+            "",
             ""
           );
 

@@ -94,7 +94,6 @@ const Chat = ({
   error = null,
   pageIdentifier = 1,
 }) => {
-  console.log(messages, "messages>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
   const bottomRef = useRef(null);
   // const scrollContainerRef = useRef(null);
   // const [isBottom, setIsBottom] = useState(false);

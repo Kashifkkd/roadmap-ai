@@ -188,7 +188,7 @@ export default function GenerateStepImageButton({
       </Button>
 
       {/* Upload Image Button */}
-      <Button
+      {/* <Button
         type="button"
         onClick={handleOpenDialog}
         disabled={isGenerating}
@@ -197,9 +197,13 @@ export default function GenerateStepImageButton({
       >
         <Upload className="w-3.5 h-3.5" />
         <span className="hidden sm:inline">Upload Image</span>
-      </Button>
+      </Button> */}
       {/* Image Preview */}
-      <div className="w-10 h-10 rounded-md bg-primary-50 border border-primary-200 flex items-center justify-center overflow-hidden shrink-0">
+      <div
+        className="w-10 h-10 rounded-md bg-primary-50 border border-primary-200 flex items-center justify-center overflow-hidden shrink-0"
+        onClick={handleOpenDialog}
+        disabled={isGenerating}
+      >
         {stepImageUrl ? (
           <img
             src={stepImageUrl}

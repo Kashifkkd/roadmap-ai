@@ -256,7 +256,6 @@ export default function CometManagerSidebar({
     try {
       const materials = await getSourceMaterials(sessionId);
       setSourceMaterials(materials);
-      console.log(">>> materials", materials);
     } catch (error) {
       console.error("Failed to fetch source materials:", error);
       setSourcesError(error.message || "Failed to load source materials");
@@ -433,13 +432,14 @@ export default function CometManagerSidebar({
             (chapters && chapters.length > 0 ? (
               chapters.map((chapter, index) => {
                 const chapterId = chapter.id || `chapter-${index}`;
+                const chapterKey = `${chapterId}-${index}`;
                 const stepCount = chapter.steps?.length || 0;
                 const isSelected = selectedChapter === chapterId;
                 const isExpanded = expandedChapters.has(chapterId);
 
                 return (
                   <div
-                    key={chapterId}
+                    key={chapterKey}
                     className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
                       isExpanded ? "bg-primary-100" : "bg-white"
                     }`}
@@ -929,7 +929,7 @@ export default function CometManagerSidebar({
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center p-2 gap-2">
                               <span className="text-md font-semibold">
-                                {category.name} 
+                                {category.name}
                               </span>
                             </div>
                             {/* <span

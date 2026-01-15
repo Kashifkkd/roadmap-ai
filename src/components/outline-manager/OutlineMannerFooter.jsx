@@ -137,11 +137,6 @@ export default function OutlineMannerFooter() {
         if (raw) parsedSessionData = JSON.parse(raw);
       } catch {}
 
-      console.log(
-        "parsedSessionData>>>>>>>>>>>>>>>>>>>>>>>",
-        parsedSessionData.chatbot_conversation
-      );
-
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: "initial_chapter_creation",
@@ -163,11 +158,6 @@ export default function OutlineMannerFooter() {
       });
 
       await graphqlClient.sendMessage(cometJsonForMessage);
-      console.log(
-        "cometJsonForMessage>>>>>>>>>>>>>>>>>>>>>>>",
-        parsedSessionData.chatbot_conversation
-      );
-
       // Start listening for updates, then navigate on data
       // isGenerating is already set to true at the start
     } catch (error) {

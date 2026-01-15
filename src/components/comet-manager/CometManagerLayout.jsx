@@ -22,8 +22,6 @@ export default function CometManagerLayout() {
   const outlineRef = useRef(null);
   const initializedSessionIdRef = useRef(null);
 
-  console.log("sessionData", sessionData);
-
   useEffect(() => {
     const currentSessionId = sessionData?.session_id;
 
