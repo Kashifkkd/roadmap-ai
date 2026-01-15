@@ -2,6 +2,7 @@ import { getCommit } from "./cohort/getCohorts";
 export const endpoints = {
   register: "api/auth/v1/register",
   login: "api/auth/v1/token",
+  refresh: "api/auth/v1/refresh",
   uploadSourceMaterial: "api/n8n/upload_source_material",
   getSourceMaterials: "api/n8n/source_materials",
   getAssets: "api/n8n/assets",
