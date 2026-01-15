@@ -182,7 +182,9 @@ export default function DashboardLayout() {
         },
         "Audience & Objectives": {
           "Target Audience": formData.targetAudience || "",
-          "Learning Objectives": Array.isArray(formData.learningObjectives)
+          "Learning and Behaviour Objectives": Array.isArray(
+            formData.learningObjectives
+          )
             ? formData.learningObjectives
                 .map(String)
                 .map((obj) => obj.trim())
