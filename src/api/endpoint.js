@@ -1,3 +1,4 @@
+import { getCommit } from "./cohort/getCohorts";
 export const endpoints = {
   register: "api/auth/v1/register",
   login: "api/auth/v1/token",
@@ -18,7 +19,7 @@ export const endpoints = {
   uploadProfilePicture: "api/auth/v1/upload-profile-picture",
   updateUser: "api/auth/v1/profile/upsert",
   shareComet: (sessionId) => `api/comet/share_comets/${sessionId}`,
-  publishComet: (sessionId) => `api/comet/publish_comet/${sessionId}`,
+  publishComet: (sessionId) => `api/comet/v2/publish_comet/${sessionId}`,
 
   generateDalleImage: "api/generative-ai/v1/generate-dalle-image",
 
@@ -26,11 +27,13 @@ export const endpoints = {
     `api/clients/v1/client_details/?client_id=${clientId}`,
   getRecentClients: "api/clients/v1/recent",
   updateClient: "api/clients/v1/upsert/client/",
+    updateWithCohort: "api/clients/v1/clients/create-with-cohorts",  
   deleteClient: (clientId) => `api/clients/v1/delete/${clientId}`,
 
   downloadDocument: (documentId) => `api/documents/download/${documentId}`,
   feedbackEmail: (feedback) => `api/comet/feedback_email?feedback=${feedback}`,
   getCohorts: (clientId) => `api/clients/v1/cohorts?client_id=${clientId}`,
+    getCommit: (clientId) => `api/comet/sessions?client_id=${clientId}`,
   getCohortPaths: (cohortId) => `api/clients/v1/cohorts/${cohortId}/paths`,
   getClientPaths: (clientId) => `api/clients/v1/clients/${clientId}/paths`,
   createCohort: "api/clients/v1/cohorts",
@@ -39,4 +42,5 @@ export const endpoints = {
   uploadTool: "api/n8n/upload_tool_file",
   generateStepImages: "api/generative-ai/v2/generate-step-images",
   replaceStepImage: (stepId) => `api/comet/step/replace-image/${stepId}`,
+    fetchList: "api/comet/sessions"
 };

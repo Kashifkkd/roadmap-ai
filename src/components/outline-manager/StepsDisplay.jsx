@@ -604,14 +604,41 @@ const StepsDisplay = ({
   };
 
   const handleSaveEdit = (stepIndex, fieldType) => {
-    const currentChapterNumber =
-      chapterNumber ||
-      selectedChapter?.chapterNumber ||
-      selectedChapter?.step ||
-      "Unknown";
+    if (!editValue.trim()) {
+      setEditingField(null);
+      setEditValue("");
+      return;
+    }
 
-    // TODO: Implement actual save logic here
-    // await graphqlClient.updateStepContent(...)
+    // Update the step in chapterSteps
+    const newSteps = [...chapterSteps];
+    newSteps[stepIndex] = {
+      ...newSteps[stepIndex],
+      [fieldType]: editValue.trim(),
+    };
+    setChapterSteps(newSteps);
+
+    // Update localStorage
+    try {
+      const storedData = JSON.parse(
+        localStorage.getItem("sessionData") || "{}"
+      );
+      if (storedData && storedData.response_outline) {
+        const chapterName = selectedChapter?.chapter;
+        storedData.response_outline = storedData.response_outline.map((ch) => {
+          if (ch?.chapter === chapterName) {
+            return {
+              ...ch,
+              steps: newSteps,
+            };
+          }
+          return ch;
+        });
+        localStorage.setItem("sessionData", JSON.stringify(storedData));
+      }
+    } catch (error) {
+      console.error("Error updating localStorage:", error);
+    }
 
     setEditingField(null);
     setEditValue("");
@@ -697,7 +724,7 @@ const StepsDisplay = ({
                     {/* Aha Moment */}
                     {step?.aha && (
                       <div
-                        className="flex gap-3 px-3 py-4 bg-white rounded-xl relative"
+                        className="group flex gap-3 px-3 py-4 bg-white rounded-xl relative"
                         data-step-index={index}
                         data-field-type="aha"
                       >
@@ -726,14 +753,12 @@ const StepsDisplay = ({
                                   onClick={() => handleSaveEdit(index, "aha")}
                                   className="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-1 text-sm"
                                 >
-                                  <Check className="w-4 h-4" />
                                   Save
                                 </button>
                                 <button
                                   onClick={handleCancelEdit}
                                   className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-1 text-sm"
                                 >
-                                  <X className="w-4 h-4" />
                                   Cancel
                                 </button>
                               </div>
@@ -744,24 +769,24 @@ const StepsDisplay = ({
                             </p>
                           )}
                         </div>
-                        {/* {editingField !== `${index}-aha` && (
+                        {editingField !== `${index}-aha` && (
                           <button
                             onClick={() =>
                               handleEditStep(index, "aha", step.aha)
                             }
-                            className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-gray-200 transition-colors"
+                            className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                             title="Edit Aha Moment"
                           >
                             <Pencil className="w-4 h-4 text-gray-600" />
                           </button>
-                        )} */}
+                        )}
                       </div>
                     )}
 
                     {/* Action */}
                     {step?.action && (
                       <div
-                        className="flex gap-3 px-3 py-4 bg-white rounded-xl relative"
+                        className="group flex gap-3 px-3 py-4 bg-white rounded-xl relative"
                         data-step-index={index}
                         data-field-type="action"
                       >
@@ -793,14 +818,12 @@ const StepsDisplay = ({
                                   }
                                   className="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-1 text-sm"
                                 >
-                                  <Check className="w-4 h-4" />
                                   Save
                                 </button>
                                 <button
                                   onClick={handleCancelEdit}
                                   className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-1 text-sm"
                                 >
-                                  <X className="w-4 h-4" />
                                   Cancel
                                 </button>
                               </div>
@@ -811,24 +834,24 @@ const StepsDisplay = ({
                             </p>
                           )}
                         </div>
-                        {/* {editingField !== `${index}-action` && (
+                        {editingField !== `${index}-action` && (
                           <button
                             onClick={() =>
                               handleEditStep(index, "action", step.action)
                             }
-                            className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-gray-200 transition-colors"
+                            className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                             title="Edit Action"
                           >
                             <Pencil className="w-4 h-4 text-gray-600" />
                           </button>
-                        )} */}
+                        )}
                       </div>
                     )}
 
                     {/* Tool */}
                     {step?.tool && (
                       <div
-                        className="flex gap-3 px-3 py-4 bg-white rounded-xl relative"
+                        className="group flex gap-3 px-3 py-4 bg-white rounded-xl relative"
                         data-step-index={index}
                         data-field-type="tool"
                       >
@@ -871,17 +894,17 @@ const StepsDisplay = ({
                             </p>
                           )}
                         </div>
-                        {/* {editingField !== `${index}-tool` && (
+                        {editingField !== `${index}-tool` && (
                           <button
                             onClick={() =>
                               handleEditStep(index, "tool", step.tool)
                             }
-                            className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-gray-200 transition-colors"
+                            className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                             title="Edit Tool"
                           >
                             <Pencil className="w-4 h-4 text-gray-600" />
                           </button>
-                        )} */}
+                        )}
                       </div>
                     )}
                     {step?.description && (
@@ -1057,7 +1080,6 @@ const AddStepModal = ({
           className="absolute right-4 top-4 rounded-full p-1.5 text-gray-500 transition-colors hover:bg-gray-100 disabled:pointer-events-none"
           aria-label="Close add step modal"
         >
-          <X className="h-4 w-4" />
         </button>
 
         <h3 className="text-lg font-semibold text-gray-900">Add New Step</h3>
@@ -1078,9 +1100,9 @@ const AddStepModal = ({
               onClick={onToggleSourceMaterial}
               className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
                 includeSourceMaterial
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-gray-200 text-gray-600 hover:border-gray-300"
-              }`}
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-gray-200 text-gray-600 hover:border-gray-300"
+                }`}
               disabled={isSubmitting}
             >
               <Paperclip className="h-4 w-4" />

@@ -432,6 +432,8 @@ export default function ChatWindow({
               }
             });
 
+            console.log("allMessages with status:", allMessages);
+            console.log("conversation:", conversation);
 
             // Update with all messages
             if (allMessages.length > 0) {

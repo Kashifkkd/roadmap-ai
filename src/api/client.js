@@ -48,6 +48,18 @@ export async function updateClientDetails(clientData) {
   return res;
 }
 
+export async function updateClientCohortDetails(clientData) {
+  const res = await apiService({
+    endpoint: endpoints.updateWithCohort,
+    method: "POST",
+    data: clientData,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  return res;
+}
+
 export async function deleteClient(clientId) {
   const res = await apiService({
     endpoint: endpoints.deleteClient(clientId),

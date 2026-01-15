@@ -254,6 +254,8 @@ export default function ImageUpload({
     return asset.asset_type === "image";
   }).length;
 
+  console.log(">>assets", assets);
+
   return (
     <>
       <div className="mb-6">

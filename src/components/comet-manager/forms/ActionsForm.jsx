@@ -186,6 +186,22 @@ export default function ActionsForm({
               showInfo={true}
             />
           </div>
+           {/* {formData.hasReflectionQuestion && (
+            <div className="mb-4 mt-4 ml-6">
+              <Label className="block text-sm font-medium text-gray-700 mb-2">
+                Reflection Question
+              </Label>
+              <Input
+                type="text"
+                value={formData.reflection_question || ""}
+                onChange={(e) =>
+                  updateField("reflection_question", e.target.value)
+                }
+                placeholder="Enter reflection question..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-white"
+              />
+            </div>
+          )} */}
         </div>
       </div>
     </div>
