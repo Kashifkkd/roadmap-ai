@@ -201,11 +201,11 @@ export default function WelcomePage() {
         comet_creation_data: sessionData?.comet_creation_data ?? {},
         response_outline: sessionData?.response_outline ?? {},
         response_path: sessionData?.response_path ?? {},
-        additional_data: sessionData?.additional_data ?? {
-          personalization_enabled: false,
-          habit_enabled: false,
-          habit_description: "",
-        },
+        // additional_data: sessionData?.additional_data ?? {
+        //   personalization_enabled: false,
+        //   habit_enabled: false,
+        //   habit_description: "",
+        // },
         chatbot_conversation: chatbotConversation,
         to_modify: sessionData?.to_modify ?? {},
         source_material_uid: uploadedFileUid || sourceMaterialUid || null,

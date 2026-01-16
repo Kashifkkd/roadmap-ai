@@ -242,11 +242,11 @@ export default function DashboardLayout() {
         comet_creation_data: formattedCometData,
         response_outline: {},
         response_path: parsedSessionData?.response_path || {},
-        additional_data: {
-          personalization_enabled: formData.personalizationEnabled || false,
-          habit_enabled: formData.habitEnabled || false,
-          habit_description: formData.habitText || "",
-        },
+        // additional_data: {
+        //   personalization_enabled: formData.personalizationEnabled || false,
+        //   habit_enabled: formData.habitEnabled || false,
+        //   habit_description: formData.habitText || "",
+        // },
         chatbot_conversation: [...chatbotConversation, { user: messageText }],
         to_modify: parsedSessionData?.to_modify ?? {},
         source_material_uid: null,

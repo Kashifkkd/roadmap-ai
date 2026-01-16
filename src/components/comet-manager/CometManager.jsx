@@ -208,6 +208,38 @@ export default function CometManager({
   const router = useRouter();
   const [isGeneratingNextChapter, setIsGeneratingNextChapter] = useState(false);
   const [nextChapterError, setNextChapterError] = useState(null);
+  const [showNextChapter, setShowNextChapter] = useState(true);
+useEffect(() => {
+  const outline = sessionData?.response_outline;
+  const path = sessionData?.response_path;
+
+  let outlineCount = 0;
+  let pathCount = 0;
+
+  // outline count
+  if (Array.isArray(outline)) {
+    outlineCount = outline.length;
+  } else if (Array.isArray(outline?.chapters)) {
+    outlineCount = outline.chapters.length;
+  } else if (outline && typeof outline === "object") {
+    outlineCount = Object.keys(outline).length;
+  }
+
+  // path count
+  if (Array.isArray(path?.chapters)) {
+    pathCount = path.chapters.length;
+  } else if (Array.isArray(path)) {
+    pathCount = path.length;
+  }
+
+  // hide button if path >= outline
+  if (outlineCount > 0 && pathCount >= outlineCount) {
+    setShowNextChapter(false);
+  } else {
+    setShowNextChapter(true);
+  }
+}, [sessionData]);
+
 
   // Subscription for next chapter
   useEffect(() => {
@@ -276,15 +308,18 @@ export default function CometManager({
         session_id: currentSessionId,
         input_type: "continued_chapter_creation",
         comet_creation_data: parsedSessionData?.comet_creation_data || {},
-        additional_data: {
-          personalization_enabled:
-            parsedSessionData?.additional_data?.personalization_enabled ||
-            false,
-          habit_enabled:
-            parsedSessionData?.additional_data?.habit_enabled || false,
-          habit_description:
-            parsedSessionData?.additional_data?.habit_description || "",
-        },
+         enabled_attributes: parsedSessionData?.enabled_attributes || {},
+        // additional_data: {
+        
+        //   personalization_enabled:
+        //     parsedSessionData?.additional_data?.personalization_enabled ||
+        //     false,
+        //   habit_enabled:
+        //     parsedSessionData?.additional_data?.habit_enabled || false,
+        //   habit_description:
+        //     parsedSessionData?.additional_data?.habit_description || "",
+        // },
+        
         response_outline: parsedSessionData?.response_outline || {},
         response_path: parsedSessionData?.response_path || {},
         chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
@@ -1210,7 +1245,7 @@ export default function CometManager({
           {/* Footer Navigation */}
           <div className="border-t p-4 bg-background w-full rounded-b-xl shrink-0">
             <div className="flex items-center justify-end">
-              <Button
+              {/* <Button
                 variant="default"
                 className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
                 onClick={handleNextChapter}
@@ -1218,7 +1253,20 @@ export default function CometManager({
               >
                 <span>Next Chapter</span>
                 <ChevronRight size={16} />
-              </Button>
+              </Button> */}
+
+              {showNextChapter && (
+  <Button
+    variant="default"
+    className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
+    onClick={handleNextChapter}
+    disabled={isGeneratingNextChapter}
+  >
+    <span>Next Chapter</span>
+    <ChevronRight size={16} />
+  </Button>
+)}
+
             </div>
           </div>
         </>
