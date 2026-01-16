@@ -51,7 +51,7 @@ const ScreenContentTypePreview = ({
     FALLBACK_IMAGE_URL;
 
   // Check if blend mode is enabled from content settings
-  const isBlendMode = content?.blend_mode ?? false;
+  const isBlendMode = content?.fullBleed ?? false;
 
   const title =
     content?.heading || content?.title || content?.name || "Untitled Story";

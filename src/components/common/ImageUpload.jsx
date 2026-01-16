@@ -95,6 +95,7 @@ export default function ImageUpload({
             uploadResponse.response.ImageUrl,
           asset_id:
             uploadResponse.response.id || uploadResponse.response.asset_id,
+          asset_type: "image",
         };
         if (onUploadSuccess) {
           onUploadSuccess(assetData);
@@ -229,6 +230,7 @@ export default function ImageUpload({
     // Use exact API response fields: asset_url, asset_type, id
     const image_url = asset.asset_url;
     const filename = getFilenameFromUrl(image_url);
+    const assetType = asset.asset_type || asset.type || "image";
 
     // Format asset to match outline structure: { type: "image", url: "...", alt: "..." }
     const assetToSave = {
@@ -237,7 +239,7 @@ export default function ImageUpload({
       url: image_url, // Also include url for compatibility
       asset_id: asset.id,
       id: asset.id,
-      type: asset.asset_type,
+      asset_type: assetType,
       alt: filename || "",
       name: filename || "",
     };

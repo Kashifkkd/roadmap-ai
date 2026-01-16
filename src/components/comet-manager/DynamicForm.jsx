@@ -75,7 +75,7 @@ const getFormValuesFromScreen = (screen) => {
     values.body = content.body || "";
     values.mediaUrl = content.media?.url || "";
     values.mediaType = content.media?.type || "";
-    values.contentFullBleed = content.blend_mode ?? false;
+    values.contentFullBleed = content.fullBleed ?? false;
     values.media = content.media || {};
   }
 
@@ -243,7 +243,7 @@ export default function DynamicForm({
                 }
                 currentScreen.screenContents.content.media.type = value;
               } else if (field === "contentFullBleed") {
-                currentScreen.screenContents.content.blend_mode = value;
+                currentScreen.screenContents.content.fullBleed = value;
               }
             } else if (contentType === "action" || contentType === "actions") {
               if (field === "title") {

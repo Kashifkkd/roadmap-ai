@@ -31,6 +31,7 @@ export default function GenerateStepImageButton({
   onSuccess,
   onError,
 }) {
+  console.log(chapterUid, "chapterUid >>>>>>>>>>>>");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -101,7 +102,6 @@ export default function GenerateStepImageButton({
     try {
       const response = await generateStepImages({
         sessionId,
-        pathId,
         chapterUid,
         stepUid,
       });
