@@ -26,6 +26,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Stack } from "@mui/material";
 import DevicePreview from "./DevicePreview";
+import GenerateStepImageButton from "./GenerateStepImageButton";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
@@ -71,6 +72,8 @@ export default function CometManagerSidebar({
   onTabChange,
   externalTab,
 }) {
+  console.log(selectedScreen, "selectedScreen >>>>>>>>>>>>");
+  console.log(chapters, "chapters >>>>>>>>>>>><<<<<<<<<<<<<<");
   const [tab, setTab] = useState(0);
 
   // Sync with external tab control
@@ -426,195 +429,215 @@ export default function CometManagerSidebar({
 
       {/* Tab Content */}
       <div className="flex flex-col gap-2 bg-primary-50 p-2 rounded-xl flex-1 overflow-auto">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 flex-1">
           {/* Steps Tab Content */}
-          {tab === 0 &&
-            (chapters && chapters.length > 0 ? (
-              chapters.map((chapter, index) => {
-                const chapterId = chapter.id || `chapter-${index}`;
-                const chapterKey = `${chapterId}-${index}`;
-                const stepCount = chapter.steps?.length || 0;
-                const isSelected = selectedChapter === chapterId;
-                const isExpanded = expandedChapters.has(chapterId);
+          {tab === 0 && (
+            <>
+              {chapters && chapters.length > 0 ? (
+                chapters.map((chapter, index) => {
+                  const chapterId = chapter.id || `chapter-${index}`;
+                  const chapterKey = `${chapterId}-${index}`;
+                  const stepCount = chapter.steps?.length || 0;
+                  const isSelected = selectedChapter === chapterId;
+                  const isExpanded = expandedChapters.has(chapterId);
 
-                return (
-                  <div
-                    key={chapterKey}
-                    className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
-                      isExpanded ? "bg-primary-100" : "bg-white"
-                    }`}
-                  >
-                    {/* Chapter Header */}
+                  return (
                     <div
-                      onClick={() => {
-                        setSelectedChapter(chapterId);
-                        toggleChapter(chapterId);
-                        // Clear step selection when clicking chapter
-                        setSelectedStep(null);
-                        if (setSelectedStepFromHook) {
-                          setSelectedStepFromHook(null);
-                        }
-                        setExpandedSteps(new Set());
-                        if (onChapterClick) {
-                          onChapterClick(chapterId, chapter);
-                        }
-                      }}
-                      className="flex items-center gap-2 p-3 sm:p-4 cursor-pointer transition-all"
+                      key={chapterKey}
+                      className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
+                        isExpanded ? "bg-primary-100" : "bg-white"
+                      }`}
                     >
+                      {/* Chapter Header */}
                       <div
-                        className={`rounded-full p-1 ${
-                          isSelected ? "bg-primary" : "bg-primary-100"
-                        }`}
+                        onClick={() => {
+                          setSelectedChapter(chapterId);
+                          toggleChapter(chapterId);
+                          // Clear step selection when clicking chapter
+                          setSelectedStep(null);
+                          if (setSelectedStepFromHook) {
+                            setSelectedStepFromHook(null);
+                          }
+                          setExpandedSteps(new Set());
+                          if (onChapterClick) {
+                            onChapterClick(chapterId, chapter);
+                          }
+                        }}
+                        className="flex items-center gap-2 p-3 sm:p-4 cursor-pointer transition-all"
                       >
-                        <ChevronDown
-                          size={16}
-                          className={`${
-                            isSelected ? "text-white" : "text-primary"
-                          } transition-transform ${
-                            isExpanded ? "rotate-180" : ""
-                          }`}
-                        />
-                      </div>
-                      <div className="flex flex-col flex-1 min-w-0">
-                        <p className="text-[10px] font-medium text-gray-900">
-                          Chapter {index}
-                        </p>
-                        <p
-                          className={`text-sm sm:text-sm font-medium ${
-                            isSelected ? "text-gray-900 " : "text-primary"
+                        <div
+                          className={`rounded-full p-1 ${
+                            isSelected ? "bg-primary" : "bg-primary-100"
                           }`}
                         >
-                          {chapter.chapter ||
-                            chapter.name ||
-                            "Untitled Chapter"}
-                        </p>
-                        {/* <p className="text-xs text-gray-500 mt-1">
+                          <ChevronDown
+                            size={16}
+                            className={`${
+                              isSelected ? "text-white" : "text-primary"
+                            } transition-transform ${
+                              isExpanded ? "rotate-180" : ""
+                            }`}
+                          />
+                        </div>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <p className="text-[10px] font-medium text-gray-900">
+                            Chapter {index}
+                          </p>
+                          <p
+                            className={`text-sm sm:text-sm font-medium ${
+                              isSelected ? "text-gray-900 " : "text-primary"
+                            }`}
+                          >
+                            {chapter.chapter ||
+                              chapter.name ||
+                              "Untitled Chapter"}
+                          </p>
+                          {/* <p className="text-xs text-gray-500 mt-1">
                           {stepCount} {stepCount === 1 ? "step" : "steps"}
                         </p> */}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Expanded Steps - Inside the same card */}
-                    {isExpanded &&
-                      chapter.steps &&
-                      chapter.steps.length > 0 && (
-                        <div className="flex flex-col gap-2 px-3 pb-3">
-                          {chapter.steps.map((step, stepIndex) => {
-                            // Create unique step ID that includes chapter index and step index
-                            const stepId =
-                              step.id || `step-${chapterId}-${stepIndex}`;
-                            const isStepSelected = selectedStep === stepId;
-                            const isStepExpanded = expandedSteps.has(stepId);
-                            return (
-                              <div
-                                key={stepId}
-                                className={`flex flex-col rounded-sm transition-all ${
-                                  isStepExpanded
-                                    ? "bg-primary-700"
-                                    : isStepSelected
-                                    ? "bg-primary-700"
-                                    : "bg-white"
-                                }`}
-                              >
-                                {/* Step Header */}
+                      {/* Expanded Steps - Inside the same card */}
+                      {isExpanded &&
+                        chapter.steps &&
+                        chapter.steps.length > 0 && (
+                          <div className="flex flex-col gap-2 px-3 pb-3">
+                            {chapter.steps.map((step, stepIndex) => {
+                              // Create unique step ID that includes chapter index and step index
+                              const stepId =
+                                step.id || `step-${chapterId}-${stepIndex}`;
+                              const isStepSelected = selectedStep === stepId;
+                              const isStepExpanded = expandedSteps.has(stepId);
+                              return (
                                 <div
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedStep(stepId);
-                                    if (setSelectedStepFromHook) {
-                                      setSelectedStepFromHook(stepId);
-                                    }
-                                  }}
-                                  className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
-                                    isStepSelected || isStepExpanded
-                                      ? "text-white"
-                                      : "hover:bg-gray-200"
+                                  key={stepId}
+                                  className={`flex flex-col rounded-sm transition-all ${
+                                    isStepExpanded
+                                      ? "bg-primary-700"
+                                      : isStepSelected
+                                      ? "bg-primary-700"
+                                      : "bg-white"
                                   }`}
                                 >
+                                  {/* Step Header */}
                                   <div
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      toggleStep(stepId);
+                                      setSelectedStep(stepId);
+                                      if (setSelectedStepFromHook) {
+                                        setSelectedStepFromHook(stepId);
+                                      }
                                     }}
-                                    className={`rounded-full p-1 shrink-0 ${
+                                    className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
                                       isStepSelected || isStepExpanded
-                                        ? "bg-white"
-                                        : "bg-primary-100"
+                                        ? "text-white"
+                                        : "hover:bg-gray-200"
                                     }`}
                                   >
-                                    <ChevronDown
-                                      size={12}
-                                      className={`transition-transform ${
-                                        isStepExpanded ? "rotate-180" : ""
-                                      } ${
+                                    <div
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleStep(stepId);
+                                      }}
+                                      className={`rounded-full p-1 shrink-0 ${
                                         isStepSelected || isStepExpanded
-                                          ? "text-primary-700"
-                                          : "text-primary"
-                                      }`}
-                                    />
-                                  </div>
-                                  <div className="flex flex-col py-1 flex-1 min-w-0">
-                                    <p
-                                      className={`text-xs sm:text-xs  ${
-                                        isStepSelected || isStepExpanded
-                                          ? "text-white"
-                                          : "text-gray-900"
+                                          ? "bg-white"
+                                          : "bg-primary-100"
                                       }`}
                                     >
-                                      Step {stepIndex + 1}
-                                    </p>
-                                    <p
-                                      className={`text-xs sm:text-sm font-semibold ${
-                                        isStepSelected || isStepExpanded
-                                          ? ""
-                                          : ""
-                                      } ${
-                                        isStepSelected || isStepExpanded
-                                          ? "text-white"
-                                          : "text-gray-900"
-                                      }`}
-                                    >
-                                      {step.name || `Step ${stepIndex + 1}`}
-                                    </p>
+                                      <ChevronDown
+                                        size={12}
+                                        className={`transition-transform ${
+                                          isStepExpanded ? "rotate-180" : ""
+                                        } ${
+                                          isStepSelected || isStepExpanded
+                                            ? "text-primary-700"
+                                            : "text-primary"
+                                        }`}
+                                      />
+                                    </div>
+                                    <div className="flex flex-col py-1 flex-1 min-w-0">
+                                      <p
+                                        className={`text-xs sm:text-xs  ${
+                                          isStepSelected || isStepExpanded
+                                            ? "text-white"
+                                            : "text-gray-900"
+                                        }`}
+                                      >
+                                        Step {stepIndex + 1}
+                                      </p>
+                                      <p
+                                        className={`text-xs sm:text-sm font-semibold ${
+                                          isStepSelected || isStepExpanded
+                                            ? ""
+                                            : ""
+                                        } ${
+                                          isStepSelected || isStepExpanded
+                                            ? "text-white"
+                                            : "text-gray-900"
+                                        }`}
+                                      >
+                                        {step.name || `Step ${stepIndex + 1}`}
+                                      </p>
+                                    </div>
                                   </div>
-                                </div>
 
-                                {/* Step Details (Expanded) - Inside the same card */}
-                                {isStepExpanded && (
-                                  <div className="px-2 pb-2">
-                                    <div className="px-3 py-3 bg-white rounded-lg">
-                                      <div className="flex flex-col gap-2">
-                                        <div>
-                                          <h4 className="text-sm font-semibold text-black mb-1">
-                                            {step.name ||
-                                              `Step ${stepIndex + 1}`}
-                                          </h4>
-                                          {step.description && (
-                                            <p className="text-xs text-black leading-relaxed">
-                                              {step.description}
-                                            </p>
-                                          )}
+                                  {/* Step Details (Expanded) - Inside the same card */}
+                                  {isStepExpanded && (
+                                    <div className="px-2 pb-2">
+                                      <div className="px-3 py-3 bg-white rounded-lg">
+                                        <div className="flex flex-col gap-2">
+                                          <div>
+                                            <h4 className="text-sm font-semibold text-black mb-1">
+                                              {step.name ||
+                                                `Step ${stepIndex + 1}`}
+                                            </h4>
+                                            {step.description && (
+                                              <p className="text-xs text-black leading-relaxed">
+                                                {step.description}
+                                              </p>
+                                            )}
+                                          </div>
                                         </div>
                                       </div>
                                     </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                  </div>
-                );
-              })
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                <p className="text-sm text-gray-500">No chapters available</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Complete the outline to see chapters here
-                </p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                  <p className="text-sm text-gray-500">No chapters available</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Complete the outline to see chapters here
+                  </p>
+                </div>
+              )}
+
+              {/* Generate Step Image Button at bottom of Steps Tab */}
+              <div className="mt-auto pt-3 border-t border-gray-200">
+                <GenerateStepImageButton
+                  sessionId={sessionId}
+                  chapterUid={selectedChapter}
+                  stepUid={selectedScreen?.stepUid}
+                  stepImageUrl={selectedScreen?.stepImageUrl}
+                  pathId={0}
+                  onSuccess={(response) => {
+                    console.log("Step image generated:", response);
+                  }}
+                  onError={(error) => {
+                    console.error("Step image generation failed:", error);
+                  }}
+                />
               </div>
-            ))}
+            </>
+          )}
 
           {/* Sources Tab Content */}
           {tab === 1 &&

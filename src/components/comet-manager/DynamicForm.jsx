@@ -1043,7 +1043,7 @@ export default function DynamicForm({
   };
 
   return (
-    <div className="bg-white h-fit rounded-md no-scrollbar overflow-auto">
+    <div className="bg-white h-fit rounded-t-md no-scrollbar overflow-auto">
       {/* <div className="p-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <h3 className="font-medium text-primary text-xl">{screen.name}</h3>
