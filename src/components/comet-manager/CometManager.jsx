@@ -25,6 +25,7 @@ import {
   FileVideo,
   FileIcon,
   Paperclip,
+  Zap,
 } from "lucide-react";
 import { graphqlClient } from "@/lib/graphql-client";
 import { Button } from "@/components/ui/Button";
@@ -59,6 +60,7 @@ import PDFPreview from "./PDFPreview";
 import ImagePreview from "./ImagePreview";
 import CometSettingsDialog from "./CometSettingsDialog";
 import GenerateStepImageButton from "./GenerateStepImageButton";
+import UploadStepImageDialog from "./UploadStepImageDialog";
 import {
   Drawer,
   DrawerContent,
@@ -203,11 +205,14 @@ export default function CometManager({
   const [activeTab, setActiveTab] = useState(0); // Track active tab: 0=Steps, 1=Sources, 2=Assets
   const { isCometSettingsOpen, setIsCometSettingsOpen } = useCometSettings();
   const selectedScreenRef = useRef(null);
+  const [isUploadImageDialogOpen, setIsUploadImageDialogOpen] = useState(false);
 
   // Next Chapter state
   const router = useRouter();
   const [isGeneratingNextChapter, setIsGeneratingNextChapter] = useState(false);
   const [nextChapterError, setNextChapterError] = useState(null);
+  const [isAnalyzingTextCollapsed, setIsAnalyzingTextCollapsed] =
+    useState(false);
   const [showNextChapter, setShowNextChapter] = useState(true);
 useEffect(() => {
   const outline = sessionData?.response_outline;
@@ -423,10 +428,10 @@ useEffect(() => {
     setDraggedIndex(null);
   };
 
-  // selected chapter for header
-  const currentChapter = Array.isArray(chapters)
-    ? chapters.find((chapter) => chapter.id === selectedScreen?.chapterId)
-    : null;
+  const currentChapter =
+    chapters?.find((ch) =>
+      ch.steps?.some((step) => String(step.id) === String(selectedStepId))
+    ) || null;
 
   const handleScreenClick = (screen) => {
     setSelectedMaterial(null);
@@ -448,11 +453,13 @@ useEffect(() => {
   const handleAddNewScreen = (screenType) => {
     // Get current chapter and step
     const targetChapter = currentChapter || chapters[0] || null;
+    console.log("targetChapter>>>>>>>>>>>>>>>>>>>>>>>>", targetChapter);
     const targetChapterId =
       targetChapter?.id || chapters[0]?.id || "#chapter_1";
 
     // Get step ID - use selectedStepId if available, otherwise get first step from chapter
     let targetStepId = selectedStepId;
+    console.log("targetStepId>>>>>>>>>>>>>>>>>>>>>>>>", targetStepId);
     if (
       !targetStepId &&
       targetChapter?.steps &&
@@ -471,25 +478,30 @@ useEffect(() => {
         : chapters.findIndex(
             (ch) => String(ch.id) === String(targetChapterId)
           ) + 1 || 1;
+    console.log("chapterNum>>>>>>>>>>>>>>>>>>>>>>>>", chapterNum);
     const stepNum =
       targetChapter?.steps?.findIndex(
         (step) => String(step.id) === String(targetStepId)
       ) + 1 || 1;
+    console.log("stepNum>>>>>>>>>>>>>>>>>>>>>>>>", stepNum);
     const screenNum =
       allScreens.filter(
         (s) =>
           String(s.chapterId) === String(targetChapterId) &&
           String(s.stepId) === String(targetStepId)
       ).length + 1;
+    console.log("screenNum>>>>>>>>>>>>>>>>>>>>>>>>", screenNum);
     const screenId = `#screen_${chapterNum}_${stepNum}_${screenNum}`;
+    console.log("screenId>>>>>>>>>>>>>>>>>>>>>>>>", screenId);
     const screenContentId = `#screen_content_${chapterNum}_${stepNum}_${screenNum}`;
+    console.log("screenContentId>>>>>>>>>>>>>>>>>>>>>>>>", screenContentId);
     const screenUuid = crypto.randomUUID();
-
+    console.log("screenUuid>>>>>>>>>>>>>>>>>>>>>>>>", screenUuid);
     // Get position - count screens in the same step
     const position =
       allScreens.filter((s) => String(s.stepId) === String(targetStepId))
         .length + 1;
-
+    console.log("position>>>>>>>>>>>>>>>>>>>>>>>>", position);
     // Map screenType.id to contentType
     const contentTypeMap = {
       content: "content",
@@ -504,15 +516,16 @@ useEffect(() => {
     };
 
     const contentType = contentTypeMap[screenType.id] || screenType.id;
-
+    console.log("contentType>>>>>>>>>>>>>>>>>>>>>>>>", contentType);
     // Initialize screen based on type
     let newScreen = {};
-
+    console.log("newScreen>>>>>>>>>>>>>>>>>>>>>>>>", newScreen);
     if (screenType.id === "action") {
       // Action screen structure
       const actionTitle = "";
       const actionText = "";
-
+      console.log("actionTitle>>>>>>>>>>>>>>>>>>>>>>>>", actionTitle);
+      console.log("actionText>>>>>>>>>>>>>>>>>>>>>>>>", actionText);
       newScreen = {
         id: screenId,
         uuid: screenUuid,
@@ -848,14 +861,27 @@ useEffect(() => {
 
     if (addAtIndex !== null) {
       insertScreenAt(newScreen, addAtIndex);
+      console.log(
+        "newScreen inserted at index>>>>>>>>>>>>>>>>>>>>>>>>",
+        newScreen
+      );
     } else {
       addScreenData(newScreen);
+      console.log("newScreen added>>>>>>>>>>>>>>>>>>>>>>>>", newScreen);
     }
 
     setShowAddPopup(false);
     setAddAtIndex(null);
     setSelectedScreenId(newScreen.id);
     setCurrentScreen(addAtIndex !== null ? addAtIndex : screens.length);
+    console.log(
+      "newScreen set selected screen id>>>>>>>>>>>>>>>>>>>>>>>>",
+      newScreen.id
+    );
+    console.log(
+      "newScreen set current screen>>>>>>>>>>>>>>>>>>>>>>>>",
+      addAtIndex !== null ? addAtIndex : screens.length
+    );
   };
 
   const navigateScreen = (direction) => {
@@ -943,20 +969,44 @@ useEffect(() => {
                   const chapterScreens = allScreens.filter(
                     (s) => s.chapterId === chapterId
                   );
+                  console.log(
+                    "chapterScreens>>>>>>>>>>>>>>>>>>>>>>>>",
+                    chapterScreens
+                  );
                   if (chapterScreens.length > 0) {
                     // Find the first screen's index in the filtered screens array
                     const firstScreen = chapterScreens[0];
+                    console.log(
+                      "firstScreen>>>>>>>>>>>>>>>>>>>>>>>>",
+                      firstScreen
+                    );
                     const screenIndex = screens.findIndex(
                       (s) => s.id === firstScreen.id
                     );
+                    console.log(
+                      "screenIndex>>>>>>>>>>>>>>>>>>>>>>>>",
+                      screenIndex
+                    );
                     if (screenIndex >= 0) {
                       setSelectedScreenId(firstScreen.id);
+                      console.log(
+                        "selectedScreenId>>>>>>>>>>>>>>>>>>>>>>>>",
+                        firstScreen.id
+                      );
                       setCurrentScreen(screenIndex);
+                      console.log(
+                        "currentScreen>>>>>>>>>>>>>>>>>>>>>>>>",
+                        screenIndex
+                      );
                     } else {
                       // If screen is not in current filtered screens, select the first step of the chapter
                       const firstStep = chapter.steps?.[0];
                       if (firstStep) {
                         setSelectedStep(firstStep.id);
+                        console.log(
+                          "selectedStep>>>>>>>>>>>>>>>>>>>>>>>>",
+                          firstStep.id
+                        );
                         // The screens will update via useEffect, then we can select the first screen
                       }
                     }
@@ -1093,13 +1143,26 @@ useEffect(() => {
                             </span> */}
                           </div>
                         </div>
-                        <div className="flex ">
-                          <GenerateStepImageButton
+                        <div className="flex items-center gap-2">
+                          <div 
+                            onClick={() => setIsUploadImageDialogOpen(true)}
+                            className="w-10 h-10 rounded-md bg-primary-50 border border-primary-200 flex items-center justify-center overflow-hidden shrink-0 relative cursor-pointer hover:opacity-80 transition-opacity"
+                          >
+                            {selectedScreen?.stepImageUrl && (
+                              <img
+                                src={selectedScreen.stepImageUrl}
+                                alt="Step image"
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                            {!selectedScreen?.stepImageUrl && (
+                              <FileImage className="w-5 h-5 text-primary-400" />
+                            )}
+                          </div>
+                          {/* <GenerateStepImageButton
                             sessionId={sessionId}
-                            chapterUid={selectedScreen?.chapterId}
+                            chapterUid={selectedScreen?.uuid}
                             stepUid={selectedScreen?.stepUid}
-                            stepImageUrl={selectedScreen?.stepImageUrl}
-                            pathId={0}
                             onSuccess={(response) => {
                               console.log("Step image generated:", response);
                             }}
@@ -1109,13 +1172,13 @@ useEffect(() => {
                                 error
                               );
                             }}
-                          />
+                          /> */}
                         </div>
                       </div>
                     )}
 
                     {/* Scrollable children container */}
-                    <div className="overflow-y-auto p-2 sm:p-3 no-scrollbar flex flex-col gap-2 flex-1">
+                    <div className="overflow-y-auto p-2 sm:p-3 no-scrollbar flex flex-col gap-2 flex-1 ">
                       {/* Navigation - Screens */}
                       <div className="bg-background rounded-md p-2 sm:p-3 shrink-0">
                         <div className="flex flex-col gap-3 w-full">
@@ -1195,6 +1258,40 @@ useEffect(() => {
                           />
                         </div>
                       )}
+                      {selectedScreen && (
+                        <div className="border-t p-3 bg-background w-full rounded-b-xl shrink-0 sticky bottom-0 -mt-2">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 px-1 py-1 rounded-xl bg-[#E9EAEB]">
+                              <div
+                                className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center shrink-0 cursor-pointer hover:bg-gray-50 transition-colors"
+                                onClick={() =>
+                                  setIsAnalyzingTextCollapsed(
+                                    !isAnalyzingTextCollapsed
+                                  )
+                                }
+                              >
+                                <Zap size={14} className="text-gray-900" />
+                              </div>
+                              {!isAnalyzingTextCollapsed && (
+                                <span className="text-gray-700 text-sm">
+                                  Analyzing instructions and source materials
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Right button - Next Chapter */}
+                            <Button
+                              variant="default"
+                              className="ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50 cursor-pointer"
+                              onClick={handleNextChapter}
+                              disabled={isGeneratingNextChapter}
+                            >
+                              <span>Next Chapter</span>
+                              <ChevronRight size={16} />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
 
                       {/* {selectedScreen && (
                         <div className="shrink-0 p-4 bg-white rounded-lg overflow-auto max-h-full">
@@ -1243,7 +1340,7 @@ useEffect(() => {
           </div>
 
           {/* Footer Navigation */}
-          <div className="border-t p-4 bg-background w-full rounded-b-xl shrink-0">
+          {/* <div className="border-t p-4 bg-background w-full rounded-b-xl shrink-0">
             <div className="flex items-center justify-end">
               {/* <Button
                 variant="default"
@@ -1268,7 +1365,7 @@ useEffect(() => {
 )}
 
             </div>
-          </div>
+          </div> */}
         </>
       )}
 
@@ -1283,6 +1380,19 @@ useEffect(() => {
       <CometSettingsDialog
         open={isCometSettingsOpen}
         onOpenChange={setIsCometSettingsOpen}
+      />
+      {/* Upload Step Image Dialog */}
+      <UploadStepImageDialog
+        open={isUploadImageDialogOpen}
+        onOpenChange={setIsUploadImageDialogOpen}
+        sessionId={sessionId}
+        stepUid={selectedScreen?.stepUid}
+        onSuccess={(response) => {
+          console.log("Step image uploaded:", response);
+        }}
+        onError={(error) => {
+          console.error("Step image upload failed:", error);
+        }}
       />
       {/* Preview Drawer */}
       <Drawer

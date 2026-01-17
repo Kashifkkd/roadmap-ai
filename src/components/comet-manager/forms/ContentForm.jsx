@@ -94,17 +94,18 @@ export default function ContentForm({
   }, [existingAssets, formData.mediaUrl, formData.media]);
 
   useEffect(() => {
-    if (existingMediaAsset) {
-      const mediaName =
-        existingMediaAsset.name ||
-        existingMediaAsset.alt ||
-        existingMediaAsset.url?.split("/").pop() ||
-        "Uploaded media";
-      setUploadedMedia(mediaName);
+    const mediaUrl = formData.mediaUrl;
+    const mediaType = formData.mediaType;
+    if (mediaUrl && mediaType && mediaType !== "link") {
+      setUploadedMedia(
+        formData.contentMediaFile?.name ||
+          mediaUrl.split("/").pop() ||
+          "Uploaded media"
+      );
     } else {
       setUploadedMedia(null);
     }
-  }, [existingMediaAsset]);
+  }, [formData.mediaUrl, formData.mediaType, formData.contentMediaFile]);
 
   const handleRemoveAsset = (index) => {
     if (removeScreenAsset) {
@@ -132,6 +133,7 @@ export default function ContentForm({
     // Clear media URL
     updateField("mediaUrl", "");
     updateField("mediaType", "");
+    updateField("contentMediaFile", null);
     setUploadedMedia(null);
   };
 
@@ -255,42 +257,8 @@ export default function ContentForm({
                           const mediaUrl = uploadResponse.response.url;
 
                           if (mediaUrl) {
-                            const assetData = {
-                              status: "success",
-                              s3_url: mediaUrl,
-                              url: mediaUrl,
-                              videoUrl:
-                                assetType === "video" ? mediaUrl : undefined,
-                              audioUrl:
-                                assetType === "audio" ? mediaUrl : undefined,
-                              ImageUrl:
-                                assetType === "image" ? mediaUrl : undefined,
-                              asset_id:
-                                uploadResponse.response.id ||
-                                uploadResponse.response.asset_id,
-                              id:
-                                uploadResponse.response.id ||
-                                uploadResponse.response.asset_id,
-                              asset_type: assetType,
-                              type: assetType,
-                              name: file.name,
-                              alt: file.name,
-                            };
-
-                            // Update form fields
                             updateField("mediaUrl", mediaUrl);
                             updateField("mediaType", assetType);
-
-                            // update screen assets in session data
-                            setTimeout(() => {
-                              if (updateScreenAssets) {
-                                console.log(
-                                  "Adding asset to screen assets:",
-                                  assetData
-                                );
-                                updateScreenAssets([assetData]);
-                              }
-                            }, 100);
                           } else {
                             throw new Error("No media URL in response");
                           }
@@ -318,7 +286,7 @@ export default function ContentForm({
               </div>
               {/* File name display */}
               {(uploadedMedia || isUploadingMedia || uploadErrorMedia) && (
-                <div className="mb-2 p-2 bg-white rounded-lg border border-gray-200 ">
+                <div className="mb-2 p-2 bg-white rounded-lg border border-gray-200">
                   {isUploadingMedia ? (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -329,7 +297,7 @@ export default function ContentForm({
                       <X className="h-4 w-4" />
                       <span>{uploadErrorMedia}</span>
                     </div>
-                  ) : uploadedMedia && existingMediaAsset ? (
+                  ) : uploadedMedia ? (
                     <div className="flex items-center justify-between gap-2 text-sm">
                       <div className="flex items-center gap-2 text-green-600 flex-1">
                         <Check className="h-4 w-4 shrink-0" />
@@ -338,7 +306,7 @@ export default function ContentForm({
                           {uploadedMedia}
                         </span>
                         <span className="text-xs text-gray-500 shrink-0">
-                          ({existingMediaAsset.type || "media"})
+                          ({formData.mediaType || "media"})
                         </span>
                       </div>
                       <button

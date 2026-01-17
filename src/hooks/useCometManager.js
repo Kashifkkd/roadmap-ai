@@ -40,7 +40,7 @@ export function useCometManager(sessionData = null) {
 
     const pathChapters = outline.chapters || [];
     return pathChapters.map((chapter, chapterIndex) => {
-      const chapterId = chapter.id || `chapter-${chapterIndex}`;
+      const chapterId = chapter.uuid || `chapter-${chapterIndex}`;
       const chapterName = chapter.name || `Chapter ${chapterIndex + 1}`;
 
       // Transform steps for this chapter
@@ -49,7 +49,7 @@ export function useCometManager(sessionData = null) {
 
       chapterSteps.forEach((stepItem, stepIndex) => {
         const step = stepItem.step || {};
-        const stepId = step.id || `step-${chapterIndex}-${stepIndex}`;
+        const stepId = step.uuid || `step-${chapterIndex}-${stepIndex}`;
         const stepTitle = step.title || step.name || `Step ${stepIndex + 1}`;
         const stepDescription = step.description || "";
 
@@ -107,12 +107,12 @@ export function useCometManager(sessionData = null) {
     const pathChapters = outline.chapters || [];
 
     pathChapters.forEach((chapter, chapterIndex) => {
-      const chapterId = chapter.id || `chapter-${chapterIndex}`;
+      const chapterId = chapter.uuid || `chapter-${chapterIndex}`;
       const chapterSteps = chapter.steps || [];
 
       chapterSteps.forEach((stepItem, stepIndex) => {
         const step = stepItem.step || {};
-        const stepId = step.id || `step-${chapterIndex}-${stepIndex}`;
+        const stepId = step.uuid || `step-${chapterIndex}-${stepIndex}`;
         const stepTitle = step.title || step.name || `Step ${stepIndex + 1}`;
         const stepScreens = stepItem.screens || [];
 
@@ -235,9 +235,13 @@ export function useCometManager(sessionData = null) {
       const targetStepId = newScreen.stepId;
 
       for (const chapter of pathChapters) {
-        if (chapter.id === targetChapterId) {
+        // Match by uuid
+        const chapterMatchId = chapter.uuid || chapter.id;
+        if (chapterMatchId === targetChapterId) {
           for (const stepItem of chapter.steps || []) {
-            if (stepItem.step?.id === targetStepId) {
+            // Match step by uuid
+            const stepMatchId = stepItem.step?.uuid || stepItem.step?.id;
+            if (stepMatchId === targetStepId) {
               if (!stepItem.screens) {
                 stepItem.screens = [];
               }
@@ -339,9 +343,13 @@ export function useCometManager(sessionData = null) {
 
       // Find the target step
       for (const chapter of pathChapters) {
-        if (chapter.id === targetChapterId) {
+        // Match by uuid
+        const chapterMatchId = chapter.uuid || chapter.id;
+        if (chapterMatchId === targetChapterId) {
           for (const stepItem of chapter.steps || []) {
-            if (stepItem.step?.id === targetStepId) {
+            // Match step by uuid
+            const stepMatchId = stepItem.step?.uuid || stepItem.step?.id;
+            if (stepMatchId === targetStepId) {
               if (!stepItem.screens) {
                 stepItem.screens = [];
               }

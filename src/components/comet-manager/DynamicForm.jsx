@@ -75,7 +75,7 @@ const getFormValuesFromScreen = (screen) => {
     values.body = content.body || "";
     values.mediaUrl = content.media?.url || "";
     values.mediaType = content.media?.type || "";
-    values.contentFullBleed = content.blend_mode ?? false;
+    values.contentFullBleed = content.fullBleed ?? false;
     values.media = content.media || {};
   }
 
@@ -243,7 +243,7 @@ export default function DynamicForm({
                 }
                 currentScreen.screenContents.content.media.type = value;
               } else if (field === "contentFullBleed") {
-                currentScreen.screenContents.content.blend_mode = value;
+                currentScreen.screenContents.content.fullBleed = value;
               }
             } else if (contentType === "action" || contentType === "actions") {
               if (field === "title") {
@@ -1043,7 +1043,7 @@ export default function DynamicForm({
   };
 
   return (
-    <div className="bg-white h-fit rounded-md no-scrollbar overflow-auto">
+    <div className="bg-white h-fit rounded-t-md no-scrollbar overflow-auto">
       {/* <div className="p-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <h3 className="font-medium text-primary text-xl">{screen.name}</h3>
