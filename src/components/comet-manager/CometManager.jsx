@@ -1340,32 +1340,21 @@ useEffect(() => {
           </div>
 
           {/* Footer Navigation */}
-          {/* <div className="border-t p-4 bg-background w-full rounded-b-xl shrink-0">
-            <div className="flex items-center justify-end">
-              {/* <Button
-                variant="default"
-                className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
-                onClick={handleNextChapter}
-                disabled={isGeneratingNextChapter}
-              >
-                <span>Next Chapter</span>
-                <ChevronRight size={16} />
-              </Button> */}
-
-              {showNextChapter && (
-  <Button
-    variant="default"
-    className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
-    onClick={handleNextChapter}
-    disabled={isGeneratingNextChapter}
-  >
-    <span>Next Chapter</span>
-    <ChevronRight size={16} />
-  </Button>
-)}
-
+          {showNextChapter && (
+            <div className="border-t p-4 bg-background w-full rounded-b-xl shrink-0">
+              <div className="flex items-center justify-end">
+                <Button
+                  variant="default"
+                  className="w-fit flex items-center justify-center gap-2 p-3 disabled:opacity-50"
+                  onClick={handleNextChapter}
+                  disabled={isGeneratingNextChapter}
+                >
+                  <span>Next Chapter</span>
+                  <ChevronRight size={16} />
+                </Button>
+              </div>
             </div>
-          </div> */}
+          )}
         </>
       )}
 
