@@ -340,10 +340,10 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         comet_creation_data: updatedCometCreationData,
         response_outline: sessionData?.response_outline || {},
         response_path: updatedResponsePath,
-        additional_data: {
-          personalization_enabled: personalizationEnabled,
-          habit_enabled: habitEnabled,
-        },
+        // additional_data: {
+        //   personalization_enabled: personalizationEnabled,
+        //   habit_enabled: habitEnabled,
+        // },
         chatbot_conversation: sessionData?.chatbot_conversation || [],
         to_modify: sessionData?.to_modify || {},
       });

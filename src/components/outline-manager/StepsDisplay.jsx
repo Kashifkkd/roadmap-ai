@@ -422,12 +422,12 @@ const StepsDisplay = ({
         comet_creation_data: snapshot?.comet_creation_data || {},
         response_outline: snapshot?.response_outline || {},
         response_path: snapshot?.response_path || {},
-        additional_data: {
-          personalization_enabled:
-            snapshot?.additional_data?.personalization_enabled || false,
-          habit_enabled: snapshot?.additional_data?.habit_enabled || false,
-          habit_description: snapshot?.additional_data?.habit_description || "",
-        },
+        // additional_data: {
+        //   personalization_enabled:
+        //     snapshot?.additional_data?.personalization_enabled || false,
+        //   habit_enabled: snapshot?.additional_data?.habit_enabled || false,
+        //   habit_description: snapshot?.additional_data?.habit_description || "",
+        // },
         chatbot_conversation: updatedConversation,
         to_modify: {},
       });
@@ -541,12 +541,12 @@ const StepsDisplay = ({
         comet_creation_data: snapshot?.comet_creation_data || {},
         response_outline: currentResponseOutline,
         response_path: snapshot?.response_path || {},
-        additional_data: {
-          personalization_enabled:
-            snapshot?.additional_data?.personalization_enabled || false,
-          habit_enabled: snapshot?.additional_data?.habit_enabled || false,
-          habit_description: snapshot?.additional_data?.habit_description || "",
-        },
+        // additional_data: {
+        //   personalization_enabled:
+        //     snapshot?.additional_data?.personalization_enabled || false,
+        //   habit_enabled: snapshot?.additional_data?.habit_enabled || false,
+        //   habit_description: snapshot?.additional_data?.habit_description || "",
+        // },
         chatbot_conversation: updatedConversation,
         to_modify: {},
       });

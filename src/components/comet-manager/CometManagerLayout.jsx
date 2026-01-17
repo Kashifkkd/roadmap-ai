@@ -173,14 +173,14 @@ export default function CometManagerLayout() {
             comet_creation_data: sessionData?.comet_creation_data || {},
             response_outline: sessionData?.response_outline || {},
             response_path: currentOutline || sessionData?.response_path || {},
-            additional_data: {
-              personalization_enabled:
-                sessionData?.additional_data?.personalization_enabled || false,
-              habit_enabled:
-                sessionData?.additional_data?.habit_enabled || false,
-              habit_description:
-                sessionData?.additional_data?.habit_description || "",
-            },
+            // additional_data: {
+            //   personalization_enabled:
+            //     sessionData?.additional_data?.personalization_enabled || false,
+            //   habit_enabled:
+            //     sessionData?.additional_data?.habit_enabled || false,
+            //   habit_description:
+            //     sessionData?.additional_data?.habit_description || "",
+            // },
             chatbot_conversation: sessionData?.chatbot_conversation || [],
             to_modify: sessionData?.to_modify || {},
           });
