@@ -202,9 +202,12 @@ export default function CometManager({
   const [selectedAssetCategory, setSelectedAssetCategory] = useState(null);
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [selectedImageAsset, setSelectedImageAsset] = useState(null);
+  const [selectedRemainingChapter, setSelectedRemainingChapter] = useState(null);
+  const [scrollToStepIndex, setScrollToStepIndex] = useState(null);
   const [activeTab, setActiveTab] = useState(0); // Track active tab: 0=Steps, 1=Sources, 2=Assets
   const { isCometSettingsOpen, setIsCometSettingsOpen } = useCometSettings();
   const selectedScreenRef = useRef(null);
+  const remainingChapterStepsRef = useRef(null);
   const [isUploadImageDialogOpen, setIsUploadImageDialogOpen] = useState(false);
 
   // Next Chapter state
@@ -278,6 +281,16 @@ useEffect(() => {
       if (cleanup) cleanup();
     };
   }, [isGeneratingNextChapter, sessionId]);
+
+  // Scroll to step in remaining chapter panel when step is clicked in sidebar
+  useEffect(() => {
+    if (scrollToStepIndex !== null && remainingChapterStepsRef.current) {
+      const stepElement = document.getElementById(`remaining-step-${scrollToStepIndex}`);
+      if (stepElement) {
+        stepElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [scrollToStepIndex]);
 
   // Handle Next Chapter click
   const handleNextChapter = async () => {
@@ -439,6 +452,7 @@ useEffect(() => {
     setSelectedAssetCategory(null);
     setSelectedAssets([]);
     setSelectedImageAsset(null);
+    setSelectedRemainingChapter(null);
     setActiveTab(0);
     setSelectedScreenId(screen.id);
     const screenIndex = screens.findIndex((s) => s.id === screen.id);
@@ -927,6 +941,7 @@ useEffect(() => {
                 selectedScreen={selectedScreen}
                 onAddScreen={handleAddScreen}
                 chapters={chapters}
+                remainingChapters={sessionData?.response_path?.remaining_chapters || []}
                 sessionId={sessionId}
                 selectedStepId={selectedStepId}
                 setSelectedStep={setSelectedStep}
@@ -956,6 +971,7 @@ useEffect(() => {
                   setSelectedAssetCategory(null);
                   setSelectedAssets([]);
                   setSelectedImageAsset(null);
+                  setSelectedRemainingChapter(null);
                 }}
                 onStepClick={(stepId, step) => {}}
                 onChapterClick={(chapterId, chapter) => {
@@ -964,6 +980,7 @@ useEffect(() => {
                   setSelectedAssetCategory(null);
                   setSelectedAssets([]);
                   setSelectedImageAsset(null);
+                  setSelectedRemainingChapter(null);
                   setActiveTab(0);
                   // Filter screens for this chapter (use allScreens to get screens from all steps)
                   const chapterScreens = allScreens.filter(
@@ -1011,6 +1028,20 @@ useEffect(() => {
                       }
                     }
                   }
+                }}
+                onRemainingChapterClick={(chapter) => {
+                  // Clear all other selections when remaining chapter is clicked
+                  setSelectedMaterial(null);
+                  setSelectedAssetCategory(null);
+                  setSelectedAssets([]);
+                  setSelectedImageAsset(null);
+                  setSelectedScreenId(null);
+                  setSelectedRemainingChapter(chapter);
+                  setScrollToStepIndex(null); // Reset scroll target when chapter changes
+                }}
+                onRemainingStepClick={(stepIndex) => {
+                  // Set the step index to scroll to in the right panel
+                  setScrollToStepIndex(stepIndex);
                 }}
               />
             </div>
@@ -1124,6 +1155,151 @@ useEffect(() => {
                       onClose={() => setSelectedMaterial(null)}
                     />
                   </div>
+                ) : selectedRemainingChapter ? (
+                  <div className="flex flex-col w-full h-full bg-background rounded-xl overflow-hidden">
+                    {/* Header - matching outline manager StepsDisplay */}
+                    <div className="p-2 border-b border-gray-300 flex flex-col justify-between items-center shrink-0">
+                      <div className="flex justify-between items-center gap-2 w-full">
+                        <span className="text-base text-[#7367F0] font-medium">
+                          Steps
+                        </span>
+                        <button
+                          onClick={() => setSelectedRemainingChapter(null)}
+                          className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                        >
+                          <X size={18} className="text-gray-500" />
+                        </button>
+                      </div>
+                      <p className="text-lg text-start text-gray-900 font-semibold w-full">
+                        {selectedRemainingChapter.chapter || "Untitled Chapter"}
+                      </p>
+                    </div>
+
+                    {/* Steps List - matching outline manager StepsDisplay */}
+                    <div
+                      ref={remainingChapterStepsRef}
+                      className="flex-1 overflow-y-auto py-2"
+                      style={{
+                        scrollbarWidth: "thin",
+                        scrollbarColor: "#9ca3af #e5e7eb",
+                      }}
+                    >
+                      <div className="space-y-4 bg-primary-50 px-2 py-4 rounded">
+                        {selectedRemainingChapter.steps && selectedRemainingChapter.steps.length > 0 ? (
+                          selectedRemainingChapter.steps.map((step, stepIndex) => (
+                            <div
+                              key={stepIndex}
+                              id={`remaining-step-${stepIndex}`}
+                              className="border-b border-primary-300 pb-4"
+                            >
+                              {/* Step Header */}
+                              <div className="mb-4 ml-4">
+                                <p className="text-xs text-gray-900 mb-1">
+                                  Step {stepIndex + 1}
+                                </p>
+                                <h3 className="text-base font-semibold text-primary">
+                                  {step.title || `Step ${step.step || stepIndex + 1}`}
+                                </h3>
+                              </div>
+
+                              {/* Step Content */}
+                              <div className="space-y-4">
+                                {/* Aha Moment */}
+                                {step.aha && (
+                                  <div className="flex gap-3 px-3 py-4 bg-white rounded-xl">
+                                    <div className="shrink-0 mt-1">
+                                      <img
+                                        src="/bulb.svg"
+                                        alt="Aha"
+                                        width={24}
+                                        height={24}
+                                        className="w-6 h-6"
+                                      />
+                                    </div>
+                                    <div className="flex-1">
+                                      <p className="font-medium text-gray-900 mb-1">Aha</p>
+                                      <p className="text-gray-700 text-sm leading-relaxed">
+                                        {step.aha}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Action */}
+                                {step.action && (
+                                  <div className="flex gap-3 px-3 py-4 bg-white rounded-xl">
+                                    <div className="shrink-0 mt-1">
+                                      <img
+                                        src="/markup.svg"
+                                        alt="Action"
+                                        width={24}
+                                        height={24}
+                                        className="w-6 h-6"
+                                      />
+                                    </div>
+                                    <div className="flex-1">
+                                      <p className="font-medium text-gray-900 mb-1">Action</p>
+                                      <p className="text-gray-700 text-sm leading-relaxed">
+                                        {step.action}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Tool */}
+                                {step.tool && (
+                                  <div className="flex gap-3 px-3 py-4 bg-white rounded-xl">
+                                    <div className="shrink-0 mt-1">
+                                      <img
+                                        src="/tool.svg"
+                                        alt="Tool"
+                                        width={24}
+                                        height={24}
+                                        className="w-6 h-6"
+                                      />
+                                    </div>
+                                    <div className="flex-1">
+                                      <p className="font-medium text-gray-900 mb-1">Tool</p>
+                                      <p className="text-gray-700 text-sm leading-relaxed">
+                                        {step.tool}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Description */}
+                                {step.description && (
+                                  <div className="flex gap-3 px-3 py-4 bg-white rounded-xl">
+                                    <div className="shrink-0 mt-1">
+                                      <img
+                                        src="/tool.svg"
+                                        alt="Description"
+                                        width={24}
+                                        height={24}
+                                        className="w-6 h-6"
+                                      />
+                                    </div>
+                                    <div className="flex-1">
+                                      <p className="font-medium text-gray-900 mb-1">Description</p>
+                                      <p className="text-gray-700 text-sm leading-relaxed">
+                                        {step.description}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="flex flex-col items-center justify-center p-8 text-center">
+                            <p className="text-sm text-gray-500">
+                              No steps available for this chapter
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 ) : activeTab === 0 ? (
                   <>
                     {selectedScreen && chapters && (
@@ -1195,6 +1371,7 @@ useEffect(() => {
                                 >
                                   <ScreenCard
                                     screen={screen}
+                                    chapter={currentChapter}
                                     selectedScreen={selectedScreen}
                                     index={index}
                                     onDragStart={handleDragStart}
@@ -1340,7 +1517,7 @@ useEffect(() => {
           </div>
 
           {/* Footer Navigation */}
-          {showNextChapter && (
+          {/* {showNextChapter && (
             <div className="border-t p-4 bg-background w-full rounded-b-xl shrink-0">
               <div className="flex items-center justify-end">
                 <Button
@@ -1354,7 +1531,7 @@ useEffect(() => {
                 </Button>
               </div>
             </div>
-          )}
+          )} */}
         </>
       )}
 
