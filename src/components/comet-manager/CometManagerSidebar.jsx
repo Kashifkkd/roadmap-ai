@@ -63,7 +63,10 @@ export default function CometManagerSidebar({
   selectedScreen,
   onAddScreen,
   chapters = [],
+  remainingChapters = [],
   onChapterClick,
+  onRemainingChapterClick,
+  onRemainingStepClick,
   sessionId,
   selectedStepId,
   setSelectedStep: setSelectedStepFromHook,
@@ -74,6 +77,7 @@ export default function CometManagerSidebar({
 }) {
   console.log(selectedScreen, "selectedScreen >>>>>>>>>>>>");
   console.log(chapters, "chapters >>>>>>>>>>>><<<<<<<<<<<<<<");
+  console.log("remainingChapters >>>>>>>>>>>>", remainingChapters, Array.isArray(remainingChapters), typeof remainingChapters);
   const [tab, setTab] = useState(0);
 
   // Sync with external tab control
@@ -86,6 +90,8 @@ export default function CometManagerSidebar({
   const [selectedStep, setSelectedStep] = useState(null);
   const [expandedChapters, setExpandedChapters] = useState(new Set());
   const [expandedSteps, setExpandedSteps] = useState(new Set());
+  const [expandedRemainingChapters, setExpandedRemainingChapters] = useState(new Set());
+  const [expandedRemainingSteps, setExpandedRemainingSteps] = useState(new Set());
 
   // Source materials state
   const [sourceMaterials, setSourceMaterials] = useState([]);
@@ -184,6 +190,31 @@ export default function CometManagerSidebar({
         newSet.add(chapterId);
       }
       return newSet;
+    });
+  };
+
+  // Toggle remaining chapter expansion
+  const toggleRemainingChapter = (chapterKey) => {
+    setExpandedRemainingChapters((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(chapterKey)) {
+        newSet.delete(chapterKey);
+      } else {
+        newSet.add(chapterKey);
+      }
+      return newSet;
+    });
+  };
+
+  // Toggle remaining step expansion - only one step can be expanded at a time
+  const toggleRemainingStep = (stepKey) => {
+    setExpandedRemainingSteps((prev) => {
+      // If clicking the same step that's already expanded, close it
+      if (prev.has(stepKey)) {
+        return new Set();
+      }
+      // Otherwise, close all and open only the clicked step
+      return new Set([stepKey]);
     });
   };
 
@@ -618,6 +649,189 @@ export default function CometManagerSidebar({
                     Complete the outline to see chapters here
                   </p>
                 </div>
+              )}
+
+              {/* Remaining Chapters Section */}
+              {remainingChapters && remainingChapters.length > 0 && (
+                <>
+                  {remainingChapters
+                    .map((remainingChapter, index) => {
+                      const isDeactivated = remainingChapter.state === "deactivated";
+                      const isGenerating = remainingChapter.state === "generating";
+                      const isActive = remainingChapter.state === "active";
+                      const chapterIndex = remainingChapter.chapter_index ?? index;
+                      const chapterKey = `remaining-${chapterIndex}-${index}`;
+                      const isExpanded = expandedRemainingChapters.has(chapterKey) || isGenerating;
+                      const isSelected = selectedChapter === chapterKey;
+
+                      // Don't render deactivated state
+                      if (isDeactivated) return null;
+
+                      return (
+                        <div
+                          key={chapterKey}
+                          className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
+                            isExpanded ? "bg-primary-100" : "bg-white"
+                          }`}
+                        >
+                          {/* Chapter Header */}
+                          <div
+                            onClick={() => {
+                              setSelectedChapter(chapterKey);
+                              toggleRemainingChapter(chapterKey);
+                              // Call callback to show chapter details in right panel
+                              if (onRemainingChapterClick) {
+                                onRemainingChapterClick(remainingChapter);
+                              }
+                            }}
+                            className="flex items-center gap-2 p-3 sm:p-4 cursor-pointer transition-all"
+                          >
+                            <div
+                              className={`rounded-full p-1 ${
+                                isSelected ? "bg-primary" : "bg-primary-100"
+                              }`}
+                            >
+                              <ChevronDown
+                                size={16}
+                                className={`${
+                                  isSelected ? "text-white" : "text-primary"
+                                } transition-transform ${
+                                  isExpanded ? "rotate-180" : ""
+                                }`}
+                              />
+                            </div>
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <p className="text-[10px] font-medium text-gray-900">
+                                Chapter {chapterIndex}
+                              </p>
+                              <p
+                                className={`text-sm sm:text-sm font-medium ${
+                                  isSelected ? "text-gray-900" : "text-primary"
+                                }`}
+                              >
+                                {remainingChapter.chapter || "Untitled Chapter"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Expanded Steps - Inside the same card */}
+                          {isExpanded &&
+                            remainingChapter.steps &&
+                            remainingChapter.steps.length > 0 && (
+                              <div className="flex flex-col gap-2 px-3 pb-3">
+                                {remainingChapter.steps.map((stepItem, stepIndex) => {
+                                  const stepTitle =
+                                    stepItem.title || `Step ${stepItem.step || stepIndex + 1}`;
+                                  const stepKey = `${chapterKey}-step-${stepIndex}`;
+                                  const isStepExpanded = expandedRemainingSteps.has(stepKey);
+
+                                  return (
+                                    <div
+                                      key={stepKey}
+                                      className={`flex flex-col rounded-sm transition-all ${
+                                        isStepExpanded
+                                          ? "bg-primary-700"
+                                          : "bg-white"
+                                      }`}
+                                    >
+                                      {/* Step Header */}
+                                      <div
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleRemainingStep(stepKey);
+                                          // Notify parent to scroll to this step in the right panel
+                                          if (onRemainingStepClick) {
+                                            onRemainingStepClick(stepIndex);
+                                          }
+                                        }}
+                                        className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
+                                          isStepExpanded
+                                            ? "text-white"
+                                            : "hover:bg-gray-200"
+                                        }`}
+                                      >
+                                        <div
+                                          className={`rounded-full p-1 shrink-0 ${
+                                            isStepExpanded
+                                              ? "bg-white"
+                                              : "bg-primary-100"
+                                          }`}
+                                        >
+                                          <ChevronDown
+                                            size={12}
+                                            className={`transition-transform ${
+                                              isStepExpanded ? "rotate-180" : ""
+                                            } ${
+                                              isStepExpanded
+                                                ? "text-primary-700"
+                                                : "text-primary"
+                                            }`}
+                                          />
+                                        </div>
+                                        <div className="flex flex-col py-1 flex-1 min-w-0">
+                                          <p
+                                            className={`text-xs sm:text-xs ${
+                                              isStepExpanded ? "text-white" : "text-gray-900"
+                                            }`}
+                                          >
+                                            Step {stepIndex + 1}
+                                          </p>
+                                          <p
+                                            className={`text-xs sm:text-sm font-semibold ${
+                                              isStepExpanded ? "text-white" : "text-gray-900"
+                                            }`}
+                                          >
+                                            {stepTitle}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {/* Step Details (Expanded) - Inside the same card */}
+                                      {isStepExpanded && (
+                                        <div className="px-2 pb-2">
+                                          <div className="px-3 py-3 bg-white rounded-lg">
+                                            <div className="flex flex-col gap-2">
+                                              <div>
+                                                <h4 className="text-sm font-semibold text-black mb-1">
+                                                  {stepTitle}
+                                                </h4>
+                                                {stepItem.description && (
+                                                  <p className="text-xs text-black leading-relaxed">
+                                                    {stepItem.description}
+                                                  </p>
+                                                )}
+                                                {stepItem.aha && (
+                                                  <p className="text-xs text-black leading-relaxed mt-1">
+                                                    <span className="font-semibold">Aha: </span>
+                                                    {stepItem.aha}
+                                                  </p>
+                                                )}
+                                                {stepItem.action && (
+                                                  <p className="text-xs text-black leading-relaxed mt-1">
+                                                    <span className="font-semibold">Action: </span>
+                                                    {stepItem.action}
+                                                  </p>
+                                                )}
+                                                {stepItem.tool && (
+                                                  <p className="text-xs text-black leading-relaxed mt-1">
+                                                    <span className="font-semibold">Tool: </span>
+                                                    {stepItem.tool}
+                                                  </p>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                        </div>
+                      );
+                    })}
+                </>
               )}
 
               {/* Generate Step Image Button at bottom of Steps Tab */}

@@ -12,6 +12,7 @@ import {
 
 export default function ScreenCard({
   screen,
+  chapter,
   selectedScreen,
   index,
   onDragStart,
@@ -21,6 +22,7 @@ export default function ScreenCard({
   onClick,
   onAddScreen,
 }) {
+  console.log("chapter>>>>>>>>>>>>>>>>>>>>>>>>", chapter);
   const [showAddButton, setShowAddButton] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const AddButton = ({ position, insertIndex }) => (
