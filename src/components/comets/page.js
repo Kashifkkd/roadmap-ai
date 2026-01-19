@@ -32,9 +32,9 @@ export default function AllComet() {
   );
 
   useEffect(() => {
-    console.log("useEffect triggered", { debouncedSearch, selected });
     getCometData()
-  }, [debouncedSearch, selected ,sortBy, sortOrder])
+    window.addEventListener("storage", getCometData);
+  }, [debouncedSearch, selected, sortBy, sortOrder])
 
 
   const getCometData = async () => {
@@ -89,7 +89,7 @@ export default function AllComet() {
     }
     if (selected && selected != 'select') data.status = selected
     if (sessionName) data.session_name = sessionName
-    if (sortBy) data.sort_order  = sortBy
+    if (sortBy) data.sort_order = sortBy
     if (sortOrder) data.sort_by = sortOrder
 
     const res = await axios.get("https://kyper-stage.1st90.com/api/comet/sessions",
@@ -166,7 +166,7 @@ export default function AllComet() {
   return (
     <div className="h-screen w-[100vw] flex flex-col pt-2 pr-2 pl-2 bg-[#F1F0FE]">
       <div className="flex-1 flex w-[98%] flex-col m-auto pt-8 pb-8 gap-2.5 overflow-y-auto">
-        <CometFilter handleChange={handleChange} selected={selected} handleStatus={handleStatus} sessionName={sessionName} handleSortBy={handleSortBy} handleSortOrder={handleSortOrder}  sortBy={sortBy} sortOrder={sortOrder}/>
+        <CometFilter handleChange={handleChange} selected={selected} handleStatus={handleStatus} sessionName={sessionName} handleSortBy={handleSortBy} handleSortOrder={handleSortOrder} sortBy={sortBy} sortOrder={sortOrder} />
         {noComet ? <div className="w-screen h-screen flex justify-center items-center">
           No comet sessions found.
         </div> : <AllCometsContainer cometSessions={cometSessions} />}

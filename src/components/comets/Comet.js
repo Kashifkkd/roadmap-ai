@@ -74,7 +74,7 @@ const Comet = ({
   return (
     <div
       onClick={handleClick}
-      className="relative flex flex-col  w-[310px] min-h-[270px] rounded-2xl overflow-hidden group cursor-pointer transition-transform duration-300 ease-in-out hover:-translate-y-1"
+      className="relative flex flex-col  w-[310px] min-h-[270px] rounded-2xl overflow-hidden group cursor-pointer transition-transform duration-300 ease-in-out "
     >
       {/* Background image */}
       <Image

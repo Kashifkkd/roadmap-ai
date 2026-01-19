@@ -48,22 +48,32 @@ export default function ChapterTextarea({
     try {
       const sessionId = await ensureSessionId();
 
+      // Always get the freshest sessionData from localStorage to avoid stale data issues
+      let freshSessionData = sessionData;
+      try {
+        const stored = localStorage.getItem("sessionData");
+        if (stored) {
+          freshSessionData = JSON.parse(stored);
+        }
+      } catch { }
+
+      // Append to existing conversation instead of overwriting
+      const existingConversation = freshSessionData?.chatbot_conversation || [];
+      const newEntry = { user: `add a chapter,  description: ${text}` };
+      const chatbotConversation = [...existingConversation, newEntry];
+
       const cometJsonForMessage = JSON.stringify({
         session_id: sessionId,
         input_type: "outline_updation",
-        comet_creation_data: sessionData?.comet_creation_data || {},
-        response_outline: sessionData?.response_outline || {},
-        response_path: sessionData?.response_path || {},
+        comet_creation_data: freshSessionData?.comet_creation_data || {},
+        response_outline: freshSessionData?.response_outline || {},
+        response_path: freshSessionData?.response_path || {},
         // additional_data: {
         //   personalization_enabled: sessionData?.additional_data?.personalization_enabled || false,
         //   habit_enabled: sessionData?.additional_data?.habit_enabled || false,
         //   habit_description: sessionData?.additional_data?.habit_description || "",
         // },
-        chatbot_conversation: [
-          {
-            user: `add a chapter,  description: ${text}`,
-          },
-        ],
+        chatbot_conversation: chatbotConversation,
         to_modify: {},
       });
       /*

@@ -526,7 +526,7 @@ export default function OutlineMannerCreateComet({
               {showChapterTextarea ? (
                 <div className="p-2 border-b border-gray-200">
                   <ChapterTextarea
-                    sessionData={sessionData}
+                    sessionData={prefillData || sessionData}
                     setAllMessages={setAllMessages}
                     onClose={() => setShowChapterTextarea(false)}
                   />
@@ -548,9 +548,9 @@ export default function OutlineMannerCreateComet({
                         onDrop={(e) => handleChapterDrop(e, index)}
                         className={`border rounded-sm transition-all duration-200  ${
                           selectedChapter?.chapter === chapter?.chapter &&
-                          expandedChapters[index]
-                          ? "border-gray-300 bg-primary-100 shadow-sm"
-                          : "border-gray-300 bg-white shadow-sm "
+                            expandedChapters[index]
+                            ? "border-gray-300 bg-primary-100 shadow-sm"
+                            : "border-gray-300 bg-white shadow-sm "
                           } ${draggedChapterIndex === index ? "opacity-50" : ""}`}
                       >
                         <div
@@ -579,16 +579,16 @@ export default function OutlineMannerCreateComet({
                               <div
                                 className={`p-1 flex gap-2 rounded-full text-nowrap ${
                                   selectedChapter?.chapter === chapter?.chapter
-                                  ? "bg-gray-200"
-                                  : "bg-gray-200"
+                                    ? "bg-gray-200"
+                                    : "bg-gray-200"
                                   }`}
                               >
                                 <div
                                   className={`flex justify-center items-center size-[18px] rounded-full ${
                                     selectedChapter?.chapter ===
-                                    chapter?.chapter
-                                    ? "bg-white text-gray-800"
-                                    : "bg-white text-gray-800"
+                                      chapter?.chapter
+                                      ? "bg-white text-gray-800"
+                                      : "bg-white text-gray-800"
                                     }`}
                                 >
                                   <Zap size={12} />
@@ -620,8 +620,8 @@ export default function OutlineMannerCreateComet({
                                 size={18}
                                 className={`transition-transform duration-200 text-primary-600 ${
                                   expandedChapters[index]
-                                  ? "rotate-180"
-                                  : "rotate-0"
+                                    ? "rotate-180"
+                                    : "rotate-0"
                                   }`}
                               />
                             </div>
@@ -655,9 +655,9 @@ export default function OutlineMannerCreateComet({
                                 <p
                                   className={`text-base font-medium ${
                                     selectedChapter?.chapter === chapter?.chapter &&
-                                    expandedChapters[index]
-                                    ? "text-primary font-medium"
-                                    : "text-gray-900"
+                                      expandedChapters[index]
+                                      ? "text-primary font-medium"
+                                      : "text-gray-900"
                                     }`}
                                 >
                                   {chapter?.chapter || "Untitled Chapter"}
@@ -745,8 +745,8 @@ export default function OutlineMannerCreateComet({
                                       }
                                       className={`group relative flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all duration-200 ${
                                         selectedStep?.title === step?.title
-                                        ? "bg-primary-700 border border-primary shadow-sm text-white"
-                                        : "bg-white hover:bg-accent hover:shadow-md text-gray-900"
+                                          ? "bg-primary-700 border border-primary shadow-sm text-white"
+                                          : "bg-white hover:bg-accent hover:shadow-md text-gray-900"
                                         } ${
                                           draggedStepIndex === stepIndex &&
                                           draggedStepChapterIndex === index
@@ -799,15 +799,15 @@ export default function OutlineMannerCreateComet({
                                         >
                                           Step {stepIndex + 1}
                                         </div>
-                                        <div className="flex-1 min-w-0">
+                                        <div className="flex-1 min-w-0 overflow-hidden">
                                           {editingStepKey === `${index}-${stepIndex}` ? (
-                                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex items-center gap-1 min-w-0" onClick={(e) => e.stopPropagation()}>
                                               <input
                                                 type="text"
                                                 value={stepEditValue}
                                                 onChange={(e) => setStepEditValue(e.target.value)}
                                                 onKeyDown={(e) => handleStepEditKeyDown(e, index, stepIndex)}
-                                                className="flex-1 px-1 py-0.5 text-sm font-medium border border-primary rounded focus:outline-none focus:ring-1 focus:ring-primary text-gray-900"
+                                                className="flex-1 min-w-0 px-1 py-0.5 text-sm font-medium border border-primary rounded focus:outline-none focus:ring-1 focus:ring-primary text-gray-900"
                                                 autoFocus
                                               />
                                               <button

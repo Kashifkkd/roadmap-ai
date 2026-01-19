@@ -250,6 +250,13 @@ export default function WelcomePage() {
     });
   };
 
+  const handleCreateNewCometFromDashboard = () => {
+    // Clear existing session data to start fresh
+    localStorage.removeItem("sessionId");
+    localStorage.removeItem("sessionData");
+    router.push("/dashboard");
+  };
+
   const handleCreateNewComet = () => {
     router.push("/dashboard");
   };
@@ -391,9 +398,9 @@ export default function WelcomePage() {
               <div
                 className={`w-full flex flex-col relative transition-all duration-200 rounded-xl bg-white ${
                   isExpanded || messages.length > 0
-                    ? "min-h-[500px] max-h-[600px]"
-                    : ""
-                }`}
+                  ? "min-h-[500px] max-h-[600px]"
+                  : ""
+                  }`}
               >
                 {/* Chat Messages */}
                 {messages.length > 0 && (
@@ -419,7 +426,7 @@ export default function WelcomePage() {
                 <div
                   className={`relative w-full bg-white rounded-xl border border-primary-300 shadow-sm ${
                     messages.length > 0 ? "mt-auto" : ""
-                  }`}
+                    }`}
                 >
                   <div className="relative w-full">
                     {messages.length === 0 && (
@@ -431,10 +438,10 @@ export default function WelcomePage() {
                         cometCreated
                           ? "Comet created! Click 'Continue to Dashboard' below."
                           : isLoading
-                          ? "Waiting for response..."
-                          : messages.length > 0
-                          ? "Type your answer here..."
-                          : "I'll guide you step by step - just tell me what you want to create."
+                            ? "Waiting for response..."
+                            : messages.length > 0
+                              ? "Type your answer here..."
+                              : "I'll guide you step by step - just tell me what you want to create."
                       }
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
@@ -444,17 +451,17 @@ export default function WelcomePage() {
                       }
                       className={`w-full ${
                         messages.length === 0 ? "pl-10" : "pl-3"
-                      } pr-3 ${
-                        messages.length > 0 ? "pt-2.5 pb-2.5" : "pt-3 pb-3"
-                      } text-md shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text overflow-y-auto`}
+                        } pr-3 ${
+                          messages.length > 0 ? "pt-2.5 pb-2.5" : "pt-3 pb-3"
+                        } text-md shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text overflow-y-auto`}
                       rows={1}
                       style={{
                         minHeight:
                           messages.length > 0
                             ? "2.5rem"
                             : isExpanded
-                            ? "6rem"
-                            : "3rem",
+                              ? "6rem"
+                              : "3rem",
                         maxHeight: "200px",
                       }}
                     />
@@ -494,9 +501,9 @@ export default function WelcomePage() {
                       variant="default"
                       className={`cursor-pointer flex items-center gap-2 ${
                         attachedFile
-                          ? "text-white bg-primary-600"
-                          : "text-white bg-primary hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
-                      }`}
+                        ? "text-white bg-primary-600"
+                        : "text-white bg-primary hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
+                        }`}
                       onClick={handleAttach}
                       disabled={isLoading || cometCreated || isUploading}
                     >
@@ -554,7 +561,7 @@ export default function WelcomePage() {
               <Button
                 variant="default"
                 className="flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50"
-                onClick={handleCreateNewComet}
+                onClick={handleCreateNewCometFromDashboard}
                 disabled={isDisabled}
               >
                 <Stars />
