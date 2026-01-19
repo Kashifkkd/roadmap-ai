@@ -45,12 +45,12 @@ export default function NotificationsForm({
           </Label>
           <Input
             type="text"
-            value={formData.heading || ""}
-            onChange={(e) => updateField("heading", e.target.value)}
+            value={formData.title || ""}
+            onChange={(e) => updateField("title", e.target.value)}
             placeholder="Enter notification title"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             onSelect={(event) =>
-              onTextFieldSelect?.("notificationsHeading", event, formData.heading)
+              onTextFieldSelect?.("notificationsTitle", event, formData.title)
             }
             onBlur={onFieldBlur}
           />
