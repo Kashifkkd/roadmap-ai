@@ -105,6 +105,23 @@ export const apiService = async ({
     requestHeaders.Authorization = `Bearer ${token}`;
   }
 
+  // 🔹 Add CloudFront cookies as headers 
+  if (typeof window !== "undefined") {
+    const cloudFrontPolicy = localStorage.getItem("CloudFront-Policy");
+    const cloudFrontSignature = localStorage.getItem("CloudFront-Signature");
+    const cloudFrontKeyPairId = localStorage.getItem("CloudFront-Key-Pair-Id");
+
+    if (cloudFrontPolicy) {
+      requestHeaders["CloudFront-Policy"] = cloudFrontPolicy;
+    }
+    if (cloudFrontSignature) {
+      requestHeaders["CloudFront-Signature"] = cloudFrontSignature;
+    }
+    if (cloudFrontKeyPairId) {
+      requestHeaders["CloudFront-Key-Pair-Id"] = cloudFrontKeyPairId;
+    }
+  }
+
   try {
     const requestObj = {
       url: `${customUrl || BACKEND_URL}/${endpoint}`,
