@@ -208,13 +208,14 @@ export default function Header() {
         <button
           onPointerDown={handlePointerDown}
           onClick={handleFloatingFeedbackClick}
-          className="w-10 h-10 rounded-full border-2 border-[#e7fffe] bg-[#e7fffe] hover:bg-[#D9F0EC] shadow-lg flex items-center justify-center transition-all cursor-grab "
+          className="w-30 h-10 rounded-md border-2 border-[#e7fffe] bg-[#e7fffe] hover:bg-[#D9F0EC] shadow-lg flex items-center justify-center transition-all cursor-grab gap-2"
           style={{
             touchAction: "none",
             userSelect: "none",
           }}
         >
           <Image src="/Dialog 2.svg" alt="Feedback" width={24} height={24} />
+          <span className="text-md font-medium text-gray-900">Feedback</span>
         </button>
       </div>
     );

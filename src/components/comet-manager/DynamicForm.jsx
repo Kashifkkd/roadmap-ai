@@ -444,7 +444,7 @@ export default function DynamicForm({
                 }
               }
             } else if (contentType === "notifications") {
-              if (field === "heading") {
+              if (field === "title" ) {
                 currentScreen.screenContents.content.heading = value;
               } else if (field === "message") {
                 const messageValue = extractPlainTextFromDelta(value);

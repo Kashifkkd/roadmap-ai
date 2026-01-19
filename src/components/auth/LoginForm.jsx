@@ -73,6 +73,23 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
       localStorage.setItem("access_token", data.access_token);
       localStorage.setItem("token_type", data.token_type);
 
+      // Store CloudFront cookies 
+      const cloudfrontCookies = data.cloudfront_cookies;
+      if (cloudfrontCookies) {
+        localStorage.setItem(
+          "CloudFront-Policy",
+          cloudfrontCookies["CloudFront-Policy"]
+        );
+        localStorage.setItem(
+          "CloudFront-Signature",
+          cloudfrontCookies["CloudFront-Signature"]
+        );
+        localStorage.setItem(
+          "CloudFront-Key-Pair-Id",
+          cloudfrontCookies["CloudFront-Key-Pair-Id"]
+        );
+      }
+
       if (onOpenChange) onOpenChange(false);
 
       if (typeof window !== "undefined") {

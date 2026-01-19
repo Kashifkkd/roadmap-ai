@@ -38,13 +38,25 @@ export default function AllCometsContainer({ cometSessions }) {
 
       const result = await response.json();
       console.log("Fetched session details:", result);
-      
+
       localStorage.setItem("sessionData", JSON.stringify(result));
       localStorage.setItem("sessionId", session_id);
-      if(status==='draft'){
-        router.push("/dashboard");
-      }else{
+
+      // Safely read nested properties in case parts of the response are missing
+      const sessionData = JSON.parse(localStorage.getItem("sessionData") || "{}");
+      const pathChapters =
+        sessionData?.response_path?.chapters ??
+        [];
+      const outlineChapters =
+        sessionData?.response_outline?.chapters ??
+        [];
+
+      if (Array.isArray(pathChapters) && pathChapters.length > 0) {
         router.push("/comet-manager");
+      } else if (Array.isArray(outlineChapters) && outlineChapters.length > 0) {
+        router.push("/outline-manager");
+      } else {
+        router.push("/dashboard");
       }
       console.log("Session details:", result);
     } catch (err) {

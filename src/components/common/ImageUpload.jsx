@@ -68,7 +68,7 @@ export default function ImageUpload({
     "Minimalist",
   ];
 
-  const imageSizes = ["1024x1024", "512x512", "256x256"];
+  const imageSizes = ["1024x1024"];
 
   const handleFileUpload = async (file) => {
     setIsUploadingImage(true);
