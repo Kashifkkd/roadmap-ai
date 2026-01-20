@@ -637,6 +637,11 @@ export default function CometManagerSidebar({
                 </div>
               )}
 
+              {/* line between regular chapters and remaining chapters */}
+              {remainingChapters && remainingChapters.length > 0 && chapters && chapters.length > 0 && (
+                <div className="h-0.5 bg-gray-300 "></div>
+              )}
+
               {/* Remaining Chapters Section */}
               {remainingChapters && remainingChapters.length > 0 && (
                 <>
@@ -653,182 +658,187 @@ export default function CometManagerSidebar({
                       if (isActive) return null;
 
                       return (
-                        <div
-                          key={chapterKey}
-                          className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${isGenerating ? "bg-[#D1FADF]" : " bg-white"}`}
-                        >
-                          {/* Chapter Header */}
+                        <div key={chapterKey}>
+                          {index > 0 && remainingChapters[index - 1]?.state === "generating" && isDeactivated && (
+                            // line between generating and deactivated chapters
+                            <div className="h-0.5 bg-gray-300 mb-2"></div>
+                          )}
                           <div
-                            onClick={() => {
-                              if (isDeactivated) return;
-                              setSelectedChapter(chapterKey);
-                              toggleRemainingChapter(chapterKey);
-                              if (onRemainingChapterClick) {
-                                onRemainingChapterClick(remainingChapter);
-                              }
-                            }}
-                            className={`flex items-center gap-2 p-3 sm:p-4 transition-all cursor-pointer`}
+                            className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${isGenerating ? "bg-[#D1FADF]" : " bg-white"}`}
                           >
+                            {/* Chapter Header */}
                             <div
-                              className={`rounded-full p-1 ${isGenerating ? "bg-[#A6F4C5]" : "bg-gray-100"}`}
+                              onClick={() => {
+                                if (isDeactivated) return;
+                                setSelectedChapter(chapterKey);
+                                toggleRemainingChapter(chapterKey);
+                                if (onRemainingChapterClick) {
+                                  onRemainingChapterClick(remainingChapter);
+                                }
+                              }}
+                              className={`flex items-center gap-2 p-3 sm:p-4 transition-all cursor-pointer`}
                             >
-                              <ChevronDown
-
-                                size={16}
-                                className={`${isGenerating ? "text-[#12B76A]" : "text-gray-800"
-                                  } transition-transform ${isExpanded ? "rotate-180" : ""
-                                  }`}
-                              />
-                            </div>
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <p className="text-[10px] font-medium text-gray-900">
-                                Chapter {chapterIndex}
-                              </p>
-                              <p
-                                className={`text-sm sm:text-sm font-medium ${isGenerating ? "text-[#12B76A]" : "text-gray-400"} ${isExpanded ? "text-gray-800" : "text-gray"}
-                                  `}
+                              <div
+                                className={`rounded-full p-1 ${isGenerating ? "bg-[#A6F4C5]" : "bg-gray-100"}`}
                               >
-                                {remainingChapter.chapter || "Untitled Chapter"}
-                              </p>
+                                <ChevronDown
+
+                                  size={16}
+                                  className={`${isGenerating ? "text-[#12B76A]" : "text-gray-800"
+                                    } transition-transform ${isExpanded ? "rotate-180" : ""
+                                    }`}
+                                />
+                              </div>
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <p className="text-[10px] font-medium text-gray-900">
+                                  Chapter {chapterIndex}
+                                </p>
+                                <p
+                                  className={`text-sm sm:text-sm font-medium ${isGenerating ? "text-[#12B76A]" : "text-gray-400"} ${isExpanded ? "text-gray-800" : "text-gray"}
+                                  `}
+                                >
+                                  {remainingChapter.chapter || "Untitled Chapter"}
+                                </p>
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Expanded Steps - Inside the same card */}
-                          {isExpanded &&
-                            remainingChapter.steps &&
-                            remainingChapter.steps.length > 0 && (
-                              <div className="flex flex-col gap-2 px-3 pb-3">
-                                {remainingChapter.steps.map((stepItem, stepIndex) => {
-                                  const stepTitle =
-                                    stepItem.title || `Step ${stepItem.step || stepIndex + 1}`;
-                                  const stepKey = `${chapterKey}-step-${stepIndex}`;
-                                  const isStepExpanded = expandedRemainingSteps.has(stepKey);
+                            {/* Expanded Steps - Inside the same card */}
+                            {isExpanded &&
+                              remainingChapter.steps &&
+                              remainingChapter.steps.length > 0 && (
+                                <div className="flex flex-col gap-2 px-3 pb-3">
+                                  {remainingChapter.steps.map((stepItem, stepIndex) => {
+                                    const stepTitle =
+                                      stepItem.title || `Step ${stepItem.step || stepIndex + 1}`;
+                                    const stepKey = `${chapterKey}-step-${stepIndex}`;
+                                    const isStepExpanded = expandedRemainingSteps.has(stepKey);
 
-                                  return (
-                                    <div
-                                      key={stepKey}
-                                      className={`flex flex-col rounded-sm transition-all ${isStepExpanded
-                                        ? "bg-[#027A48]"
-                                        : "bg-white"
-                                        }`}
-                                    >
-                                      {/* Step Header */}
+                                    return (
                                       <div
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          toggleRemainingStep(stepKey);
-                                          // Notify parent to scroll to this step in the right panel
-                                          if (onRemainingStepClick) {
-                                            onRemainingStepClick(stepIndex);
-                                          }
-                                        }}
-                                        className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${isStepExpanded
-                                          ? "text-white"
-                                          : "hover:bg-gray-200"
+                                        key={stepKey}
+                                        className={`flex flex-col rounded-sm transition-all ${isStepExpanded
+                                          ? "bg-[#027A48]"
+                                          : "bg-white"
                                           }`}
                                       >
+                                        {/* Step Header */}
                                         <div
-                                          className={`rounded-full p-1 shrink-0 ${isStepExpanded
-                                            ? "bg-white"
-                                            : "bg-[#A6F4C5]"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleRemainingStep(stepKey);
+                                            // Notify parent to scroll to this step in the right panel
+                                            if (onRemainingStepClick) {
+                                              onRemainingStepClick(stepIndex);
+                                            }
+                                          }}
+                                          className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${isStepExpanded
+                                            ? "text-white"
+                                            : "hover:bg-gray-200"
                                             }`}
                                         >
-                                          <ChevronDown
-                                            size={12}
-                                            className={`transition-transform ${isStepExpanded ? "rotate-180" : ""
-                                              } ${isStepExpanded
-                                                ? "text-[#12B76A]"
-                                                : "text-primary"
-                                              }`}
-                                          />
-                                        </div>
-                                        <div className="flex flex-col py-1 flex-1 min-w-0">
-                                          <p
-                                            className={`text-xs sm:text-xs ${isStepExpanded ? "text-white" : "text-gray-900"
+                                          <div
+                                            className={`rounded-full p-1 shrink-0 ${isStepExpanded
+                                              ? "bg-white"
+                                              : "bg-[#A6F4C5]"
                                               }`}
                                           >
-                                            Step {stepIndex + 1}
-                                          </p>
-                                          <p
-                                            className={`text-xs sm:text-sm font-semibold ${isStepExpanded ? "text-white" : "text-gray-900"
-                                              }`}
-                                          >
-                                            {stepTitle}
-                                          </p>
+                                            <ChevronDown
+                                              size={12}
+                                              className={`transition-transform ${isStepExpanded ? "rotate-180" : ""
+                                                } ${isStepExpanded
+                                                  ? "text-[#12B76A]"
+                                                  : "text-primary"
+                                                }`}
+                                            />
+                                          </div>
+                                          <div className="flex flex-col py-1 flex-1 min-w-0">
+                                            <p
+                                              className={`text-xs sm:text-xs ${isStepExpanded ? "text-white" : "text-gray-900"
+                                                }`}
+                                            >
+                                              Step {stepIndex + 1}
+                                            </p>
+                                            <p
+                                              className={`text-xs sm:text-sm font-semibold ${isStepExpanded ? "text-white" : "text-gray-900"
+                                                }`}
+                                            >
+                                              {stepTitle}
+                                            </p>
+                                          </div>
                                         </div>
+
+                                        {/* Step Details (Expanded) - Inside the same card */}
+                                        {isStepExpanded && (
+                                          <div className="flex flex-col px-3 pb-2 gap-2">
+                                            {stepItem.aha && (
+                                              <div className="px-3 py-3 bg-white rounded-lg ">
+                                                <div className="flex flex-col gap-2">
+                                                  <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                      <img src="/bulb.svg" alt="Aha" width={20} height={20} className="w-5 h-5" />
+                                                      <span className="font-semibold text-sm">Aha</span>
+                                                    </div>
+                                                    <p className="text-sm text-black leading-relaxed">
+                                                      {stepItem.aha}
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {stepItem.action && (
+                                              <div className="px-3 py-3 bg-white rounded-lg ">
+                                                <div className="flex flex-col gap-2">
+                                                  <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                      <img src="/markup.svg" alt="Action" width={20} height={20} className="w-5 h-5" />
+                                                      <span className="font-semibold text-sm">Action</span>
+                                                    </div>
+                                                    <p className="text-sm text-black leading-relaxed">
+                                                      {stepItem.action}
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+                                            {stepItem.tool && (
+                                              <div className="px-3 py-3 bg-white rounded-lg ">
+                                                <div className="flex flex-col gap-2">
+                                                  <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                      <img src="/tool.svg" alt="Tool" width={20} height={20} className="w-5 h-5" />
+                                                      <span className="font-semibold text-sm">Tool</span>
+                                                    </div>
+                                                    <p className="text-sm text-black leading-relaxed">
+                                                      {stepItem.tool}
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+                                            {stepItem.description && (
+                                              <div className="px-3 py-3 bg-white rounded-lg ">
+                                                <div className="flex flex-col gap-2">
+                                                  <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                      {/* <img src="/description.svg" alt="Description" width={20} height={20} className="w-5 h-5" /> */}
+                                                      <span className="font-semibold text-sm">Description</span>
+                                                    </div>
+                                                    <p className="text-sm text-black leading-relaxed">
+                                                      {stepItem.description}
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
                                       </div>
-
-                                      {/* Step Details (Expanded) - Inside the same card */}
-                                      {isStepExpanded && (
-                                        <div className="flex flex-col px-3 pb-2 gap-2">
-                                          {stepItem.aha && (
-                                            <div className="px-3 py-3 bg-white rounded-lg ">
-                                              <div className="flex flex-col gap-2">
-                                                <div className="flex flex-col gap-2">
-                                                  <div className="flex items-center gap-2">
-                                                    <img src="/bulb.svg" alt="Aha" width={20} height={20} className="w-5 h-5" />
-                                                    <span className="font-semibold text-sm">Aha</span>
-                                                  </div>
-                                                  <p className="text-sm text-black leading-relaxed">
-                                                    {stepItem.aha}
-                                                  </p>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          )}
-
-                                          {stepItem.action && (
-                                            <div className="px-3 py-3 bg-white rounded-lg ">
-                                              <div className="flex flex-col gap-2">
-                                                <div className="flex flex-col gap-2">
-                                                  <div className="flex items-center gap-2">
-                                                    <img src="/markup.svg" alt="Action" width={20} height={20} className="w-5 h-5" />
-                                                    <span className="font-semibold text-sm">Action</span>
-                                                  </div>
-                                                  <p className="text-sm text-black leading-relaxed">
-                                                    {stepItem.action}
-                                                  </p>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          )}
-                                          {stepItem.tool && (
-                                            <div className="px-3 py-3 bg-white rounded-lg ">
-                                              <div className="flex flex-col gap-2">
-                                                <div className="flex flex-col gap-2">
-                                                  <div className="flex items-center gap-2">
-                                                    <img src="/tool.svg" alt="Tool" width={20} height={20} className="w-5 h-5" />
-                                                    <span className="font-semibold text-sm">Tool</span>
-                                                  </div>
-                                                  <p className="text-sm text-black leading-relaxed">
-                                                    {stepItem.tool}
-                                                  </p>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          )}
-                                          {stepItem.description && (
-                                            <div className="px-3 py-3 bg-white rounded-lg ">
-                                              <div className="flex flex-col gap-2">
-                                                <div className="flex flex-col gap-2">
-                                                  <div className="flex items-center gap-2">
-                                                    {/* <img src="/description.svg" alt="Description" width={20} height={20} className="w-5 h-5" /> */}
-                                                    <span className="font-semibold text-sm">Description</span>
-                                                  </div>
-                                                  <p className="text-sm text-black leading-relaxed">
-                                                    {stepItem.description}
-                                                  </p>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
+                                    );
+                                  })}
+                                </div>
+                              )}
+                          </div>
                         </div>
                       );
                     })}
