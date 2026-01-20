@@ -467,7 +467,6 @@ export default function CometManager({
   const handleAddNewScreen = (screenType) => {
     // Get current chapter and step
     const targetChapter = currentChapter || chapters[0] || null;
-    console.log("targetChapter>>>>>>>>>>>>>>>>>>>>>>>>", targetChapter);
     const targetChapterId =
       targetChapter?.id || chapters[0]?.id || "#chapter_1";
 
@@ -926,6 +925,9 @@ export default function CometManager({
       (step) => String(step.id) === String(selectedScreen?.stepId)
     ) ?? -1) + 1 || 1;
 
+  console.log(selectedScreen, "selectedScreen >>>>>>>>>>>>", selectedScreen?.title);
+  console.log(currentChapter, "currentChapter >>>>>>>>>>>> steps name");
+
   return (
     <div className="flex flex-col w-full bg-background rounded-xl h-full relative">
       {/* Loading State */}
@@ -1312,7 +1314,9 @@ export default function CometManager({
                           </h2>
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-medium text-primary">
-                              {selectedScreen.title || "Untitled Chapter"}
+                              {currentChapter?.steps?.find(
+                                (step) => String(step.id) === String(selectedScreen?.stepId)
+                              )?.name || "Untitled Step"}
                             </span>
                             {/* <span className="text-xs text-primary truncate">
                               {selectedScreen.name || "Untitled Step"}
