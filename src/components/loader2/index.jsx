@@ -1,7 +1,6 @@
 import React from "react";
 import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
-import { useState,useEffect } from "react";
 
 const Loader = ({ inputText, onBack, backLabel = "Back" }) => {
   const steps = [
@@ -45,14 +44,7 @@ const Loader = ({ inputText, onBack, backLabel = "Back" }) => {
   const itemHeight = 40;
   const totalHeight = steps.length * itemHeight;
   const animationDuration = steps.length * 1;
-  const [sessionData, setSessionData] = useState({});
-  console.log("sessionData",sessionData);
-useEffect(() => {
 
-const value=localStorage.getItem("sessionData");
-// console.log("value",JSON.parse(value));
-setSessionData(JSON.parse(value));
-},[])
   return (
     <div className="w-full h-full flex flex-col rounded-2xl p-2 bg-white relative">
       {onBack && (
@@ -88,7 +80,7 @@ setSessionData(JSON.parse(value));
             Extracting insights, drafting early ideas, and preparing your{" "}
             {inputText} Screen.
           </p>
-               {sessionData?.meta?.state || "ragOutine"}
+
           <div className="w-full  relative">
             <div className="absolute top-0 left-0 right-0 h-16 bg-linear-to-b from-white via-white/80 to-transparent z-10 pointer-events-none " />
 

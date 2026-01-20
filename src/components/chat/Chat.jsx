@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import { Drawer } from "@mui/material";
-import { MessageCircle,Zap } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import Image from "next/image";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
@@ -109,8 +109,6 @@ const Chat = ({
   // };
 
   // Auto-scroll to bottom
-    const [isAnalyzingTextCollapsed, setIsAnalyzingTextCollapsed] =
-    useState(false);
   useEffect(() => {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
@@ -127,14 +125,7 @@ const Chat = ({
       console.error("Failed to send suggestion:", error);
     }
   };
-  const [sessionData, setSessionData] = useState({});
-  console.log("sessionData",sessionData);
-useEffect(() => {
 
-const value=localStorage.getItem("sessionData");
-// console.log("value",JSON.parse(value));
-setSessionData(JSON.parse(value));
-},[])
   const hasMessages = messages && messages.length > 0;
 
   // Memoize message so that it do not re render to prevent re-render when input changes
@@ -348,32 +339,6 @@ setSessionData(JSON.parse(value));
             <p className="text-red-600 text-sm">{error}</p>
           </div>
         )}
-          {/* <span className="text-gray-700 text-sm">
-                                 {sessionData?.meta?.state || "..."}
-                                </span> */}
-
-                                  <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3 px-1 py-1 rounded-xl bg-[#E9EAEB]">
-                              <div
-                                className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center shrink-0 cursor-pointer hover:bg-gray-50 transition-colors"
-                                onClick={() =>
-                                  setIsAnalyzingTextCollapsed(
-                                    !isAnalyzingTextCollapsed
-                                  )
-                                }
-                              >
-                                <Zap size={14} className="text-gray-900" />
-                              </div>
-                              {!isAnalyzingTextCollapsed && (
-                                <span className="text-gray-700 text-sm">
-                                 {sessionData?.meta?.state || "Analyzing instructions and source materials"}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Right button - Next Chapter */}
-                      
-                          </div>
         <div className="max-w-4xl mx-auto w-full">
           <ChatInput
             disabled={isLoading}
