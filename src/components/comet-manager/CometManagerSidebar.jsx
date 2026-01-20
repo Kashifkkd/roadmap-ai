@@ -835,7 +835,7 @@ export default function CometManagerSidebar({
                 </>
               )}
 
-              {/* Generate Step Image Button at bottom of Steps Tab */}
+              {/* Generate Step Image Button at bottom of Steps Tab
               <div className="mt-auto pt-3 border-t border-gray-200">
                 <GenerateStepImageButton
                   sessionId={sessionId}
@@ -850,7 +850,7 @@ export default function CometManagerSidebar({
                     console.error("Step image generation failed:", error);
                   }}
                 />
-              </div>
+              </div> */}
             </>
           )}
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkle, Sparkles } from "lucide-react";
 import { generateStepImages } from "@/api/generateStepImages";
 import { Button } from "@/components/ui/Button";
 
@@ -55,7 +55,7 @@ export default function GenerateStepImageButton({
       disabled={isGenerating}
       variant="default"
       size="sm"
-      className="bg-black hover:bg-primary-600 text-white hover:text-white border-0 flex items-center justify-center gap-2 px-4 py-3 w-full disabled:opacity-50 cursor-pointer sticky bottom-0 "
+      className="bg-white hover:bg-primary-100 text-primary-400 border border-primary-400 flex items-center justify-center gap-2 px-4 py-3 w-full disabled:opacity-50 cursor-pointer sticky bottom-0 "
     >
       {isGenerating ? (
         <>
@@ -64,7 +64,9 @@ export default function GenerateStepImageButton({
         </>
       ) : (
         <>
-          <span className="hidden sm:inline">Generate Image</span>
+          <Sparkles className="w-3.5 h-3.5 text-primary-400" />
+
+          <span className="hidden sm:inline">Generate Step Images</span>
         </>
       )}
     </Button>

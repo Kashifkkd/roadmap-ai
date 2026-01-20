@@ -155,13 +155,13 @@ const EASE_CATEGORIES = ["Engagement", "Aha", "Support", "Execution"];
 
 export default function CometManager({
   sessionData,
-  setSessionData = () => {},
+  setSessionData = () => { },
   setAllMessages,
   isPreviewMode,
   setIsPreviewMode,
   onOutlineChange,
   isAskingKyper = false,
-  setIsAskingKyper = () => {},
+  setIsAskingKyper = () => { },
 }) {
   // Use comet manager hook to get actual data
   const {
@@ -217,36 +217,36 @@ export default function CometManager({
   const [isAnalyzingTextCollapsed, setIsAnalyzingTextCollapsed] =
     useState(false);
   const [showNextChapter, setShowNextChapter] = useState(true);
-useEffect(() => {
-  const outline = sessionData?.response_outline;
-  const path = sessionData?.response_path;
+  useEffect(() => {
+    const outline = sessionData?.response_outline;
+    const path = sessionData?.response_path;
 
-  let outlineCount = 0;
-  let pathCount = 0;
+    let outlineCount = 0;
+    let pathCount = 0;
 
-  // outline count
-  if (Array.isArray(outline)) {
-    outlineCount = outline.length;
-  } else if (Array.isArray(outline?.chapters)) {
-    outlineCount = outline.chapters.length;
-  } else if (outline && typeof outline === "object") {
-    outlineCount = Object.keys(outline).length;
-  }
+    // outline count
+    if (Array.isArray(outline)) {
+      outlineCount = outline.length;
+    } else if (Array.isArray(outline?.chapters)) {
+      outlineCount = outline.chapters.length;
+    } else if (outline && typeof outline === "object") {
+      outlineCount = Object.keys(outline).length;
+    }
 
-  // path count
-  if (Array.isArray(path?.chapters)) {
-    pathCount = path.chapters.length;
-  } else if (Array.isArray(path)) {
-    pathCount = path.length;
-  }
+    // path count
+    if (Array.isArray(path?.chapters)) {
+      pathCount = path.chapters.length;
+    } else if (Array.isArray(path)) {
+      pathCount = path.length;
+    }
 
-  // hide button if path >= outline
-  if (outlineCount > 0 && pathCount >= outlineCount) {
-    setShowNextChapter(false);
-  } else {
-    setShowNextChapter(true);
-  }
-}, [sessionData]);
+    // hide button if path >= outline
+    if (outlineCount > 0 && pathCount >= outlineCount) {
+      setShowNextChapter(false);
+    } else {
+      setShowNextChapter(true);
+    }
+  }, [sessionData]);
 
 
   // Subscription for next chapter
@@ -265,7 +265,7 @@ useEffect(() => {
               JSON.stringify(updatedSessionData)
             );
             setSessionData(updatedSessionData);
-          } catch {}
+          } catch { }
         },
         (err) => {
           console.error("Subscription error:", err);
@@ -311,7 +311,7 @@ useEffect(() => {
               "sessionData",
               JSON.stringify(JSON.parse(cometJson))
             );
-          } catch {}
+          } catch { }
         }
       }
 
@@ -320,15 +320,15 @@ useEffect(() => {
       try {
         const raw = localStorage.getItem("sessionData");
         if (raw) parsedSessionData = JSON.parse(raw);
-      } catch {}
+      } catch { }
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: "continued_chapter_creation",
         comet_creation_data: parsedSessionData?.comet_creation_data || {},
-         enabled_attributes: parsedSessionData?.enabled_attributes || {},
+        enabled_attributes: parsedSessionData?.enabled_attributes || {},
         // additional_data: {
-        
+
         //   personalization_enabled:
         //     parsedSessionData?.additional_data?.personalization_enabled ||
         //     false,
@@ -337,7 +337,7 @@ useEffect(() => {
         //   habit_description:
         //     parsedSessionData?.additional_data?.habit_description || "",
         // },
-        
+
         response_outline: parsedSessionData?.response_outline || {},
         response_path: parsedSessionData?.response_path || {},
         chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
@@ -490,8 +490,8 @@ useEffect(() => {
       targetChapter?.order !== undefined
         ? targetChapter.order + 1
         : chapters.findIndex(
-            (ch) => String(ch.id) === String(targetChapterId)
-          ) + 1 || 1;
+          (ch) => String(ch.id) === String(targetChapterId)
+        ) + 1 || 1;
     console.log("chapterNum>>>>>>>>>>>>>>>>>>>>>>>>", chapterNum);
     const stepNum =
       targetChapter?.steps?.findIndex(
@@ -918,8 +918,8 @@ useEffect(() => {
     typeof currentChapter?.position === "number"
       ? currentChapter.position
       : chapters.findIndex(
-          (ch) => String(ch.id) === String(selectedScreen?.chapterId)
-        ) + 1 || 1;
+        (ch) => String(ch.id) === String(selectedScreen?.chapterId)
+      ) + 1 || 1;
 
   const stepNumber =
     (currentChapter?.steps?.findIndex(
@@ -973,7 +973,7 @@ useEffect(() => {
                   setSelectedImageAsset(null);
                   setSelectedRemainingChapter(null);
                 }}
-                onStepClick={(stepId, step) => {}}
+                onStepClick={(stepId, step) => { }}
                 onChapterClick={(chapterId, chapter) => {
                   // Clear material and assets when chapter is clicked
                   setSelectedMaterial(null);
@@ -1319,23 +1319,8 @@ useEffect(() => {
                             </span> */}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            onClick={() => setIsUploadImageDialogOpen(true)}
-                            className="w-10 h-10 rounded-md bg-primary-50 border border-primary-200 flex items-center justify-center overflow-hidden shrink-0 relative cursor-pointer hover:opacity-80 transition-opacity"
-                          >
-                            {selectedScreen?.stepImageUrl && (
-                              <img
-                                src={selectedScreen.stepImageUrl}
-                                alt="Step image"
-                                className="w-full h-full object-cover"
-                              />
-                            )}
-                            {!selectedScreen?.stepImageUrl && (
-                              <FileImage className="w-5 h-5 text-primary-400" />
-                            )}
-                          </div>
-                          {/* <GenerateStepImageButton
+                        <div>
+                          <GenerateStepImageButton
                             sessionId={sessionId}
                             chapterUid={selectedScreen?.uuid}
                             stepUid={selectedScreen?.stepUid}
@@ -1348,7 +1333,27 @@ useEffect(() => {
                                 error
                               );
                             }}
-                          /> */}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+
+                          <div
+                            onClick={() => setIsUploadImageDialogOpen(true)}
+                            className="w-20 h-10 rounded-md bg-primary-50 border border-primary-200 flex items-center justify-center overflow-hidden shrink-0 relative cursor-pointer hover:opacity-80 transition-opacity"
+                          >
+
+                            {selectedScreen?.stepImageUrl && (
+                              <img
+                                src={selectedScreen.stepImageUrl}
+                                alt="Step image"
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                            {!selectedScreen?.stepImageUrl && (
+                              <FileImage className="w-5 h-5 text-primary-400" />
+                            )}
+                          </div>
+
                         </div>
                       </div>
                     )}
@@ -1451,7 +1456,7 @@ useEffect(() => {
                               </div>
                               {!isAnalyzingTextCollapsed && (
                                 <span className="text-gray-700 text-sm">
-                                 {sessionData?.meta?.state || "Analyzing instructions and source materials"}
+                                  {sessionData?.meta?.state || "Analyzing instructions and source materials"}
                                 </span>
                               )}
                             </div>
@@ -1570,11 +1575,10 @@ useEffect(() => {
         }}
       >
         <DrawerContent
-          className={`${
-            isMaximized
-              ? "w-screen! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
-              : "w-screen! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
-          } max-w-none! h-screen! bg-primary-50 p-0`}
+          className={`${isMaximized
+            ? "w-screen! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
+            : "w-screen! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
+            } max-w-none! h-screen! bg-primary-50 p-0`}
         >
           {/* Preview Header */}
           <div className="bg-primary-50 border-b border-gray-200 py-2 px-3 sm:px-4 flex items-center justify-between">
@@ -1604,9 +1608,8 @@ useEffect(() => {
 
           {/* Preview Content */}
           <div
-            className={`flex-1 overflow-hidden border-lg bg-primary-50 ${
-              isMaximized ? "p-0 sm:p-2 md:p-3" : "p-0 sm:p-2 md:p-3"
-            }`}
+            className={`flex-1 overflow-hidden border-lg bg-primary-50 ${isMaximized ? "p-0 sm:p-2 md:p-3" : "p-0 sm:p-2 md:p-3"
+              }`}
           >
             <FromDoerToEnabler
               selectedScreen={selectedScreen}
