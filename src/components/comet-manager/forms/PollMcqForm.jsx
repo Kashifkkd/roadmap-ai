@@ -2,6 +2,7 @@ import React from "react";
 import {
   SectionHeader,
   TextField,
+  TextArea,
   RichTextArea,
   ListField,
 } from "./FormFields";
@@ -19,7 +20,7 @@ const extractPlainTextFromDelta = (value) => {
   if (value == null) return "";
   if (typeof value !== "string") return value;
   if (value.trim() === "") return value;
-  
+
   if (value.trim().startsWith("{")) {
     try {
       const parsed = JSON.parse(value);
@@ -171,6 +172,13 @@ export default function PollMcqForm({
             )
           }
           onBlur={onRichTextBlur}
+        />
+        <TextArea
+          label="Key Learning"
+          value={formData.key_learning || ""}
+          onChange={(value) => updateField("key_learning", value)}
+          placeholder="The main takeaway or explanation shown after the user answers (e.g. why the correct answer is right)"
+          rows={3}
         />
         <ListField
           label="Poll Options"

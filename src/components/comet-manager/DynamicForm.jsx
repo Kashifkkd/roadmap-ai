@@ -84,7 +84,7 @@ const getFormValuesFromScreen = (screen) => {
     values.question = content.question || "";
     values.top_label = content.top_label || "";
     values.bottom_label = content.bottom_label || "";
-    values.key_learning = content.key_learning || "";
+    values.key_learning = content.key_learning || content.keyLearning || "";
     values.options = content.options || [];
   }
 
@@ -175,7 +175,7 @@ export default function DynamicForm({
   chapterNumber,
   stepNumber,
   isAskingKyper = false,
-  setIsAskingKyper = () => {},
+  setIsAskingKyper = () => { },
 }) {
   // No local state - derive form values directly from screen
   const formData = useMemo(() => {
@@ -381,7 +381,7 @@ export default function DynamicForm({
                 if (
                   !currentScreen.screenContents.content.habit_image ||
                   typeof currentScreen.screenContents.content.habit_image ===
-                    "string"
+                  "string"
                 ) {
                   currentScreen.screenContents.content.habit_image = {
                     url: currentScreen.screenContents.content.habit_image || "",
@@ -394,7 +394,7 @@ export default function DynamicForm({
                 if (
                   !currentScreen.screenContents.content.habit_image ||
                   typeof currentScreen.screenContents.content.habit_image ===
-                    "string"
+                  "string"
                 ) {
                   currentScreen.screenContents.content.habit_image = {
                     url: value,
@@ -444,7 +444,7 @@ export default function DynamicForm({
                 }
               }
             } else if (contentType === "notifications") {
-              if (field === "title" ) {
+              if (field === "title") {
                 currentScreen.screenContents.content.heading = value;
               } else if (field === "message") {
                 const messageValue = extractPlainTextFromDelta(value);
@@ -698,8 +698,8 @@ export default function DynamicForm({
         typeof screen?.position === "number"
           ? screen.position
           : typeof screen?.order === "number"
-          ? screen.order + 1
-          : 1;
+            ? screen.order + 1
+            : 1;
 
       const conversationMessage = `{ 'path': 'chapter-${chapterNumber}-step-${stepNumber}-screen-${screenNumber}', 'field': '${mappedField}', 'value': '${askContext.selectedText}', 'instruction': '${query}' }`;
       console.log("conversationMessage>>", conversationMessage);
