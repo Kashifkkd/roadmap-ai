@@ -22,6 +22,7 @@ export default function ScreenCard({
   onClick,
   onAddScreen,
 }) {
+  console.log(screen, "screen >>>>>>>>>>>>");
   const [showAddButton, setShowAddButton] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const AddButton = ({ position, insertIndex }) => (
@@ -68,16 +69,16 @@ export default function ScreenCard({
             <div className="flex flex-col items-center">
               <div
                 className={`flex items-start gap-2 font-medium w-full transition-colors duration-300 ${selectedScreen?.id === screen.id
-                    ? "text-white"
-                    : "text-gray-700"
+                  ? "text-white"
+                  : "text-gray-700"
                   }`}
               >
                 Screen {index + 1}
               </div>
               <div
                 className={`flex text-sm items-start gap-2 font-medium w-full transition-colors duration-300 ${selectedScreen?.id === screen.id
-                    ? "text-white"
-                    : "text-gray-700"
+                  ? "text-white"
+                  : "text-gray-700"
                   }`}
               >
                 {screen.screenContents?.contentType || "Content"} Screen
@@ -93,12 +94,12 @@ export default function ScreenCard({
                 {/* Title */}
                 <div
                   className={`flex items-start gap-2 text-sm font-medium w-full transition-colors duration-300 mb-1 text-wrap ${selectedScreen?.id === screen.id
-                      ? "text-black"
-                      : "text-black"
+                    ? "text-black"
+                    : "text-black"
                     }`}
-                  title={screen.title}
+                  title={screen.screenContents?.name || screen.title} 
                 >
-                  {screen.title}
+                  {screen.screenContents?.name || screen.title}
                 </div>
 
                 {/* Thumbnail */}
@@ -120,8 +121,8 @@ export default function ScreenCard({
                 {/* Key Learning Heading */}
                 <div
                   className={`text-sm font-medium w-full mb-1 transition-colors duration-300 ${selectedScreen?.id === screen.id
-                      ? "text-black"
-                      : "text-gray-700"
+                    ? "text-black"
+                    : "text-gray-700"
                     }`}
                 >
                   Key Learning
@@ -129,8 +130,8 @@ export default function ScreenCard({
 
                 <div
                   className={`w-full text-xs font-medium overflow-hidden text-ellipsis line-clamp-3 transition-colors duration-300 ${selectedScreen?.id === screen.id
-                      ? "text-black"
-                      : "text-gray-700"
+                    ? "text-black"
+                    : "text-gray-700"
                     }`}
                 >
                   {screen.screenContents?.content?.body ||
@@ -152,15 +153,15 @@ export default function ScreenCard({
           />
           <div
             className={`p-1 rounded transition-colors duration-300 ${selectedScreen?.id === screen.id
-                ? "bg-primary-800"
-                : "bg-background"
+              ? "bg-primary-800"
+              : "bg-background"
               }`}
           >
             <GripVertical
               size={16}
               className={`cursor-grab active:cursor-grabbing transition-colors duration-300 ${selectedScreen?.id === screen.id
-                  ? "text-white"
-                  : "text-gray-500"
+                ? "text-white"
+                : "text-gray-500"
                 }`}
             />
           </div>
