@@ -46,78 +46,109 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
     setError({ field: "", message: "" });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
-      return;
+  const validationError = validateForm();
+  if (validationError) {
+    setError(validationError);
+    return;
+  }
+
+  setIsLoading(true);
+  setError({ field: "", message: "" });
+
+  try {
+    const result = await loginUser(formData);
+
+    if (result.error) {
+      throw new Error(result.response?.message || "Invalid email or password");
     }
 
-    setIsLoading(true);
-    setError({ field: "", message: "" });
+    const data = result.response;
 
-    try {
-      const result = await loginUser(formData);
+    // ----------------------------
+    // AUTH STORAGE (same as you had)
+    // ----------------------------
+    localStorage.setItem("user_name", data.full_name);
+    localStorage.setItem("access_token", data.access_token);
+    localStorage.setItem("token_type", data.token_type);
+    localStorage.setItem("refresh_token", data.refresh_token); // optional but useful
 
-      if (result.error) {
-        throw new Error(
-          result.response?.message || "Invalid email or password"
-        );
+    // ----------------------------
+    // ✅ CLOUDFRONT (based on YOUR real response)
+    // ----------------------------
+    // data.cloudfront_cookies
+    // data.cloudfront_domain
+    const domain = data?.cloudfront_domain || null;
+    const cf = data?.cloudfront_cookies || null;
+
+    if (domain && cf) {
+      const policy = cf["CloudFront-Policy"];
+      const signature = cf["CloudFront-Signature"];
+      const keyPairId = cf["CloudFront-Key-Pair-Id"];
+
+      if (!policy || !signature || !keyPairId) {
+        throw new Error("CloudFront cookies missing in login response");
       }
 
-      const data = result.response;
+      // ONE curl-style string (exactly like curl)
+      const cookieHeader =
+        `CloudFront-Policy=${policy}; ` +
+        `CloudFront-Signature=${signature}; ` +
+        `CloudFront-Key-Pair-Id=${keyPairId}`;
 
-      localStorage.setItem("user_name", data.full_name);
-      localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("token_type", data.token_type);
+      // 1) Save ONE value in localStorage
+      localStorage.setItem("cf_cookie_header", cookieHeader);
+      localStorage.setItem("cf_cookie_domain", domain);
 
-      // Store CloudFront cookies 
-      const cloudfrontCookies = data.cloudfront_cookies;
-      if (cloudfrontCookies) {
-        localStorage.setItem(
-          "CloudFront-Policy",
-          cloudfrontCookies["CloudFront-Policy"]
-        );
-        localStorage.setItem(
-          "CloudFront-Signature",
-          cloudfrontCookies["CloudFront-Signature"]
-        );
-        localStorage.setItem(
-          "CloudFront-Key-Pair-Id",
-          cloudfrontCookies["CloudFront-Key-Pair-Id"]
-        );
-      }
+      // 2) Save PAIRS in browser cookies (AWS required)
+      // NOTE: setting domain cookies works only if your site is on same parent domain.
+      document.cookie = `CloudFront-Policy=${policy}; domain=${domain}; path=/; secure; samesite=none`;
+      document.cookie = `CloudFront-Signature=${signature}; domain=${domain}; path=/; secure; samesite=none`;
+      document.cookie = `CloudFront-Key-Pair-Id=${keyPairId}; domain=${domain}; path=/; secure; samesite=none`;
 
-      if (onOpenChange) onOpenChange(false);
-
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("auth-changed"));
-      }
-
-      // Check for redirect parameter, fallback to stored redirect, default to home
-      const redirectPath = searchParams.get("redirect");
-      let destination = "/";
-
-      if (redirectPath) {
-        destination = decodeURIComponent(redirectPath);
-      } else if (typeof window !== "undefined") {
-        const storedRedirect =
-          window.sessionStorage.getItem("postLoginRedirect");
-        if (storedRedirect) {
-          destination = storedRedirect;
-          window.sessionStorage.removeItem("postLoginRedirect");
-        }
-      }
-
-      router.push(destination);
-    } catch (err) {
-      setError({ field: "api", message: err.message });
-    } finally {
-      setIsLoading(false);
+      // 3) Also save FULL curl string as ONE cookie (optional convenience)
+      document.cookie = `CloudFront-Full=${encodeURIComponent(
+        cookieHeader
+      )}; domain=${domain}; path=/; secure; samesite=none`;
     }
-  };
+
+    // ----------------------------
+    // CLOSE MODAL + EVENT (same)
+    // ----------------------------
+    if (onOpenChange) onOpenChange(false);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("auth-changed"));
+    }
+
+    // ----------------------------
+    // REDIRECT (same)
+    // ----------------------------
+    const redirectPath = searchParams.get("redirect");
+    let destination = "/";
+
+    if (redirectPath) {
+      destination = decodeURIComponent(redirectPath);
+    } else if (typeof window !== "undefined") {
+      const storedRedirect =
+        window.sessionStorage.getItem("postLoginRedirect");
+      if (storedRedirect) {
+        destination = storedRedirect;
+        window.sessionStorage.removeItem("postLoginRedirect");
+      }
+    }
+
+    router.push(destination);
+  } catch (err) {
+    setError({ field: "api", message: err?.message || "Login failed" });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
 
   useEffect(() => {
     if (!open) {

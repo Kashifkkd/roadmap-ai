@@ -665,7 +665,7 @@ export default function CometManagerSidebar({
                       const isSelected = selectedChapter === chapterKey;
 
                       // Don't render deactivated state
-                      if (isDeactivated) return null;
+                      if (isActive) return null;
 
                       return (
                         <div

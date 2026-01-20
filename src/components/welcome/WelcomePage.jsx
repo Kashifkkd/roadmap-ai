@@ -380,7 +380,7 @@ export default function WelcomePage() {
 
               <p className="text-md max-w-2xl mx-auto text-primary-900">
                 You can type your idea below, or pick one of the suggestions to
-                get started...
+                get started..
               </p>
             </div>
           </div>

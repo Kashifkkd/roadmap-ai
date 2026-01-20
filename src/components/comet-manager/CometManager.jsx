@@ -1451,7 +1451,7 @@ useEffect(() => {
                               </div>
                               {!isAnalyzingTextCollapsed && (
                                 <span className="text-gray-700 text-sm">
-                                  Analyzing instructions and source materials
+                                 {sessionData?.meta?.state || "Analyzing instructions and source materials"}
                                 </span>
                               )}
                             </div>

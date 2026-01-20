@@ -31,19 +31,41 @@ export default function OutlineMannerFooter() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isGenerating || !sessionId) return;
+ useEffect(() => {
+  if (!isGenerating || !sessionId) return;
 
-    let cleanup;
-    const subscribe = async () => {
+  let cleanup;
+
+  const getChaptersCount = (sessionData) => {
+    const chaptersA = sessionData?.response_path?.chapters; // <--- your screenshot
+    const chaptersB = sessionData?.chapters;               // <--- fallback if root exists
+
+    if (Array.isArray(chaptersA)) return chaptersA.length;
+    if (Array.isArray(chaptersB)) return chaptersB.length;
+
+    // sometimes it can be an object like { 0: {...}, 1: {...} }
+    if (chaptersA && typeof chaptersA === "object") return Object.keys(chaptersA).length;
+    if (chaptersB && typeof chaptersB === "object") return Object.keys(chaptersB).length;
+
+    return 0;
+  };
+
+  const subscribe = async () => {
+    try {
       cleanup = await graphqlClient.subscribeToSessionUpdates(
         sessionId,
         (sessionData) => {
           try {
             localStorage.setItem("sessionData", JSON.stringify(sessionData));
           } catch {}
-          router.push("/comet-manager");
-          // setIsGenerating(false);
+
+          const chaptersCount = getChaptersCount(sessionData);
+
+          // ✅ only push when chapters > 1
+          if (chaptersCount > 1) {
+            router.push("/comet-manager");
+            // setIsGenerating(false);
+          }
         },
         (err) => {
           console.error("Subscription error:", err);
@@ -51,14 +73,20 @@ export default function OutlineMannerFooter() {
           setIsGenerating(false);
         }
       );
-    };
+    } catch (e) {
+      console.error("Subscribe crashed:", e);
+      setError(e?.message || "Subscription failed");
+      setIsGenerating(false);
+    }
+  };
 
-    subscribe();
+  subscribe();
 
-    return () => {
-      if (cleanup) cleanup();
-    };
-  }, [isGenerating, sessionId, router]);
+  return () => {
+    if (typeof cleanup === "function") cleanup();
+  };
+}, [isGenerating, sessionId, router]);
+
 
   const handleSubmit = async () => {
     // Check if user is authenticated
