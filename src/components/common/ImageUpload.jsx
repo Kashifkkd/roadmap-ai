@@ -96,6 +96,7 @@ export default function ImageUpload({
           asset_id:
             uploadResponse.response.id || uploadResponse.response.asset_id,
           asset_type: "image",
+          name: uploadResponse.response.name || file.name,
         };
         if (onUploadSuccess) {
           onUploadSuccess(assetData);
@@ -363,7 +364,7 @@ export default function ImageUpload({
                       className="relative border border-gray-300 rounded-lg overflow-hidden group"
                     >
                       {typeof image_url === "string" &&
-                      image_url.startsWith("http") ? (
+                        image_url.startsWith("http") ? (
                         <img
                           src={image_url}
                           alt={assetId}
@@ -557,7 +558,7 @@ export default function ImageUpload({
                           onClick={() => handleSelectAsset(asset)}
                         >
                           {typeof image_url === "string" &&
-                          image_url.startsWith("http") ? (
+                            image_url.startsWith("http") ? (
                             <img
                               src={image_url}
                               alt={assetName}

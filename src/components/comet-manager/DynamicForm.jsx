@@ -242,6 +242,11 @@ export default function DynamicForm({
                   currentScreen.screenContents.content.media = {};
                 }
                 currentScreen.screenContents.content.media.type = value;
+              } else if (field === "mediaName") {
+                if (!currentScreen.screenContents.content.media) {
+                  currentScreen.screenContents.content.media = {};
+                }
+                currentScreen.screenContents.content.media.name = value;
               } else if (field === "contentFullBleed") {
                 currentScreen.screenContents.content.fullBleed = value;
               }

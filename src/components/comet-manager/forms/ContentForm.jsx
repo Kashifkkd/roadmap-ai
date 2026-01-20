@@ -46,19 +46,19 @@ export default function ContentForm({
     if (
       fileType === "application/vnd.ms-powerpoint" ||
       fileType ===
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation"
     )
       return "ppt";
     if (
       fileType === "application/vnd.ms-excel" ||
       fileType ===
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
       return "excel";
     if (
       fileType === "application/msword" ||
       fileType ===
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
       return "doc";
     if (fileType.startsWith("text/")) return "text";
@@ -99,8 +99,8 @@ export default function ContentForm({
     if (mediaUrl && mediaType && mediaType !== "link") {
       setUploadedMedia(
         formData.contentMediaFile?.name ||
-          mediaUrl.split("/").pop() ||
-          "Uploaded media"
+        mediaUrl.split("/").pop() ||
+        "Uploaded media"
       );
     } else {
       setUploadedMedia(null);
@@ -255,15 +255,16 @@ export default function ContentForm({
 
                         if (uploadResponse?.response) {
                           const mediaUrl = uploadResponse.response.url;
+                          const mediaName = uploadResponse.response.name || file.name;
 
                           if (mediaUrl) {
                             updateField("mediaUrl", mediaUrl);
                             updateField("mediaType", assetType);
+                            updateField("mediaName", mediaName);
+                            setUploadedMedia(mediaName);
                           } else {
                             throw new Error("No media URL in response");
                           }
-
-                          setUploadedMedia(file.name);
                         } else {
                           throw new Error("Invalid upload response");
                         }
