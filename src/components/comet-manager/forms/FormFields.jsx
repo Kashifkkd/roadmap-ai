@@ -44,6 +44,7 @@ export const TextArea = ({
   onChange,
   placeholder = "",
   rows = 4,
+  inputProps = {},
 }) => (
   <div className="mb-4">
     <Label className="block text-sm font-medium text-gray-700 mb-2">
@@ -55,6 +56,7 @@ export const TextArea = ({
       placeholder={placeholder}
       rows={rows}
       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      {...inputProps}
     />
   </div>
 );
@@ -154,14 +156,12 @@ export const ListField = ({
               onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
-              className={`flex gap-2 ${
-                draggedIndex === index ? "opacity-50" : ""
-              }`}
+              className={`flex gap-2 ${draggedIndex === index ? "opacity-50" : ""
+                }`}
             >
               <div
-                className={`${
-                  onReorder ? "cursor-move" : "cursor-default"
-                } text-gray-400 h-10 w-10 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center`}
+                className={`${onReorder ? "cursor-move" : "cursor-default"
+                  } text-gray-400 h-10 w-10 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center`}
               >
                 <GripVertical size={18} />
               </div>
@@ -172,11 +172,10 @@ export const ListField = ({
                 <div className="flex items-center justify-center gap-x-1">
                   <div
                     onClick={() => handleToggleCorrect(index, true)}
-                    className={`cursor-pointer h-10 w-10 flex items-center justify-center rounded-lg transition-all ${
-                      isCorrect
+                    className={`cursor-pointer h-10 w-10 flex items-center justify-center rounded-lg transition-all ${isCorrect
                         ? "bg-green-500"
                         : "bg-green-100 hover:bg-green-200"
-                    }`}
+                      }`}
                   >
                     <CircleCheck
                       size={18}
@@ -185,11 +184,10 @@ export const ListField = ({
                   </div>
                   <div
                     onClick={() => handleToggleCorrect(index, false)}
-                    className={`cursor-pointer h-10 w-10 rounded-lg flex items-center justify-center transition-all ${
-                      !isCorrect && isCorrect !== undefined
+                    className={`cursor-pointer h-10 w-10 rounded-lg flex items-center justify-center transition-all ${!isCorrect && isCorrect !== undefined
                         ? "bg-red-500"
                         : "bg-red-100 hover:bg-red-200"
-                    }`}
+                      }`}
                   >
                     <CircleX
                       size={18}
@@ -330,9 +328,9 @@ export const RichTextArea = ({
           const absolutePosition =
             editorRect && typeof window !== "undefined"
               ? {
-                  top: editorRect.top + bounds.bottom + window.scrollY,
-                  left: editorRect.left + bounds.left + window.scrollX,
-                }
+                top: editorRect.top + bounds.bottom + window.scrollY,
+                left: editorRect.left + bounds.left + window.scrollX,
+              }
               : null;
 
           callback({

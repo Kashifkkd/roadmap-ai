@@ -78,7 +78,7 @@ export default function HabitOptInForm({
             onBlur={onFieldBlur}
           />
         </div>
-        <div>
+        {/* <div>
           <Label className="block text-sm font-medium text-gray-700 mb-2"></Label>
           <RichTextArea
             label="Description"
@@ -93,7 +93,7 @@ export default function HabitOptInForm({
             }
             onBlur={onRichTextBlur}
           />
-        </div>
+        </div> */}
 
         <ImageUpload
           label="Habit Image"

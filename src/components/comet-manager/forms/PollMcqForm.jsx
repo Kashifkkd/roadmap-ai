@@ -177,8 +177,13 @@ export default function PollMcqForm({
           label="Key Learning"
           value={formData.key_learning || ""}
           onChange={(value) => updateField("key_learning", value)}
-          placeholder="The main takeaway or explanation shown after the user answers (e.g. why the correct answer is right)"
+          placeholder=""
           rows={3}
+          inputProps={{
+            onSelect: (event) =>
+              onTextFieldSelect?.("mcqKeyLearning", event, formData.key_learning),
+            onBlur: onFieldBlur,
+          }}
         />
         <ListField
           label="Poll Options"

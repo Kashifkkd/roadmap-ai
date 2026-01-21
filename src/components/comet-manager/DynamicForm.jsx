@@ -246,7 +246,7 @@ export default function DynamicForm({
                 if (!currentScreen.screenContents.content.media) {
                   currentScreen.screenContents.content.media = {};
                 }
-                currentScreen.screenContents.content.media.name = value;
+                currentScreen.screenContents.content.media.title = value;
               } else if (field === "contentFullBleed") {
                 currentScreen.screenContents.content.fullBleed = value;
               }
