@@ -119,14 +119,14 @@ export default function ScreenCard({
                 </div>
 
                 {/* Key Learning Heading */}
-                <div
+                {/* <div
                   className={`text-sm font-medium w-full mb-1 transition-colors duration-300 ${selectedScreen?.id === screen.id
                     ? "text-black"
                     : "text-gray-700"
                     }`}
                 >
                   Key Learning
-                </div>
+                </div> */}
 
                 <div
                   className={`w-full text-xs font-medium overflow-hidden text-ellipsis line-clamp-3 transition-colors duration-300 ${selectedScreen?.id === screen.id
@@ -134,7 +134,7 @@ export default function ScreenCard({
                     : "text-gray-700"
                     }`}
                 >
-                  {screen.screenContents?.content?.body ||
+                  {screen.screenContents?.content?.body || screen.screenContents?.content?.keyLearning ||
                     "No content available"}
                 </div>
               </div>
