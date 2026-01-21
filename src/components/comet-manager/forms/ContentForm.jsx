@@ -98,7 +98,7 @@ export default function ContentForm({
     const mediaType = formData.mediaType;
     if (mediaUrl && mediaType && mediaType !== "link") {
       setUploadedMedia(
-        formData.contentMediaFile?.name ||
+        formData.contentMediaFile?.title ||
         mediaUrl.split("/").pop() ||
         "Uploaded media"
       );
