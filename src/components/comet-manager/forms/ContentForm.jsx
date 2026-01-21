@@ -328,8 +328,27 @@ export default function ContentForm({
               </div>
               <div className="relative">
                 <LinkIcon
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${formData.mediaUrl && formData.mediaUrl.trim() !== ""
+                      ? "text-primary cursor-pointer hover:text-primary-700 transition-colors"
+                      : "text-gray-400"
+                    }`}
                   size={18}
+                  onClick={() => {
+                    const url = formData.mediaUrl?.trim();
+                    if (url) {
+                      // Ensure URL has a protocol
+                      const urlWithProtocol =
+                        url.startsWith("http://") || url.startsWith("https://")
+                          ? url
+                          : `https://${url}`;
+                      window.open(urlWithProtocol, "_blank", "noopener,noreferrer");
+                    }
+                  }}
+                  title={
+                    formData.mediaUrl && formData.mediaUrl.trim() !== ""
+                      ? "Open link in new tab"
+                      : ""
+                  }
                 />
                 <Input
                   type="url"
