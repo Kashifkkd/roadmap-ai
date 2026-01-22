@@ -3,7 +3,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft } from "lucide-react";
 import Stars from "@/components/icons/Stars";
-import Loader from "@/components/loader2";
+import Loader from "@/components/loader3";
 import { graphqlClient } from "@/lib/graphql-client";
 import { tokenManager } from "@/lib/api-client";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
@@ -13,9 +13,18 @@ export default function OutlineMannerFooter() {
   const pathname = usePathname();
   const loginButtonRef = useRef(null);
   const [sessionId, setSessionId] = useState(null);
+  const [sessionData, setSessionData] = useState(null);
   const [error, setError] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Check authentication status
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedSessionData = localStorage.getItem("sessionData");
+    if (storedSessionData) {
+      setSessionData(JSON.parse(storedSessionData));
+    }
+  }, []);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -52,7 +61,7 @@ export default function OutlineMannerFooter() {
     (sessionData) => {
       try {
         localStorage.setItem("sessionData", JSON.stringify(sessionData));
-      } catch {}
+      } catch { }
 
       // Only navigate when generating and chapters > 1
       if (isGenerating) {
@@ -79,7 +88,7 @@ export default function OutlineMannerFooter() {
             "postLoginRedirect",
             pathname || "/outline-manager"
           );
-        } catch {}
+        } catch { }
 
         const buttonRect = loginButtonRef.current?.getBoundingClientRect();
         let buttonPosition = null;
@@ -134,7 +143,7 @@ export default function OutlineMannerFooter() {
               "sessionData",
               JSON.stringify(JSON.parse(cometJson))
             );
-          } catch {}
+          } catch { }
         }
       }
 
@@ -145,7 +154,7 @@ export default function OutlineMannerFooter() {
       try {
         const raw = localStorage.getItem("sessionData");
         if (raw) parsedSessionData = JSON.parse(raw);
-      } catch {}
+      } catch { }
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,

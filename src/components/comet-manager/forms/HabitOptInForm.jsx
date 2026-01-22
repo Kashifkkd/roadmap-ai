@@ -27,6 +27,8 @@ export default function HabitOptInForm({
     onRichTextSelection,
     onRichTextBlur,
   } = askKyperHandlers;
+
+  console.log("formData habit Description>>>>>>>>>>", formData.habitDescription);
   const habits = formData.habits || [];
 
   // Get existing assets from screen
@@ -85,13 +87,13 @@ export default function HabitOptInForm({
           <Label className="block text-sm font-medium text-gray-700 mb-2"></Label>
           <RichTextArea
             label="Description"
-            value={formData.description || ""}
-            onChange={(value) => updateField("description", value)}
+            value={formData.habitDescription || ""}
+            onChange={(value) => updateField("habitDescription", value)}
             onSelectionChange={(selectionInfo) =>
               onRichTextSelection?.(
-                "habitsDescription",
+                "habitDescription",
                 selectionInfo,
-                formData.description
+                formData.habitDescription
               )
             }
             onBlur={onRichTextBlur}

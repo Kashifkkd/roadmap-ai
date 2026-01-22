@@ -395,10 +395,9 @@ export default function WelcomePage() {
           <div className="space-y-4">
             <div className="relative w-full max-w-3xl mx-auto rounded-xl border-primary-200 p-1.5 bg-[#E3E1FC] bg-[linear-gradient(147deg,rgba(227, 225, 252, 1) 0%, rgba(248, 247, 254, 1) 100%)]">
               <div
-                className={`w-full flex flex-col relative transition-all duration-200 rounded-xl bg-white ${
-                  isExpanded || messages.length > 0
-                  ? "min-h-[500px] max-h-[600px]"
-                  : ""
+                className={`w-full flex flex-col relative transition-all duration-200 rounded-xl bg-white ${isExpanded || messages.length > 0
+                    ? "min-h-[500px] max-h-[600px]"
+                    : ""
                   }`}
               >
                 {/* Chat Messages */}
@@ -423,8 +422,7 @@ export default function WelcomePage() {
 
                 {/* Input Area */}
                 <div
-                  className={`relative w-full bg-white rounded-xl border border-primary-300 shadow-sm ${
-                    messages.length > 0 ? "mt-auto" : ""
+                  className={`relative w-full bg-white rounded-xl border border-primary-300 shadow-sm ${messages.length > 0 ? "mt-auto" : ""
                     }`}
                 >
                   <div className="relative w-full">
@@ -448,10 +446,8 @@ export default function WelcomePage() {
                       disabled={
                         isDisabled || isLoading || isAnimating || cometCreated
                       }
-                      className={`w-full ${
-                        messages.length === 0 ? "pl-10" : "pl-3"
-                        } pr-3 ${
-                          messages.length > 0 ? "pt-2.5 pb-2.5" : "pt-3 pb-3"
+                      className={`w-full ${messages.length === 0 ? "pl-10" : "pl-3"
+                        } pr-3 ${messages.length > 0 ? "pt-2.5 pb-2.5" : "pt-3 pb-3"
                         } text-md shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text overflow-y-auto`}
                       rows={1}
                       style={{
@@ -498,10 +494,9 @@ export default function WelcomePage() {
                   <div className="w-full flex flex-row justify-between items-center gap-2 px-3 py-3">
                     <Button
                       variant="default"
-                      className={`cursor-pointer flex items-center gap-2 ${
-                        attachedFile
-                        ? "text-white bg-primary-600"
-                        : "text-white bg-primary hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
+                      className={`cursor-pointer flex items-center gap-2 ${attachedFile
+                          ? "text-white bg-primary-600"
+                          : "text-white bg-primary hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
                         }`}
                       onClick={handleAttach}
                       disabled={isLoading || cometCreated || isUploading}
@@ -533,7 +528,7 @@ export default function WelcomePage() {
             {messages.length === 0 && (
               <div className="w-full max-w-3xl mx-auto">
                 <h3 className="text-primary-900 text-lg font-medium mb-4 text-start">
-                  22222222Here are some suggested prompts to get you started
+                  Here are some suggested prompts to get you started
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {SUGGESTIONS.map((suggestion, index) => (

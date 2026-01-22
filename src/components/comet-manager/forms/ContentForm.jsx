@@ -336,6 +336,7 @@ export default function ContentForm({
                   onClick={() => {
                     const url = formData.mediaUrl?.trim();
                     if (url) {
+                      // Ensure URL has a protocol
                     
                       const urlWithProtocol =
                         url.startsWith("http://") || url.startsWith("https://")
