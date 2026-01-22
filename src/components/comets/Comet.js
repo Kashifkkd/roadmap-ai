@@ -86,13 +86,13 @@ const Comet = ({
       onClick={handleClick}
       className="relative flex flex-col  w-[310px] min-h-[270px] rounded-2xl overflow-hidden group cursor-pointer transition-transform duration-300 ease-in-out "
     >
-      {/* Background image */}
+      {/* Background image with zoom effect */}
       <Image
         src={imgSrc}
         alt="card image"
         fill
         sizes="100%"
-        className="absolute inset-0 z-0 object-cover transition-all duration-300 group-hover:brightness-110"
+        className="absolute inset-0 z-0 object-cover transition-transform duration-500 ease-out group-hover:scale-110"
         priority
         unoptimized
         onError={() => setImgSrc("/fallbackImage.png")}
@@ -194,12 +194,11 @@ const Comet = ({
       </div>
       {/* Overlay content */}
 
-      <div className="absolute bottom-2 left-2 right-2 z-20 flex flex-col gap-2.5 rounded-lg p-4 bg-white group-hover:opacity-0 group-hover:pointer-events-none">
+      <div className="absolute bottom-2 left-2 right-2 z-20 flex flex-col gap-2.5 rounded-lg p-4 bg-white transition-all duration-700 ease-out group-hover:opacity-0 group-hover:pointer-events-none group-hover:-translate-y-6">
         <div className="flex flex-col gap-2">
           <StatusButton status={status} />
-          <span className="text-gray-800 font-noto font-semibold text-[20px] leading-[30px] tracking-normal">
-            {title?.length > 20 ? `${title.slice(0, 20)}...` : title}
-            {/* {title} */}
+          <span className="text-gray-800 font-noto font-semibold text-[20px] leading-[30px] tracking-normal line-clamp-2">
+            {title?.length > 50 ? `${title.slice(0, 50)}...` : title}
           </span>
           <div className="flex w-[70%] rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
             <span className="font-inter font-medium text-xs gap-2 leading-5 align-middle text-gray-900">

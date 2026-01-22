@@ -48,7 +48,7 @@ import ClientSettingsDialog from "@/components/header/ClientSettingsDialog";
 
 // ---------- Helper: Safe avatar renderer ----------
 const UserAvatar = ({ user }) => {
-  const raw = user?.ImageUrl?.trim();
+  const raw = user?.image_url?.trim();
   const alt = `${user?.first_name || ""} ${user?.last_name || "User"}`.trim();
   const fallbackInitial =
     user?.first_name?.charAt(0)?.toUpperCase() ||

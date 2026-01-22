@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { set } from "react-hook-form";
 
 export default function AllCometsContainer({ cometSessions }) {
-  const [bgImageUrl, setBgImageUrl] = React.useState("");
 
   useEffect(() => {
     console.log(
@@ -50,10 +49,9 @@ export default function AllCometsContainer({ cometSessions }) {
       const outlineChapters =
         sessionData?.response_outline?.chapters ??
         [];
-
       if (Array.isArray(pathChapters) && pathChapters.length > 0) {
         router.push("/comet-manager");
-      } else if (Array.isArray(outlineChapters) && outlineChapters.length > 0) {
+      } else if (sessionData.response_outline.length >0) {
         router.push("/outline-manager");
       } else {
         router.push("/dashboard");
@@ -74,11 +72,12 @@ export default function AllCometsContainer({ cometSessions }) {
             key={idx} // unique key for each item
             title={c.session_name || "New manager Essentials "} // pass title from array
             activeUsers={c.activeUsers || 10} // use actual data or default
-            imageURL={ bgImageUrl || "/fallbackImage.png"} // use actual image URL or empty string
+            imageURL={c.path_image || "/fallbackImage.png"} // use actual image URL from API
             date={c.updated_at || "23 Aug, 2025"}
             status={c.status}
             session_id={c.session_id}
             onCometClick={handleCometClick}
+            updatedBy={c.updated_by || c.created_by}
           />
         ))}
       </div>

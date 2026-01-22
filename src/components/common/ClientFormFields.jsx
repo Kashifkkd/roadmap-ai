@@ -54,6 +54,7 @@ const ToggleSwitch = ({ checked, onChange, label }) => (
       className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none  ${checked ? "bg-primary-700" : "bg-gray-300"
         }`}
       role="switch"
+      value={checked}
       aria-checked={checked}
     >
       <span
@@ -91,7 +92,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
     highlightheader: "#006C56",
   });
   const [enableFoozi, setEnableFoozi] = useState(false);
-  const [enableCohorts, setEnableCohorts] = useState(false);
+  const [enableCohorts, setEnableCohorts] = useState();
   const [secureLinks, setSecureLinks] = useState(false);
 
   // Image state
@@ -177,7 +178,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       });
 
       setEnableFoozi(initialValues.enable_foozi || false);
-      setEnableCohorts(initialValues.enable_cohorts || false);
+      // setEnableCohorts(initialValues.enable_cohorts || false);
       setExistingImageUrl(initialValues.image_url || "");
       setExistingBackgroundImageUrl(initialValues.background_image_url || "");
     }
@@ -225,7 +226,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         highlightheader: "#006C56",
       });
       setEnableFoozi(false);
-      setEnableCohorts(false);
+      // setEnableCohorts(false);
       setPendingImageFile(null);
       setPendingBackgroundImageFile(null);
       setExistingImageUrl("");
@@ -290,6 +291,14 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   useEffect(() => {
     getCommitList()
   }, [clientId])
+
+  useEffect(() => {
+    if (cohorts?.length > 0) {
+      setEnableCohorts(true)
+    } else {
+      setEnableCohorts(false)
+    }
+  }, [cohorts])
 
 
   const [localCohort, setCohortList] = useState([])
@@ -491,7 +500,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   const handleDeleteCohortDialog = async (cohort) => {
     if (!initialValues?.id) {
       toast.success("Cohort deleted successfully");
-       setCohortList(prevItems =>
+      setCohortList(prevItems =>
         prevItems.filter(item => item.name !== cohort.name)
       );
       return
@@ -660,6 +669,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   const imagePreview = pendingImagePreview || existingImageUrl;
   const backgroundImagePreview =
     pendingBackgroundImagePreview || existingBackgroundImageUrl;
+
 
   return (
     <div className="space-y-6">
@@ -885,6 +895,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   setNewCohortName("");
                   // setNewCohortDescription("");
                   setIsCohortFormOpen(true);
+
                 }}
               >
                 {/* <Plus className="w-4 h-4" /> */}

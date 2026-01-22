@@ -79,13 +79,16 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [leaderboardEntryAmount, setLeaderboardEntryAmount] = useState("25");
   const [imageGuidance, setImageGuidance] = useState("");
   const [artStyle, setArtStyle] = useState("");
+  const [reminderType, setReminderType] = useState("");
+  const [sourceAlignment, setSourceAlignment] = useState("");
+  const [duration, setDuration] = useState("");
 
   // Kick Off
   const [kickOffDates, setKickOffDates] = useState([]);
   const [newKickOffDate, setNewKickOffDate] = useState("");
   const [newKickOffTime, setNewKickOffTime] = useState("");
 
-  // Toggles (only those present in UI)
+  // Toggles (all available from backend)
   const [habitEnabled, setHabitEnabled] = useState(false);
   const [personalizationEnabled, setPersonalizationEnabled] = useState(false);
   const [managerEmailEnabled, setManagerEmailEnabled] = useState(false);
@@ -96,6 +99,19 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [showUserEmail, setShowUserEmail] = useState(true);
   const [leaderboardEnabled, setLeaderboardEnabled] = useState(true);
   const [enableCommunity, setEnableCommunity] = useState(false);
+  const [chapters, setChapters] = useState(true);
+  const [actionHub, setActionHub] = useState(true);
+  const [checklists, setChecklists] = useState(true);
+  const [actionPoints, setActionPoints] = useState(true);
+  const [chartTargets, setChartTargets] = useState(true);
+  const [calendarInvites, setCalendarInvites] = useState(true);
+  const [onboardingSteps, setOnboardingSteps] = useState(true);
+  const [dailyHighlighter, setDailyHighlighter] = useState(false);
+  const [pushNotifications, setPushNotifications] = useState(true);
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [feedback, setFeedback] = useState(true);
+  const [habits, setHabits] = useState(true);
+  const [pathVersion, setPathVersion] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -146,6 +162,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [brandColors, setBrandColors] = useState([]);
   const [newColorName, setNewColorName] = useState("");
   const [newColorHex, setNewColorHex] = useState("#000000");
+  const [editingColorIndex, setEditingColorIndex] = useState(null);
+  const [editingColorHex, setEditingColorHex] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -200,7 +218,12 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
       if (enabledAttributes) {
         // Only update toggles that are present in UI
         if (enabledAttributes.engagement_frequency !== undefined) {
-          setLearningFrequency(enabledAttributes.engagement_frequency);
+          // Normalize learning frequency to match SelectItem values
+          const freq = String(enabledAttributes.engagement_frequency).toLowerCase().trim();
+          const validFreqs = ["daily", "weekly", "monthly"];
+          const normalizedFreq = validFreqs.includes(freq) ? freq : "";
+          setLearningFrequency(normalizedFreq);
+          console.log("Learning Frequency loaded:", enabledAttributes.engagement_frequency, "-> normalized to:", normalizedFreq);
         }
         if (enabledAttributes.habit_enabled !== undefined) {
           setHabitEnabled(enabledAttributes.habit_enabled);
@@ -225,21 +248,100 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         if (enabledAttributes.enable_community !== undefined) {
           setEnableCommunity(enabledAttributes.enable_community);
         }
-        // Image attributes
+        // Image attributes - normalize to match SelectItem values
         if (enabledAttributes.image_guidance !== undefined) {
-          setImageGuidance(enabledAttributes.image_guidance);
+          const guidance = String(enabledAttributes.image_guidance).toLowerCase().trim();
+          const validGuidances = ["simple", "detailed", "complex", "very_detailed"];
+          const normalizedGuidance = validGuidances.includes(guidance) ? guidance : "";
+          setImageGuidance(normalizedGuidance);
+          console.log("Image Guidance loaded:", enabledAttributes.image_guidance, "-> normalized to:", normalizedGuidance);
         } else {
           setImageGuidance("");
         }
         if (enabledAttributes.art_style !== undefined) {
-          setArtStyle(enabledAttributes.art_style);
+          const art = String(enabledAttributes.art_style).trim();
+          // Normalize art style - handle case variations
+          const artStyleMap = {
+            "photorealistic": "Photorealistic",
+            "hyper-real": "Hyper-real",
+            "watercolor": "Watercolor",
+            "line art": "Line art",
+            "pixel art": "Pixel art",
+            "flat illustration": "Flat illustration",
+            "anime": "Anime",
+            "3d render": "3D render",
+            "oil painting": "Oil painting",
+            "charcoal": "Charcoal",
+            "sketch": "Sketch",
+            "minimalist": "Minimalist"
+          };
+          const normalizedArt = artStyleMap[art.toLowerCase()] || art;
+          // Check if normalized value exists in valid options
+          const validArtStyles = ["Photorealistic", "Hyper-real", "Watercolor", "Line art", "Pixel art", "Flat illustration", "Anime", "3D render", "Oil painting", "Charcoal", "Sketch", "Minimalist"];
+          const finalArt = validArtStyles.includes(normalizedArt) ? normalizedArt : "";
+          setArtStyle(finalArt);
+          console.log("Art Style loaded:", enabledAttributes.art_style, "-> normalized to:", finalArt);
         } else {
           setArtStyle("");
         }
+        
+        // Load additional fields
+        if (enabledAttributes.reminder_type !== undefined) {
+          const reminder = String(enabledAttributes.reminder_type).toLowerCase().trim();
+          const validReminders = ["daily", "weekly", "monthly"];
+          const normalizedReminder = validReminders.includes(reminder) ? reminder : "";
+          setReminderType(normalizedReminder);
+        }
+        
+        if (enabledAttributes.source_alignment !== undefined) {
+          const source = String(enabledAttributes.source_alignment).toLowerCase().trim();
+          const validSources = ["fidelity", "balanced", "extension"];
+          const normalizedSource = validSources.includes(source) ? source : "";
+          setSourceAlignment(normalizedSource);
+        }
+        
+        if (enabledAttributes.duration !== undefined) {
+          setDuration(String(enabledAttributes.duration));
+        }
+        
+        if (enabledAttributes.language !== undefined) {
+          const lang = String(enabledAttributes.language).trim();
+          const validLangs = ["English", "Spanish", "French"];
+          const normalizedLang = validLangs.find(l => l.toLowerCase() === lang.toLowerCase()) || lang;
+          setLanguage(normalizedLang);
+        }
+        
+        // Load all boolean toggles
+        if (enabledAttributes.chapters !== undefined) setChapters(enabledAttributes.chapters);
+        if (enabledAttributes.action_hub !== undefined) setActionHub(enabledAttributes.action_hub);
+        if (enabledAttributes.checklists !== undefined) setChecklists(enabledAttributes.checklists);
+        if (enabledAttributes.action_points !== undefined) setActionPoints(enabledAttributes.action_points);
+        if (enabledAttributes.chart_targets !== undefined) setChartTargets(enabledAttributes.chart_targets);
+        if (enabledAttributes.calendar_invites !== undefined) setCalendarInvites(enabledAttributes.calendar_invites);
+        if (enabledAttributes.onboarding_steps !== undefined) setOnboardingSteps(enabledAttributes.onboarding_steps);
+        if (enabledAttributes.daily_highlighter !== undefined) setDailyHighlighter(enabledAttributes.daily_highlighter);
+        if (enabledAttributes.push_notifications !== undefined) setPushNotifications(enabledAttributes.push_notifications);
+        if (enabledAttributes.email_notifications !== undefined) setEmailNotifications(enabledAttributes.email_notifications);
+        if (enabledAttributes.feedback !== undefined) setFeedback(enabledAttributes.feedback);
+        if (enabledAttributes.habits !== undefined) setHabits(enabledAttributes.habits);
+        if (enabledAttributes.pathVersion !== undefined) setPathVersion(enabledAttributes.pathVersion);
+        if (enabledAttributes.path_personalization !== undefined) setPersonalizationEnabled(enabledAttributes.path_personalization);
       } else {
         // If enabled_attributes doesn't exist, initialize with empty strings
         setImageGuidance("");
         setArtStyle("");
+      }
+      
+      // Also check comet_creation_data for duration
+      const experienceDesign = sessionData?.comet_creation_data?.["Experience Design"];
+      if (experienceDesign?.Duration && !duration) {
+        setDuration(experienceDesign.Duration);
+      }
+      if (experienceDesign?.["Source Alignment"] && !sourceAlignment) {
+        const source = String(experienceDesign["Source Alignment"]).toLowerCase().trim();
+        const validSources = ["fidelity", "balanced", "extension"];
+        const normalizedSource = validSources.find(s => source.includes(s)) || "";
+        setSourceAlignment(normalizedSource);
       }
     }
 
@@ -321,7 +423,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
       const updatedEnabledAttributes = {
         ...currentEnabledAttributes, // Preserve other attributes
-        // Only update attributes that are present in UI
+        // Update all attributes
         engagement_frequency: learningFrequency,
         habit_enabled: habitEnabled,
         path_personalization: personalizationEnabled,
@@ -332,7 +434,33 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         enable_community: enableCommunity,
         image_guidance: imageGuidance || "",
         art_style: artStyle || "",
+        reminder_type: reminderType || "",
+        source_alignment: sourceAlignment || "",
+        duration: duration || "",
+        language: language || "English",
+        chapters: chapters,
+        action_hub: actionHub,
+        checklists: checklists,
+        action_points: actionPoints,
+        chart_targets: chartTargets,
+        calendar_invites: calendarInvites,
+        onboarding_steps: onboardingSteps,
+        daily_highlighter: dailyHighlighter,
+        push_notifications: pushNotifications,
+        email_notifications: emailNotifications,
+        feedback: feedback,
+        habits: habits,
+        pathVersion: pathVersion,
       };
+      
+      // Also update Experience Design in comet_creation_data if duration or source_alignment changed
+      if (duration || sourceAlignment) {
+        updatedCometCreationData["Experience Design"] = {
+          ...(sessionData?.comet_creation_data?.["Experience Design"] || {}),
+          ...(duration && { Duration: duration }),
+          ...(sourceAlignment && { "Source Alignment": sourceAlignment.charAt(0).toUpperCase() + sourceAlignment.slice(1) }),
+        };
+      }
 
       // Transform brandColors back to the format expected by backend (object with lowercase keys)
       const coloursObject = brandColors.reduce((acc, color) => {
@@ -428,16 +556,70 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         alert("A color with this name already exists");
         return;
       }
+      
+      // Normalize hex color
+      let normalizedHex = newColorHex.trim();
+      if (!normalizedHex.startsWith("#")) {
+        normalizedHex = "#" + normalizedHex;
+      }
+      normalizedHex = normalizedHex.toUpperCase();
+      
+      // Validate hex format
+      if (!/^#[0-9A-Fa-f]{6}$/.test(normalizedHex)) {
+        alert("Please enter a valid hex color (e.g., #FF0000)");
+        return;
+      }
+      
       const newColor = {
         name:
           newColorName.trim().charAt(0).toUpperCase() +
           newColorName.trim().slice(1),
-        hex: newColorHex,
-        color: newColorHex,
+        hex: normalizedHex,
+        color: normalizedHex,
       };
       setBrandColors([...brandColors, newColor]);
       setNewColorName("");
       setNewColorHex("#000000");
+    }
+  };
+
+  const handleEditColor = (index) => {
+    setEditingColorIndex(index);
+    setEditingColorHex(brandColors[index].hex);
+  };
+
+  const handleSaveColorEdit = (index) => {
+    // Normalize hex color - add # if missing, uppercase it
+    let normalizedHex = editingColorHex.trim();
+    if (!normalizedHex.startsWith("#")) {
+      normalizedHex = "#" + normalizedHex;
+    }
+    normalizedHex = normalizedHex.toUpperCase();
+    
+    // Validate hex color format
+    if (/^#[0-9A-Fa-f]{6}$/.test(normalizedHex)) {
+      const updatedColors = [...brandColors];
+      updatedColors[index] = {
+        ...updatedColors[index],
+        hex: normalizedHex,
+        color: normalizedHex,
+      };
+      setBrandColors(updatedColors);
+      setEditingColorIndex(null);
+      setEditingColorHex("");
+    } else {
+      alert("Please enter a valid hex color (e.g., #FF0000)");
+    }
+  };
+
+  const handleCancelColorEdit = () => {
+    setEditingColorIndex(null);
+    setEditingColorHex("");
+  };
+
+  const handleDeleteColor = (index) => {
+    if (window.confirm(`Are you sure you want to delete the color "${brandColors[index].name}"?`)) {
+      setBrandColors(brandColors.filter((_, i) => i !== index));
     }
   };
 
@@ -698,11 +880,11 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 Learning Frequency
                               </Label>
                               <Select
-                                value={learningFrequency}
+                                value={learningFrequency || undefined}
                                 onValueChange={setLearningFrequency}
                               >
                                 <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                  <SelectValue />
+                                  <SelectValue placeholder="Select frequency" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="daily">Daily</SelectItem>
@@ -722,11 +904,11 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 Language
                               </Label>
                               <Select
-                                value={language}
+                                value={language || undefined}
                                 onValueChange={setLanguage}
                               >
                                 <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                  <SelectValue />
+                                  <SelectValue placeholder="Select language" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="English">
@@ -738,6 +920,57 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                   <SelectItem value="French">French</SelectItem>
                                 </SelectContent>
                               </Select>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-700">
+                                Reminder Type
+                              </Label>
+                              <Select
+                                value={reminderType || undefined}
+                                onValueChange={setReminderType}
+                              >
+                                <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                                  <SelectValue placeholder="Select reminder type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="daily">Daily</SelectItem>
+                                  <SelectItem value="weekly">Weekly</SelectItem>
+                                  <SelectItem value="monthly">Monthly</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-700">
+                                Source Alignment
+                              </Label>
+                              <Select
+                                value={sourceAlignment || undefined}
+                                onValueChange={setSourceAlignment}
+                              >
+                                <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                                  <SelectValue placeholder="Select source alignment" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="fidelity">Fidelity</SelectItem>
+                                  <SelectItem value="balanced">Balanced</SelectItem>
+                                  <SelectItem value="extension">Extension</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-700">
+                                Duration
+                              </Label>
+                              <Input
+                                type="text"
+                                value={duration}
+                                onChange={(e) => setDuration(e.target.value)}
+                                placeholder="e.g. 4 weeks, 10-15 min/day"
+                                className="w-full rounded-lg border-gray-300"
+                              />
                             </div>
                           </div>
                         </div>
@@ -756,7 +989,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               Art Style
                             </Label>
                             <Select
-                              value={artStyle}
+                              value={artStyle || undefined}
                               onValueChange={setArtStyle}
                             >
                               <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
@@ -805,7 +1038,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               Image Guidance
                             </Label>
                             <Select
-                              value={imageGuidance}
+                              value={imageGuidance || undefined}
                               onValueChange={setImageGuidance}
                             >
                               <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
@@ -899,6 +1132,80 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           onChange={setLeaderboardEnabled}
                           label="Enabled Leaderboard"
                           showInfo={true}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Feature Toggles Section */}
+                    <div className="pt-6 pb-2 px-2 bg-gray-100 rounded-lg">
+                      <p className=" font-bold mb-2 px-4  text-gray-700">
+                        Feature Settings
+                      </p>
+                      <div className="space-y-4 bg-white p-2 rounded-lg">
+                        <ToggleSwitch
+                          checked={chapters}
+                          onChange={setChapters}
+                          label="Chapters"
+                        />
+                        <ToggleSwitch
+                          checked={actionHub}
+                          onChange={setActionHub}
+                          label="Action Hub"
+                        />
+                        <ToggleSwitch
+                          checked={checklists}
+                          onChange={setChecklists}
+                          label="Checklists"
+                        />
+                        <ToggleSwitch
+                          checked={actionPoints}
+                          onChange={setActionPoints}
+                          label="Action Points"
+                        />
+                        <ToggleSwitch
+                          checked={chartTargets}
+                          onChange={setChartTargets}
+                          label="Chart Targets"
+                        />
+                        <ToggleSwitch
+                          checked={calendarInvites}
+                          onChange={setCalendarInvites}
+                          label="Calendar Invites"
+                        />
+                        <ToggleSwitch
+                          checked={onboardingSteps}
+                          onChange={setOnboardingSteps}
+                          label="Onboarding Steps"
+                        />
+                        <ToggleSwitch
+                          checked={dailyHighlighter}
+                          onChange={setDailyHighlighter}
+                          label="Daily Highlighter"
+                        />
+                        <ToggleSwitch
+                          checked={pushNotifications}
+                          onChange={setPushNotifications}
+                          label="Enable Push Notifications"
+                        />
+                        <ToggleSwitch
+                          checked={emailNotifications}
+                          onChange={setEmailNotifications}
+                          label="Enable Email Notifications"
+                        />
+                        <ToggleSwitch
+                          checked={feedback}
+                          onChange={setFeedback}
+                          label="Feedback"
+                        />
+                        <ToggleSwitch
+                          checked={habits}
+                          onChange={setHabits}
+                          label="Habits"
+                        />
+                        <ToggleSwitch
+                          checked={pathVersion}
+                          onChange={setPathVersion}
+                          label="Path Version"
                         />
                       </div>
                     </div>
@@ -1000,24 +1307,105 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                         {brandColors.map((color, index) => (
                           <div
                             key={index}
-                            className="border border-gray-200 rounded-lg p-3 sm:p-4 flex items-center gap-2 sm:gap-3 min-w-0"
+                            className="border border-gray-200 rounded-lg p-3 sm:p-4 flex flex-col gap-3 min-w-0"
                           >
-                            <div
-                              className="w-12 h-8 sm:w-16 sm:h-10 rounded border border-gray-300 shrink-0"
-                              style={{ backgroundColor: color.color }}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="text-xs sm:text-sm font-medium text-gray-700 truncate">
-                                {color.name}
-                              </div>
-                              <div className="text-xs text-gray-500 truncate">
-                                {color.hex}
-                              </div>
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              {editingColorIndex === index ? (
+                                <div className="flex gap-2 items-center flex-1 w-full">
+                                  <Input
+                                    type="color"
+                                    value={editingColorHex}
+                                    onChange={(e) => setEditingColorHex(e.target.value)}
+                                    className="w-16 h-10 rounded-lg border-gray-300 cursor-pointer shrink-0"
+                                  />
+                                  <Input
+                                    type="text"
+                                    value={editingColorHex}
+                                    onChange={(e) => {
+                                      let value = e.target.value.trim();
+                                      // Auto-add # if user types hex without it
+                                      if (value && !value.startsWith("#") && /^[0-9A-Fa-f]{0,6}$/.test(value)) {
+                                        value = "#" + value;
+                                      }
+                                      setEditingColorHex(value);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        handleSaveColorEdit(index);
+                                      } else if (e.key === "Escape") {
+                                        handleCancelColorEdit();
+                                      }
+                                    }}
+                                    placeholder="#000000"
+                                    className="flex-1 rounded-lg border-gray-300 text-xs"
+                                    maxLength={7}
+                                    autoFocus
+                                  />
+                                </div>
+                              ) : (
+                                <>
+                                  <div
+                                    className="w-12 h-8 sm:w-16 sm:h-10 rounded border border-gray-300 shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all relative group"
+                                    style={{ backgroundColor: color.color }}
+                                    onClick={() => handleEditColor(index)}
+                                    title="Click to edit color"
+                                  >
+                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded">
+                                      <Pencil size={14} className="text-white" />
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-xs sm:text-sm font-medium text-gray-700 truncate">
+                                      {color.name}
+                                    </div>
+                                    <div className="text-xs text-gray-500 truncate">
+                                      {color.hex}
+                                    </div>
+                                  </div>
+                                </>
+                              )}
                             </div>
-                            <Info
-                              size={16}
-                              className="text-gray-500 cursor-help shrink-0"
-                            />
+                            
+                            {editingColorIndex === index ? (
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleSaveColorEdit(index)}
+                                  className="text-xs px-2 py-1 h-7"
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={handleCancelColorEdit}
+                                  className="text-xs px-2 py-1 h-7"
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditColor(index)}
+                                  className="text-xs px-2 py-1 h-7"
+                                >
+                                  <Pencil size={12} className="mr-1" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteColor(index)}
+                                  className="text-xs px-2 py-1 h-7 text-red-500 hover:text-red-700 hover:border-red-300"
+                                >
+                                  <Trash2 size={12} />
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -1051,10 +1439,17 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               />
                               <Input
                                 value={newColorHex}
-                                onChange={(e) => setNewColorHex(e.target.value)}
+                                onChange={(e) => {
+                                  let value = e.target.value.trim();
+                                  // Auto-add # if user types hex without it
+                                  if (value && !value.startsWith("#") && /^[0-9A-Fa-f]{0,6}$/.test(value)) {
+                                    value = "#" + value;
+                                  }
+                                  setNewColorHex(value);
+                                }}
                                 placeholder="#000000"
                                 className="flex-1 rounded-lg border-gray-300"
-                                pattern="^#[0-9A-Fa-f]{6}$"
+                                maxLength={7}
                               />
                             </div>
                           </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { X, MoreHorizontal, Trash2, Plus, ArrowLeft } from "lucide-react";
+import React, { useState, useEffect ,useRef } from "react";
+import { X, MoreHorizontal, Trash2, Plus, ArrowLeft, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -22,8 +22,9 @@ import { getUserById } from "@/api/User/getUserById";
 import { registerClientUser } from "@/api/User/registerClientUser";
 import { updateClientUser } from "@/api/User/updateClientUser";
 import { deleteClientUser } from "@/api/User/deleteClientUser";
-import { getCohorts } from "@/api/cohort/getCohorts";
-import { getCohortPaths } from "@/api/cohort/getCohortPaths";
+import { getCohorts, getCommit } from "@/api/cohort/getCohorts";
+import { getCohortPaths, getClientPaths } from "@/api/cohort/getCohortPaths";
+import { bulkUploadUsers } from "@/api/bulkUploadUsers";
 import { toast } from "sonner";
 
 export default function UserManagement({ clientId, open, isActive }) {
@@ -32,6 +33,9 @@ export default function UserManagement({ clientId, open, isActive }) {
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState(null);
   const [userSearchTerm, setUserSearchTerm] = useState("");
+
+  // Bulk upload ref
+  const bulkUploadInputRef = useRef(null);
 
   // Add User form state
   const [showAddUserForm, setShowAddUserForm] = useState(false);
@@ -43,7 +47,7 @@ export default function UserManagement({ clientId, open, isActive }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [cohort, setCohort] = useState("");
   const [enableSSO, setEnableSSO] = useState(false);
-  const [managerEmails, setManagerEmails] = useState([]);
+  const [managerEmail, setManagerEmail] = useState("");
   const [accountabilityEmails, setAccountabilityEmails] = useState([
     { id: 1, value: "" },
   ]);
@@ -56,6 +60,7 @@ export default function UserManagement({ clientId, open, isActive }) {
   const [cohortsLoading, setCohortsLoading] = useState(false);
   const [cohortPaths, setCohortPaths] = useState([]);
   const [cohortPathsLoading, setCohortPathsLoading] = useState(false);
+  const [showMangerMail, setShowManagerMail] = useState(managerEmails ? true : false);
 
   // Helper functions
   const normalizeSearchTerm = (term) => term.trim().toLowerCase();
@@ -113,8 +118,10 @@ export default function UserManagement({ clientId, open, isActive }) {
       setCohortsLoading(true);
       try {
         const res = await getCohorts({ clientId });
+        // const res1 = await getCommit({ clientId });
         const data = res?.response || [];
         setCohorts(Array.isArray(data) ? data : []);
+        // setCometAssignments(Array.isArray(res?.response) ? res?.response.path_ids : []);
       } catch (error) {
         console.error("Failed to fetch cohorts:", error);
         toast.error("Failed to load cohorts");
@@ -130,14 +137,15 @@ export default function UserManagement({ clientId, open, isActive }) {
   // Fetch cohort paths when cohort is selected
   useEffect(() => {
     const fetchCohortPaths = async () => {
-      if (!open || !showAddUserForm || !cohort) return;
+      // if (!open || !showAddUserForm || !cohort) return;
 
-      const cohortId = Number(cohort);
-      if (!cohortId || isNaN(cohortId)) return;
+      // if (!cohortId || isNaN(cohortId)) return;
 
       setCohortPathsLoading(true);
+      let payload = {}
+      if (cohort) payload.cohort_id = Number(cohort);
       try {
-        const result = await getCohortPaths({ cohortId });
+        const result = await getClientPaths(clientId, payload);
         const data = result?.response || [];
         setCohortPaths(Array.isArray(data) ? data : []);
       } catch (error) {
@@ -151,12 +159,14 @@ export default function UserManagement({ clientId, open, isActive }) {
     fetchCohortPaths();
   }, [open, showAddUserForm, cohort]);
 
+
+
   // Auto add comet assignments for each item in dropdown
   useEffect(() => {
     if (cohortPaths.length > 0 && !cohortPathsLoading) {
       setCometAssignments((prev) => {
         // Only auto-create if no assignments have values yet
-        const hasValues = prev.some((a) => a.cometType);
+        const hasValues = prev?.some((a) => a.cometType);
         if (hasValues) return prev;
 
         const assignments = cohortPaths.map((path, index) => ({
@@ -180,22 +190,20 @@ export default function UserManagement({ clientId, open, isActive }) {
     setConfirmPassword("");
     setCohort(user.cohort_id ? String(user.cohort_id) : "");
     setEnableSSO(user.is_sso || false);
+    setManagerEmails(user.manager_email || '')
 
-    // Set manager emails
-    const managerEmailsList = user.manager_emails || user.managerEmails || [];
-    if (managerEmailsList.length > 0) {
-      setManagerEmails(
-        managerEmailsList.map((email, index) => ({
-          id: index + 1,
-          value: email,
-        }))
-      );
-    } else {
-      setManagerEmails([{ id: 1, value: "" }]);
+    // Set manager email
+    const managerEmailValue = user.manager_email || user.managerEmail || "";
+    if (managerEmailValue) {
+      setManagerEmail(managerEmailValue);
+    }else {
+      setManagerEmail("");
     }
 
     // Set accountability partner emails
+    const accountabilityEmailValue = user.accountability_partner_email || user.accountability_email || user.accountabilityPartnerEmail || "";
     const accountabilityEmailsList =
+      user.accountability_emails ||
       user.accountability_partner_emails ||
       user.accountabilityPartnerEmails ||
       [];
@@ -206,6 +214,8 @@ export default function UserManagement({ clientId, open, isActive }) {
           value: email,
         }))
       );
+    } else if (accountabilityEmailValue) {
+      setAccountabilityEmails([{ id: 1, value: accountabilityEmailValue }]);
     } else {
       setAccountabilityEmails([{ id: 1, value: "" }]);
     }
@@ -216,22 +226,23 @@ export default function UserManagement({ clientId, open, isActive }) {
 
     // Add active path as current comet
     const activePathId = user.active_path_id;
-    if (activePathId) {
-      assignments.push({
-        id: assignmentId++,
-        isCurrent: true,
-        cometType: String(activePathId),
-      });
-    }
+    // if (activePathId) {
+    //   assignments.push({
+    //     id: assignmentId++,
+    //     isCurrent: true,
+    //     cometType: String(activePathId),
+    //   });
+    // }
 
     // Add adhoc paths as non-current comets
     const adhocPathsList = user.adhoc_paths;
+    
     if (Array.isArray(adhocPathsList) && adhocPathsList.length > 0) {
       adhocPathsList.forEach((pathId) => {
         if (pathId) {
           assignments.push({
             id: assignmentId++,
-            isCurrent: false,
+            isCurrent:  user.active_path_id === pathId ? true :false,
             cometType: String(pathId),
           });
         }
@@ -261,7 +272,7 @@ export default function UserManagement({ clientId, open, isActive }) {
     setConfirmPassword("");
     setCohort("");
     setEnableSSO(false);
-    setManagerEmails([{ id: 1, value: "" }]);
+    setManagerEmail("");
     setAccountabilityEmails([{ id: 1, value: "" }]);
     setCometAssignments([{ id: 1, isCurrent: true, cometType: "" }]);
     setCurrentCometIndex(0);
@@ -325,9 +336,10 @@ export default function UserManagement({ clientId, open, isActive }) {
       last_name: lastName || "",
       email,
       path_ids: pathIds,
+      paths: pathIds,
       active_path_id: activePathId || null,
       cohort_id: cohort ? Number(cohort) : null,
-      adhoc_paths: adhocPaths.length > 0 ? adhocPaths : [],
+      adhoc_paths: pathIds,
       is_sso: enableSSO,
       enable_ai_notifications: false,
       timezone: "UTC",
@@ -336,19 +348,18 @@ export default function UserManagement({ clientId, open, isActive }) {
       userData.password = password;
     }
 
-    // Add manager emails and accountability emails
-    const managerEmailsList = managerEmails
-      .map((m) => m.value.trim())
-      .filter((e) => e);
+    // Add manager email and accountability emails
+    const trimmedManagerEmail = managerEmail.trim();
     const accountabilityEmailsList = accountabilityEmails
       .map((a) => a.value.trim())
       .filter((e) => e);
 
-    if (managerEmailsList.length > 0) {
-      userData.manager_emails = managerEmailsList;
+    if (trimmedManagerEmail) {
+      userData.manager_email = trimmedManagerEmail;
     }
     if (accountabilityEmailsList.length > 0) {
-      userData.accountability_partner_emails = accountabilityEmailsList;
+      userData.accountability_emails = accountabilityEmailsList;
+      userData.accountability_emails = accountabilityEmailsList;
     }
 
     const payload = editingUser ? userData : { user: userData };
@@ -437,8 +448,55 @@ export default function UserManagement({ clientId, open, isActive }) {
     }
   };
 
+  const handleSetCohort = (e) => {
+    setCohort(e)
+  }
+
+  const handleBulkUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validExtensions = ['.csv', '.xlsx', '.xls'];
+    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!validExtensions.includes(fileExtension)) {
+      toast.error("Please upload a CSV or Excel file (.csv, .xlsx, .xls)");
+      return;
+    }
+
+    try {
+      toast.info("Uploading users...");
+      const response = await bulkUploadUsers(file);
+
+      if (response?.response || response?.success) {
+        toast.success("Users uploaded successfully");
+
+        // Refresh user list
+        if (clientId) {
+          try {
+            const listRes = await getUserById({ clientId });
+            const data = listRes?.response || [];
+            setUsers(Array.isArray(data) ? data : []);
+          } catch (err) {
+            console.error("Failed to refresh users after bulk upload:", err);
+          }
+        }
+      } else {
+        const errorMessage = response?.detail || response?.message || "Failed to upload users";
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("Bulk upload error:", error);
+      const errorMessage = error?.message || error?.response?.data?.detail || "Failed to upload users";
+      toast.error(errorMessage);
+    } finally {
+      if (bulkUploadInputRef.current) {
+        bulkUploadInputRef.current.value = "";
+      }
+    }
+  };
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col">{console.warn(editingUser,'user')}
       {!showAddUserForm ? (
         <div className="flex-1 overflow-y-auto overflow-x-auto">
           <div className="flex items-center justify-between mb-2">
@@ -466,10 +524,18 @@ export default function UserManagement({ clientId, open, isActive }) {
               <Button
                 size="md"
                 variant="outline"
+                onClick={() => bulkUploadInputRef.current?.click()}
                 className=" text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer"
               >
                 User Bulk Upload
               </Button>
+              <input
+                ref={bulkUploadInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={handleBulkUpload}
+                className="hidden"
+              />
             </div>
           </div>
           <table className="w-full border-collapse">
@@ -712,61 +778,17 @@ export default function UserManagement({ clientId, open, isActive }) {
               </button>
             </div>
 
-            {/* Manager Email Addresses */}
+            {/* Manager Email Address */}
             <div className="pt-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium text-gray-700">
-                  Manager Email Addresses
-                </Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    const nextId =
-                      managerEmails.length > 0
-                        ? Math.max(...managerEmails.map((m) => m.id)) + 1
-                        : 1;
-                    setManagerEmails((prev) => [
-                      ...prev,
-                      { id: nextId, value: "" },
-                    ]);
-                  }}
-                  className="border-primary-500 text-primary-700 hover:bg-purple-50 px-3 py-1 h-8 text-xs font-medium"
-                >
-                  + Add Email
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {managerEmails.map((item) => (
-                  <div key={item.id} className="flex items-center gap-2">
-                    <Input
-                      type="email"
-                      value={item.value}
-                      onChange={(e) =>
-                        setManagerEmails((prev) =>
-                          prev.map((row) =>
-                            row.id === item.id
-                              ? { ...row, value: e.target.value }
-                              : row
-                          )
-                        )
-                      }
-                      className="flex-1 bg-white border border-gray-300"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setManagerEmails((prev) =>
-                          prev.filter((row) => row.id !== item.id)
-                        )
-                      }
-                      className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0"
-                    >
-                      <Trash2 className="w-4 h-4 text-white" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <Label className="text-sm font-medium text-gray-700">
+                Manager Email Address
+              </Label>
+              <Input
+                type="email"
+                value={managerEmail}
+                onChange={(e) => setManagerEmail(e.target.value)}
+                className="w-full bg-white border border-gray-300"
+              />
             </div>
 
             {/* Accountability Partner Email Addresses */}
@@ -830,7 +852,7 @@ export default function UserManagement({ clientId, open, isActive }) {
               </Label>
               <Select
                 value={cohort}
-                onValueChange={setCohort}
+                onValueChange={handleSetCohort}
                 disabled={cohortsLoading || cohorts.length === 0}
               >
                 <SelectTrigger className="w-full bg-white border border-gray-300">
@@ -890,14 +912,14 @@ export default function UserManagement({ clientId, open, isActive }) {
                       );
                     }}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${assignment.isCurrent
-                        ? "bg-green-50 border-green-500"
-                        : "bg-gray-50 border-gray-300"
+                      ? "bg-green-50 border-green-500"
+                      : "bg-gray-50 border-gray-300"
                       }`}
                   >
                     <div
                       className={`w-4 h-4 rounded-full ${assignment.isCurrent
-                          ? "bg-green-500"
-                          : "bg-white border-2 border-gray-400"
+                        ? "bg-green-500"
+                        : "bg-white border-2 border-gray-400"
                         }`}
                     />
                     <span className="text-sm font-medium text-gray-700">
@@ -909,6 +931,8 @@ export default function UserManagement({ clientId, open, isActive }) {
                   <Select
                     value={assignment.cometType}
                     onValueChange={(value) => {
+
+
                       setCometAssignments((prev) =>
                         prev.map((item) =>
                           item.id === assignment.id
@@ -917,9 +941,9 @@ export default function UserManagement({ clientId, open, isActive }) {
                         )
                       );
                     }}
-                    disabled={
-                      cohortPathsLoading || !cohort || cohortPaths.length === 0
-                    }
+                  // disabled={
+                  //   cohortPathsLoading || !cohort || cohortPaths.length === 0
+                  // }
                   >
                     <SelectTrigger className="flex-1 bg-white border border-gray-300">
                       <SelectValue
