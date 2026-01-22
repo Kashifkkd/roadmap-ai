@@ -25,9 +25,8 @@ const DeviceIcon = ({ view, isActive, onClick }) => {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${
-        isActive ? "bg-primary" : "bg-primary-200"
-      }`}
+      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${isActive ? "bg-primary" : "bg-primary-200"
+        }`}
       aria-label={`Switch to ${view} view`}
     >
       {icons[view]}
@@ -69,14 +68,14 @@ const ScreenContentTypePreview = ({
     Array.isArray(content?.key_points) && content.key_points.length > 0
       ? content.key_points
       : sections.find((section) => section.id === "content-key-points")?.list ||
-        [];
+      [];
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "w-full max-w-2xl"
-      : "w-full max-w-5xl";
+        ? "w-full max-w-2xl"
+        : "w-full max-w-5xl";
 
   const imageAspectClass =
     deviceView === DEVICE_VIEWS.mobile ? "aspect-[2/3]" : "aspect-[16/8]";
@@ -85,22 +84,22 @@ const ScreenContentTypePreview = ({
     deviceView === DEVICE_VIEWS.mobile
       ? "text-lg"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "text-2xl"
-      : "text-3xl";
+        ? "text-2xl"
+        : "text-3xl";
 
   const descriptionSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-sm"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "text-base"
-      : "text-base";
+        ? "text-base"
+        : "text-base";
 
   const paddingClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "px-4 py-2"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "px-6 py-8"
-      : "px-8 py-10";
+        ? "px-6 py-8"
+        : "px-8 py-10";
 
   return (
     <div
@@ -108,9 +107,8 @@ const ScreenContentTypePreview = ({
     >
       {/* Main Content Card */}
       <div
-        className={`bg-gray-100 overflow-hidden shadow-sm ${
-          keyPointsSource.length > 0 ? "shrink-0" : "flex-1"
-        }`}
+        className={`bg-gray-100 overflow-hidden shadow-sm ${keyPointsSource.length > 0 ? "shrink-0" : "flex-1"
+          }`}
         style={{ minHeight: "70vh" }}
       >
         {isBlendMode ? (
@@ -256,22 +254,22 @@ const MCQScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "w-full max-w-2xl"
-      : "w-full max-w-5xl";
+        ? "w-full max-w-2xl"
+        : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-lg"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "text-2xl"
-      : "text-3xl";
+        ? "text-2xl"
+        : "text-3xl";
 
   const questionSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-base"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "text-lg"
-      : "text-xl";
+        ? "text-lg"
+        : "text-xl";
 
   const optionSizeClass =
     deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
@@ -280,8 +278,8 @@ const MCQScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "px-4 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "px-6 py-8"
-      : "px-8 py-10";
+        ? "px-6 py-8"
+        : "px-8 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
@@ -346,15 +344,15 @@ const AssessmentScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "w-full max-w-2xl"
-      : "w-full max-w-5xl";
+        ? "w-full max-w-2xl"
+        : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-lg"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "text-2xl"
-      : "text-3xl";
+        ? "text-2xl"
+        : "text-3xl";
 
   const questionSizeClass =
     deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
@@ -363,8 +361,8 @@ const AssessmentScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "px-4 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "px-6 py-8"
-      : "px-8 py-10";
+        ? "px-6 py-8"
+        : "px-8 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
@@ -402,9 +400,8 @@ const AssessmentScreenPreview = ({ deviceView, content }) => {
 
                     return (
                       <div
-                        key={`assessment-option-${
-                          option?.option_id || option?.optionId || oIndex
-                        }`}
+                        key={`assessment-option-${option?.option_id || option?.optionId || oIndex
+                          }`}
                         className="bg-gray-200/90 text-sm border border-gray-300 px-4 py-2 rounded-sm shadow-sm hover:bg-gray-300/90 transition-colors cursor-pointer"
                       >
                         <p
@@ -436,15 +433,15 @@ const ForceRankScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "w-full max-w-2xl"
-      : "w-full max-w-5xl";
+        ? "w-full max-w-2xl"
+        : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-lg"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "text-2xl"
-      : "text-3xl";
+        ? "text-2xl"
+        : "text-3xl";
 
   const questionSizeClass =
     deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
@@ -453,8 +450,8 @@ const ForceRankScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "px-4 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "px-6 py-8"
-      : "px-8 py-10";
+        ? "px-6 py-8"
+        : "px-8 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
@@ -555,15 +552,15 @@ const HabitsScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "w-full max-w-2xl"
-      : "w-full max-w-5xl";
+        ? "w-full max-w-2xl"
+        : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-2xl"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "text-3xl"
-      : "text-4xl";
+        ? "text-3xl"
+        : "text-4xl";
 
   const subtitleSizeClass =
     deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
@@ -575,8 +572,8 @@ const HabitsScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "px-6 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "px-8 py-8"
-      : "px-10 py-10";
+        ? "px-8 py-8"
+        : "px-10 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
@@ -710,15 +707,15 @@ const ReflectionScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "w-full max-w-2xl"
-      : "w-full max-w-5xl";
+        ? "w-full max-w-2xl"
+        : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-lg"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "text-2xl"
-      : "text-3xl";
+        ? "text-2xl"
+        : "text-3xl";
 
   const textSizeClass =
     deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
@@ -727,8 +724,8 @@ const ReflectionScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "px-4 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "px-6 py-8"
-      : "px-8 py-10";
+        ? "px-6 py-8"
+        : "px-8 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
@@ -784,15 +781,15 @@ const LinearPollScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "w-full max-w-2xl"
-      : "w-full max-w-5xl";
+        ? "w-full max-w-2xl"
+        : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-lg"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "text-2xl"
-      : "text-3xl";
+        ? "text-2xl"
+        : "text-3xl";
 
   const textSizeClass =
     deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
@@ -801,8 +798,8 @@ const LinearPollScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "px-4 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "px-6 py-8"
-      : "px-8 py-10";
+        ? "px-6 py-8"
+        : "px-8 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
@@ -887,15 +884,15 @@ const ActionScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-[300px] "
       : deviceView === DEVICE_VIEWS.tablet
-      ? "w-full max-w-2xl"
-      : "w-full max-w-5xl";
+        ? "w-full max-w-2xl"
+        : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-2xl"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "text-3xl"
-      : "text-4xl";
+        ? "text-3xl"
+        : "text-4xl";
 
   const textSizeClass =
     deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
@@ -904,8 +901,8 @@ const ActionScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "px-6 py-8"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "px-8 py-10"
-      : "px-12 py-12";
+        ? "px-8 py-10"
+        : "px-12 py-12";
 
   return (
     <div
@@ -981,15 +978,15 @@ const SocialDiscussionScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "w-full max-w-[300px]"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "w-full max-w-2xl"
-      : "w-full max-w-5xl";
+        ? "w-full max-w-2xl"
+        : "w-full max-w-5xl";
 
   const titleSizeClass =
     deviceView === DEVICE_VIEWS.mobile
       ? "text-xl"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "text-2xl"
-      : "text-3xl";
+        ? "text-2xl"
+        : "text-3xl";
 
   const textSizeClass =
     deviceView === DEVICE_VIEWS.mobile ? "text-sm" : "text-base";
@@ -998,8 +995,8 @@ const SocialDiscussionScreenPreview = ({ deviceView, content }) => {
     deviceView === DEVICE_VIEWS.mobile
       ? "px-4 py-6"
       : deviceView === DEVICE_VIEWS.tablet
-      ? "px-6 py-8"
-      : "px-8 py-10";
+        ? "px-6 py-8"
+        : "px-8 py-10";
 
   return (
     <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
@@ -1082,22 +1079,20 @@ const ContentBlock = ({ reverse = false, deviceView, section }) => {
 
   return (
     <div
-      className={`flex gap-6 items-start ${
-        deviceView === DEVICE_VIEWS.desktop
+      className={`flex gap-6 items-start ${deviceView === DEVICE_VIEWS.desktop
           ? reverse
             ? "flex-row-reverse"
             : "flex-row"
           : "flex-col"
-      }`}
+        }`}
     >
       <div
-        className={`shrink-0 ${
-          deviceView === DEVICE_VIEWS.desktop
+        className={`shrink-0 ${deviceView === DEVICE_VIEWS.desktop
             ? "w-1/2"
             : deviceView === DEVICE_VIEWS.tablet
-            ? "w-full"
-            : "w-full"
-        }`}
+              ? "w-full"
+              : "w-full"
+          }`}
       >
         <div className="relative w-full aspect-[16/10] bg-gray-200 rounded-lg overflow-hidden">
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400">
@@ -1117,30 +1112,27 @@ const ContentBlock = ({ reverse = false, deviceView, section }) => {
 
       {/* Text Content */}
       <div
-        className={`flex-1 ${
-          deviceView === DEVICE_VIEWS.desktop ? "w-1/2" : "w-full"
-        }`}
+        className={`flex-1 ${deviceView === DEVICE_VIEWS.desktop ? "w-1/2" : "w-full"
+          }`}
       >
         <h3
-          className={`font-bold text-gray-900 mb-3 font-sans ${
-            deviceView === DEVICE_VIEWS.mobile
+          className={`font-bold text-gray-900 mb-3 font-sans ${deviceView === DEVICE_VIEWS.mobile
               ? "text-lg"
               : deviceView === DEVICE_VIEWS.tablet
-              ? "text-xl"
-              : "text-xl"
-          }`}
+                ? "text-xl"
+                : "text-xl"
+            }`}
         >
           {section.title || "Details"}
         </h3>
         {section.description && (
           <p
-            className={`text-gray-900 leading-relaxed font-sans ${
-              deviceView === DEVICE_VIEWS.mobile
+            className={`text-gray-900 leading-relaxed font-sans ${deviceView === DEVICE_VIEWS.mobile
                 ? "text-sm"
                 : deviceView === DEVICE_VIEWS.tablet
-                ? "text-base"
-                : "text-base"
-            }`}
+                  ? "text-base"
+                  : "text-base"
+              }`}
           >
             {section.description}
           </p>
@@ -1284,29 +1276,29 @@ export default function FromDoerToEnabler({
           meta: [
             content.lowLabel || content.lowerScale !== undefined
               ? {
-                  label: "Scale Start",
-                  value: [
-                    content.lowLabel,
-                    content.lowerScale !== undefined
-                      ? `(${content.lowerScale})`
-                      : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" "),
-                }
+                label: "Scale Start",
+                value: [
+                  content.lowLabel,
+                  content.lowerScale !== undefined
+                    ? `(${content.lowerScale})`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" "),
+              }
               : null,
             content.highLabel || content.higherScale !== undefined
               ? {
-                  label: "Scale End",
-                  value: [
-                    content.highLabel,
-                    content.higherScale !== undefined
-                      ? `(${content.higherScale})`
-                      : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" "),
-                }
+                label: "Scale End",
+                value: [
+                  content.highLabel,
+                  content.higherScale !== undefined
+                    ? `(${content.higherScale})`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" "),
+              }
               : null,
           ].filter(Boolean),
         });
@@ -1331,15 +1323,15 @@ export default function FromDoerToEnabler({
               : null,
             typeof content.canCompleteNow === "boolean"
               ? {
-                  label: "Complete Now",
-                  value: content.canCompleteNow ? "Yes" : "No",
-                }
+                label: "Complete Now",
+                value: content.canCompleteNow ? "Yes" : "No",
+              }
               : null,
             typeof content.canSchedule === "boolean"
               ? {
-                  label: "Schedule",
-                  value: content.canSchedule ? "Available" : "Not available",
-                }
+                label: "Schedule",
+                value: content.canSchedule ? "Available" : "Not available",
+              }
               : null,
           ].filter(Boolean),
         });
@@ -1353,9 +1345,9 @@ export default function FromDoerToEnabler({
           meta: [
             typeof content.is_mandatory === "boolean"
               ? {
-                  label: "Mandatory",
-                  value: content.is_mandatory ? "Yes" : "No",
-                }
+                label: "Mandatory",
+                value: content.is_mandatory ? "Yes" : "No",
+              }
               : null,
             content.votes_count !== undefined
               ? { label: "Votes", value: String(content.votes_count) }
@@ -1377,20 +1369,49 @@ export default function FromDoerToEnabler({
           description: content.description || content.text || "",
           list: Array.isArray(content.questions)
             ? content.questions.map((question, index) => {
-                if (typeof question === "string") {
-                  return question;
-                }
-                if (question?.text) {
-                  return question.text;
-                }
-                if (question?.question) {
-                  return question.question;
-                }
-                return `Question ${index + 1}`;
-              })
+              if (typeof question === "string") {
+                return question;
+              }
+              if (question?.text) {
+                return question.text;
+              }
+              if (question?.question) {
+                return question.question;
+              }
+              return `Question ${index + 1}`;
+            })
             : [],
         });
         break;
+      case "profile":
+        addSection({
+          id: contentType,
+          sectionTitle: content.heading || content.title || title,
+          description: content.body || content.description || "",
+        });
+        break;
+      case "manager_email":
+        addSection({
+          id: contentType,
+          sectionTitle: content.heading || content.title || title,
+          description: content.body || content.description || "",
+          secondaryText: content.email ? `Email: ${content.email}` : null,
+        });
+        break;
+      case "accountability_partner_email": {
+        const emailsList = Array.isArray(content.emails)
+          ? content.emails.filter(Boolean)
+          : [];
+        const emailsText =
+          emailsList.length > 0 ? `Emails: ${emailsList.join(", ")}` : null;
+        addSection({
+          id: contentType,
+          sectionTitle: content.heading || content.title || title,
+          description: content.body || content.description || "",
+          secondaryText: emailsText,
+        });
+        break;
+      }
       default:
         break;
     }
@@ -1480,14 +1501,12 @@ export default function FromDoerToEnabler({
 
       {/* Preview canvas */}
       <div
-        className={`bg-gray-white flex-1 overflow-y-auto min-h-0 flex flex-col ${
-          isMaximized ? "px-0 sm:px-2" : "px-2"
-        }`}
+        className={`bg-gray-white flex-1 overflow-y-auto min-h-0 flex flex-col ${isMaximized ? "px-0 sm:px-2" : "px-2"
+          }`}
       >
         <div
-          className={`bg-gray-200 flex-1 overflow-y-auto rounded-sm min-h-0 flex flex-col ${
-            isMaximized ? "px-0 py-0 sm:px-2 sm:py-2" : "px-2 py-2"
-          }`}
+          className={`bg-gray-200 flex-1 overflow-y-auto rounded-sm min-h-0 flex flex-col ${isMaximized ? "px-0 py-0 sm:px-2 sm:py-2" : "px-2 py-2"
+            }`}
         >
           {deviceView === DEVICE_VIEWS.mobile ? (
             // iOS-style phone frame

@@ -12,6 +12,9 @@ import SocialDiscussionForm from "./forms/SocialDiscussionForm";
 import AssessmentForm from "./forms/AssessmentForm";
 import NotificationsForm from "./forms/NotificationsForm";
 import MiniAppForm from "./forms/MiniAppForm";
+import ProfileForm from "./forms/ProfileForm";
+import EmailPromptForm from "./forms/EmailPromptForm";
+import AccountabilityPartnerEmailForm from "./forms/AccountabilityPartnerEmailForm";
 import AskKyperPopup from "@/components/create-comet/AskKyperPopup";
 import { graphqlClient } from "@/lib/graphql-client";
 
@@ -162,6 +165,22 @@ const getFormValuesFromScreen = (screen) => {
   if (contentType === "miniapp" || contentType === "miniApp") {
     // For miniApp, the content itself is HTML string
     values.htmlContent = typeof content === "string" ? content : "";
+  }
+
+  if (contentType === "profile") {
+    values.heading = content.heading || "";
+    values.body = content.body || "";
+  }
+
+  if (contentType === "manager_email") {
+    values.heading = content.heading || "";
+    values.body = content.body || "";
+    values.email = content.email || "";
+  }
+  if (contentType === "accountability_partner_email") {
+    values.heading = content.heading || "";
+    values.body = content.body || "";
+    values.emails = Array.isArray(content.emails) ? content.emails : [""];
   }
 
   return values;
@@ -474,6 +493,33 @@ export default function DynamicForm({
                   currentScreen.screenContents.content.icon.url = value;
                 }
               }
+            } else if (contentType === "profile") {
+              if (field === "heading") {
+                currentScreen.screenContents.content.heading = value;
+              } else if (field === "body") {
+                const bodyValue = extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.body = bodyValue;
+              }
+            } else if (contentType === "manager_email") {
+              if (field === "heading") {
+                currentScreen.screenContents.content.heading = value;
+              } else if (field === "body") {
+                const bodyValue = extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.body = bodyValue;
+              } else if (field === "email") {
+                currentScreen.screenContents.content.email = value;
+              }
+            } else if (contentType === "accountability_partner_email") {
+              if (field === "heading") {
+                currentScreen.screenContents.content.heading = value;
+              } else if (field === "body") {
+                const bodyValue = extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.body = bodyValue;
+              } else if (field === "emails") {
+                currentScreen.screenContents.content.emails = Array.isArray(value)
+                  ? value
+                  : [];
+              }
             }
 
             // Update title for display
@@ -699,6 +745,14 @@ export default function DynamicForm({
         habitsText: "habits[].text",
         notificationsTitle: "title",
         notificationsMessage: "message",
+        profileHeading: "heading",
+        profileBody: "body",
+        managerEmailHeading: "heading",
+        managerEmailBody: "body",
+        managerEmailEmail: "email",
+        accountabilityPartnerHeading: "heading",
+        accountabilityPartnerBody: "body",
+        accountabilityPartnerEmails: "emails",
       };
 
       const mappedField =
@@ -802,7 +856,6 @@ export default function DynamicForm({
         const newOutline = JSON.parse(JSON.stringify(prevOutline));
         const pathChapters = newOutline.chapters || [];
 
-        // Find the screen in the outline and update assets
         for (const chapter of pathChapters) {
           for (const stepItem of chapter.steps || []) {
             const screenIndex = stepItem.screens?.findIndex(
@@ -810,18 +863,11 @@ export default function DynamicForm({
             );
             if (screenIndex !== undefined && screenIndex >= 0) {
               const currentScreen = stepItem.screens[screenIndex];
-              // Update assets array - merge with existing assets
+              if (!currentScreen.assets) currentScreen.assets = [];
               const existingAssets = currentScreen.assets || [];
               const newAssets = Array.isArray(assets)
                 ? [...existingAssets, ...assets]
                 : [...existingAssets, assets];
-
-              console.log("updateScreenAssets - saving assets:", {
-                screenId,
-                existingCount: existingAssets.length,
-                newCount: newAssets.length,
-                assets: newAssets,
-              });
 
               stepItem.screens[screenIndex] = {
                 ...currentScreen,
@@ -1048,6 +1094,57 @@ export default function DynamicForm({
       screen?.screenContents?.contentType === "miniApp"
     ) {
       return <MiniAppForm {...formProps} />;
+    }
+
+    //9-Profile
+    if (screenType === "profile" || contentType === "profile") {
+      return (
+        <ProfileForm
+          {...formProps}
+          askKyperHandlers={{
+            onTextFieldSelect: handleTextFieldSelect,
+            onFieldBlur: handleFieldBlur,
+            onRichTextSelection: handleRichTextSelection,
+            onRichTextBlur: handleFieldBlur,
+          }}
+        />
+      );
+    }
+
+    //10-Manager Email & Accountability Partner Email
+    if (
+      screenType === "manager_email" ||
+      contentType === "manager_email"
+    ) {
+      return (
+        <EmailPromptForm
+          formTitle="Manager Email"
+          fieldPrefix="managerEmail"
+          {...formProps}
+          askKyperHandlers={{
+            onTextFieldSelect: handleTextFieldSelect,
+            onFieldBlur: handleFieldBlur,
+            onRichTextSelection: handleRichTextSelection,
+            onRichTextBlur: handleFieldBlur,
+          }}
+        />
+      );
+    }
+    if (
+      screenType === "accountability_partner_email" ||
+      contentType === "accountability_partner_email"
+    ) {
+      return (
+        <AccountabilityPartnerEmailForm
+          {...formProps}
+          askKyperHandlers={{
+            onTextFieldSelect: handleTextFieldSelect,
+            onFieldBlur: handleFieldBlur,
+            onRichTextSelection: handleRichTextSelection,
+            onRichTextBlur: handleFieldBlur,
+          }}
+        />
+      );
     }
 
     return (

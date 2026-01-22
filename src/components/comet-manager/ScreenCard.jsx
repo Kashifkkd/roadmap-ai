@@ -76,18 +76,18 @@ export default function ScreenCard({
                 Screen {index + 1}
               </div>
               <div
-                className={`flex text-sm items-start gap-2 font-medium w-full transition-colors duration-300 ${selectedScreen?.id === screen.id
+                className={`flex text-sm items-start gap-2 font-medium w-full transition-colors duration-300 text-wrap truncate ${selectedScreen?.id === screen.id
                   ? "text-white"
                   : "text-gray-700"
                   }`}
               >
-                {screen.screenContents?.contentType || "Content"} Screen
+                {(screen.screenContents?.contentType || "Content").replace(/_/g, " ")} Screen
               </div>
               <div
                 className={`flex flex-col items-start bg-white p-2 mt-0.5 shrink-0 
   transition-all duration-300  shadow-sm overflow-hidden
   ${selectedScreen?.id === screen.id
-                    ? "h-[210px] w-[145px]" 
+                    ? "h-[210px] w-[145px]"
                     : "h-[170px] w-[135px]" // normal screen size
                   }`}
               >
@@ -97,7 +97,7 @@ export default function ScreenCard({
                     ? "text-black"
                     : "text-black"
                     }`}
-                  title={screen.screenContents?.name || screen.title} 
+                  title={screen.screenContents?.name || screen.title}
                 >
                   {screen.screenContents?.name || screen.title}
                 </div>
