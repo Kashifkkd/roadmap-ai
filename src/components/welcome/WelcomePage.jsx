@@ -13,6 +13,7 @@ import { graphqlClient } from "@/lib/graphql-client";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import { toast } from "sonner";
+import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
 const SUGGESTIONS = [
   "Create a go-to microlearning experience for new managers",
@@ -68,12 +69,7 @@ export default function WelcomePage() {
     }
   }, [messages.length, isExpanded]);
 
-  // Cleanup WebSocket connections on unmount
-  useEffect(() => {
-    return () => {
-      graphqlClient.cleanup();
-    };
-  }, []);
+  // Note: WebSocket cleanup is now handled by SubscriptionManager
 
   const [cometCreated, setCometCreated] = useState(false);
 
@@ -82,6 +78,69 @@ export default function WelcomePage() {
       setCometCreated(true);
     }
   }, [sessionData, cometCreated]);
+
+  // Subscribe to session updates - temporary subscription for welcome page
+  useSessionSubscription(
+    sessionId,
+    (receivedSessionData) => {
+      localStorage.setItem(
+        "sessionData",
+        JSON.stringify(receivedSessionData)
+      );
+      setSessionData(receivedSessionData);
+
+      // Update chatbot_conversation
+      if (receivedSessionData.chatbot_conversation) {
+        const conversation = receivedSessionData.chatbot_conversation;
+        const allMessages = [];
+        let shouldNavigate = false;
+
+        // Only show messages without identifier
+        conversation.forEach((entry) => {
+          // Skip messages with identifier
+          if (entry.identifier) return;
+
+          if (entry.user && entry.user.trim()) {
+            allMessages.push({
+              from: "user",
+              content: entry.user,
+            });
+          }
+          if (entry.agent) {
+            allMessages.push({
+              from: "bot",
+              content: entry.agent,
+            });
+
+            // Check if this is the "Comet data created" message
+            if (entry.agent.includes("Comet data created successfully")) {
+              shouldNavigate = true;
+            }
+          }
+        });
+
+        // Update with filtered messages
+        if (allMessages.length > 0) {
+          setMessages(allMessages);
+          setIsAnimating(true);
+        }
+        setIsLoading(false);
+
+        // Navigate to dashboard after showing "Comet data created" message
+        if (shouldNavigate) {
+          setCometCreated(true);
+          setTimeout(() => {
+            router.push("/dashboard");
+          }, 4000);
+        }
+      }
+    },
+    (error) => {
+      console.error("Subscription error:", error);
+      setError(error.message);
+    },
+    { forceTemporary: true }
+  );
 
   const handleMessageTypingComplete = () => {
     setIsAnimating(false);
@@ -117,67 +176,7 @@ export default function WelcomePage() {
           setAttachedFile(null); // Clear attached file after upload
         }
 
-        // Setup subscription only for first message
-        await graphqlClient.subscribeToSessionUpdates(
-          currentSessionId,
-          (receivedSessionData) => {
-            localStorage.setItem(
-              "sessionData",
-              JSON.stringify(receivedSessionData)
-            );
-            setSessionData(receivedSessionData);
-
-            // Update chatbot_conversation
-            if (receivedSessionData.chatbot_conversation) {
-              const conversation = receivedSessionData.chatbot_conversation;
-              const allMessages = [];
-              let shouldNavigate = false;
-
-              // Only show messages without identifier
-              conversation.forEach((entry) => {
-                // Skip messages with identifier
-                if (entry.identifier) return;
-
-                if (entry.user && entry.user.trim()) {
-                  allMessages.push({
-                    from: "user",
-                    content: entry.user,
-                  });
-                }
-                if (entry.agent) {
-                  allMessages.push({
-                    from: "bot",
-                    content: entry.agent,
-                  });
-
-                  // Check if this is the "Comet data created" message
-                  if (entry.agent.includes("Comet data created successfully")) {
-                    shouldNavigate = true;
-                  }
-                }
-              });
-
-              // Update with filtered messages
-              if (allMessages.length > 0) {
-                setMessages(allMessages);
-                setIsAnimating(true);
-              }
-              setIsLoading(false);
-
-              // Navigate to dashboard after showing "Comet data created" message
-              if (shouldNavigate) {
-                setCometCreated(true);
-                setTimeout(() => {
-                  router.push("/dashboard");
-                }, 4000);
-              }
-            }
-          },
-          (error) => {
-            console.error("Subscription error:", error);
-            setError(error.message);
-          }
-        );
+        // Note: Subscription is now handled by useSessionSubscription hook below
       } else {
         console.log("Using existing session:", currentSessionId);
 
@@ -534,7 +533,7 @@ export default function WelcomePage() {
             {messages.length === 0 && (
               <div className="w-full max-w-3xl mx-auto">
                 <h3 className="text-primary-900 text-lg font-medium mb-4 text-start">
-                  Here are some suggested prompts to get you started
+                  22222222Here are some suggested prompts to get you started
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {SUGGESTIONS.map((suggestion, index) => (

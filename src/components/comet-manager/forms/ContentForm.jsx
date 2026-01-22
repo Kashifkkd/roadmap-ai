@@ -194,9 +194,9 @@ export default function ContentForm({
             <ImageUpload
               label="Upload Image/Icon"
               sessionId={sessionId}
-              chapterId={chapterUuid || chapterId}
-              stepId={stepUuid || stepId}
-              screenId={screenUuid || screenId}
+              chapterUid={chapterUuid}
+              stepUid={stepUuid}
+              screenUid={screenUuid}
               onUploadSuccess={(assetData) => {
                 if (updateScreenAssets) {
                   updateScreenAssets([assetData]);
@@ -222,7 +222,7 @@ export default function ContentForm({
           {/* Upload Media Section */}
           <div className="mb-4">
             <Label className="block text-sm font-medium text-gray-700 mb-2">
-              Upload Media/File
+              Upload Media/Files
             </Label>
             <div className="relative p-2 bg-gray-100 rounded-lg hover:border-primary transition-colors mb-4">
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 mb-2 bg-white">
@@ -326,7 +326,7 @@ export default function ContentForm({
                   Or paste your link here
                 </p>
               </div>
-              <div className="relative">
+             <div className="relative">
                 <LinkIcon
                   className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${formData.mediaUrl && formData.mediaUrl.trim() !== ""
                       ? "text-primary cursor-pointer hover:text-primary-700 transition-colors"
@@ -337,6 +337,7 @@ export default function ContentForm({
                     const url = formData.mediaUrl?.trim();
                     if (url) {
                       // Ensure URL has a protocol
+                    
                       const urlWithProtocol =
                         url.startsWith("http://") || url.startsWith("https://")
                           ? url

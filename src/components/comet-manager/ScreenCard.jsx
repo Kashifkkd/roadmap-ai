@@ -87,7 +87,7 @@ export default function ScreenCard({
                 className={`flex flex-col items-start bg-white p-2 mt-0.5 shrink-0 
   transition-all duration-300  shadow-sm overflow-hidden
   ${selectedScreen?.id === screen.id
-                    ? "h-[210px] w-[145px]" // active screen size
+                    ? "h-[210px] w-[145px]" 
                     : "h-[170px] w-[135px]" // normal screen size
                   }`}
               >

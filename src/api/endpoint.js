@@ -1,4 +1,4 @@
-import { getCommit } from "./cohort/getCohorts";
+
 export const endpoints = {
   register: "api/auth/v1/register",
   login: "api/auth/v1/token",
@@ -42,6 +42,13 @@ export const endpoints = {
   deleteCohort: (cohortId) => `api/clients/v1/cohorts/${cohortId}`,
   uploadTool: "api/n8n/upload_tool_file",
   generateStepImages: "api/generative-ai/v2/generate-step-images",
+  getImageAttributes: "api/generative-ai/v2/get-image-attributes",
+  setImageAttributes: "api/generative-ai/v2/set-image-attributes",
+  getSuggestPrompt: "api/generative-ai/v2/build-prompt",
   replaceStepImage: (stepId) => `api/comet/step/replace-image/${stepId}`,
+    uploadPathImage: (sessionId) => `api/comet/path/upload-image/${sessionId}`,
+   getImageAttributes: "api/generative-ai/v2/get-image-attributes",
+  setImageAttributes: "api/generative-ai/v2/set-image-attributes",
+  getSuggestPrompt: "api/generative-ai/v2/build-prompt",
     fetchList: "api/comet/sessions"
 };

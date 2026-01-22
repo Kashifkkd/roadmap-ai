@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { graphqlClient } from "@/lib/graphql-client";
 import { uploadAssetFile } from "@/api/uploadAssets";
+import { uploadPathImage } from "@/api/uploadPathImage";
 import UserManagement from "@/components/common/UserManagement";
 
 // Toggle Switch Component
@@ -52,14 +53,14 @@ const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
         checked ? "bg-primary" : "bg-gray-300"
-      }`}
+        }`}
       role="switch"
       aria-checked={checked}
     >
       <span
         className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
           checked ? "translate-x-6" : "translate-x-1"
-        }`}
+          }`}
       />
     </button>
   </div>
@@ -76,6 +77,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [learningFrequency, setLearningFrequency] = useState("");
   const [language, setLanguage] = useState("English");
   const [leaderboardEntryAmount, setLeaderboardEntryAmount] = useState("25");
+  const [imageGuidance, setImageGuidance] = useState("");
+  const [artStyle, setArtStyle] = useState("");
 
   // Kick Off
   const [kickOffDates, setKickOffDates] = useState([]);
@@ -134,7 +137,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
     },
     {
       id: 5,
-      name: "Charlie Brown",
+      name: "Charlie Browns",
       email: "charlie.brown@example.com",
       kickoff: "Yes",
     },
@@ -152,18 +155,21 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
       const sessionData = JSON.parse(data);
       setCometTitle(
         sessionData?.comet_creation_data?.["Basic Information"]?.[
-          "Comet Title"
+        "Comet Title"
         ] || ""
       );
       setDescription(
         sessionData?.comet_creation_data?.["Basic Information"]?.Description ||
-          ""
+        ""
       );
 
-      // Fetch path_image from response_path
+      // Fetch path_image from response_path (exclude fallback images)
       const pathImage = sessionData?.response_path?.path_image;
-      if (pathImage) {
+      if (pathImage && !pathImage.includes("fallbackImage")) {
         setPathImageUrl(pathImage);
+      } else {
+        setPathImageUrl(null);
+        setCoverImage(null);
       }
 
       // Fetch colours from backend and transform to display format
@@ -219,6 +225,21 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         if (enabledAttributes.enable_community !== undefined) {
           setEnableCommunity(enabledAttributes.enable_community);
         }
+        // Image attributes
+        if (enabledAttributes.image_guidance !== undefined) {
+          setImageGuidance(enabledAttributes.image_guidance);
+        } else {
+          setImageGuidance("");
+        }
+        if (enabledAttributes.art_style !== undefined) {
+          setArtStyle(enabledAttributes.art_style);
+        } else {
+          setArtStyle("");
+        }
+      } else {
+        // If enabled_attributes doesn't exist, initialize with empty strings
+        setImageGuidance("");
+        setArtStyle("");
       }
     }
 
@@ -266,15 +287,10 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
       let uploadedImageUrl = pathImageUrl;
       if (coverImage && coverImage instanceof File) {
         try {
-          const uploadResponse = await uploadAssetFile(
+          const uploadResponse = await uploadPathImage(
             coverImage,
-            "image",
-            sessionId,
-            "",
-            "",
-            "",
-            ""
-          );
+            sessionId
+          )
 
           if (uploadResponse?.response) {
             uploadedImageUrl = uploadResponse.response.s3_url;
@@ -314,6 +330,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         user_email: showUserEmail,
         leaderboard: leaderboardEnabled,
         enable_community: enableCommunity,
+        image_guidance: imageGuidance || "",
+        art_style: artStyle || "",
       };
 
       // Transform brandColors back to the format expected by backend (object with lowercase keys)
@@ -330,8 +348,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         ...(uploadedImageUrl && !uploadedImageUrl.startsWith("blob:")
           ? { path_image: uploadedImageUrl }
           : pathImageUrl && !pathImageUrl.startsWith("blob:")
-          ? { path_image: pathImageUrl }
-          : {}),
+            ? { path_image: pathImageUrl }
+            : {}),
       };
 
       const cometJsonForSave = JSON.stringify({
@@ -481,15 +499,15 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                 }}
                 className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
                   activeTab === "comet-info"
-                    ? "bg-primary text-white shadow-md"
-                    : "text-gray-700 hover:bg-white/60"
-                }`}
+                  ? "bg-primary text-white shadow-md"
+                  : "text-gray-700 hover:bg-white/60"
+                  }`}
               >
                 <FileText
                   size={18}
                   className={`lg:w-5 lg:h-5 ${
                     activeTab === "comet-info" ? "text-white" : "text-gray-500"
-                  }`}
+                    }`}
                 />
                 <span className="hidden md:inline">Comet Info</span>
                 <span className="md:hidden">Info</span>
@@ -503,15 +521,15 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                 }}
                 className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
                   activeTab === "users"
-                    ? "bg-primary text-white shadow-md"
-                    : "text-gray-700 hover:bg-white/60"
-                }`}
+                  ? "bg-primary text-white shadow-md"
+                  : "text-gray-700 hover:bg-white/60"
+                  }`}
               >
                 <Users
                   size={18}
                   className={`lg:w-5 lg:h-5 ${
                     activeTab === "users" ? "text-white" : "text-gray-500"
-                  }`}
+                    }`}
                 />
                 Users
               </button>
@@ -524,15 +542,15 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                 }}
                 className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
                   activeTab === "analytics"
-                    ? "bg-primary text-white shadow-md"
-                    : "text-gray-700 hover:bg-white/60"
-                }`}
+                  ? "bg-primary text-white shadow-md"
+                  : "text-gray-700 hover:bg-white/60"
+                  }`}
               >
                 <BarChart3
                   size={18}
                   className={`lg:w-5 lg:h-5 ${
                     activeTab === "analytics" ? "text-white" : "text-gray-500"
-                  }`}
+                    }`}
                 />
                 Analytics
               </button>
@@ -721,6 +739,91 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 </SelectContent>
                               </Select>
                             </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Generative AI Settings Section */}
+                    <div className="pt-6 pb-2 px-2 bg-gray-100 rounded-lg">
+                      <p className=" font-bold mb-2 px-4  text-gray-700">
+                        Generative AI Settings
+                      </p>
+                      <div className="space-y-4 bg-white p-2 rounded-lg">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Left Column */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Art Style
+                            </Label>
+                            <Select
+                              value={artStyle}
+                              onValueChange={setArtStyle}
+                            >
+                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                                <SelectValue placeholder="Select art style" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Photorealistic">
+                                  Photorealistic
+                                </SelectItem>
+                                <SelectItem value="Hyper-real">
+                                  Hyper-real
+                                </SelectItem>
+                                <SelectItem value="Watercolor">
+                                  Watercolor
+                                </SelectItem>
+                                <SelectItem value="Line art">
+                                  Line art
+                                </SelectItem>
+                                <SelectItem value="Pixel art">
+                                  Pixel art
+                                </SelectItem>
+                                <SelectItem value="Flat illustration">
+                                  Flat illustration
+                                </SelectItem>
+                                <SelectItem value="Anime">Anime</SelectItem>
+                                <SelectItem value="3D render">
+                                  3D render
+                                </SelectItem>
+                                <SelectItem value="Oil painting">
+                                  Oil painting
+                                </SelectItem>
+                                <SelectItem value="Charcoal">
+                                  Charcoal
+                                </SelectItem>
+                                <SelectItem value="Sketch">Sketch</SelectItem>
+                                <SelectItem value="Minimalist">
+                                  Minimalist
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Right Column */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Image Guidance
+                            </Label>
+                            <Select
+                              value={imageGuidance}
+                              onValueChange={setImageGuidance}
+                            >
+                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                                <SelectValue placeholder="Select image guidance" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="simple">Simple</SelectItem>
+                                <SelectItem value="detailed">
+                                  Detailed
+                                </SelectItem>
+                                <SelectItem value="complex">
+                                  Complex
+                                </SelectItem>
+                                <SelectItem value="very_detailed">
+                                  Very Detailed
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                       </div>

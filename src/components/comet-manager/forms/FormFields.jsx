@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Plus, Trash2, GripVertical, CircleCheck, CircleX } from "lucide-react";
 import "quill/dist/quill.snow.css";
 
-// Form field components for comet manager forms
+
 
 export const SectionHeader = ({ title }) => (
   <div className="w-full mb-4">

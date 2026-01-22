@@ -20,3 +20,65 @@ export const generateStepImages = async ({
 
   return response;
 };
+
+
+export const getImageAttributes = async ({
+  sessionId
+}) => {
+  const payload = {
+    session_id: sessionId,
+  };
+
+  const response = await apiService({
+    endpoint: endpoints.getImageAttributes,
+    method: "POST",
+    data: payload,
+  });
+  return response;
+};
+
+export const setImageAttributes = async ({
+  sessionId,
+  imageGuidance,
+  artStyle,
+}) => {
+  const payload = {
+    session_id: sessionId,
+  };
+
+  // Add optional parameters if provided
+  if (imageGuidance !== undefined && imageGuidance !== null) {
+    payload.image_guidance = imageGuidance;
+  }
+  if (artStyle !== undefined && artStyle !== null) {
+    payload.art_style = artStyle;
+  }
+
+  const response = await apiService({
+    endpoint: endpoints.setImageAttributes,
+    method: "POST",
+    data: payload,
+  });
+  return response;
+};
+
+export const getSuggestPrompt = async ({
+  sessionId,
+  chapterUid,
+  stepUid,
+  screenUid,
+}) => {
+  const payload = {
+    session_id: sessionId,
+    chapter_uid: chapterUid,
+    step_uid: stepUid,
+    screen_uid: screenUid,
+  };
+
+  const response = await apiService({
+    endpoint: endpoints.getSuggestPrompt,
+    method: "POST",
+    data: payload,
+  });
+  return response;
+};

@@ -17,6 +17,7 @@ import { isArrayWithValues } from "@/utils/isArrayWithValues";
 import AskOutlineKyper from "./AskOutlineKyper";
 import { graphqlClient } from "@/lib/graphql-client";
 import Image from "next/image";
+import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
 const StepsDisplay = ({
   selectedChapter,
@@ -47,14 +48,84 @@ const StepsDisplay = ({
   const [sourceMaterialNotes, setSourceMaterialNotes] = useState("");
   const [addStepError, setAddStepError] = useState(null);
   const [storedSessionId, setStoredSessionId] = useState(null);
-  const subscriptionCleanupRef = useRef(null);
   const targetChapterRef = useRef(null);
   const targetChapterIndexRef = useRef(null);
   const stepRefs = useRef({});
+  const handledUpdateRef = useRef(false);
+  const isSubmittingStepRef = useRef(false);
+  const isAskingKyperRef = useRef(false);
+
+  // Track submission states in refs for use in subscription callback
+  useEffect(() => {
+    isSubmittingStepRef.current = isSubmittingStep;
+  }, [isSubmittingStep]);
+
+  useEffect(() => {
+    isAskingKyperRef.current = isAskingKyper;
+  }, [isAskingKyper]);
 
   useEffect(() => {
     setChapterSteps(selectedChapter?.steps || []);
   }, [selectedChapter]);
+
+  // Subscribe to session updates - temporary subscription that reuses existing subscription
+  // This will receive updates from the shared subscription when steps are added/modified
+  useSessionSubscription(
+    storedSessionId,
+    (sessionPayload) => {
+      // Only handle updates when we're actively submitting or asking
+      if (!isSubmittingStepRef.current && !isAskingKyperRef.current) {
+        return;
+      }
+
+      if (handledUpdateRef.current) return;
+
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(
+            "sessionData",
+            JSON.stringify(sessionPayload)
+          );
+        } catch {}
+      }
+
+      const updatedChapter = findUpdatedChapterFromSession(sessionPayload);
+      if (!updatedChapter) {
+        return;
+      }
+
+      handledUpdateRef.current = true;
+
+      // Handle step addition
+      if (isSubmittingStepRef.current) {
+        setChapterSteps(updatedChapter?.steps || []);
+        setIsSubmittingStep(false);
+        setIsAddStepModalOpen(false);
+        setStepPrompt("");
+        setSourceMaterialNotes("");
+        setIncludeSourceMaterial(false);
+        setAddStepError(null);
+      }
+
+      // Handle ask Kyper
+      if (isAskingKyperRef.current) {
+        setChapterSteps(updatedChapter?.steps || []);
+        setIsAskingKyper(false);
+      }
+    },
+    (error) => {
+      console.error("Subscription error in StepsDisplay:", error);
+      if (isSubmittingStepRef.current) {
+        setAddStepError("Unable to receive update from Kyper.");
+        setIsSubmittingStep(false);
+      }
+      if (isAskingKyperRef.current) {
+        setIsAskingKyper(false);
+      }
+      handledUpdateRef.current = false;
+    },
+    { forceTemporary: true }
+  );
 
   // Scroll to selected step when it changes
   useEffect(() => {
@@ -82,14 +153,7 @@ const StepsDisplay = ({
     } catch {}
   }, [storedSessionId]);
 
-  useEffect(() => {
-    return () => {
-      if (subscriptionCleanupRef.current) {
-        subscriptionCleanupRef.current();
-        subscriptionCleanupRef.current = null;
-      }
-    };
-  }, []);
+  // Note: Subscription cleanup is now handled by SubscriptionManager
 
   const getLatestSessionSnapshot = useCallback(() => {
     if (typeof window !== "undefined") {
@@ -105,16 +169,7 @@ const StepsDisplay = ({
     return sessionData;
   }, [sessionData]);
 
-  const cleanupSubscription = useCallback(() => {
-    if (subscriptionCleanupRef.current) {
-      try {
-        subscriptionCleanupRef.current();
-      } catch (error) {
-        console.error("Error cleaning up subscription:", error);
-      }
-      subscriptionCleanupRef.current = null;
-    }
-  }, []);
+  // Note: No need for manual cleanup - SubscriptionManager handles it
 
   const ensureSessionContext = useCallback(async () => {
     let currentSessionId = storedSessionId;
@@ -305,7 +360,6 @@ const StepsDisplay = ({
 
   const handleCloseAddStepModal = () => {
     if (isSubmittingStep) return;
-    cleanupSubscription();
     setIsAddStepModalOpen(false);
     setStepPrompt("");
     setSourceMaterialNotes("");
@@ -351,50 +405,7 @@ const StepsDisplay = ({
         ? numericChapter - 1
         : null;
 
-      cleanupSubscription();
-
-      let handledUpdate = false;
-
-      const cleanup = await graphqlClient.subscribeToSessionUpdates(
-        sessionId,
-        (sessionPayload) => {
-          if (handledUpdate) return;
-
-          if (typeof window !== "undefined") {
-            try {
-              localStorage.setItem(
-                "sessionData",
-                JSON.stringify(sessionPayload)
-              );
-            } catch {}
-          }
-
-          const updatedChapter = findUpdatedChapterFromSession(sessionPayload);
-          if (!updatedChapter) {
-            return;
-          }
-
-          handledUpdate = true;
-          setChapterSteps(updatedChapter?.steps || []);
-          setIsSubmittingStep(false);
-          setIsAddStepModalOpen(false);
-          setStepPrompt("");
-          setSourceMaterialNotes("");
-          setIncludeSourceMaterial(false);
-          setAddStepError(null);
-          cleanupSubscription();
-        },
-        (error) => {
-          console.error("Subscription error while adding step:", error);
-          if (handledUpdate) return;
-          handledUpdate = true;
-          setAddStepError("Unable to receive update from Kyper.");
-          setIsSubmittingStep(false);
-          cleanupSubscription();
-        }
-      );
-
-      subscriptionCleanupRef.current = cleanup;
+      handledUpdateRef.current = false;
 
       const baseInstruction = stepPrompt.trim();
       const supplementalNotes =
@@ -444,13 +455,13 @@ const StepsDisplay = ({
       console.error("Error adding step:", error);
       setAddStepError(error?.message || "Unable to add step right now.");
       setIsSubmittingStep(false);
-      cleanupSubscription();
     }
   };
 
   const handleAskKyper = async (query) => {
     try {
       setIsAskingKyper(true);
+      handledUpdateRef.current = false; // Reset handled flag when starting
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -465,45 +476,6 @@ const StepsDisplay = ({
       targetChapterIndexRef.current = Number.isFinite(numericChapter)
         ? numericChapter - 1
         : null;
-
-      cleanupSubscription();
-
-      let handledUpdate = false;
-
-      const cleanup = await graphqlClient.subscribeToSessionUpdates(
-        sessionId,
-        (sessionPayload) => {
-          if (handledUpdate) return;
-
-          // Update localStorage with new session data
-          if (typeof window !== "undefined") {
-            try {
-              localStorage.setItem(
-                "sessionData",
-                JSON.stringify(sessionPayload)
-              );
-            } catch {}
-          }
-
-          // update the chapter
-          const updatedChapter = findUpdatedChapterFromSession(sessionPayload);
-          if (updatedChapter) {
-            handledUpdate = true;
-            setChapterSteps(updatedChapter?.steps || []);
-            setIsAskingKyper(false);
-            cleanupSubscription();
-          }
-        },
-        (error) => {
-          console.error("Subscription error while asking Kyper:", error);
-          if (handledUpdate) return;
-          handledUpdate = true;
-          setIsAskingKyper(false);
-          cleanupSubscription();
-        }
-      );
-
-      subscriptionCleanupRef.current = cleanup;
 
       setAllMessages((prev) => [
         ...prev,
@@ -575,7 +547,6 @@ const StepsDisplay = ({
         { from: "bot", content: "Error: Unable to get response from Kyper" },
       ]);
       setIsAskingKyper(false);
-      cleanupSubscription();
     }
   };
 

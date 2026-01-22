@@ -16,6 +16,7 @@ import SliderField from "./SliderField";
 import AskKyperPopup from "./AskKyperPopup";
 import { graphqlClient } from "@/lib/graphql-client";
 import { Info, Trash2 } from "lucide-react";
+import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
 export default function CreateComet({
   initialData = null,
@@ -40,8 +41,8 @@ export default function CreateComet({
   const [fieldPosition, setFieldPosition] = useState(null);
   const [habitEnabled, setHabitEnabled] = useState(false);
   const [personalizationEnabled, setPersonalizationEnabled] = useState(false);
-  const subscriptionCleanupRef = useRef(null);
   const [sessionId, setSessionId] = useState(null);
+  const isAskingKyperRef = useRef(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -87,27 +88,27 @@ export default function CreateComet({
     };
   }, [blurTimeout]);
 
+  // Note: WebSocket cleanup is now handled by SubscriptionManager
+
+  // Track isAskingKyper in ref for subscription callback
   useEffect(() => {
-    return () => {
-      graphqlClient.cleanup();
-    };
-  }, []);
+    isAskingKyperRef.current = isAskingKyper;
+  }, [isAskingKyper]);
 
-  // Listen for socket response when asking Kyper
-  useEffect(() => {
-    // console.log("sessionId", sessionId);
-    // console.log("isAskingKyper", isAskingKyper);
-    if (!isAskingKyper || !sessionId) return;
+  // Subscribe to session updates - temporary subscription that reuses existing subscription
+  // Note: The form is updated via prefillData prop from DashboardLayout, not directly here
+  // This subscription is mainly for when asking Kyper to get immediate updates
+  useSessionSubscription(
+    sessionId,
+    (sessionData) => {
+      // Only handle updates when actively asking Kyper (for immediate form updates)
+      // Otherwise, updates come through prefillData prop which triggers the useEffect below
+      if (!isAskingKyperRef.current) {
+        return;
+      }
 
-    let cleanup;
-    const subscribeToUpdates = async () => {
-      cleanup = await graphqlClient.subscribeToSessionUpdates(
-        sessionId,
-        (sessionData) => {
-          // console.log("AI response received:", sessionData);
-
-          // Update entire form with comet_creation_data like prefill
-          if (sessionData.comet_creation_data) {
+      // Update entire form with comet_creation_data when asking Kyper
+      if (sessionData.comet_creation_data) {
             // console.log(
             //   "Updating entire form with comet_creation_data:",
             //   sessionData.comet_creation_data
@@ -225,48 +226,19 @@ export default function CreateComet({
 
             setIsAskingKyper(false);
           }
-
-          // Previous approach - update only specific field (commented out for potential revert)
-          // if (sessionData.chatbot_conversation) {
-          //   const agentMessage = sessionData.chatbot_conversation.find(
-          //     (conv) => conv.agent
-          //   )?.agent;
-
-          //   if (agentMessage && focusedField) {
-          //     try {
-          //       const parsedResponse = JSON.parse(agentMessage);
-          //       if (parsedResponse.value || parsedResponse.updatedValue) {
-          //         setValue(
-          //           focusedField,
-          //           parsedResponse.value || parsedResponse.updatedValue
-          //         );
-          //       }
-          //     } catch {
-          //       setValue(focusedField, agentMessage.trim());
-          //     }
-          //     setIsAskingKyper(false);
-          //   }
-          // }
         },
         (error) => {
           console.error("Subscription error:", error);
-          setIsAskingKyper(false);
-        }
+          if (isAskingKyperRef.current) {
+            setIsAskingKyper(false);
+          }
+        },
+        { forceTemporary: true }
       );
-    };
-
-    subscribeToUpdates();
-
-    return () => {
-      if (cleanup) {
-        cleanup();
-      }
-    };
-  }, [isAskingKyper, sessionId, focusedField, setValue]);
 
   useEffect(() => {
     if (prefillData) {
-      // console.log("Prefilling form with data:", prefillData);
+      // console.log("CreateComet: Prefilling form with data:", prefillData);
 
       if (prefillData.comet_creation_data) {
         const basicInfo = prefillData.comet_creation_data["Basic Information"];

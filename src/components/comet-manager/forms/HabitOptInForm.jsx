@@ -16,6 +16,9 @@ export default function HabitOptInForm({
   chapterId = "",
   stepId = "",
   screenId = "",
+  chapterUuid = "",
+  stepUuid = "",
+  screenUuid = "",
   askKyperHandlers = {},
 }) {
   const {
@@ -78,7 +81,7 @@ export default function HabitOptInForm({
             onBlur={onFieldBlur}
           />
         </div>
-        {/* <div>
+        <div>
           <Label className="block text-sm font-medium text-gray-700 mb-2"></Label>
           <RichTextArea
             label="Description"
@@ -93,14 +96,14 @@ export default function HabitOptInForm({
             }
             onBlur={onRichTextBlur}
           />
-        </div> */}
+        </div>
 
         <ImageUpload
           label="Habit Image"
           sessionId={sessionId}
-          chapterId={chapterId}
-          stepId={stepId}
-          screenId={screenId}
+          chapterUid={chapterUuid}
+          stepUid={stepUuid}
+          screenUid={screenUuid}
           onUploadSuccess={(assetData) => {
             if (updateScreenAssets) {
               updateScreenAssets([assetData]);

@@ -46,8 +46,97 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
     setError({ field: "", message: "" });
   };
 
+  // ----------------------------
+// FETCH CLOUDFRONT COOKIES API
+// ----------------------------
+const fetchCloudfrontCookies = async (accessToken) => {
+  try {
+    console.log("➡️ Calling CloudFront cookies API...");
+
+    const res = await fetch(
+      "https://kyper-stage.1st90.com/api/auth/v1/cloudfront-cookies?expires_in_hours=10",
+      {
+        method: "GET",
+        credentials: "include", // IMPORTANT if server sets Set-Cookie
+        headers: {
+          accept: "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    console.log("✅ CloudFront cookies API status:", res.status);
+
+    // Helpful: see if server actually sent Set-Cookie (browser won't expose it in JS normally)
+    // but you can still log all accessible headers:
+    console.log("📦 Response headers:");
+    for (const [k, v] of res.headers.entries()) {
+      console.log(`   ${k}: ${v}`);
+    }
+
+    const contentType = res.headers.get("content-type") || "";
+    let data = null;
+
+    if (contentType.includes("application/json")) {
+      data = await res.json();
+    } else {
+      const text = await res.text();
+      console.log("⚠️ Non-JSON response:", text);
+      data = { raw: text };
+    }
+
+    console.log("📌 CloudFront API RAW RESPONSE:", data);
+
+    if (!res.ok) {
+      throw new Error(data?.message || "CloudFront API failed");
+    }
+
+    // If backend returns cookies inside JSON (NOT Set-Cookie),
+    // you can optionally set them manually ONLY for allowed domains.
+    // Example expected shapes:
+    // data.cookies = { "CloudFront-Policy": "...", "CloudFront-Signature": "...", "CloudFront-Key-Pair-Id": "..." }
+    // OR data.cookie_header = "CloudFront-Policy=...; CloudFront-Signature=...; CloudFront-Key-Pair-Id=..."
+
+    if (data?.cookies && typeof data.cookies === "object") {
+      console.log("🧩 cookies object found in JSON. Attempting to set document.cookie...");
+
+      Object.entries(data.cookies).forEach(([name, value]) => {
+        // You can only set cookies for your current site domain (or parent), not .cloudfront.net
+        document.cookie = `${name}=${value}; path=/; secure; samesite=lax`;
+      });
+
+      console.log("🍪 document.cookie now:", document.cookie);
+    } else if (typeof data?.cookie_header === "string") {
+      console.log("🧩 cookie_header string found. Attempting to set document.cookie...");
+
+      // Split "a=b; c=d; e=f" into ["a=b", "c=d", "e=f"] (simple approach)
+      const parts = data.cookie_header
+        .split(";")
+        .map((p) => p.trim())
+        .filter(Boolean);
+
+      parts.forEach((kv) => {
+        // kv like "CloudFront-Policy=...."
+        document.cookie = `${kv}; path=/; secure; samesite=lax`;
+      });
+
+      console.log("🍪 document.cookie now:", document.cookie);
+    } else {
+      console.log(
+        "ℹ️ No cookie payload in JSON. If cookies are supposed to be saved, server must set Set-Cookie headers."
+      );
+    }
+
+    return data;
+  } catch (err) {
+    console.error("🔴 CloudFront API ERROR:", err);
+    return null;
+  }
+};
+
 const handleSubmit = async (e) => {
   e.preventDefault();
+ 
 
   const validationError = validateForm();
   if (validationError) {
@@ -74,46 +163,9 @@ const handleSubmit = async (e) => {
     localStorage.setItem("access_token", data.access_token);
     localStorage.setItem("token_type", data.token_type);
     localStorage.setItem("refresh_token", data.refresh_token); // optional but useful
-
-    // ----------------------------
-    // ✅ CLOUDFRONT (based on YOUR real response)
-    // ----------------------------
-    // data.cloudfront_cookies
-    // data.cloudfront_domain
-    const domain = data?.cloudfront_domain || null;
-    const cf = data?.cloudfront_cookies || null;
-
-    if (domain && cf) {
-      const policy = cf["CloudFront-Policy"];
-      const signature = cf["CloudFront-Signature"];
-      const keyPairId = cf["CloudFront-Key-Pair-Id"];
-
-      if (!policy || !signature || !keyPairId) {
-        throw new Error("CloudFront cookies missing in login response");
-      }
-
-      // ONE curl-style string (exactly like curl)
-      const cookieHeader =
-        `CloudFront-Policy=${policy}; ` +
-        `CloudFront-Signature=${signature}; ` +
-        `CloudFront-Key-Pair-Id=${keyPairId}`;
-
-      // 1) Save ONE value in localStorage
-      localStorage.setItem("cf_cookie_header", cookieHeader);
-      localStorage.setItem("cf_cookie_domain", domain);
-
-      // 2) Save PAIRS in browser cookies (AWS required)
-      // NOTE: setting domain cookies works only if your site is on same parent domain.
-      document.cookie = `CloudFront-Policy=${policy}; domain=${domain}; path=/; secure; samesite=none`;
-      document.cookie = `CloudFront-Signature=${signature}; domain=${domain}; path=/; secure; samesite=none`;
-      document.cookie = `CloudFront-Key-Pair-Id=${keyPairId}; domain=${domain}; path=/; secure; samesite=none`;
-
-      // 3) Also save FULL curl string as ONE cookie (optional convenience)
-      document.cookie = `CloudFront-Full=${encodeURIComponent(
-        cookieHeader
-      )}; domain=${domain}; path=/; secure; samesite=none`;
-    }
-
+const cf = await fetchCloudfrontCookies(data.access_token);
+console.log("✅ CloudFront cookies fetch result:", cf);
+ 
     // ----------------------------
     // CLOSE MODAL + EVENT (same)
     // ----------------------------

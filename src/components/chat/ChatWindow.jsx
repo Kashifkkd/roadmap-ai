@@ -5,6 +5,7 @@ import Chat from "./Chat";
 import Loader from "@/components/loader2";
 import { graphqlClient } from "@/lib/graphql-client";
 import { useRouter } from "next/navigation";
+import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
 export default function ChatWindow({
   initialInput = null,
@@ -35,12 +36,7 @@ export default function ChatWindow({
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
   const [shouldAnimateWelcome, setShouldAnimateWelcome] = useState(false);
 
-  // Cleanup WebSocket connections on unmount
-  useEffect(() => {
-    return () => {
-      graphqlClient.cleanup();
-    };
-  }, []);
+  // Note: WebSocket cleanup is now handled by SubscriptionManager
 
   // Initialize sessionId from localStorage so subscription can start even if other components send messages
   // useEffect(() => {
@@ -375,93 +371,61 @@ export default function ChatWindow({
     }
   };
 
-  useEffect(() => {
-    if (!sessionId) {
-      return;
-    }
+  // Subscribe to session updates - ChatWindow uses the shared subscription
+  // It will be persistent if on a persistent screen, temporary otherwise
+  useSessionSubscription(
+    sessionId,
+    (sessionData) => {
+      console.log("Session update received:", sessionData);
 
-    let cleanup;
-    const subscribeToUpdates = async () => {
-      cleanup = await graphqlClient.subscribeToSessionUpdates(
-        sessionId,
-        (sessionData) => {
-          console.log("Session update received:", sessionData);
-
-          if (onResponseReceived) {
-            onResponseReceived(sessionData);
-          }
-          localStorage.setItem("sessionData", JSON.stringify(sessionData));
-
-          if (sessionData.chatbot_conversation) {
-            // OLD CODE
-            // const agentMessage = sessionData?.chatbot_conversation?.find(
-            //   (conv) => conv?.agent
-            // )?.agent;
-            //
-            // setAllMessages((prev) => {
-            //   const lastMessage = prev[prev.length - 1];
-            //   if (
-            //     lastMessage?.from === "bot" &&
-            //     lastMessage?.content === agentMessage
-            //   ) {
-            //     return prev;
-            //   }
-            //   return [...prev, { from: "bot", content: agentMessage }];
-            // });
-
-            // NEW CODE
-            const conversation = sessionData.chatbot_conversation;
-            const allMessages = [];
-
-            conversation.forEach((entry) => {
-              if (entry.user) {
-                allMessages.push({
-                  from: "user",
-                  content: entry.user,
-                  status: entry.status,
-                  identifier: entry.identifier,
-                });
-              }
-              if (entry.agent) {
-                allMessages.push({
-                  from: "bot",
-                  content: entry.agent,
-                  status: entry.status,
-                  identifier: entry.identifier,
-                });
-              }
-            });
-
-            console.log("allMessages with status:", allMessages);
-            console.log("conversation:", conversation);
-
-            // Update with all messages
-            if (allMessages.length > 0) {
-              setAllMessages(allMessages);
-            }
-            setIsLoading(false);
-          }
-
-          // Notify parent component if needed
-          if (onResponseReceived) {
-            onResponseReceived(sessionData);
-          }
-        },
-        (error) => {
-          console.error("Subscription error:", error);
-          setError(error.message);
-        }
-      );
-    };
-
-    subscribeToUpdates();
-
-    return () => {
-      if (cleanup) {
-        cleanup();
+      if (onResponseReceived) {
+        onResponseReceived(sessionData);
       }
-    };
-  }, [sessionId, onResponseReceived]);
+      localStorage.setItem("sessionData", JSON.stringify(sessionData));
+
+      if (sessionData.chatbot_conversation) {
+        const conversation = sessionData.chatbot_conversation;
+        const allMessages = [];
+
+        conversation.forEach((entry) => {
+          if (entry.user) {
+            allMessages.push({
+              from: "user",
+              content: entry.user,
+              status: entry.status,
+              identifier: entry.identifier,
+            });
+          }
+          if (entry.agent) {
+            allMessages.push({
+              from: "bot",
+              content: entry.agent,
+              status: entry.status,
+              identifier: entry.identifier,
+            });
+          }
+        });
+
+        console.log("allMessages with status:", allMessages);
+        console.log("conversation:", conversation);
+
+        // Update with all messages
+        if (allMessages.length > 0) {
+          setAllMessages(allMessages);
+        }
+        setIsLoading(false);
+      }
+
+      // Notify parent component if needed
+      if (onResponseReceived) {
+        onResponseReceived(sessionData);
+      }
+    },
+    (error) => {
+      console.error("Subscription error:", error);
+      setError(error.message);
+    }
+  );
 
   if (isGeneratingOutline) {
     return <Loader />;

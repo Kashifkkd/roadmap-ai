@@ -3,12 +3,14 @@
 import React, { useState } from "react";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
 import { Plus, X, Loader2, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -22,13 +24,14 @@ import { Button } from "@/components/ui/Button";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import { uploadAssetFile } from "@/api/uploadAssets";
+import { getImageAttributes, setImageAttributes, getSuggestPrompt } from "@/api/generateStepImages";
 
 export default function ImageUpload({
   label = "Upload Image/Icon",
   sessionId = "",
-  chapterId = "",
-  stepId = "",
-  screenId = "",
+  chapterUid = "",
+  stepUid = "",
+  screenUid = "",
   onUploadSuccess,
   onAIGenerateSuccess,
   existingAssets = [],
@@ -43,9 +46,13 @@ export default function ImageUpload({
   const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiArtStyle, setAiArtStyle] = useState("Photorealistic");
-  const [aiSize, setAiSize] = useState("1024x1024");
+  const [imageGuidance, setImageGuidance] = useState("simple");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [aiGenerateError, setAiGenerateError] = useState(null);
+  const [isLoadingAttributes, setIsLoadingAttributes] = useState(false);
+  const [attributesError, setAttributesError] = useState(null);
+  const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
+  const [promptError, setPromptError] = useState(null);
 
   // Asset Selection Dialog State
   const [isAssetDialogOpen, setIsAssetDialogOpen] = useState(false);
@@ -68,7 +75,12 @@ export default function ImageUpload({
     "Minimalist",
   ];
 
-  const imageSizes = ["1024x1024"];
+  const imageGuidanceOptions = [
+    { value: "simple", label: "Simple" },
+    { value: "detailed", label: "Detailed" },
+    { value: "complex", label: "Complex" },
+    { value: "very_detailed", label: "Very Detailed" },
+  ];
 
   const handleFileUpload = async (file) => {
     setIsUploadingImage(true);
@@ -79,9 +91,10 @@ export default function ImageUpload({
         file,
         "image",
         sessionId || "",
-        chapterId || "",
-        stepId || "",
-        screenId || ""
+        chapterUid || "",
+        stepUid || "",
+        screenUid || "",
+        "" // link parameter (optional, not used for file uploads)
       );
 
       // console.log(uploadResponse, "uploadResponse")
@@ -96,7 +109,7 @@ export default function ImageUpload({
           asset_id:
             uploadResponse.response.id || uploadResponse.response.asset_id,
           asset_type: "image",
-          name: uploadResponse.response.name || file.name,
+          title: uploadResponse.response.name || file.name,
         };
         if (onUploadSuccess) {
           onUploadSuccess(assetData);
@@ -111,6 +124,128 @@ export default function ImageUpload({
     }
   };
 
+  // Handle opening AI dialog - fetch attributes first
+  const handleOpenAIDialog = async () => {
+    setIsAIDialogOpen(true);
+    setIsLoadingAttributes(true);
+    setAttributesError(null);
+    setAiGenerateError(null);
+    setPromptError(null);
+
+    // Debug: Log UUID values to help diagnose why button might be disabled
+    console.log("ImageUpload UUID props:", {
+      sessionId,
+      chapterUid,
+      stepUid,
+      screenUid,
+    });
+
+    try {
+      const response = await getImageAttributes({ sessionId });
+
+      if (response?.error) {
+        throw new Error(response?.error?.message || "Failed to fetch image attributes");
+      }
+
+      // Handle different response structures
+      const attributes = response?.response || response || {};
+      
+      // Set the fields from the API response
+      if (attributes.art_style) {
+        setAiArtStyle(attributes.art_style);
+      }
+      if (attributes.image_guidance) {
+        setImageGuidance(attributes.image_guidance);
+      }
+    } catch (error) {
+      console.error("Error fetching image attributes:", error);
+      setAttributesError(error.message || "Failed to load image attributes");
+    } finally {
+      setIsLoadingAttributes(false);
+    }
+  };
+
+  // Handle suggest prompt
+  const handleSuggestPrompt = async () => {
+    // Validate required parameters
+    if (!sessionId || !chapterUid || !stepUid || !screenUid) {
+      const missingParams = [];
+      if (!sessionId) missingParams.push("sessionId");
+      if (!chapterUid) missingParams.push("chapterUid");
+      if (!stepUid) missingParams.push("stepUid");
+      if (!screenUid) missingParams.push("screenUid");
+      
+      setPromptError(`Missing required parameters: ${missingParams.join(", ")}`);
+      console.error("Missing parameters for getSuggestPrompt:", {
+        sessionId: !!sessionId,
+        chapterUid: !!chapterUid,
+        stepUid: !!stepUid,
+        screenUid: !!screenUid,
+        values: { sessionId, chapterUid, stepUid, screenUid }
+      });
+      return;
+    }
+
+    setIsLoadingPrompt(true);
+    setPromptError(null);
+
+    try {
+      console.log("🔵 Calling getSuggestPrompt API with:", {
+        sessionId,
+        chapterUid,
+        stepUid,
+        screenUid,
+      });
+
+      const apiResponse = await getSuggestPrompt({
+        sessionId,
+        chapterUid,
+        stepUid,
+        screenUid,
+      });
+
+      console.log("🔵 Raw API response from getSuggestPrompt:", apiResponse);
+
+      // apiService returns: { success: true, response: {...}, status: 200 }
+      // or: { success: false, error: true, message: "..." }
+      if (!apiResponse?.success || apiResponse?.error) {
+        const errorMessage = apiResponse?.message || apiResponse?.error?.message || "Failed to get suggested prompt";
+        console.error("❌ API returned error:", errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      // Extract the actual response data
+      // apiService wraps it: { success: true, response: { status: "success", prompt: "...", ... } }
+      const responseData = apiResponse?.response || {};
+      
+      console.log("🔵 Extracted response data:", responseData);
+
+      // The build-prompt API returns: { status: "success", prompt: "...", ... }
+      if (responseData.prompt) {
+        setAiPrompt(responseData.prompt);
+        console.log("✅ Prompt set successfully:", responseData.prompt);
+      } else {
+        // If prompt is not found, log the full response for debugging
+        console.warn("⚠️ Prompt not found in response. Full response structure:", {
+          responseData,
+          keys: Object.keys(responseData),
+          hasStatus: !!responseData.status,
+        });
+        setPromptError("Prompt not found in API response. Check console for details.");
+      }
+    } catch (error) {
+      console.error("❌ Error getting suggested prompt:", error);
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      });
+      setPromptError(error.message || "Failed to get suggested prompt");
+    } finally {
+      setIsLoadingPrompt(false);
+    }
+  };
+
   const handleGenerateImage = async () => {
     if (!aiPrompt.trim()) {
       setAiGenerateError("Please enter a prompt");
@@ -121,14 +256,25 @@ export default function ImageUpload({
     setAiGenerateError(null);
 
     try {
+      // First, set the image attributes
+      const setAttributesResponse = await setImageAttributes({
+        sessionId,
+        artStyle: aiArtStyle,
+        imageGuidance,
+      });
+
+      if (setAttributesResponse?.error) {
+        throw new Error(setAttributesResponse?.error?.message || "Failed to set image attributes");
+      }
+
+      // Then, generate the image
       const payload = {
         prompt: aiPrompt,
         art_style: aiArtStyle,
-        size: aiSize,
         session_id: sessionId || "",
-        chapter_id: chapterId ? parseInt(chapterId) : 0,
-        step_id: stepId ? parseInt(stepId) : 0,
-        screen_id: screenId ? parseInt(screenId) : 0,
+        chapter_uid: chapterUid || "",
+        step_uid: stepUid || "",
+        screen_uid: screenUid || "",
       };
 
       const { response, error } = await apiService({
@@ -161,7 +307,7 @@ export default function ImageUpload({
         setAiPrompt("");
       }
     } catch (error) {
-      setAiGenerateError("Failed to generate image. Please try again.");
+      setAiGenerateError(error.message || "Failed to generate image. Please try again.");
       console.error("Error generating image:", error);
     } finally {
       setIsGeneratingImage(false);
@@ -317,7 +463,7 @@ export default function ImageUpload({
               <button
                 type="button"
                 className="border border-primary rounded-lg px-4 py-2 bg-white hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-primary text-sm font-medium"
-                onClick={() => setIsAIDialogOpen(true)}
+                onClick={handleOpenAIDialog}
               >
                 <Plus className="h-4 w-4" />
                 Create
@@ -405,59 +551,116 @@ export default function ImageUpload({
             <DialogTitle>AI-Generate Image</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {/* Prompt Field */}
-            <div className="space-y-2">
-              <Label htmlFor="ai-prompt">Prompt</Label>
-              <Input
-                id="ai-prompt"
-                type="text"
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-                placeholder="Enter a description for the image..."
-                className="w-full"
-              />
-            </div>
-
-            {/* Art Style Field */}
-            <div className="space-y-2">
-              <Label htmlFor="ai-art-style">Art Style</Label>
-              <Select value={aiArtStyle} onValueChange={setAiArtStyle}>
-                <SelectTrigger id="ai-art-style" className="w-full">
-                  <SelectValue placeholder="Select art style" />
-                </SelectTrigger>
-                <SelectContent>
-                  {artStyles.map((style) => (
-                    <SelectItem key={style} value={style}>
-                      {style}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Size Field */}
-            <div className="space-y-2">
-              <Label htmlFor="ai-size">Size</Label>
-              <Select value={aiSize} onValueChange={setAiSize}>
-                <SelectTrigger id="ai-size" className="w-full">
-                  <SelectValue placeholder="Select size" />
-                </SelectTrigger>
-                <SelectContent>
-                  {imageSizes.map((size) => (
-                    <SelectItem key={size} value={size}>
-                      {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Error Message */}
-            {aiGenerateError && (
-              <div className="flex items-center gap-2 text-sm text-red-600">
-                <X className="h-4 w-4" />
-                <span>{aiGenerateError}</span>
+            {isLoadingAttributes ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-gray-600">Loading image attributes...</p>
               </div>
+            ) : attributesError ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                <div className="rounded-full bg-red-50 p-3">
+                  <X className="h-6 w-6 text-red-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700">
+                    Unable to load image attributes
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{attributesError}</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Prompt Field */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="ai-prompt">Prompt</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSuggestPrompt}
+                      disabled={isLoadingPrompt || !sessionId || !chapterUid || !stepUid || !screenUid}
+                      className="text-xs"
+                      title={
+                        !sessionId
+                          ? "Session ID is required"
+                          : !chapterUid
+                          ? "Chapter UUID is required"
+                          : !stepUid
+                          ? "Step UUID is required"
+                          : !screenUid
+                          ? "Screen UUID is required"
+                          : "Get AI-suggested prompt"
+                      }
+                    >
+                      {isLoadingPrompt ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          Loading...
+                        </>
+                      ) : (
+                        "Suggest Prompt"
+                      )}
+                    </Button>
+                  </div>
+                  <Textarea
+                    id="ai-prompt"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="Enter a description for the image..."
+                    className="w-full min-h-[100px] resize-y"
+                    rows={4}
+                  />
+                  {promptError && (
+                    <div className="flex items-center gap-2 text-xs text-red-600">
+                      <X className="h-3 w-3" />
+                      <span>{promptError}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Art Style Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="ai-art-style">Art Style</Label>
+                  <Select value={aiArtStyle} onValueChange={setAiArtStyle}>
+                    <SelectTrigger id="ai-art-style" className="w-full">
+                      <SelectValue placeholder="Select art style" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {artStyles.map((style) => (
+                        <SelectItem key={style} value={style}>
+                          {style}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Image Guidance Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="image-guidance">Image Guidance</Label>
+                  <Select value={imageGuidance} onValueChange={setImageGuidance}>
+                    <SelectTrigger id="image-guidance" className="w-full">
+                      <SelectValue placeholder="Select image guidance" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {imageGuidanceOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Error Message */}
+                {aiGenerateError && (
+                  <div className="flex items-center gap-2 text-sm text-red-600">
+                    <X className="h-4 w-4" />
+                    <span>{aiGenerateError}</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
           <DialogFooter>
@@ -467,14 +670,16 @@ export default function ImageUpload({
                 setIsAIDialogOpen(false);
                 setAiPrompt("");
                 setAiGenerateError(null);
+                setAttributesError(null);
+                setPromptError(null);
               }}
-              disabled={isGeneratingImage}
+              disabled={isGeneratingImage || isLoadingAttributes}
             >
               Cancel
             </Button>
             <Button
               onClick={handleGenerateImage}
-              disabled={isGeneratingImage || !aiPrompt.trim()}
+              disabled={isGeneratingImage || isLoadingAttributes || !aiPrompt.trim() || !!attributesError}
             >
               {isGeneratingImage ? (
                 <>
