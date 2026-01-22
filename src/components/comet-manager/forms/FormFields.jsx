@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Plus, Trash2, GripVertical, CircleCheck, CircleX } from "lucide-react";
 import "quill/dist/quill.snow.css";
 
-// Form field components for comet manager forms
+
 
 export const SectionHeader = ({ title }) => (
   <div className="w-full mb-4">
@@ -173,8 +173,8 @@ export const ListField = ({
                   <div
                     onClick={() => handleToggleCorrect(index, true)}
                     className={`cursor-pointer h-10 w-10 flex items-center justify-center rounded-lg transition-all ${isCorrect
-                        ? "bg-green-500"
-                        : "bg-green-100 hover:bg-green-200"
+                      ? "bg-green-500"
+                      : "bg-green-100 hover:bg-green-200"
                       }`}
                   >
                     <CircleCheck
@@ -185,8 +185,8 @@ export const ListField = ({
                   <div
                     onClick={() => handleToggleCorrect(index, false)}
                     className={`cursor-pointer h-10 w-10 rounded-lg flex items-center justify-center transition-all ${!isCorrect && isCorrect !== undefined
-                        ? "bg-red-500"
-                        : "bg-red-100 hover:bg-red-200"
+                      ? "bg-red-500"
+                      : "bg-red-100 hover:bg-red-200"
                       }`}
                   >
                     <CircleX
@@ -238,7 +238,7 @@ export const RichTextArea = ({
 }) => {
   const quillEditorRef = useRef(null);
   const editorRef = useRef(null);
-  const toolbarRef = useRef(null);
+  // const toolbarRef = useRef(null);
   const selectionCallbackRef = useRef(onSelectionChange);
   const blurCallbackRef = useRef(onBlur);
   const blurHandlerRef = useRef(null);
@@ -252,7 +252,7 @@ export const RichTextArea = ({
   }, [onBlur]);
 
   useEffect(() => {
-    if (quillEditorRef.current || !editorRef.current || !toolbarRef.current)
+    if (quillEditorRef.current || !editorRef.current)
       return;
 
     // Dynamically import Quill only on client side
@@ -262,16 +262,16 @@ export const RichTextArea = ({
       const QuillModule = await import("quill");
       const Quill = QuillModule.default;
 
-      //custom toolbar
       const editorElement = editorRef.current;
-      const toolbarElement = toolbarRef.current;
+      // const toolbarElement = toolbarRef.current;
 
-      if (!editorElement || !toolbarElement || quillEditorRef.current) return;
+      if (!editorElement || quillEditorRef.current) return;
 
       const editor = new Quill(editorElement, {
         theme: "snow",
         modules: {
-          toolbar: toolbarElement,
+          // toolbar: toolbarElement,
+          toolbar: false,
         },
       });
 
@@ -374,9 +374,9 @@ export const RichTextArea = ({
       }
 
       const editorElement = editorRef.current;
-      const toolbarElement = toolbarRef.current;
+      // const toolbarElement = toolbarRef.current;
       if (editorElement) editorElement.innerHTML = "";
-      if (toolbarElement) toolbarElement.innerHTML = "";
+      // if (toolbarElement) toolbarElement.innerHTML = "";
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -395,7 +395,7 @@ export const RichTextArea = ({
         />
 
         {/* Custom toolbar container */}
-        <div
+        {/* <div
           ref={toolbarRef}
           className="p-1 flex gap-1"
           style={{ border: "none" }}
@@ -409,7 +409,7 @@ export const RichTextArea = ({
           <button className="ql-image" title="Image" />
           <button className="ql-undo" title="Undo" />
           <button className="ql-redo" title="Redo" />
-        </div>
+        </div> */}
       </div>
     </div>
   );

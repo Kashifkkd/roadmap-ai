@@ -102,7 +102,8 @@ class GraphQLClient {
     return await this.request(query);
   }
 
-  async subscribeToSessionUpdates(sessionId, onUpdate, onError) {
+  subscribeToSessionUpdates(sessionId, onUpdate, onError) {
+    // wsGraphQLClient.subscribeToSessionUpdates is synchronous, so no need for async
     return wsGraphQLClient.subscribeToSessionUpdates(
       sessionId,
       onUpdate,

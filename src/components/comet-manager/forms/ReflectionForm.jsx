@@ -14,6 +14,9 @@ export default function ReflectionForm({
   chapterId = "",
   stepId = "",
   screenId = "",
+  chapterUuid = "",
+  stepUuid = "",
+  screenUuid = "",
   askKyperHandlers = {},
 }) {
   const {
@@ -71,9 +74,9 @@ export default function ReflectionForm({
         <ImageUpload
           label="Upload Image"
           sessionId={sessionId}
-          chapterId={chapterId}
-          stepId={stepId}
-          screenId={screenId}
+          chapterUid={chapterUuid}
+          stepUid={stepUuid}
+          screenUid={screenUuid}
           onUploadSuccess={(assetData) => {
             if (updateScreenAssets) {
               updateScreenAssets([assetData]);

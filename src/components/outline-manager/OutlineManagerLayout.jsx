@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import ChatWindow from "@/components/chat/ChatWindow";
 import OutlineMannerCreateComet from "./OutlineMannerCreateComet.jsx";
+import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
 export default function OutlineManagerLayout() {
   const [sessionData, setSessionData] = useState(null);
@@ -10,17 +11,55 @@ export default function OutlineManagerLayout() {
   const [prefillData, setPrefillData] = useState(null);
   const [isAskingKyper, setIsAskingKyper] = useState(false);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
 
   useEffect(() => {
     // Access localStorage only on the client
-    const storedSessionData =
-      typeof window !== "undefined"
-        ? localStorage.getItem("sessionData")
-        : null;
+    if (typeof window === "undefined") return;
+
+    const storedSessionData = localStorage.getItem("sessionData");
     if (storedSessionData && !sessionData) {
       setSessionData(JSON.parse(storedSessionData));
     }
+
+    // Get sessionId from localStorage
+    const storedSessionId = localStorage.getItem("sessionId");
+    if (storedSessionId) {
+      setSessionId(storedSessionId);
+    }
+
+    // Listen for sessionId changes (e.g., when a new session is created)
+    const handleStorageChange = (e) => {
+      if (e.key === "sessionId" && e.newValue) {
+        setSessionId(e.newValue);
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, []);
+
+  // Subscribe to session updates - persistent subscription for outline-manager
+  useSessionSubscription(
+    sessionId,
+    (updatedSessionData) => {
+      try {
+        localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
+        // Create a new object reference to ensure React detects the change
+        const updatedData = { ...updatedSessionData };
+        setSessionData(updatedData);
+        // Also update prefillData so child components receive the updates
+        setPrefillData(updatedData);
+      } catch (error) {
+        console.error("Error updating session data:", error);
+      }
+    },
+    (error) => {
+      console.error("Subscription error in OutlineManagerLayout:", error);
+    }
+  );
 
   useEffect(() => {
     if (!sessionData?.chatbot_conversation) return;

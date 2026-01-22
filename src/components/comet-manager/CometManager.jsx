@@ -28,6 +28,7 @@ import {
   Zap,
 } from "lucide-react";
 import { graphqlClient } from "@/lib/graphql-client";
+import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -249,38 +250,27 @@ export default function CometManager({
   }, [sessionData]);
 
 
-  // Subscription for next chapter
-  useEffect(() => {
-    if (!isGeneratingNextChapter || !sessionId) return;
-
-    let cleanup;
-    const subscribe = async () => {
-      console.log("Subscribing to session updates for next chapter...");
-      cleanup = await graphqlClient.subscribeToSessionUpdates(
-        sessionId,
-        (updatedSessionData) => {
-          try {
-            localStorage.setItem(
-              "sessionData",
-              JSON.stringify(updatedSessionData)
-            );
-            setSessionData(updatedSessionData);
-          } catch { }
-        },
-        (err) => {
-          console.error("Subscription error:", err);
-          setNextChapterError(err?.message || "Subscription failed");
-          setIsGeneratingNextChapter(false);
-        }
-      );
-    };
-
-    subscribe();
-
-    return () => {
-      if (cleanup) cleanup();
-    };
-  }, [isGeneratingNextChapter, sessionId]);
+  // Subscribe to session updates - persistent subscription for comet-manager
+  // This will reuse the existing subscription if one exists
+  useSessionSubscription(
+    sessionId,
+    (updatedSessionData) => {
+      try {
+        localStorage.setItem(
+          "sessionData",
+          JSON.stringify(updatedSessionData)
+        );
+        setSessionData(updatedSessionData);
+      } catch {}
+    },
+    (err) => {
+      console.error("Subscription error:", err);
+      if (isGeneratingNextChapter) {
+        setNextChapterError(err?.message || "Subscription failed");
+        setIsGeneratingNextChapter(false);
+      }
+    }
+  );
 
   // Scroll to step in remaining chapter panel when step is clicked in sidebar
   useEffect(() => {
@@ -1326,7 +1316,27 @@ export default function CometManager({
                         <div>
                           <GenerateStepImageButton
                             sessionId={sessionId}
-                            chapterUid={selectedScreen?.uuid}
+                            chapterUid={
+                              (() => {
+                                // Find chapter UUID from outline using stepUid (more reliable than chapterId)
+                                const stepUid = selectedScreen?.stepUid;
+                                if (!stepUid || !outline?.chapters) {
+                                  return null;
+                                }
+                                // Search through chapters to find the one containing this step
+                                for (const chapter of outline.chapters) {
+                                  if (chapter.steps) {
+                                    for (const stepItem of chapter.steps) {
+                                      const step = stepItem?.step;
+                                      if (step && step.uuid === stepUid) {
+                                        return chapter.uuid || null;
+                                      }
+                                    }
+                                  }
+                                }
+                                return null;
+                              })()
+                            }
                             stepUid={selectedScreen?.stepUid}
                             onSuccess={(response) => {
                               console.log("Step image generated:", response);

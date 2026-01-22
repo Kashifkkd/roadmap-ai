@@ -129,7 +129,7 @@ export default function PollMcqForm({
     updateField("options", updatedOptions);
   };
 
-  // Add a new option
+  
   const handleAddOption = () => {
     const newOption = {
       option_id: generateId("o"),

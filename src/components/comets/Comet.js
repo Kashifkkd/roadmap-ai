@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import StatusButton from "./StatusButton";
 import { useCometSettings } from "@/contexts/CometSettingsContext";
 
@@ -14,7 +14,12 @@ const Comet = ({
   onCometClick,
 }) => {
   const [disabled, setDisabled] = useState(false);
+  const [imgSrc, setImgSrc] = useState(imageURL || "/fallbackImage.png");
   const { setIsCometSettingsOpen } = useCometSettings();
+
+  useEffect(() => {
+    setImgSrc(imageURL || "/fallbackImage.png");
+  }, [imageURL]);
 
   const handleClick = async () => {
     if (disabled) return;
@@ -44,7 +49,7 @@ const Comet = ({
     }
 
     try {
-      // Fetch session details from API
+      // Fetch session details from 
       const response = await fetch(
         `https://kyper-stage.1st90.com/api/comet/session_details/${session_id}`,
         {
@@ -60,6 +65,11 @@ const Comet = ({
       }
 
       const result = await response.json();
+
+      if (imageURL && imageURL !== "/fallbackImage.png") {
+        result.response_path = result.response_path || {};
+        result.response_path.path_image = imageURL;
+      }
 
       // Store sessionData in localStorage
       localStorage.setItem("sessionData", JSON.stringify(result));
@@ -78,12 +88,14 @@ const Comet = ({
     >
       {/* Background image */}
       <Image
-        src={imageURL}
+        src={imgSrc}
         alt="card image"
-        layout="fill"
-        objectFit="cover"
-        className="absolute inset-0 z-0 transition-all duration-300 group-hover:brightness-110"
+        fill
+        sizes="100%"
+        className="absolute inset-0 z-0 object-cover transition-all duration-300 group-hover:brightness-110"
         priority
+        unoptimized
+        onError={() => setImgSrc("/fallbackImage.png")}
       />
       {/* White overlay on hover */}
       {/* new white overlay on hover  */}
@@ -146,7 +158,7 @@ const Comet = ({
                   </span>
                 </div>
               </button>
-              <button className="rounded-sm py-2 px-3 gap-3 bg-[#453E90]">
+              <button className="rounded-sm py-2 px-3 gap-3 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6]">
                 <div className="flex gap-1">
                   <Image
                     src="/preview.png"
@@ -161,7 +173,7 @@ const Comet = ({
               </button>
               <button
                 type="button"
-                className="rounded-sm py-2 px-3 gap-3 bg-[#453E90]"
+                className="rounded-sm py-2 px-3 gap-3 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6]"
                 onClick={handleSettingsClick}
               >
                 <div className="flex gap-1">

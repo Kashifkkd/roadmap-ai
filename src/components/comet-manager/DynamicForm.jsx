@@ -767,14 +767,23 @@ export default function DynamicForm({
     // Extract UUIDs for asset upload
     const screenUuid = screen?.uuid || "";
     const stepUuid = screen?.stepUid || "";
-    // Find chapter UUID from outline
+    // Find chapter UUID from outline using stepUuid (more reliable than chapterId)
     let chapterUuid = "";
     const outline = sessionData?.response_path;
-    if (outline?.chapters && chapterId) {
-      const chapter = outline.chapters.find(
-        (ch) => String(ch.id) === String(chapterId)
-      );
-      chapterUuid = chapter?.uuid || "";
+    if (outline?.chapters && stepUuid) {
+      // Search through chapters to find the one containing this step
+      for (const chapter of outline.chapters) {
+        if (chapter.steps) {
+          for (const stepItem of chapter.steps) {
+            const step = stepItem?.step;
+            if (step && step.uuid === stepUuid) {
+              chapterUuid = chapter.uuid || "";
+              break;
+            }
+          }
+          if (chapterUuid) break;
+        }
+      }
     }
 
     // Function to update screen assets

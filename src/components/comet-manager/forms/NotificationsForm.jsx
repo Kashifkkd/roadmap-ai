@@ -14,6 +14,9 @@ export default function NotificationsForm({
   chapterId = "",
   stepId = "",
   screenId = "",
+  chapterUuid = "",
+  stepUuid = "",
+  screenUuid = "",
   askKyperHandlers = {},
 }) {
   const {
@@ -73,9 +76,9 @@ export default function NotificationsForm({
         <ImageUpload
           label="Notification Icon/Image"
           sessionId={sessionId}
-          chapterId={chapterId}
-          stepId={stepId}
-          screenId={screenId}
+          chapterUid={chapterUuid}
+          stepUid={stepUuid}
+          screenUid={screenUuid}
           onUploadSuccess={(assetData) => {
             if (updateScreenAssets) {
               updateScreenAssets([assetData]);

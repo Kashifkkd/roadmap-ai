@@ -174,7 +174,12 @@ export default function AllComet() {
       {/* Comet Settings Dialog */}
       <CometSettingsDialog
         open={isCometSettingsOpen}
-        onOpenChange={setIsCometSettingsOpen}
+        onOpenChange={(open) => {
+          setIsCometSettingsOpen(open);
+          if (!open) {
+            getCometData();
+          }
+        }}
       />
     </div>
   );

@@ -8,6 +8,7 @@ import ChatWindow from "@/components/chat/ChatWindow";
 // import ProgressbarLoader from "@/components/loader";
 import { graphqlClient } from "@/lib/graphql-client";
 import Loader from "../loader2";
+import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
 export default function DashboardLayout() {
   const searchParams = useSearchParams();
@@ -29,12 +30,7 @@ export default function DashboardLayout() {
   const [formProgress, setFormProgress] = useState(0);
   const [isAskingKyper, setIsAskingKyper] = useState(false);
 
-  // Cleanup WebSocket connections on unmount
-  useEffect(() => {
-    return () => {
-      graphqlClient.cleanup();
-    };
-  }, []);
+  // Note: WebSocket cleanup is now handled by SubscriptionManager
 
   // Initialize sessionId and sessionData from localStorage on mount
   useEffect(() => {
@@ -119,35 +115,29 @@ export default function DashboardLayout() {
     }
   }, [sessionData]);
 
-  // Listen for socket response when generating outline
-  useEffect(() => {
-    if (!isGeneratingOutline || !sessionId) return;
-
-    let cleanup;
-    const subscribeToUpdates = async () => {
-      cleanup = await graphqlClient.subscribeToSessionUpdates(
-        sessionId,
-        (sessionData) => {
-          localStorage.setItem("sessionData", JSON.stringify(sessionData));
-          router.push("/outline-manager");
-          // setIsGeneratingOutline(false);
-        },
-        (error) => {
-          console.error("Subscription error:", error);
-          setError(error.message);
-          setIsGeneratingOutline(false);
-        }
-      );
-    };
-
-    subscribeToUpdates();
-
-    return () => {
-      if (cleanup) {
-        cleanup();
+  // Subscribe to session updates - persistent subscription for dashboard
+  useSessionSubscription(
+    sessionId,
+    (sessionData) => {
+      localStorage.setItem("sessionData", JSON.stringify(sessionData));
+      // Create a new object reference to ensure React detects the change
+      const updatedSessionData = { ...sessionData };
+      setSessionData(updatedSessionData);
+      // Also update prefillData so CreateComet component receives the updates
+      // Using a new object reference ensures the useEffect in CreateComet triggers
+      setPrefillData(updatedSessionData);
+      
+      // Navigate to outline-manager when outline is generated
+      if (isGeneratingOutline) {
+        router.push("/outline-manager");
       }
-    };
-  }, [isGeneratingOutline, sessionId, router]);
+    },
+    (error) => {
+      console.error("Subscription error:", error);
+      setError(error.message);
+      setIsGeneratingOutline(false);
+    }
+  );
 
   // Handle form submission and navigation
   const handleFormSubmit = async (formData) => {

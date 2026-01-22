@@ -6,6 +6,7 @@ import Stars from "@/components/icons/Stars";
 import Loader from "@/components/loader2";
 import { graphqlClient } from "@/lib/graphql-client";
 import { tokenManager } from "@/lib/api-client";
+import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
 export default function OutlineMannerFooter() {
   const router = useRouter();
@@ -31,14 +32,9 @@ export default function OutlineMannerFooter() {
     };
   }, []);
 
- useEffect(() => {
-  if (!isGenerating || !sessionId) return;
-
-  let cleanup;
-
   const getChaptersCount = (sessionData) => {
-    const chaptersA = sessionData?.response_path?.chapters; // <--- your screenshot
-    const chaptersB = sessionData?.chapters;               // <--- fallback if root exists
+    const chaptersA = sessionData?.response_path?.chapters;
+    const chaptersB = sessionData?.chapters;
 
     if (Array.isArray(chaptersA)) return chaptersA.length;
     if (Array.isArray(chaptersB)) return chaptersB.length;
@@ -50,42 +46,28 @@ export default function OutlineMannerFooter() {
     return 0;
   };
 
-  const subscribe = async () => {
-    try {
-      cleanup = await graphqlClient.subscribeToSessionUpdates(
-        sessionId,
-        (sessionData) => {
-          try {
-            localStorage.setItem("sessionData", JSON.stringify(sessionData));
-          } catch {}
+  // Subscribe to session updates - persistent subscription for outline-manager
+  useSessionSubscription(
+    sessionId,
+    (sessionData) => {
+      try {
+        localStorage.setItem("sessionData", JSON.stringify(sessionData));
+      } catch {}
 
-          const chaptersCount = getChaptersCount(sessionData);
-
-          // ✅ only push when chapters > 1
-          if (chaptersCount > 1) {
-            router.push("/comet-manager");
-            // setIsGenerating(false);
-          }
-        },
-        (err) => {
-          console.error("Subscription error:", err);
-          setError(err?.message || "Subscription failed");
-          setIsGenerating(false);
+      // Only navigate when generating and chapters > 1
+      if (isGenerating) {
+        const chaptersCount = getChaptersCount(sessionData);
+        if (chaptersCount > 1) {
+          router.push("/comet-manager");
         }
-      );
-    } catch (e) {
-      console.error("Subscribe crashed:", e);
-      setError(e?.message || "Subscription failed");
+      }
+    },
+    (err) => {
+      console.error("Subscription error:", err);
+      setError(err?.message || "Subscription failed");
       setIsGenerating(false);
     }
-  };
-
-  subscribe();
-
-  return () => {
-    if (typeof cleanup === "function") cleanup();
-  };
-}, [isGenerating, sessionId, router]);
+  );
 
 
   const handleSubmit = async () => {
