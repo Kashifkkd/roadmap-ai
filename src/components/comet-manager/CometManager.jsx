@@ -16,6 +16,8 @@ import {
   FileQuestion,
   X,
   Users,
+  User,
+  Mail,
   Target,
   Menu,
   Expand,
@@ -82,6 +84,13 @@ const SCREEN_TYPE_GROUPS = [
         color: "bg-blue-100 border-blue-300",
         description: "Text, images, and embedded media.",
       },
+      {
+        id: "profile",
+        name: "Profile",
+        icon: <User size={20} />,
+        color: "bg-violet-100 border-violet-300",
+        description: "Heading, body, and profile photo upload.",
+      },
     ],
   },
   {
@@ -147,6 +156,25 @@ const SCREEN_TYPE_GROUPS = [
         icon: <Eye size={20} />,
         color: "bg-gray-100 border-gray-300",
         description: "Step-by-step tasks.",
+      },
+    ],
+  },
+  {
+    group: "Email",
+    items: [
+      {
+        id: "manager_email",
+        name: "Manager Email",
+        icon: <Mail size={20} />,
+        color: "bg-sky-100 border-sky-300",
+        description: "Prompt user to add manager email.",
+      },
+      {
+        id: "accountability_partner_email",
+        name: "Accountability Partner Email",
+        icon: <Mail size={20} />,
+        color: "bg-amber-100 border-amber-300",
+        description: "Prompt user to add accountability partner email.",
       },
     ],
   },
@@ -516,6 +544,9 @@ export default function CometManager({
       action: "action",
       discussion: "social_discussion",
       habits: "habits",
+      profile: "profile",
+      manager_email: "manager_email",
+      accountability_partner_email: "accountability_partner_email",
     };
 
     const contentType = contentTypeMap[screenType.id] || screenType.id;
@@ -835,6 +866,77 @@ export default function CometManager({
           habitsIsMandatory: false,
           habits: [],
         },
+        assessment: null,
+        order: allScreens.length,
+      };
+    } else if (screenType.id === "profile") {
+      // Profile screen structure
+      const profileTitle = "";
+      newScreen = {
+        id: screenId,
+        uuid: screenUuid,
+        screenType: "profile",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "profile",
+          content: {
+            heading: "",
+            body: "",
+          },
+        },
+        assets: [],
+        imageStatus: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: profileTitle,
+        formData: {
+          heading: "",
+          body: "",
+        },
+        assessment: null,
+        order: allScreens.length,
+      };
+    } else if (screenType.id === "manager_email") {
+      newScreen = {
+        id: screenId,
+        uuid: screenUuid,
+        screenType: "manager_email",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "manager_email",
+          content: { heading: "", body: "", email: "" },
+        },
+        assets: [],
+        imageStatus: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: "",
+        formData: { heading: "", body: "", email: "" },
+        assessment: null,
+        order: allScreens.length,
+      };
+    } else if (screenType.id === "accountability_partner_email") {
+      newScreen = {
+        id: screenId,
+        uuid: screenUuid,
+        screenType: "accountability_partner_email",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "accountability_partner_email",
+          content: { heading: "", body: "", emails: [""] },
+        },
+        assets: [],
+        imageStatus: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: "",
+        formData: { heading: "", body: "", emails: [""] },
         assessment: null,
         order: allScreens.length,
       };
