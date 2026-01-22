@@ -7,7 +7,7 @@ import CreateComet from "@/components/create-comet";
 import ChatWindow from "@/components/chat/ChatWindow";
 // import ProgressbarLoader from "@/components/loader";
 import { graphqlClient } from "@/lib/graphql-client";
-import Loader from "../loader2";
+import Loader from "../loader3";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
 export default function DashboardLayout() {

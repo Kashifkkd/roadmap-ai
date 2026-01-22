@@ -1,68 +1,51 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
-const TypingText = ({
-  text,
+export default function TypingText({
+  text = "",
   onComplete,
   onTyping,
-  speed = 20,
+  cursorColor = "bg-black",
   completeDelay = 300,
-  cursorColor = "bg-primary",
   resetOnChange = true,
-}) => {
-  const [displayedText, setDisplayedText] = useState("");
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  // useEffect(() => {
-  //   if (resetOnChange) {
-  //     setDisplayedText("");
-  //     setCurrentIndex(0);
-  //   }
-  // }, [text, resetOnChange]);
+  speed = 15,
+  renderText,
+}) {
+  const [displayText, setDisplayText] = useState("");
+  const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    if (currentIndex < text.length) {
-      const timer = setTimeout(() => {
-        setDisplayedText((prev) => prev + text[currentIndex]);
-        setCurrentIndex((prev) => prev + 1);
-        // Notify parent component that typing is happening
-        if (onTyping) {
-          onTyping();
-        }
+    if (resetOnChange) {
+      setDisplayText("");
+      setIndex(0);
+    }
+  }, [text, resetOnChange]);
+
+  useEffect(() => {
+    if (!text) return;
+
+    if (index < text.length) {
+      const timeout = setTimeout(() => {
+        setDisplayText((prev) => prev + text[index]);
+        setIndex((prev) => prev + 1);
+
+        if (onTyping) onTyping();
       }, speed);
 
-      return () => clearTimeout(timer);
-    } else if (
-      onComplete &&
-      currentIndex >= text.length &&
-      displayedText.length >= text.length
-    ) {
-      const completeTimer = setTimeout(() => {
-        onComplete();
+      return () => clearTimeout(timeout);
+    } else {
+      const doneTimeout = setTimeout(() => {
+        if (onComplete) onComplete();
       }, completeDelay);
-      return () => clearTimeout(completeTimer);
+
+      return () => clearTimeout(doneTimeout);
     }
-  }, [
-    currentIndex,
-    text,
-    onComplete,
-    onTyping,
-    displayedText.length,
-    speed,
-    completeDelay,
-  ]);
+  }, [text, index, onComplete, onTyping, completeDelay, speed]);
 
   return (
-    <span>
-      {displayedText}
-      {currentIndex < text.length && (
-        <span
-          className={`inline-block w-0.5 h-4 ${cursorColor} ml-0.5 animate-blink`}
-        />
-      )}
+    <span className="inline">
+      {renderText ? renderText(displayText) : displayText}
     </span>
   );
-};
-
-export default TypingText;
+}

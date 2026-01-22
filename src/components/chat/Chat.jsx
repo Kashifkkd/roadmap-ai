@@ -9,6 +9,46 @@ import ChatInput from "./ChatInput";
 import SequentialLoader from "./SequentialLoader";
 import TypingText from "./TypingText";
 
+/**
+ * ✅ StructuredText
+ * Automatically converts messages that contain "- " lines into a bullet list.
+ * Example:
+ * "Hello\n- item1\n- item2"
+ */
+const StructuredText = ({ text }) => {
+  if (!text) return null;
+
+  // Split by new lines
+  const rawLines = text.split("\n");
+
+  // Clean lines (remove extra spaces)
+  const lines = rawLines.map((l) => l.trim()).filter(Boolean);
+
+  // Find all bullet lines
+  const bulletLines = lines.filter((l) => l.startsWith("- "));
+
+  // If there are bullet lines, show intro + bullets
+  if (bulletLines.length > 0) {
+    const firstBulletIndex = lines.findIndex((l) => l.startsWith("- "));
+    const intro = lines.slice(0, firstBulletIndex).join(" ").trim();
+
+    return (
+      <div className="space-y-2">
+        {intro && <p>{intro}</p>}
+
+        <ul className="list-disc pl-5 space-y-1">
+          {bulletLines.map((item, index) => (
+            <li key={index}>{item.replace("- ", "")}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  // Normal text
+  return <p>{text}</p>;
+};
+
 const TypingWelcomeMessage = React.memo(({ messages, onTyping }) => {
   const [visibleMessages, setVisibleMessages] = useState([]);
   const [typingMessageIndex, setTypingMessageIndex] = useState(-1);
@@ -31,17 +71,18 @@ const TypingWelcomeMessage = React.memo(({ messages, onTyping }) => {
   };
 
   return (
-    <div className="flex flex-col space-y-2  p-2 mr-6 mb-2 bg-[#ECF7F6] rounded-lg">
+    <div className="flex flex-col space-y-2 p-2 mr-6 mb-2 bg-[#ECF7F6] rounded-lg">
       {visibleMessages.map((idx) => (
         <div key={idx} className="bg-[#D9F0EC] rounded-lg p-2">
-          <p className="text-[#399C8D] text-xs sm:text-sm font-md leading-relaxed">
-            {messages[idx]}
-          </p>
+          <div className="text-[#399C8D] text-xs sm:text-sm font-md leading-relaxed whitespace-pre-wrap">
+            <StructuredText text={messages[idx]} />
+          </div>
         </div>
       ))}
+
       {typingMessageIndex >= 0 && typingMessageIndex < messages.length && (
         <div className="bg-[#D9F0EC] rounded-lg p-2">
-          <p className="text-[#399C8D] text-xs sm:text-sm font-md leading-relaxed">
+          <div className="text-[#399C8D] text-xs sm:text-sm font-md leading-relaxed whitespace-pre-wrap">
             <TypingText
               key={typingMessageIndex}
               text={messages[typingMessageIndex]}
@@ -50,8 +91,9 @@ const TypingWelcomeMessage = React.memo(({ messages, onTyping }) => {
               cursorColor="bg-[#399C8D]"
               completeDelay={100}
               resetOnChange={false}
+              renderText={(typedText) => <StructuredText text={typedText} />}
             />
-          </p>
+          </div>
         </div>
       )}
     </div>
@@ -64,14 +106,14 @@ const welcomeMessageChat = ({ messages, animate = false, onTyping }) => {
   }
 
   return (
-    <div className="flex flex-col space-y-2  p-2 mr-6 mb-2 bg-[#ECF7F6] rounded-lg">
+    <div className="flex flex-col space-y-2 p-2 mr-6 mb-2 bg-[#ECF7F6] rounded-lg">
       {messages.length > 0 &&
         messages.map((msg, idx) => {
           return (
             <div key={idx} className="bg-[#D9F0EC] rounded-lg p-2">
-              <p className="text-[#399C8D] text-xs sm:text-sm font-md leading-relaxed">
-                {msg}
-              </p>
+              <div className="text-[#399C8D] text-xs sm:text-sm font-md leading-relaxed whitespace-pre-wrap">
+                <StructuredText text={msg} />
+              </div>
             </div>
           );
         })}
@@ -86,27 +128,12 @@ const Chat = ({
   onSuggestionClick,
   inputValue = "",
   onInputChange,
-  // welcomeMessage = [],
-  // showWelcomeMessage = false,
-  // shouldAnimateWelcome = false,
   onSubmit,
   cometManager = false,
   error = null,
   pageIdentifier = 1,
 }) => {
   const bottomRef = useRef(null);
-  // const scrollContainerRef = useRef(null);
-  // const [isBottom, setIsBottom] = useState(false);
-
-  // const handleScroll = () => {
-  //   const container = scrollContainerRef.current;
-  //   if (!container) return;
-
-  //   const threshold = 40;
-  //   const { scrollTop, scrollHeight, clientHeight } = container;
-  //   const distanceToBottom = scrollHeight - scrollTop - clientHeight;
-  //   setIsBottom(distanceToBottom <= threshold);
-  // };
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -193,143 +220,22 @@ const Chat = ({
 
   return (
     <div className="h-full bg-background flex flex-col border-2 border-[#C7C2F9] rounded-lg overflow-hidden">
-      <div
-        className="flex-1 overflow-y-auto no-scrollbar p-2 sm:p-2 pb-4"
-        // ref={scrollContainerRef}
-        // onScroll={handleScroll}
-      >
-        {
-          hasMessages ? (
-            <div className="max-w-4xl mx-auto w-full">
-              {renderedMessages}
+      <div className="flex-1 overflow-y-auto no-scrollbar p-2 sm:p-2 pb-4">
+        {hasMessages ? (
+          <div className="max-w-4xl mx-auto w-full">
+            {renderedMessages}
+            {isLoading && <SequentialLoader />}
+          </div>
+        ) : cometManager ? (
+          <div className="max-w-4xl mx-auto w-full">
+            {isLoading && <SequentialLoader />}
+          </div>
+        ) : isLoading ? (
+          <div className="max-w-4xl mx-auto w-full">
+            <SequentialLoader />
+          </div>
+        ) : null}
 
-              {isLoading && <SequentialLoader />}
-              {/* {showWelcomeMessage && (
-                <ChatMessage
-                  role="agent"
-                  text={welcomeMessageChat({
-                    messages: welcomeMessage,
-                    animate: shouldAnimateWelcome,
-                    onTyping: () => {
-                      if (bottomRef.current) {
-                        bottomRef.current.scrollIntoView({
-                          behavior: "smooth",
-                        });
-                      }
-                    },
-                  })}
-                />
-              )} */}
-            </div>
-          ) : cometManager ? (
-            <div className="max-w-4xl mx-auto w-full">
-              {/* {showWelcomeMessage && (
-              <ChatMessage
-                role="bot"
-                text={welcomeMessageChat({
-                  messages: welcomeMessage,
-                  animate: true,
-                })}
-              />
-            )} */}
-              {isLoading && <SequentialLoader />}
-            </div>
-          ) : isLoading ? (
-            <div className="max-w-4xl mx-auto w-full">
-              <SequentialLoader />
-            </div>
-          ) : null
-          // : (
-          // <div className="flex flex-col items-center pt-10 sm:space-y-6 max-w-4xl mx-auto w-full">
-          //   <div className="w-full flex justify-center items-center">
-          //     <Image
-          //       src="/logo2.svg"
-          //       alt="Kyper Logo"
-          //       width={60}
-          //       height={60}
-          //       className="rounded-full animate-spin sm:w-20 sm:h-20"
-          //       style={{
-          //         animation: "spin 8s linear infinite",
-          //       }}
-          //     />
-          //   </div>
-          //   <div className="text-center space-y-1 sm:space-y-2 w-full">
-          //     <h1 className="text-2xl sm:text-3xl font-bold text-primary ">
-          //       Welcome!
-          //     </h1>
-          //     <h2 className="text-xl sm:text-2xl font-semibold text-primary">
-          //       Let&apos;s build your next
-          //       <br />
-          //       Comet together.
-          //     </h2>
-          //   </div>
-          //   {/* Description */}
-          //   <p className="text-center text-base sm:text-lg text-gray-600 w-full max-w-2xl px-2">
-          //     You can type your idea below, or pick one of the suggestions to
-          //     get started.
-          //   </p>
-          //   {/* Heading for suggestions */}
-          //   <h3 className="text-lg sm:text-xl font-medium text-primary w-full text-center">
-          //     Pick an idea to get started
-          //   </h3>
-          //   <div className="space-y-2 sm:space-y-3 w-full max-w-2xl">
-          //     <button
-          //       onClick={() =>
-          //         handleSuggestionClick(
-          //           "Create a go-to microlearning experience for new managers"
-          //         )
-          //       }
-          //       disabled={isLoading}
-          //       className="w-full py-3 sm:py-4 px-4 sm:px-6 text-left bg-primary-50 hover:bg-purple-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-          //     >
-          //       <span className="text-primary-700">
-          //         Create a go-to microlearning experience for new managers
-          //       </span>
-          //     </button>
-
-          //     <button
-          //       onClick={() =>
-          //         handleSuggestionClick(
-          //           "Get store managers ready for the holiday season"
-          //         )
-          //       }
-          //       disabled={isLoading}
-          //       className="w-full py-3 sm:py-4 px-4 sm:px-6 text-left bg-primary-50 hover:bg-purple-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-          //     >
-          //       <span className="text-primary-700">
-          //         Get store managers ready for the holiday season
-          //       </span>
-          //     </button>
-
-          //     <button
-          //       onClick={() =>
-          //         handleSuggestionClick("Help sales leaders reinforce the SKO")
-          //       }
-          //       disabled={isLoading}
-          //       className="w-full py-3 sm:py-4 px-4 sm:px-6 text-left bg-primary-50 hover:bg-purple-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-          //     >
-          //       <span className="text-primary-700">
-          //         Help sales leaders reinforce the SKO
-          //       </span>
-          //     </button>
-
-          //     <button
-          //       onClick={() =>
-          //         handleSuggestionClick(
-          //           "Add reinforcement & application to a training"
-          //         )
-          //       }
-          //       disabled={isLoading}
-          //       className="w-full py-3 sm:py-4 px-4 sm:px-6 text-left bg-primary-50 hover:bg-purple-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-          //     >
-          //       <span className="text-primary-700">
-          //         Add reinforcement & application to a training
-          //       </span>
-          //     </button>
-          //   </div>
-          // </div>
-          // )
-        }
         <div ref={bottomRef} />
       </div>
 
@@ -339,6 +245,7 @@ const Chat = ({
             <p className="text-red-600 text-sm">{error}</p>
           </div>
         )}
+
         <div className="max-w-4xl mx-auto w-full">
           <ChatInput
             disabled={isLoading}

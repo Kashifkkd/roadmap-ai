@@ -129,6 +129,7 @@ const getFormValuesFromScreen = (screen) => {
 
   if (contentType === "habits") {
     values.title = content.title || "";
+    values.habitDescription = content.habitDescription || "";
     // habit_image is a string URL, not an object
     values.habit_image =
       typeof content.habit_image === "string"
@@ -382,7 +383,10 @@ export default function DynamicForm({
             } else if (contentType === "habits") {
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
-              else if (field === "description") {
+              else if (field === "habitDescription") {
+                currentScreen.screenContents.content.habitDescription =
+                  extractPlainTextFromDelta(value);
+              } else if (field === "description") {
                 if (
                   !currentScreen.screenContents.content.habit_image ||
                   typeof currentScreen.screenContents.content.habit_image ===
@@ -691,6 +695,7 @@ export default function DynamicForm({
         assessmentTitle: "title",
         assessmentQuestions: "questions",
         habitsTitle: "title",
+        habitDescription: "habitDescription",
         habitsText: "habits[].text",
         notificationsTitle: "title",
         notificationsMessage: "message",
