@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RichTextArea } from "@/components/comet-manager/forms/FormFields";
 import { graphqlClient } from "@/lib/graphql-client";
 import { uploadAssetFile } from "@/api/uploadAssets";
 import { uploadPathImage } from "@/api/uploadPathImage";
@@ -51,15 +52,13 @@ const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-        checked ? "bg-primary" : "bg-gray-300"
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${checked ? "bg-primary" : "bg-gray-300"
         }`}
       role="switch"
       aria-checked={checked}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
-          checked ? "translate-x-6" : "translate-x-1"
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${checked ? "translate-x-6" : "translate-x-1"
           }`}
       />
     </button>
@@ -87,6 +86,18 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [kickOffDates, setKickOffDates] = useState([]);
   const [newKickOffDate, setNewKickOffDate] = useState("");
   const [newKickOffTime, setNewKickOffTime] = useState("");
+
+  // Ad Hoc Notifications 
+  const [adHocChannelRows, setAdHocChannelRows] = useState([{ id: 1, name: "" }]);
+  const [adHocDraft, setAdHocDraft] = useState({
+    channel: "",
+    emailSubject: "",
+    emailHeader: "",
+    emailBody: "",
+    sendDate: "",
+    sendTime: "",
+  });
+  const [adHocNotifications, setAdHocNotifications] = useState([]);
 
   // Toggles (all available from backend)
   const [habitEnabled, setHabitEnabled] = useState(false);
@@ -284,7 +295,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         } else {
           setArtStyle("");
         }
-        
+
         // Load additional fields
         if (enabledAttributes.reminder_type !== undefined) {
           const reminder = String(enabledAttributes.reminder_type).toLowerCase().trim();
@@ -292,25 +303,25 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
           const normalizedReminder = validReminders.includes(reminder) ? reminder : "";
           setReminderType(normalizedReminder);
         }
-        
+
         if (enabledAttributes.source_alignment !== undefined) {
           const source = String(enabledAttributes.source_alignment).toLowerCase().trim();
           const validSources = ["fidelity", "balanced", "extension"];
           const normalizedSource = validSources.includes(source) ? source : "";
           setSourceAlignment(normalizedSource);
         }
-        
+
         if (enabledAttributes.duration !== undefined) {
           setDuration(String(enabledAttributes.duration));
         }
-        
+
         if (enabledAttributes.language !== undefined) {
           const lang = String(enabledAttributes.language).trim();
           const validLangs = ["English", "Spanish", "French"];
           const normalizedLang = validLangs.find(l => l.toLowerCase() === lang.toLowerCase()) || lang;
           setLanguage(normalizedLang);
         }
-        
+
         // Load all boolean toggles
         if (enabledAttributes.chapters !== undefined) setChapters(enabledAttributes.chapters);
         if (enabledAttributes.action_hub !== undefined) setActionHub(enabledAttributes.action_hub);
@@ -331,7 +342,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         setImageGuidance("");
         setArtStyle("");
       }
-      
+
       // Also check comet_creation_data for duration
       const experienceDesign = sessionData?.comet_creation_data?.["Experience Design"];
       if (experienceDesign?.Duration && !duration) {
@@ -452,7 +463,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         habits: habits,
         pathVersion: pathVersion,
       };
-      
+
       // Also update Experience Design in comet_creation_data if duration or source_alignment changed
       if (duration || sourceAlignment) {
         updatedCometCreationData["Experience Design"] = {
@@ -548,6 +559,58 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
     setKickOffDates(kickOffDates.filter((_, i) => i !== index));
   };
 
+  const addAdHocChannelRow = () => {
+    setAdHocChannelRows((rows) => {
+      const nextId = rows.reduce((max, r) => Math.max(max, r.id), 0) + 1;
+      return [...rows, { id: nextId, name: "" }];
+    });
+  };
+
+  const updateAdHocChannelRowName = (id, name) => {
+    setAdHocChannelRows((rows) =>
+      rows.map((r) => (r.id === id ? { ...r, name } : r))
+    );
+  };
+
+  const removeAdHocChannelRow = (id) => {
+    setAdHocChannelRows((rows) => {
+      const next = rows.filter((r) => r.id !== id);
+      return next.length ? next : [{ id: 1, name: "" }];
+    });
+  };
+
+  const getAdHocChannels = () => {
+    const seen = new Set();
+    return adHocChannelRows
+      .map((r) => String(r.name || "").trim())
+      .filter(Boolean)
+      .filter((name) => {
+        const key = name.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  };
+
+  const resetAdHocDraft = () => {
+    setAdHocDraft({
+      channel: "",
+      emailSubject: "",
+      emailHeader: "",
+      emailBody: "",
+      sendDate: "",
+      sendTime: "",
+    });
+  };
+
+  const handleSaveAdHocNotification = () => {
+    setAdHocNotifications((prev) => [
+      ...prev,
+      { ...adHocDraft, id: Date.now() },
+    ]);
+    resetAdHocDraft();
+  };
+
   const handleAddColor = () => {
     if (newColorName.trim() && newColorHex) {
       const colorName = newColorName.trim().toLowerCase();
@@ -556,20 +619,20 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         alert("A color with this name already exists");
         return;
       }
-      
+
       // Normalize hex color
       let normalizedHex = newColorHex.trim();
       if (!normalizedHex.startsWith("#")) {
         normalizedHex = "#" + normalizedHex;
       }
       normalizedHex = normalizedHex.toUpperCase();
-      
+
       // Validate hex format
       if (!/^#[0-9A-Fa-f]{6}$/.test(normalizedHex)) {
         alert("Please enter a valid hex color (e.g., #FF0000)");
         return;
       }
-      
+
       const newColor = {
         name:
           newColorName.trim().charAt(0).toUpperCase() +
@@ -595,7 +658,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
       normalizedHex = "#" + normalizedHex;
     }
     normalizedHex = normalizedHex.toUpperCase();
-    
+
     // Validate hex color format
     if (/^#[0-9A-Fa-f]{6}$/.test(normalizedHex)) {
       const updatedColors = [...brandColors];
@@ -679,16 +742,14 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                   setSelectedUser(null);
                   setShowAddUserForm(false);
                 }}
-                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
-                  activeTab === "comet-info"
+                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${activeTab === "comet-info"
                   ? "bg-primary text-white shadow-md"
                   : "text-gray-700 hover:bg-white/60"
                   }`}
               >
                 <FileText
                   size={18}
-                  className={`lg:w-5 lg:h-5 ${
-                    activeTab === "comet-info" ? "text-white" : "text-gray-500"
+                  className={`lg:w-5 lg:h-5 ${activeTab === "comet-info" ? "text-white" : "text-gray-500"
                     }`}
                 />
                 <span className="hidden md:inline">Comet Info</span>
@@ -701,16 +762,14 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                   setSelectedUser(null);
                   setShowAddUserForm(false);
                 }}
-                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
-                  activeTab === "users"
+                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${activeTab === "users"
                   ? "bg-primary text-white shadow-md"
                   : "text-gray-700 hover:bg-white/60"
                   }`}
               >
                 <Users
                   size={18}
-                  className={`lg:w-5 lg:h-5 ${
-                    activeTab === "users" ? "text-white" : "text-gray-500"
+                  className={`lg:w-5 lg:h-5 ${activeTab === "users" ? "text-white" : "text-gray-500"
                     }`}
                 />
                 Users
@@ -722,16 +781,14 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                   setSelectedUser(null);
                   setShowAddUserForm(false);
                 }}
-                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
-                  activeTab === "analytics"
+                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${activeTab === "analytics"
                   ? "bg-primary text-white shadow-md"
                   : "text-gray-700 hover:bg-white/60"
                   }`}
               >
                 <BarChart3
                   size={18}
-                  className={`lg:w-5 lg:h-5 ${
-                    activeTab === "analytics" ? "text-white" : "text-gray-500"
+                  className={`lg:w-5 lg:h-5 ${activeTab === "analytics" ? "text-white" : "text-gray-500"
                     }`}
                 />
                 Analytics
@@ -743,14 +800,14 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
           <div className="flex-1 bg-white rounded-lg flex flex-col overflow-hidden">
             {activeTab === "comet-info" && (
               <div className="overflow-y-auto h-full flex flex-col">
-                <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-3 sm:py-4 md:py-6 lg:py-8">
+                <div className="flex-1 overflow-y-auto p-2">
                   <div className="space-y-4 md:space-y-5">
                     {/* Comet Title */}
-                    <div className="bg-gray-100 p-2 pt-6 rounded-lg ">
-                      <span className="text-sm font-medium text-gray-700 p-2 ">
+                    <div className="bg-gray-100 px-2  rounded-lg ">
+                      <div className="text-md font-bold text-gray-700 py-4 px-2 ">
                         Basic Info
-                      </span>
-                      <div className="space-y-4 flex flex-row gap-2 w-full bg-white p-2 rounded-b-lg">
+                      </div>
+                      <div className="space-y-4 flex flex-row gap-2 w-full bg-white p-2 rounded-t-lg">
                         <div className="flex flex-col gap-2 w-1/2">
                           <div className="space-y-2 ">
                             <Label
@@ -771,7 +828,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
                           {/* Description */}
 
-                          <div className="space-y-2">
+                          <div className="space-y-2 py-2">
                             <Label
                               htmlFor="description"
                               className="text-sm font-medium text-gray-700"
@@ -784,17 +841,17 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               onChange={(e) => setDescription(e.target.value)}
                               placeholder="Enter description"
                               rows={4}
-                              className="w-full resize-none rounded-lg border-gray-300"
+                              className="w-full rounded-lg border-gray-300 resize-none overflow-y-auto create-comet-scrollbar focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
                             />
                           </div>
                         </div>
 
                         {/* Comet Cover Image */}
-                        <div className="space-y-2 w-1/2 ">
-                          <Label className="text-sm font-medium text-gray-700">
+                        <div className="space-y-2 w-1/2 h-full ">
+                          <Label className="text-sm font-medium text-gray-700 ">
                             Comet Cover Image
                           </Label>
-                          <div className="w-full max-h-[1500px] p-2 bg-gray-100 rounded-lg">
+                          <div className="w-full max-h-[1600px] p-2 bg-gray-100 rounded-lg">
                             {pathImageUrl ? (
                               <div className="relative border-2 border-gray-300 rounded-lg overflow-hidden bg-white group">
                                 <img
@@ -834,7 +891,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 />
                               </div>
                             ) : (
-                              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-white">
+                              <div className="border-2 border-dashed border-gray-300 rounded-lg p-11 text-center bg-white">
                                 <input
                                   type="file"
                                   accept="image/*"
@@ -872,107 +929,107 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
                       {/* Configuration Settings Section */}
                       <div className="space-y-4 bg-white p-2 rounded-b-lg">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                           {/* Left Column */}
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label className="text-sm font-medium text-gray-700">
-                                Learning Frequency
-                              </Label>
-                              <Select
-                                value={learningFrequency || undefined}
-                                onValueChange={setLearningFrequency}
-                              >
-                                <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                  <SelectValue placeholder="Select frequency" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="daily">Daily</SelectItem>
-                                  <SelectItem value="weekly">Weekly</SelectItem>
-                                  <SelectItem value="monthly">
-                                    Monthly
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
+                          {/* <div className="space-y-4"> */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Learning Frequency
+                            </Label>
+                            <Select
+                              value={learningFrequency || undefined}
+                              onValueChange={setLearningFrequency}
+                            >
+                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                                <SelectValue placeholder="Select frequency" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="daily">Daily</SelectItem>
+                                <SelectItem value="weekly">Weekly</SelectItem>
+                                <SelectItem value="monthly">
+                                  Monthly
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
+                          {/* </div> */}
 
                           {/* Right Column */}
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label className="text-sm font-medium text-gray-700">
-                                Language
-                              </Label>
-                              <Select
-                                value={language || undefined}
-                                onValueChange={setLanguage}
-                              >
-                                <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                  <SelectValue placeholder="Select language" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="English">
-                                    English
-                                  </SelectItem>
-                                  <SelectItem value="Spanish">
-                                    Spanish
-                                  </SelectItem>
-                                  <SelectItem value="French">French</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <Label className="text-sm font-medium text-gray-700">
-                                Reminder Type
-                              </Label>
-                              <Select
-                                value={reminderType || undefined}
-                                onValueChange={setReminderType}
-                              >
-                                <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                  <SelectValue placeholder="Select reminder type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="daily">Daily</SelectItem>
-                                  <SelectItem value="weekly">Weekly</SelectItem>
-                                  <SelectItem value="monthly">Monthly</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <Label className="text-sm font-medium text-gray-700">
-                                Source Alignment
-                              </Label>
-                              <Select
-                                value={sourceAlignment || undefined}
-                                onValueChange={setSourceAlignment}
-                              >
-                                <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                  <SelectValue placeholder="Select source alignment" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="fidelity">Fidelity</SelectItem>
-                                  <SelectItem value="balanced">Balanced</SelectItem>
-                                  <SelectItem value="extension">Extension</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <Label className="text-sm font-medium text-gray-700">
-                                Duration
-                              </Label>
-                              <Input
-                                type="text"
-                                value={duration}
-                                onChange={(e) => setDuration(e.target.value)}
-                                placeholder="e.g. 4 weeks, 10-15 min/day"
-                                className="w-full rounded-lg border-gray-300"
-                              />
-                            </div>
+                          {/* <div className="space-y-4"> */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Language
+                            </Label>
+                            <Select
+                              value={language || undefined}
+                              onValueChange={setLanguage}
+                            >
+                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                                <SelectValue placeholder="Select language" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="English">
+                                  English
+                                </SelectItem>
+                                <SelectItem value="Spanish">
+                                  Spanish
+                                </SelectItem>
+                                <SelectItem value="French">French</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Reminder Type
+                            </Label>
+                            <Select
+                              value={reminderType || undefined}
+                              onValueChange={setReminderType}
+                            >
+                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                                <SelectValue placeholder="Select reminder type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="daily">Daily</SelectItem>
+                                <SelectItem value="weekly">Weekly</SelectItem>
+                                <SelectItem value="monthly">Monthly</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Source Alignment
+                            </Label>
+                            <Select
+                              value={sourceAlignment || undefined}
+                              onValueChange={setSourceAlignment}
+                            >
+                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                                <SelectValue placeholder="Select source alignment" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="fidelity">Fidelity</SelectItem>
+                                <SelectItem value="balanced">Balanced</SelectItem>
+                                <SelectItem value="extension">Extension</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Duration
+                            </Label>
+                            <Input
+                              type="text"
+                              value={duration}
+                              onChange={(e) => setDuration(e.target.value)}
+                              placeholder="e.g. 4 weeks, 10-15 min/day"
+                              className="w-full rounded-lg border-gray-300"
+                            />
+                          </div>
+                          {/* </div> */}
                         </div>
                       </div>
                     </div>
@@ -1135,7 +1192,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                         />
                       </div>
                     </div>
-                    
+
                     {/* Feature Toggles Section */}
                     <div className="pt-6 pb-2 px-2 bg-gray-100 rounded-lg">
                       <p className=" font-bold mb-2 px-4  text-gray-700">
@@ -1298,6 +1355,202 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       </div>
                     </div>
 
+                    {/* Ad Hoc Notifications Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Ad Hoc Notifications
+                        </h3>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={resetAdHocDraft}
+                          className="text-primary hover:text-primary-dark rounded-lg px-3 py-2 h-auto whitespace-nowrap"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Create Ad Hoc Notification
+                        </Button>
+                      </div>
+
+                      <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+                        {/* Select Channel */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">
+                            Select Channel
+                          </Label>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 min-w-0">
+                              <Select
+                                value={adHocDraft.channel || undefined}
+                                onValueChange={(value) =>
+                                  setAdHocDraft((d) => ({ ...d, channel: value }))
+                                }
+                              >
+                                <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {getAdHocChannels().map((name) => (
+                                    <SelectItem key={name} value={name}>
+                                      {name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAdHocDraft((d) => ({ ...d, channel: "" }))
+                              }
+                              className="shrink-0 w-9 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
+                              title="Clear selected channel"
+                              aria-label="Clear selected channel"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Email Subject */}
+                        <RichTextArea
+                          label="Email Subject"
+                          value={adHocDraft.emailSubject}
+                          onChange={(value) =>
+                            setAdHocDraft((d) => ({ ...d, emailSubject: value }))
+                          }
+                          showToolbar={true}
+                          minHeight={64}
+                        />
+
+                        {/* Email Header */}
+                        <RichTextArea
+                          label="Email Header"
+                          value={adHocDraft.emailHeader}
+                          onChange={(value) =>
+                            setAdHocDraft((d) => ({ ...d, emailHeader: value }))
+                          }
+                          showToolbar={true}
+                          minHeight={64}
+                        />
+
+                        {/* Email Body Text */}
+                        <RichTextArea
+                          label="Email Body Text"
+                          value={adHocDraft.emailBody}
+                          onChange={(value) =>
+                            setAdHocDraft((d) => ({ ...d, emailBody: value }))
+                          }
+                          showToolbar={true}
+                          minHeight={120}
+                        />
+
+                        {/* Send Date/Time + Save */}
+                        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Notification Send Date
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                type="date"
+                                value={adHocDraft.sendDate}
+                                onChange={(e) =>
+                                  setAdHocDraft((d) => ({
+                                    ...d,
+                                    sendDate: e.target.value,
+                                  }))
+                                }
+                                className="w-full rounded-lg pr-10"
+                              />
+                              <Calendar
+                                size={18}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Notification Send Time (UTC)
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                type="time"
+                                value={adHocDraft.sendTime}
+                                onChange={(e) =>
+                                  setAdHocDraft((d) => ({
+                                    ...d,
+                                    sendTime: e.target.value,
+                                  }))
+                                }
+                                className="w-full rounded-lg pr-10"
+                              />
+                              <Clock
+                                size={18}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-end">
+                            <Button
+                              type="button"
+                              onClick={handleSaveAdHocNotification}
+                              className="bg-primary hover:bg-primary-dark px-6 py-2 rounded-lg text-sm font-medium"
+                            >
+                              Save
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Channel Names */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium text-gray-700">
+                            Channel Name
+                          </Label>
+                          <button
+                            type="button"
+                            onClick={addAdHocChannelRow}
+                            className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                            title="Add channel"
+                            aria-label="Add channel"
+                          >
+                            <Plus size={18} className="text-gray-700" />
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          {adHocChannelRows.map((row) => (
+                            <div
+                              key={row.id}
+                              className="flex items-center gap-2 bg-purple-50/40 border border-purple-100 rounded-lg p-2"
+                            >
+                              <Input
+                                value={row.name}
+                                onChange={(e) =>
+                                  updateAdHocChannelRowName(row.id, e.target.value)
+                                }
+                                placeholder="Channel Name"
+                                className="w-full rounded-lg border-gray-300"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeAdHocChannelRow(row.id)}
+                                className="shrink-0 w-9 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
+                                title="Remove channel"
+                                aria-label="Remove channel"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <input type="hidden" value={adHocNotifications.length} readOnly />
+                    </div>
+
                     {/* Path Colors Section */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-gray-900">
@@ -1345,14 +1598,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               ) : (
                                 <>
                                   <div
-                                    className="w-12 h-8 sm:w-16 sm:h-10 rounded border border-gray-300 shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all relative group"
+                                    className="w-12 h-8 sm:w-16 sm:h-10 rounded border border-gray-300 shrink-0"
                                     style={{ backgroundColor: color.color }}
-                                    onClick={() => handleEditColor(index)}
-                                    title="Click to edit color"
                                   >
-                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded">
-                                      <Pencil size={14} className="text-white" />
-                                    </div>
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="text-xs sm:text-sm font-medium text-gray-700 truncate">
@@ -1365,7 +1613,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 </>
                               )}
                             </div>
-                            
+
                             {editingColorIndex === index ? (
                               <div className="flex gap-2 justify-end">
                                 <Button
@@ -1386,25 +1634,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 </Button>
                               </div>
                             ) : (
-                              <div className="flex gap-2 justify-end">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleEditColor(index)}
-                                  className="text-xs px-2 py-1 h-7"
-                                >
-                                  <Pencil size={12} className="mr-1" />
-                                  Edit
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDeleteColor(index)}
-                                  className="text-xs px-2 py-1 h-7 text-red-500 hover:text-red-700 hover:border-red-300"
-                                >
-                                  <Trash2 size={12} />
-                                </Button>
-                              </div>
+                              <></>
                             )}
                           </div>
                         ))}

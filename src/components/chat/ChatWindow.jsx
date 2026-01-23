@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Chat from "./Chat";
-import Loader from "@/components/loader3";
+import Loader from "@/components/loader2";
 import { graphqlClient } from "@/lib/graphql-client";
 import { useRouter } from "next/navigation";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
