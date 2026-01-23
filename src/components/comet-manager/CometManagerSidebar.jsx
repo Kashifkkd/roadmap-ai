@@ -55,7 +55,11 @@ function filterAssetsByType(assets, assetType) {
   if (!Array.isArray(assets) || assets.length === 0) return [];
   return assets.filter((asset) => {
     const type = asset?.asset_type?.toLowerCase() || "";
-    return type === assetType.toLowerCase();
+    const wanted = (assetType || "").toLowerCase();
+    if (wanted === "video") {
+      return type === "video" || type === "animation";
+    }
+    return type === wanted;
   });
 }
 

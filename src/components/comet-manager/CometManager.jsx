@@ -61,6 +61,7 @@ import DevicePreview from "./DevicePreview";
 import FromDoerToEnabler from "./FromDoerToEnabler";
 import PDFPreview from "./PDFPreview";
 import ImagePreview from "./ImagePreview";
+import VideoPreview from "./VideoPreview";
 import CometSettingsDialog from "./CometSettingsDialog";
 import GenerateStepImageButton from "./GenerateStepImageButton";
 import UploadStepImageDialog from "./UploadStepImageDialog";
@@ -231,6 +232,7 @@ export default function CometManager({
   const [selectedAssetCategory, setSelectedAssetCategory] = useState(null);
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [selectedImageAsset, setSelectedImageAsset] = useState(null);
+  const [selectedVideoAsset, setSelectedVideoAsset] = useState(null);
   const [selectedRemainingChapter, setSelectedRemainingChapter] = useState(null);
   const [scrollToStepIndex, setScrollToStepIndex] = useState(null);
   const [activeTab, setActiveTab] = useState(0); // Track active tab: 0=Steps, 1=Sources, 2=Assets
@@ -470,6 +472,7 @@ export default function CometManager({
     setSelectedAssetCategory(null);
     setSelectedAssets([]);
     setSelectedImageAsset(null);
+    setSelectedVideoAsset(null);
     setSelectedRemainingChapter(null);
     setActiveTab(0);
     setSelectedScreenId(screen.id);
@@ -1048,6 +1051,7 @@ export default function CometManager({
                     setSelectedAssetCategory(null);
                     setSelectedAssets([]);
                     setSelectedImageAsset(null);
+                    setSelectedVideoAsset(null);
                   }
                 }}
                 onAssetCategorySelect={(category, assets) => {
@@ -1057,6 +1061,7 @@ export default function CometManager({
                   setSelectedScreenId(null);
                   setSelectedMaterial(null);
                   setSelectedImageAsset(null);
+                  setSelectedVideoAsset(null);
                 }}
                 onTabChange={(tabIndex) => {
                   setActiveTab(tabIndex);
@@ -1065,6 +1070,7 @@ export default function CometManager({
                   setSelectedAssetCategory(null);
                   setSelectedAssets([]);
                   setSelectedImageAsset(null);
+                  setSelectedVideoAsset(null);
                   setSelectedRemainingChapter(null);
                 }}
                 onStepClick={(stepId, step) => { }}
@@ -1074,6 +1080,7 @@ export default function CometManager({
                   setSelectedAssetCategory(null);
                   setSelectedAssets([]);
                   setSelectedImageAsset(null);
+                  setSelectedVideoAsset(null);
                   setSelectedRemainingChapter(null);
                   setActiveTab(0);
                   // Filter screens for this chapter (use allScreens to get screens from all steps)
@@ -1129,6 +1136,7 @@ export default function CometManager({
                   setSelectedAssetCategory(null);
                   setSelectedAssets([]);
                   setSelectedImageAsset(null);
+                  setSelectedVideoAsset(null);
                   setSelectedScreenId(null);
                   setSelectedRemainingChapter(chapter);
                   setScrollToStepIndex(null); // Reset scroll target when chapter changes
@@ -1152,6 +1160,14 @@ export default function CometManager({
                       onClose={() => setSelectedImageAsset(null)}
                     />
                   </div>
+                ) : selectedVideoAsset ? (
+                  <div className="flex-1 overflow-hidden p-4">
+                    <VideoPreview
+                      asset={selectedVideoAsset}
+                      category={selectedAssetCategory}
+                      onClose={() => setSelectedVideoAsset(null)}
+                    />
+                  </div>
                 ) : selectedAssetCategory && selectedAssets ? (
                   <div className="flex-1 overflow-hidden p-4">
                     <div className="flex flex-col h-full gap-4">
@@ -1170,7 +1186,10 @@ export default function CometManager({
                               const assetType =
                                 asset?.asset_type?.toLowerCase() || "";
                               const assetUrl = asset?.asset_url || "";
-                              const isImage = assetType === "image";
+                              const normalizedType =
+                                assetType === "animation" ? "video" : assetType;
+                              const isImage = normalizedType === "image";
+                              const isVideo = normalizedType === "video";
 
                               // Get file name from URL
                               const getFileNameFromUrl = (url) => {
@@ -1184,8 +1203,8 @@ export default function CometManager({
 
                               // Get icon based on asset type
                               const getIcon = () => {
-                                if (assetType === "image") return FileImage;
-                                if (assetType === "video") return FileVideo;
+                                if (isImage) return FileImage;
+                                if (isVideo) return FileVideo;
                                 return FileIcon;
                               };
 
@@ -1196,9 +1215,9 @@ export default function CometManager({
                                   key={asset.id}
                                   className="flex flex-col overflow-hidden bg-white cursor-pointer hover:shadow-lg transition-shadow"
                                   onClick={() => {
-                                    if (isImage && assetUrl) {
-                                      setSelectedImageAsset(asset);
-                                    }
+                                    if (!assetUrl) return;
+                                    if (isImage) setSelectedImageAsset(asset);
+                                    if (isVideo) setSelectedVideoAsset(asset);
                                   }}
                                 >
                                   <div className="relative h-50 w-full bg-primary-50">
@@ -1221,7 +1240,7 @@ export default function CometManager({
                                     </span>
                                     <div className="flex items-center justify-between text-xs text-gray-500">
                                       <span className="capitalize">
-                                        {assetType || "file"}
+                                          {assetType || "file"}
                                       </span>
                                     </div>
                                   </div>

@@ -173,7 +173,6 @@ export default function WelcomePage() {
 
         if (attachedFile) {
           uploadedFileUid = await uploadAttachedFile(currentSessionId);
-          setAttachedFile(null); // Clear attached file after upload
         }
 
         // Note: Subscription is now handled by useSessionSubscription hook below
@@ -313,7 +312,7 @@ export default function WelcomePage() {
 
         if (uuid) {
           toast.success("File uploaded successfully");
-          setSourceMaterialUid(uid);
+          setSourceMaterialUid(uuid);
         }
 
         return uuid;
@@ -396,8 +395,8 @@ export default function WelcomePage() {
             <div className="relative w-full max-w-3xl mx-auto rounded-xl border-primary-200 p-1.5 bg-[#E3E1FC] bg-[linear-gradient(147deg,rgba(227, 225, 252, 1) 0%, rgba(248, 247, 254, 1) 100%)]">
               <div
                 className={`w-full flex flex-col relative transition-all duration-200 rounded-xl bg-white ${isExpanded || messages.length > 0
-                    ? "min-h-[500px] max-h-[600px]"
-                    : ""
+                  ? "min-h-[500px] max-h-[600px]"
+                  : ""
                   }`}
               >
                 {/* Chat Messages */}
@@ -495,8 +494,8 @@ export default function WelcomePage() {
                     <Button
                       variant="default"
                       className={`cursor-pointer flex items-center gap-2 ${attachedFile
-                          ? "text-white bg-primary-600"
-                          : "text-white bg-primary hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
+                        ? "text-white bg-primary-600"
+                        : "text-white bg-primary hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
                         }`}
                       onClick={handleAttach}
                       disabled={isLoading || cometCreated || isUploading}
