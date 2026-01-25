@@ -291,7 +291,7 @@ export default function CometManager({
           JSON.stringify(updatedSessionData)
         );
         setSessionData(updatedSessionData);
-      } catch {}
+      } catch { }
     },
     (err) => {
       console.error("Subscription error:", err);
@@ -531,10 +531,13 @@ export default function CometManager({
     console.log("screenContentId>>>>>>>>>>>>>>>>>>>>>>>>", screenContentId);
     const screenUuid = crypto.randomUUID();
     console.log("screenUuid>>>>>>>>>>>>>>>>>>>>>>>>", screenUuid);
-    // Get position - count screens in the same step
+    // Get position: when inserting between screens use insert index + 1 (1-based);
+    // when appending, use count of screens in step + 1
+    const screensInStep = allScreens.filter(
+      (s) => String(s.stepId) === String(targetStepId)
+    );
     const position =
-      allScreens.filter((s) => String(s.stepId) === String(targetStepId))
-        .length + 1;
+      addAtIndex !== null ? addAtIndex + 1 : screensInStep.length + 1;
     console.log("position>>>>>>>>>>>>>>>>>>>>>>>>", position);
     // Map screenType.id to contentType
     const contentTypeMap = {
@@ -615,6 +618,7 @@ export default function CometManager({
           content: {
             heading: contentTitle,
             body: "",
+            fullBleed: false,
             media: {
               type: "",
               url: "",
@@ -1020,9 +1024,6 @@ export default function CometManager({
       (step) => String(step.id) === String(selectedScreen?.stepId)
     ) ?? -1) + 1 || 1;
 
-  console.log(selectedScreen, "selectedScreen >>>>>>>>>>>>", selectedScreen?.title);
-  console.log(currentChapter, "currentChapter >>>>>>>>>>>> steps name");
-
   return (
     <div className="flex flex-col w-full bg-background rounded-xl h-full relative">
       {/* Loading State */}
@@ -1240,7 +1241,7 @@ export default function CometManager({
                                     </span>
                                     <div className="flex items-center justify-between text-xs text-gray-500">
                                       <span className="capitalize">
-                                          {assetType || "file"}
+                                        {assetType || "file"}
                                       </span>
                                     </div>
                                   </div>

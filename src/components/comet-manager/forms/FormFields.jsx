@@ -235,10 +235,12 @@ export const RichTextArea = ({
   onChange,
   onSelectionChange,
   onBlur,
+  showToolbar = false,
+  minHeight = 76,
 }) => {
   const quillEditorRef = useRef(null);
   const editorRef = useRef(null);
-  // const toolbarRef = useRef(null);
+  const toolbarRef = useRef(null);
   const selectionCallbackRef = useRef(onSelectionChange);
   const blurCallbackRef = useRef(onBlur);
   const blurHandlerRef = useRef(null);
@@ -263,15 +265,27 @@ export const RichTextArea = ({
       const Quill = QuillModule.default;
 
       const editorElement = editorRef.current;
-      // const toolbarElement = toolbarRef.current;
+      const toolbarElement = toolbarRef.current;
 
       if (!editorElement || quillEditorRef.current) return;
 
       const editor = new Quill(editorElement, {
         theme: "snow",
         modules: {
-          // toolbar: toolbarElement,
-          toolbar: false,
+          toolbar: showToolbar
+            ? {
+              container: toolbarElement,
+              handlers: {
+                undo: () => editor.history.undo(),
+                redo: () => editor.history.redo(),
+              },
+            }
+            : false,
+          history: {
+            delay: 1000,
+            maxStack: 100,
+            userOnly: true,
+          },
         },
       });
 
@@ -374,9 +388,9 @@ export const RichTextArea = ({
       }
 
       const editorElement = editorRef.current;
-      // const toolbarElement = toolbarRef.current;
+      const toolbarElement = toolbarRef.current;
       if (editorElement) editorElement.innerHTML = "";
-      // if (toolbarElement) toolbarElement.innerHTML = "";
+      if (toolbarElement) toolbarElement.innerHTML = "";
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -390,26 +404,27 @@ export const RichTextArea = ({
       <div className="bg-gray-100 rounded-lg p-0.5">
         <div
           ref={editorRef}
-          className="h-[76px] border rounded-lg bg-white [&_.ql-editor]:font-sans [&_.ql-editor]:text-sm [&_.ql-editor]:text-black [&_.ql-editor]:min-h-[76px]"
-          style={{ fontFamily: "inherit" }}
+          className="border rounded-lg bg-white [&_.ql-editor]:font-sans [&_.ql-editor]:text-sm [&_.ql-editor]:text-black"
+          style={{ fontFamily: "inherit", minHeight }}
         />
 
         {/* Custom toolbar container */}
-        {/* <div
-          ref={toolbarRef}
-          className="p-1 flex gap-1"
-          style={{ border: "none" }}
-        >
-          <button className="ql-bold" title="Bold" />
-          <button className="ql-italic" title="Italic" />
-          <button className="ql-underline" title="Underline" />
-          <button className="ql-strike" title="Strikethrough" />
-          <button className="ql-header" value="1" title="Paragraph" />
-          <button className="ql-link" title="Link" />
-          <button className="ql-image" title="Image" />
-          <button className="ql-undo" title="Undo" />
-          <button className="ql-redo" title="Redo" />
-        </div> */}
+        {showToolbar && (
+          <div
+            ref={toolbarRef}
+            className="mt-1 px-1 pb-1 flex flex-wrap items-center gap-1"
+            style={{ border: "none" }}
+          >
+            <button className="ql-bold" title="Bold" />
+            <button className="ql-italic" title="Italic" />
+            <button className="ql-underline" title="Underline" />
+            <button className="ql-list" value="bullet" title="Bullet list" />
+            <button className="ql-list" value="ordered" title="Numbered list" />
+            <button className="ql-link" title="Link" />
+            <button className="ql-undo" title="Undo" />
+            <button className="ql-redo" title="Redo" />
+          </div>
+        )}
       </div>
     </div>
   );

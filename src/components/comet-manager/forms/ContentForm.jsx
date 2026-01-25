@@ -175,7 +175,7 @@ export default function ContentForm({
                 <label className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus-within:outline-none focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 cursor-pointer">
                   <Input
                     type="checkbox"
-                    checked={Boolean(formData.contentFullBleed)}
+                    checked={formData.contentFullBleed === true}
                     onChange={(e) =>
                       updateField("contentFullBleed", e.target.checked)
                     }
