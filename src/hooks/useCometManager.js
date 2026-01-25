@@ -257,6 +257,10 @@ export function useCometManager(sessionData = null) {
                 ...screenData
               } = newScreen;
               stepItem.screens.push(screenData);
+              // normalize positions to match array order
+              for (let i = 0; i < stepItem.screens.length; i++) {
+                stepItem.screens[i].position = i + 1;
+              }
               return newOutline;
             }
           }
@@ -280,6 +284,10 @@ export function useCometManager(sessionData = null) {
             stepItem.screens = stepItem.screens.filter(
               (s) => s.id !== screenId
             );
+            // Normalize positions to match array order 
+            for (let i = 0; i < stepItem.screens.length; i++) {
+              stepItem.screens[i].position = i + 1;
+            }
           }
         }
       }
@@ -322,6 +330,10 @@ export function useCometManager(sessionData = null) {
           const stepId = stepItem.step?.id;
           if (stepId && screensByStep[stepId]) {
             stepItem.screens = screensByStep[stepId];
+            // Normalize positions to match array order (1-based)
+            for (let i = 0; i < stepItem.screens.length; i++) {
+              stepItem.screens[i].position = i + 1;
+            }
           }
         }
       }
@@ -381,6 +393,11 @@ export function useCometManager(sessionData = null) {
                   ...screenData
                 } = newScreen;
                 stepItem.screens.push(screenData);
+              }
+
+              // normalize positions to match array order
+              for (let i = 0; i < stepItem.screens.length; i++) {
+                stepItem.screens[i].position = i + 1;
               }
 
               return newOutline;

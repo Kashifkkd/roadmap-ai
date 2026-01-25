@@ -79,9 +79,6 @@ export default function CometManagerSidebar({
   onTabChange,
   externalTab,
 }) {
-  console.log(selectedScreen, "selectedScreen >>>>>>>>>>>>");
-  console.log(chapters, "chapters >>>>>>>>>>>><<<<<<<<<<<<<<");
-  console.log("remainingChapters >>>>>>>>>>>>", remainingChapters, Array.isArray(remainingChapters), typeof remainingChapters);
   const [tab, setTab] = useState(0);
 
   // Sync with external tab control
@@ -326,6 +323,7 @@ export default function CometManagerSidebar({
 
       if (response.response) {
         const assetsData = response?.response?.assets || [];
+        console.log("assetsData >>>>>>>>>>>>>>>>>>>>>>>", assetsData);
         const materials = Array.isArray(assetsData) ? assetsData : [];
         setAssets(materials);
       } else {
