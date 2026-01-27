@@ -99,6 +99,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
     sendTime: "",
   });
   const [adHocNotifications, setAdHocNotifications] = useState([]);
+  console.log("shdfhgsh")
 
   // Toggles (all available from backend)
   const [habitEnabled, setHabitEnabled] = useState(false);
