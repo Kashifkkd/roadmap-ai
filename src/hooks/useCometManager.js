@@ -16,14 +16,14 @@ export function useCometManager(sessionData = null) {
 
       // Set initial selected step
       const pathChapters = sessionData.response_path.chapters || [];
-      const firstStepId = pathChapters?.[0]?.steps?.[0]?.step?.id ?? null;
+      const firstStepId = pathChapters?.[0]?.steps?.[0]?.step?.uuid ?? null;
       if (firstStepId) {
         setSelectedStepId((prevSelectedStepId) => {
           if (prevSelectedStepId) {
             // Check if previous step still exists
             const stepExists = pathChapters.some((chapter) =>
               chapter.steps?.some(
-                (stepItem) => stepItem.step?.id === prevSelectedStepId
+                (stepItem) => stepItem.step?.uuid === prevSelectedStepId
               )
             );
             return stepExists ? prevSelectedStepId : firstStepId;

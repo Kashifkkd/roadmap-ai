@@ -28,6 +28,7 @@ import {
   FileIcon,
   Paperclip,
   Zap,
+  ArrowRight,
 } from "lucide-react";
 import { graphqlClient } from "@/lib/graphql-client";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
@@ -209,6 +210,7 @@ export default function CometManager({
     outline,
     setOutline,
   } = useCometManager(sessionData);
+  console.log("screens >>>>>>>>>>>>>>>>>>>>>>>", screens);
 
   useEffect(() => {
     if (onOutlineChange && outline !== null) {
@@ -248,6 +250,19 @@ export default function CometManager({
   const [isAnalyzingTextCollapsed, setIsAnalyzingTextCollapsed] =
     useState(false);
   const [showNextChapter, setShowNextChapter] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const shouldOpen =
+        localStorage.getItem("openCometSettingsFromAllComets") === "true";
+      if (shouldOpen) {
+        setIsCometSettingsOpen(true);
+        localStorage.removeItem("openCometSettingsFromAllComets");
+      }
+    } catch {
+    }
+  }, [setIsCometSettingsOpen]);
   useEffect(() => {
     const outline = sessionData?.response_outline;
     const path = sessionData?.response_path;
@@ -378,20 +393,26 @@ export default function CometManager({
     if (!selectedScreenId || !screens || screens.length === 0) return null;
     return screens.find((screen) => screen.id === selectedScreenId) || null;
   }, [selectedScreenId, screens]);
-  // console.log("selectedScreen", selectedScreen);
+  console.log("selectedScreen", selectedScreen);
 
   // Select first screen by default when screens are first loaded
   useEffect(() => {
+    console.log("screen is not selected")
+    console.log("screens >>>>>>>>>>>>>>>>>>>>>>>", screens);
     if (!screens || screens.length === 0) return;
+
+    console.log("selectedScreenId >>>>>>>>>>>>>>>>>>>>>>>", selectedScreenId);
 
     // If no screen is selected, select the first one
     if (!selectedScreenId) {
+      console.log("no screen is selected, selecting the first one")
       const firstScreen = screens[0];
       if (firstScreen && firstScreen.id) {
         setSelectedScreenId(firstScreen.id);
       }
       return;
     }
+    console.log("selectedScreenId >>>>>>>>>>>>>>>>>>>>>>>", selectedScreenId);
 
     // If selected screen is no longer in the screens array, select the first one
     const selectedScreenExists = screens.some(
@@ -1495,9 +1516,9 @@ export default function CometManager({
                     )}
 
                     {/* Scrollable children container */}
-                    <div className="overflow-y-auto p-2 sm:p-3 no-scrollbar flex flex-col gap-2 flex-1 ">
+                    <div className="overflow-y-auto p-2 sm:p-3 no-scrollbar flex flex-col  flex-1 ">
                       {/* Navigation - Screens */}
-                      <div className="bg-background rounded-md p-2 sm:p-3 shrink-0">
+                      <div className="bg-background rounded-md p-2 sm:p-3 shrink-0 mb-2">
                         <div className="flex flex-col gap-3 w-full">
                           <div className="flex items-start gap-2 w-full h-fit overflow-x-auto no-scrollbar -mx-2 px-2">
                             <div className="flex items-start gap-2 sm:gap-2 px-1">
@@ -1576,40 +1597,40 @@ export default function CometManager({
                           />
                         </div>
                       )}
-                      {selectedScreen && (
-                        <div className="border-t p-3 bg-background w-full rounded-b-xl shrink-0 sticky bottom-0 -mt-2">
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3 px-1 py-1 rounded-xl bg-[#E9EAEB]">
-                              <div
-                                className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center shrink-0 cursor-pointer hover:bg-gray-50 transition-colors"
-                                onClick={() =>
-                                  setIsAnalyzingTextCollapsed(
-                                    !isAnalyzingTextCollapsed
-                                  )
-                                }
-                              >
-                                <Zap size={14} className="text-gray-900" />
-                              </div>
-                              {!isAnalyzingTextCollapsed && (
-                                <span className="text-gray-700 text-sm">
-                                  {sessionData?.meta?.state || "Analyzing instructions and source materials"}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Right button - Next Chapter */}
-                            <Button
-                              variant="default"
-                              className="ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50 cursor-pointer"
-                              onClick={handleNextChapter}
-                              disabled={isGeneratingNextChapter}
+                      {/* {selectedScreen && ( */}
+                      <div className="border-t p-3 bg-background w-full rounded-b-xl shrink-0 sticky bottom-0 mt-auto">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3 px-1 py-1 rounded-xl bg-[#E9EAEB]">
+                            <div
+                              className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center shrink-0 cursor-pointer hover:bg-gray-50 transition-colors"
+                              onClick={() =>
+                                setIsAnalyzingTextCollapsed(
+                                  !isAnalyzingTextCollapsed
+                                )
+                              }
                             >
-                              <span>Generate Remaining Chapters</span>
-                              <ChevronRight size={16} />
-                            </Button>
+                              <Zap size={14} className="text-gray-900" />
+                            </div>
+                            {!isAnalyzingTextCollapsed && (
+                              <span className="text-gray-700 text-sm">
+                                {sessionData?.meta?.state || "Analyzing instructions and source materials"}
+                              </span>
+                            )}
                           </div>
+
+                          {/* Right button - Next Chapter */}
+                          <Button
+                            variant="default"
+                            className="ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50 cursor-pointer"
+                            onClick={handleNextChapter}
+                            disabled={isGeneratingNextChapter}
+                          >
+                            <span>Generate Remaining Chapters</span>
+                            <ArrowRight size={16} />
+                          </Button>
                         </div>
-                      )}
+                      </div>
+                      {/* )} */}
 
                       {/* {selectedScreen && (
                         <div className="shrink-0 p-4 bg-white rounded-lg overflow-auto max-h-full">
