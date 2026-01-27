@@ -131,7 +131,7 @@ export default function WelcomePage() {
           setCometCreated(true);
           setTimeout(() => {
             router.push("/dashboard");
-          }, 4000);
+          }, 2000);
         }
       }
     },
@@ -171,16 +171,17 @@ export default function WelcomePage() {
         localStorage.setItem("sessionId", currentSessionId);
         console.log("✅ Session created:", currentSessionId);
 
-        if (attachedFile) {
+        // Upload the attached file only once
+        if (attachedFile && !sourceMaterialUid) {
           uploadedFileUid = await uploadAttachedFile(currentSessionId);
+          console.log("uploadedFileUid>>>>>>>>>>", uploadedFileUid);
         }
 
         // Note: Subscription is now handled by useSessionSubscription hook below
       } else {
         console.log("Using existing session:", currentSessionId);
 
-        // Upload attached file for existing session
-        if (attachedFile) {
+        if (attachedFile && !sourceMaterialUid) {
           uploadedFileUid = await uploadAttachedFile(currentSessionId);
         }
       }
@@ -313,6 +314,8 @@ export default function WelcomePage() {
         if (uuid) {
           toast.success("File uploaded successfully");
           setSourceMaterialUid(uuid);
+        } else {
+          setSourceMaterialUid("uploaded");
         }
 
         return uuid;
@@ -332,6 +335,8 @@ export default function WelcomePage() {
 
     if (selectedFile) {
       setAttachedFile(selectedFile);
+      // New file selected
+      setSourceMaterialUid(null);
     }
 
     event.target.value = "";

@@ -35,6 +35,7 @@ import { graphqlClient } from "@/lib/graphql-client";
 import { uploadAssetFile } from "@/api/uploadAssets";
 import { uploadPathImage } from "@/api/uploadPathImage";
 import UserManagement from "@/components/common/UserManagement";
+import { publishComet } from "@/api/publishComet";
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
@@ -526,6 +527,14 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
             habit_enabled: habitEnabled,
           })
         );
+
+        //  publishing the comet
+        try {
+          await publishComet(sessionId);
+        } catch (publishError) {
+          console.error("Failed to publish comet from settings dialog:", publishError);
+          toast.error("Failed to publish comet. Please try again.");
+        }
       }
       onOpenChange(false);
     } catch (error) {
