@@ -315,10 +315,13 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
           setDuration(String(enabledAttributes.duration));
         }
 
-        if (enabledAttributes.language !== undefined) {
-          const lang = String(enabledAttributes.language).trim();
-          const validLangs = ["English", "Spanish", "French"];
-          const normalizedLang = validLangs.find(l => l.toLowerCase() === lang.toLowerCase()) || lang;
+          if (enabledAttributes.language !== undefined) {
+          const lang = String(enabledAttributes.language).trim().toLowerCase();
+          // Map full language names to codes if needed
+          const langCodeMap = { "english": "en", "spanish": "es", "french": "fr" };
+          const validCodes = ["en", "es", "fr"];
+          // If it's already a valid code, use it; otherwise try to map from full name
+          const normalizedLang = validCodes.includes(lang) ? lang : (langCodeMap[lang] || "en");
           setLanguage(normalizedLang);
         }
 
@@ -968,13 +971,13 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 <SelectValue placeholder="Select language" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="English">
+                                <SelectItem value="en">
                                   English
                                 </SelectItem>
-                                <SelectItem value="Spanish">
+                                <SelectItem value="es">
                                   Spanish
                                 </SelectItem>
-                                <SelectItem value="French">French</SelectItem>
+                                <SelectItem value="fr">French</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>

@@ -47,8 +47,27 @@ export default function DashboardLayout() {
     if (storedSessionData) {
       try {
         const parsed = JSON.parse(storedSessionData);
-        setSessionData(parsed);
-        setPrefillData(parsed);
+        
+        // Normalize data structure to handle different formats
+        const normalized = { ...parsed };
+        
+        // Handle output.chatbot_conversation -> chatbot_conversation
+        if (parsed.output?.chatbot_conversation && !parsed.chatbot_conversation) {
+          normalized.chatbot_conversation = parsed.output.chatbot_conversation;
+        }
+        
+        // Normalize Learning Objectives field name
+        if (normalized.comet_creation_data?.["Audience & Objectives"]) {
+          const audienceObj = normalized.comet_creation_data["Audience & Objectives"];
+          // Handle "Learning Objectives" -> "Learning and Behaviour Objectives"
+          if (audienceObj["Learning Objectives"] && !audienceObj["Learning and Behaviour Objectives"]) {
+            audienceObj["Learning and Behaviour Objectives"] = audienceObj["Learning Objectives"];
+            delete audienceObj["Learning Objectives"];
+          }
+        }
+        
+        setSessionData(normalized);
+        setPrefillData(normalized);
       } catch (e) {
         console.error("Error parsing sessionData:", e);
       }
@@ -119,9 +138,27 @@ export default function DashboardLayout() {
   useSessionSubscription(
     sessionId,
     (sessionData) => {
-      localStorage.setItem("sessionData", JSON.stringify(sessionData));
+      // Normalize data structure to handle different formats
+      const normalized = { ...sessionData };
+      
+      // Handle output.chatbot_conversation -> chatbot_conversation
+      if (sessionData.output?.chatbot_conversation && !sessionData.chatbot_conversation) {
+        normalized.chatbot_conversation = sessionData.output.chatbot_conversation;
+      }
+      
+      // Normalize Learning Objectives field name
+      if (normalized.comet_creation_data?.["Audience & Objectives"]) {
+        const audienceObj = normalized.comet_creation_data["Audience & Objectives"];
+        // Handle "Learning Objectives" -> "Learning and Behaviour Objectives"
+        if (audienceObj["Learning Objectives"] && !audienceObj["Learning and Behaviour Objectives"]) {
+          audienceObj["Learning and Behaviour Objectives"] = audienceObj["Learning Objectives"];
+          delete audienceObj["Learning Objectives"];
+        }
+      }
+      
+      localStorage.setItem("sessionData", JSON.stringify(normalized));
       // Create a new object reference to ensure React detects the change
-      const updatedSessionData = { ...sessionData };
+      const updatedSessionData = { ...normalized };
       setSessionData(updatedSessionData);
       // Also update prefillData so CreateComet component receives the updates
       // Using a new object reference ensures the useEffect in CreateComet triggers
@@ -133,8 +170,23 @@ export default function DashboardLayout() {
       }
     },
     (error) => {
-      console.error("Subscription error:", error);
-      setError(error.message);
+      // Enhanced error logging for debugging
+      console.error("Dashboard subscription error:", {
+        message: error?.message || 'Unknown error',
+        error: error,
+        sessionId: sessionId,
+        errorType: error?.constructor?.name,
+      });
+      
+      // Only show user-facing errors for non-connection issues
+      // WebSocket connection errors are often transient and handled by retry logic
+      const isConnectionError = error?.message?.toLowerCase().includes('connection') || 
+                                error?.message?.toLowerCase().includes('websocket') ||
+                                error?.message?.toLowerCase().includes('network');
+      
+      if (!isConnectionError && error?.message) {
+        setError(error.message);
+      }
       setIsGeneratingOutline(false);
     }
   );

@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { toast } from "sonner";
 import { uploadProfile } from "@/api/User/uploadProfile";
-import { getCohorts, getCommit } from "@/api/cohort/getCohorts";
+import { getCohorts, getCommit, getCohortbyPath } from "@/api/cohort/getCohorts";
 import { createCohort } from "@/api/cohort/createCohort";
 import { updateCohort } from "@/api/cohort/updateCohort";
 import { deleteCohort } from "@/api/cohort/deleteCohort";
@@ -403,21 +403,26 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
     setPathsLoading(true);
     setSelectedPathIds(new Set());
     setPathEnabled(true);
-
     try {
-      const result = await getClientPaths({ clientId });
+      const resCohort = await getCohortbyPath({ cohortId });
+      const result = await getClientPaths(clientId);
       const data = result?.response || [];
       const paths = Array.isArray(data) ? data : [];
-
+      const secondIds = new Set(resCohort.response.map(item => item.id));
+      setSelectedPathIds(secondIds)
+      // const updatedArray = paths.map(item => ({
+      //   ...item,
+      //   isPresent: secondIds.has(item.id)
+      // }));
       setAvailablePaths(paths);
 
       const initiallySelected = new Set();
-      paths.forEach((path) => {
-        if (path.enabled || path.selected || path.is_selected) {
-          initiallySelected.add(path.id);
-        }
-      });
-      setSelectedPathIds(initiallySelected);
+      // paths.forEach((path) => {
+      //   if (path.enabled || path.selected || path.is_selected) {
+      //     initiallySelected.add(path.id);
+      //   }
+      // });
+      // setSelectedPathIds(initiallySelected);
     } catch (error) {
       console.error("Failed to fetch cohort paths:", error);
       toast.error("Failed to load cohort paths");
@@ -467,17 +472,22 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
 
     setSavingPaths(true);
     try {
-      await updateCohortPaths({
+      const res = await updateCohortPaths({
         cohortId,
         pathIds: selectedIds,
         enabled: pathEnabled,
       });
-      toast.success("Cohort paths updated successfully");
-      setIsPathDialogOpen(false);
-      setPathDialogCohort(null);
-      setAvailablePaths([]);
-      setSelectedPathIds(new Set());
-      setPathIdsError("");
+      if (res?.status === 200) {
+        toast.success("Cohort paths updated successfully");
+        setIsPathDialogOpen(false);
+        setPathDialogCohort(null);
+        setAvailablePaths([]);
+        setSelectedPathIds(new Set());
+        setPathIdsError("");
+      } else {
+        toast.success(res.response.detail);
+      }
+
     } catch (error) {
       console.error("Failed to update cohort paths:", error);
       const errorMessage =
@@ -1062,6 +1072,143 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                 )}
               </div>
             </div>
+            {isPathDialogOpen && (
+              <div className="mt-4 border border-gray-200 rounded-lg bg-white p-4 space-y-3 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-800">
+                    {pathsLoading
+                      ? "Loading Comet..."
+                      : `Select Comet for ${pathDialogCohort?.name ||
+                      pathDialogCohort?.cohort_name ||
+                      "Cohort"
+                      }`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPathDialogOpen(false);
+                      setPathDialogCohort(null);
+                      setAvailablePaths([]);
+                      setSelectedPathIds(new Set());
+                      setPathIdsError("");
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <p className="text-xs text-gray-500">
+                  Select comets for this cohort. Currently selected:{" "}
+                  {selectedPathIds.size}
+                </p>
+
+                {pathsLoading ? (
+                  <div className="py-8 text-center text-gray-500 text-sm">
+                    Loading comets...
+                  </div>
+                ) : availablePaths.length === 0 ? (
+                  <div className="py-8 text-center text-gray-500 text-sm">
+                    No comets available
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {availablePaths.map((path) => {
+                      const pathId = path.id;
+                      const isSelected = selectedPathIds.has(pathId);
+                      // const isDisabled = !isSelected && selectedPathIds.size >= 5;
+                      const isDisabled = false;
+
+                      return (
+                        <label
+                          key={pathId}
+                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isSelected
+                            ? "bg-primary-50 border-primary-500"
+                            : isDisabled
+                              ? "bg-gray-50 border-gray-200 cursor-not-allowed opacity-60"
+                              : "bg-white border-gray-200 hover:border-gray-300"
+                            }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleTogglePath(pathId)}
+                            disabled={isDisabled || savingPaths}
+                            className="w-4 h-4 text-primary-700 border-gray-300 rounded focus:ring-primary-500 focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900">
+                              {path.name || `Path ${pathId}`}
+                            </div>
+                            {path.description && (
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                {path.description}
+                              </div>
+                            )}
+                            <div className="text-xs text-gray-400 mt-0.5">
+                              ID: {pathId}
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {pathIdsError && (
+                  <p className="text-xs text-red-500">{pathIdsError}</p>
+                )}
+
+
+                {/* <div className="flex items-center justify-between py-2 border-t border-gray-200">
+              <Label className="text-sm font-medium text-gray-700">
+                Enable Paths
+              </Label>
+              <button
+                type="button"
+                onClick={() => setPathEnabled(!pathEnabled)}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
+                  pathEnabled ? "bg-primary-700" : "bg-gray-300"
+                }`}
+                role="switch"
+                aria-checked={pathEnabled}
+                disabled={savingPaths}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
+                    pathEnabled ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div> */}
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-gray-600 hover:text-gray-800 text-sm"
+                    onClick={() => {
+                      setIsPathDialogOpen(false);
+                      setPathDialogCohort(null);
+                      setAvailablePaths([]);
+                      setSelectedPathIds(new Set());
+                      setPathIdsError("");
+                    }}
+                    disabled={savingPaths}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    className="bg-primary-700 hover:bg-primary-800 text-white px-4 py-1.5 rounded-lg disabled:opacity-60 text-sm"
+                    onClick={handleSavePaths}
+                    disabled={savingPaths || pathsLoading}
+                  >
+                    {savingPaths ? "Saving..." : "Update Comets"}
+                  </Button>
+                </div>
+              </div>
+            )}
             {initialValues?.id && <div className="border border-gray border-1 rounded p-3 mt-2">
               <Label className="text-sm font-medium text-gray-700 block">
                 All Comets
@@ -1154,142 +1301,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         )}
 
         {/* Cohort Paths Dialog */}
-        {isPathDialogOpen && (
-          <div className="mt-4 border border-gray-200 rounded-lg bg-white p-4 space-y-3 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-800">
-                {pathsLoading
-                  ? "Loading Comet..."
-                  : `Select Comet for ${pathDialogCohort?.name ||
-                  pathDialogCohort?.cohort_name ||
-                  "Cohort"
-                  }`}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsPathDialogOpen(false);
-                  setPathDialogCohort(null);
-                  setAvailablePaths([]);
-                  setSelectedPathIds(new Set());
-                  setPathIdsError("");
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
-            <p className="text-xs text-gray-500">
-              Select comets for this cohort. Currently selected:{" "}
-              {selectedPathIds.size}
-            </p>
-
-            {pathsLoading ? (
-              <div className="py-8 text-center text-gray-500 text-sm">
-                Loading comets...
-              </div>
-            ) : availablePaths.length === 0 ? (
-              <div className="py-8 text-center text-gray-500 text-sm">
-                No comets available
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                {availablePaths.map((path) => {
-                  const pathId = path.id;
-                  const isSelected = selectedPathIds.has(pathId);
-                  const isDisabled = !isSelected && selectedPathIds.size >= 5;
-
-                  return (
-                    <label
-                      key={pathId}
-                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isSelected
-                        ? "bg-primary-50 border-primary-500"
-                        : isDisabled
-                          ? "bg-gray-50 border-gray-200 cursor-not-allowed opacity-60"
-                          : "bg-white border-gray-200 hover:border-gray-300"
-                        }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => handleTogglePath(pathId)}
-                        disabled={isDisabled || savingPaths}
-                        className="w-4 h-4 text-primary-700 border-gray-300 rounded focus:ring-primary-500 focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">
-                          {path.name || `Path ${pathId}`}
-                        </div>
-                        {path.description && (
-                          <div className="text-xs text-gray-500 mt-0.5">
-                            {path.description}
-                          </div>
-                        )}
-                        <div className="text-xs text-gray-400 mt-0.5">
-                          ID: {pathId}
-                        </div>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-
-            {pathIdsError && (
-              <p className="text-xs text-red-500">{pathIdsError}</p>
-            )}
-
-
-            {/* <div className="flex items-center justify-between py-2 border-t border-gray-200">
-              <Label className="text-sm font-medium text-gray-700">
-                Enable Paths
-              </Label>
-              <button
-                type="button"
-                onClick={() => setPathEnabled(!pathEnabled)}
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
-                  pathEnabled ? "bg-primary-700" : "bg-gray-300"
-                }`}
-                role="switch"
-                aria-checked={pathEnabled}
-                disabled={savingPaths}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
-                    pathEnabled ? "translate-x-6" : "translate-x-1"
-                  }`}
-                />
-              </button>
-            </div> */}
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-gray-600 hover:text-gray-800 text-sm"
-                onClick={() => {
-                  setIsPathDialogOpen(false);
-                  setPathDialogCohort(null);
-                  setAvailablePaths([]);
-                  setSelectedPathIds(new Set());
-                  setPathIdsError("");
-                }}
-                disabled={savingPaths}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                className="bg-primary-700 hover:bg-primary-800 text-white px-4 py-1.5 rounded-lg disabled:opacity-60 text-sm"
-                onClick={handleSavePaths}
-                disabled={savingPaths || pathsLoading}
-              >
-                {savingPaths ? "Saving..." : "Update Comets"}
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Secure Links toggle */}
         {/* <div className="mt-4 border-t border-gray-200 pt-3 flex  justify-between"> */}

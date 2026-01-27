@@ -44,6 +44,8 @@ const imageGuidanceOptions = [
 
 export default function GenerateStepImageButton({
   sessionId,
+  sessionData,
+  setSessionData,
   chapterUid,
   stepUid,
   onSuccess,
@@ -54,10 +56,42 @@ export default function GenerateStepImageButton({
   const [isGenerating, setIsGenerating] = useState(false);
   const [attributesError, setAttributesError] = useState(null);
   const [generateError, setGenerateError] = useState(null);
-  
+
   // Attribute fields
   const [artStyle, setArtStyle] = useState("Photorealistic");
   const [imageGuidance, setImageGuidance] = useState("simple");
+
+  const isEnqueued = React.useMemo(() => {
+    if (!sessionData || !stepUid) return false;
+
+    // Search in response_path.chapters
+    const pathChapters = sessionData.response_path?.chapters || [];
+    for (const chapter of pathChapters) {
+      for (const stepItem of chapter.steps || []) {
+        if (stepItem.step?.uuid === stepUid) {
+          return stepItem.step?.image_generation_enqueued === true;
+        }
+      }
+    }
+
+    // Search in response_outline.chapters if not found in path
+    const outlineChapters = sessionData.response_outline?.chapters ||
+      (Array.isArray(sessionData.response_outline) ? sessionData.response_outline : []);
+    for (const chapter of (Array.isArray(outlineChapters) ? outlineChapters : [])) {
+      if (chapter.steps) {
+        for (const stepData of chapter.steps) {
+          const step = stepData.step;
+          if (step && step.uuid === stepUid) {
+            return step.image_generation_enqueued === true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }, [sessionData, stepUid]);
+
+  if (isEnqueued) return null;
 
   const handleOpenDialog = async () => {
     if (!sessionId) {
@@ -81,7 +115,7 @@ export default function GenerateStepImageButton({
 
       // Handle different response structures
       const attributes = response?.response || response || {};
-      
+
       // Set the fields from the API response
       if (attributes.art_style) {
         setArtStyle(attributes.art_style);
@@ -94,6 +128,65 @@ export default function GenerateStepImageButton({
       setAttributesError(error.message || "Failed to load image attributes");
     } finally {
       setIsLoadingAttributes(false);
+    }
+  };
+
+  const markAsEnqueued = async () => {
+    if (!sessionData || !setSessionData || !stepUid) return;
+
+    try {
+      const updatedSessionData = JSON.parse(JSON.stringify(sessionData));
+      let stepFound = false;
+
+      // Update in response_path
+      if (updatedSessionData.response_path?.chapters) {
+        for (const chapter of updatedSessionData.response_path.chapters) {
+          for (const stepItem of chapter.steps || []) {
+            if (stepItem.step?.uuid === stepUid) {
+              stepItem.step.image_generation_enqueued = true;
+              stepFound = true;
+              break;
+            }
+          }
+          if (stepFound) break;
+        }
+      }
+
+      // Also update in response_outline to be consistent
+      const outlineChapters = updatedSessionData.response_outline?.chapters ||
+        (Array.isArray(updatedSessionData.response_outline) ? updatedSessionData.response_outline : []);
+
+      for (const chapter of (Array.isArray(outlineChapters) ? outlineChapters : [])) {
+        if (chapter.steps) {
+          for (const stepData of chapter.steps) {
+            if (stepData.step?.uuid === stepUid) {
+              stepData.step.image_generation_enqueued = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (stepFound) {
+        setSessionData(updatedSessionData);
+        localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
+
+        // Persist to backend using autoSaveComet
+        const cometJsonForSave = JSON.stringify({
+          session_id: sessionId,
+          input_type: "source_material_based_outliner",
+          comet_creation_data: updatedSessionData.comet_creation_data || {},
+          response_outline: updatedSessionData.response_outline || {},
+          response_path: updatedSessionData.response_path || {},
+          chatbot_conversation: updatedSessionData.chatbot_conversation || [],
+          to_modify: updatedSessionData.to_modify || {},
+        });
+
+        const { graphqlClient } = await import("@/lib/graphql-client");
+        await graphqlClient.autoSaveComet(cometJsonForSave);
+      }
+    } catch (error) {
+      console.error("Error marking step as enqueued:", error);
     }
   };
 
@@ -125,20 +218,15 @@ export default function GenerateStepImageButton({
         stepUid,
       });
 
-      if (response?.success && response?.response) {
-        if (onSuccess) {
-          onSuccess(response.response);
-        }
-        setIsDialogOpen(false);
-        // Reset fields
-        setArtStyle("Photorealistic");
-        setImageGuidance("simple");
-      } else if (response?.status === "enqueued" || response?.response?.status === "enqueued") {
-        // Handle enqueued status
+      if (response?.success || response?.status === "enqueued" || response?.response?.status === "enqueued") {
+        // Successfully enqueued or started generating
+        await markAsEnqueued();
+
         if (onSuccess) {
           onSuccess(response.response || response);
         }
         setIsDialogOpen(false);
+        // Reset fields
         setArtStyle("Photorealistic");
         setImageGuidance("simple");
       } else {

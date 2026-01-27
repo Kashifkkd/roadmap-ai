@@ -156,14 +156,16 @@ export default function CreateComet({
                   "targetAudience",
                   audienceObjectives["Target Audience"]
                 );
-              if (audienceObjectives["Learning and Behaviour Objectives"]) {
-                const objectives =
-                  audienceObjectives["Learning and Behaviour Objectives"];
-                const objectivesArray = Array.isArray(objectives)
-                  ? objectives
-                  : typeof objectives === "string"
-                  ? objectives.split("\n").filter((obj) => obj.trim())
-                  : [objectives];
+              // Handle both "Learning Objectives" and "Learning and Behaviour Objectives"
+              const learningObjectives = 
+                audienceObjectives["Learning and Behaviour Objectives"] || 
+                audienceObjectives["Learning Objectives"];
+              if (learningObjectives) {
+                const objectivesArray = Array.isArray(learningObjectives)
+                  ? learningObjectives
+                  : typeof learningObjectives === "string"
+                  ? learningObjectives.split("\n").filter((obj) => obj.trim())
+                  : [learningObjectives];
                 setValue("learningObjectives", objectivesArray);
               }
             }
@@ -261,11 +263,12 @@ export default function CreateComet({
         if (audienceObjectives) {
           if (audienceObjectives["Target Audience"])
             setValue("targetAudience", audienceObjectives["Target Audience"]);
-          if (audienceObjectives["Learning and Behaviour Objectives"]) {
-            const objectives =
-              audienceObjectives["Learning and Behaviour Objectives"];
-
-            setValue("learningObjectives", objectives);
+          // Handle both "Learning Objectives" and "Learning and Behaviour Objectives"
+          const learningObjectives = 
+            audienceObjectives["Learning and Behaviour Objectives"] || 
+            audienceObjectives["Learning Objectives"];
+          if (learningObjectives) {
+            setValue("learningObjectives", learningObjectives);
           }
         }
 

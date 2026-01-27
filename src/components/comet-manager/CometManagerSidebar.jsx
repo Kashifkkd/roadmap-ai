@@ -79,6 +79,9 @@ export default function CometManagerSidebar({
   onTabChange,
   externalTab,
 }) {
+  console.log(selectedScreen, "selectedScreen >>>>>>>>>>>>");
+  console.log(chapters, "chapters >>>>>>>>>>>><<<<<<<<<<<<<<");
+  console.log("remainingChapters >>>>>>>>>>>>", remainingChapters, Array.isArray(remainingChapters), typeof remainingChapters);
   const [tab, setTab] = useState(0);
 
   // Sync with external tab control
@@ -88,7 +91,9 @@ export default function CometManagerSidebar({
     }
   }, [externalTab]);
   const [selectedChapter, setSelectedChapter] = useState(null);
-  const [selectedStep, setSelectedStep] = useState(null);
+  // Use selectedStepId from hook as the source of truth for step selection
+  // This ensures only one step can be selected at a time
+  // No local selectedStep state needed - use selectedStepId directly
   const [expandedChapters, setExpandedChapters] = useState(new Set());
   const [expandedSteps, setExpandedSteps] = useState(new Set());
   const [expandedRemainingChapters, setExpandedRemainingChapters] = useState(new Set());
@@ -139,11 +144,23 @@ export default function CometManagerSidebar({
       }
     }
   }, [selectedAssetCategory, filteredAssets]);
+  // Track previous selectedStepId to detect actual changes
+  // Note: selectedStepId is the step UUID (stepUid) to guarantee uniqueness
+  const prevSelectedStepIdRef = useRef(null);
+
   useEffect(() => {
     if (!selectedStepId) {
       return;
     }
 
+    // Only update expansion state if selectedStepId actually changed
+    // Don't reset when chapters data updates (subscription updates)
+    // selectedStepId is the step UUID, and step.id in chapters is also the UUID
+    const stepIdChanged = prevSelectedStepIdRef.current !== selectedStepId;
+    prevSelectedStepIdRef.current = selectedStepId;
+
+    // Find chapter containing the selected step using UUID
+    // step.id in transformed chapters is the step.uuid from source data
     const chapterIndex = chapters.findIndex((chapter) =>
       Array.isArray(chapter.steps)
         ? chapter.steps.some((step) => step.id === selectedStepId)
@@ -157,10 +174,24 @@ export default function CometManagerSidebar({
     const chapter = chapters[chapterIndex];
     const chapterId = chapter.id || `chapter-${chapterIndex}`;
 
-    setSelectedChapter(chapterId);
-    setExpandedChapters(new Set([chapterId]));
-    setSelectedStep(selectedStepId);
-    setExpandedSteps(new Set([selectedStepId]));
+    // Only update selected chapter if step actually changed
+    if (stepIdChanged) {
+      setSelectedChapter(chapterId);
+
+      // Preserve existing expanded chapters, just ensure the selected chapter is expanded
+      setExpandedChapters((prev) => {
+        const newSet = new Set(prev);
+        newSet.add(chapterId); // Add selected chapter if not already expanded
+        return newSet;
+      });
+
+      // Clear previous expanded steps and only expand the newly selected step
+      // This ensures only one step appears selected at a time
+      setExpandedSteps(new Set([selectedStepId]));
+    } else {
+      // Step didn't change, just ensure chapter is set (in case chapters array was recreated)
+      setSelectedChapter((prev) => prev || chapterId);
+    }
   }, [selectedStepId, chapters]);
 
   const handleTabChange = (index) => {
@@ -219,12 +250,9 @@ export default function CometManagerSidebar({
     });
   };
 
-  //step
+  //step - only handles expansion/collapse, not selection
   const toggleStep = (stepId) => {
-    setSelectedStep(stepId);
-    if (setSelectedStepFromHook) {
-      setSelectedStepFromHook(stepId);
-    }
+    // Don't change selection here - selection is handled by the outer click handler
     setExpandedSteps((prev) => {
       const newSet = new Set();
       // If clicking on the same step that's already expanded, collapse it
@@ -323,7 +351,6 @@ export default function CometManagerSidebar({
 
       if (response.response) {
         const assetsData = response?.response?.assets || [];
-        console.log("assetsData >>>>>>>>>>>>>>>>>>>>>>>", assetsData);
         const materials = Array.isArray(assetsData) ? assetsData : [];
         setAssets(materials);
       } else {
@@ -485,7 +512,7 @@ export default function CometManagerSidebar({
                           setSelectedChapter(chapterId);
                           toggleChapter(chapterId);
                           // Clear step selection when clicking chapter
-                          setSelectedStep(null);
+                          // Use the hook's setSelectedStep which manages selectedStepId
                           if (setSelectedStepFromHook) {
                             setSelectedStepFromHook(null);
                           }
@@ -534,7 +561,8 @@ export default function CometManagerSidebar({
                               // Create unique step ID that includes chapter index and step index
                               const stepId =
                                 step.id || `step-${chapterId}-${stepIndex}`;
-                              const isStepSelected = selectedStep === stepId;
+                              // Use selectedStepId directly from hook - ensures only one step is selected
+                              const isStepSelected = selectedStepId === stepId;
                               const isStepExpanded = expandedSteps.has(stepId);
                               return (
                                 <div
@@ -550,7 +578,12 @@ export default function CometManagerSidebar({
                                   <div
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setSelectedStep(stepId);
+                                      // Don't handle click if it's on the chevron (let chevron handler do it)
+                                      if (e.target.closest('.step-chevron')) {
+                                        return;
+                                      }
+                                      // Select this step (only one can be selected at a time)
+                                      // Use the hook's setSelectedStep which manages selectedStepId
                                       if (setSelectedStepFromHook) {
                                         setSelectedStepFromHook(stepId);
                                       }
@@ -563,9 +596,14 @@ export default function CometManagerSidebar({
                                     <div
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        // Select the step first, then toggle expansion
+                                        // Use the hook's setSelectedStep which manages selectedStepId
+                                        if (setSelectedStepFromHook) {
+                                          setSelectedStepFromHook(stepId);
+                                        }
                                         toggleStep(stepId);
                                       }}
-                                      className={`rounded-full p-1 shrink-0 ${isStepSelected || isStepExpanded
+                                      className={`step-chevron rounded-full p-1 shrink-0 ${isStepSelected || isStepExpanded
                                         ? "bg-white"
                                         : "bg-primary-100"
                                         }`}

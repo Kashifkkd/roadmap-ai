@@ -1604,7 +1604,7 @@ export default function CometManager({
                               onClick={handleNextChapter}
                               disabled={isGeneratingNextChapter}
                             >
-                              <span>Next Chapter</span>
+                              <span>Generate Remaining Chapters</span>
                               <ChevronRight size={16} />
                             </Button>
                           </div>
