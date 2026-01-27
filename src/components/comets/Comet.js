@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import StatusButton from "./StatusButton";
 import { useCometSettings } from "@/contexts/CometSettingsContext";
 
@@ -16,6 +17,7 @@ const Comet = ({
   const [disabled, setDisabled] = useState(false);
   const [imgSrc, setImgSrc] = useState(imageURL || "/fallbackImage.png");
   const { setIsCometSettingsOpen } = useCometSettings();
+  const router = useRouter();
 
   useEffect(() => {
     setImgSrc(imageURL || "/fallbackImage.png");
@@ -75,7 +77,10 @@ const Comet = ({
       localStorage.setItem("sessionData", JSON.stringify(result));
       localStorage.setItem("sessionId", session_id);
 
-      setIsCometSettingsOpen(true);
+      localStorage.setItem("openCometSettingsFromAllComets", "true");
+
+      // Navigate to comet manager
+      router.push("/comet-manager");
     } catch (error) {
       console.error("Error fetching comet session details:", error.message);
     }

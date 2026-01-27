@@ -6,6 +6,7 @@ export const endpoints = {
   uploadSourceMaterial: "api/n8n/upload_source_material",
   getSourceMaterials: "api/n8n/source_materials",
   getAssets: "api/n8n/assets",
+  getTools: "api/n8n/tools",
   getClients: "api/clients/v1/",
   uploadAssets: "api/n8n/upload_asset_file",
 

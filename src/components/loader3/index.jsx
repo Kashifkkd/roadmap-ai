@@ -92,7 +92,7 @@ const Loader = ({
           </p>
 
           {/* Pill Loader */}
-          <div className="revealPill" aria-label={displayPillText}>
+          <div className="revealPill mx-auto" aria-label={displayPillText}>
             <div className="pillContent">
               <div className="pillIcon" aria-hidden="true">
                 <Sparkles size={16} className="text-[#6C63FF]" />
@@ -101,7 +101,7 @@ const Loader = ({
               <div className="pillDivider" aria-hidden="true" />
 
               <div className="pillText">
-                <span className="text-sm font-semibold text-gray-900">
+                <span className="text-sm sm:text-base md:text-lg font-semibold text-gray-900">
                   {displayPillText}
                 </span>
               </div>

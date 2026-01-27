@@ -7,7 +7,7 @@ import CreateComet from "@/components/create-comet";
 import ChatWindow from "@/components/chat/ChatWindow";
 // import ProgressbarLoader from "@/components/loader";
 import { graphqlClient } from "@/lib/graphql-client";
-import Loader from "../loader3";
+import Loader from "../loader2";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
 export default function DashboardLayout() {
@@ -47,15 +47,15 @@ export default function DashboardLayout() {
     if (storedSessionData) {
       try {
         const parsed = JSON.parse(storedSessionData);
-        
+
         // Normalize data structure to handle different formats
         const normalized = { ...parsed };
-        
+
         // Handle output.chatbot_conversation -> chatbot_conversation
         if (parsed.output?.chatbot_conversation && !parsed.chatbot_conversation) {
           normalized.chatbot_conversation = parsed.output.chatbot_conversation;
         }
-        
+
         // Normalize Learning Objectives field name
         if (normalized.comet_creation_data?.["Audience & Objectives"]) {
           const audienceObj = normalized.comet_creation_data["Audience & Objectives"];
@@ -65,7 +65,7 @@ export default function DashboardLayout() {
             delete audienceObj["Learning Objectives"];
           }
         }
-        
+
         setSessionData(normalized);
         setPrefillData(normalized);
       } catch (e) {
@@ -140,12 +140,12 @@ export default function DashboardLayout() {
     (sessionData) => {
       // Normalize data structure to handle different formats
       const normalized = { ...sessionData };
-      
+
       // Handle output.chatbot_conversation -> chatbot_conversation
       if (sessionData.output?.chatbot_conversation && !sessionData.chatbot_conversation) {
         normalized.chatbot_conversation = sessionData.output.chatbot_conversation;
       }
-      
+
       // Normalize Learning Objectives field name
       if (normalized.comet_creation_data?.["Audience & Objectives"]) {
         const audienceObj = normalized.comet_creation_data["Audience & Objectives"];
@@ -155,7 +155,7 @@ export default function DashboardLayout() {
           delete audienceObj["Learning Objectives"];
         }
       }
-      
+
       localStorage.setItem("sessionData", JSON.stringify(normalized));
       // Create a new object reference to ensure React detects the change
       const updatedSessionData = { ...normalized };
@@ -163,7 +163,7 @@ export default function DashboardLayout() {
       // Also update prefillData so CreateComet component receives the updates
       // Using a new object reference ensures the useEffect in CreateComet triggers
       setPrefillData(updatedSessionData);
-      
+
       // Navigate to outline-manager when outline is generated
       if (isGeneratingOutline) {
         router.push("/outline-manager");
@@ -177,13 +177,13 @@ export default function DashboardLayout() {
         sessionId: sessionId,
         errorType: error?.constructor?.name,
       });
-      
+
       // Only show user-facing errors for non-connection issues
       // WebSocket connection errors are often transient and handled by retry logic
-      const isConnectionError = error?.message?.toLowerCase().includes('connection') || 
-                                error?.message?.toLowerCase().includes('websocket') ||
-                                error?.message?.toLowerCase().includes('network');
-      
+      const isConnectionError = error?.message?.toLowerCase().includes('connection') ||
+        error?.message?.toLowerCase().includes('websocket') ||
+        error?.message?.toLowerCase().includes('network');
+
       if (!isConnectionError && error?.message) {
         setError(error.message);
       }
@@ -227,15 +227,15 @@ export default function DashboardLayout() {
             formData.learningObjectives
           )
             ? formData.learningObjectives
-                .map(String)
-                .map((obj) => obj.trim())
-                .filter(Boolean)
+              .map(String)
+              .map((obj) => obj.trim())
+              .filter(Boolean)
             : typeof formData.learningObjectives === "string"
-            ? formData.learningObjectives
+              ? formData.learningObjectives
                 .split(",")
                 .map((obj) => obj.trim())
                 .filter(Boolean)
-            : [],
+              : [],
         },
         "Experience Design": {
           Focus: formData.cometFocus || "",
@@ -250,7 +250,7 @@ export default function DashboardLayout() {
       try {
         const raw = localStorage.getItem("sessionData");
         if (raw) parsedSessionData = JSON.parse(raw);
-      } catch {}
+      } catch { }
 
       const chatbotConversation = parsedSessionData?.chatbot_conversation || [];
       const messageText = formData.cometTitle || "Generate outline";

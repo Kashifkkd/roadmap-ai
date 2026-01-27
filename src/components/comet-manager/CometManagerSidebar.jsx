@@ -79,9 +79,9 @@ export default function CometManagerSidebar({
   onTabChange,
   externalTab,
 }) {
-  console.log(selectedScreen, "selectedScreen >>>>>>>>>>>>");
-  console.log(chapters, "chapters >>>>>>>>>>>><<<<<<<<<<<<<<");
-  console.log("remainingChapters >>>>>>>>>>>>", remainingChapters, Array.isArray(remainingChapters), typeof remainingChapters);
+  // console.log(selectedScreen, "selectedScreen >>>>>>>>>>>>");
+  // console.log(chapters, "chapters >>>>>>>>>>>><<<<<<<<<<<<<<");
+  // console.log("remainingChapters >>>>>>>>>>>>", remainingChapters, Array.isArray(remainingChapters), typeof remainingChapters);
   const [tab, setTab] = useState(0);
 
   // Sync with external tab control
@@ -110,6 +110,9 @@ export default function CometManagerSidebar({
   const [isLoadingAssets, setIsLoadingAssets] = useState(false);
   const [assetsError, setAssetsError] = useState(null);
   const [selectedAssetCategory, setSelectedAssetCategory] = useState(null);
+  const [tools, setTools] = useState([]);
+  const [isLoadingTools, setIsLoadingTools] = useState(false);
+  const [toolsError, setToolsError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Store the callback in a ref to avoid infinite loops
@@ -140,10 +143,34 @@ export default function CometManagerSidebar({
         (cat) => cat.id === selectedAssetCategory
       );
       if (category) {
-        onAssetCategorySelectRef.current(category, filteredAssets);
+
+        let assetsForCategory = filteredAssets;
+
+        if (selectedAssetCategory === "tool") {
+          assetsForCategory = (tools || []).map((tool, index) => ({
+            id: tool.id || tool.name || `tool-${index}`,
+            asset_type: "tool",
+            asset_url:
+              tool.url || tool.link || tool.href || tool.tool_url || "",
+            name:
+              tool.name ||
+              tool.displayName ||
+              tool.label ||
+              `Tool ${index + 1}`,
+            description:
+              tool.description ||
+              tool.summary ||
+              tool.type ||
+              tool.category ||
+              "",
+            _tool: tool,
+          }));
+        }
+
+        onAssetCategorySelectRef.current(category, assetsForCategory);
       }
     }
-  }, [selectedAssetCategory, filteredAssets]);
+  }, [selectedAssetCategory, filteredAssets, tools]);
   // Track previous selectedStepId to detect actual changes
   // Note: selectedStepId is the step UUID (stepUid) to guarantee uniqueness
   const prevSelectedStepIdRef = useRef(null);
@@ -365,6 +392,49 @@ export default function CometManagerSidebar({
     }
   }, [sessionId]);
 
+  const fetchToolsData = useCallback(async () => {
+    if (!sessionId) {
+      setToolsError("Session ID is required to fetch tools");
+      setIsLoadingTools(false);
+      return;
+    }
+
+    setIsLoadingTools(true);
+    setToolsError(null);
+
+    try {
+      const response = await apiService({
+        endpoint: endpoints.getTools,
+        method: "GET",
+        params: {
+          session_id: sessionId,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error?.message || "Failed to fetch tools");
+      }
+
+      if (response.response) {
+        const toolsData =
+          response.response.tools && Array.isArray(response.response.tools)
+            ? response.response.tools
+            : response.response;
+
+        const toolsList = Array.isArray(toolsData) ? toolsData : [];
+        setTools(toolsList);
+      } else {
+        setTools([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch tools:", error);
+      setToolsError(error.message || "Failed to load tools");
+      setTools([]);
+    } finally {
+      setIsLoadingTools(false);
+    }
+  }, [sessionId]);
+
   // Fetch source materials when Sources tab is selected
   useEffect(() => {
     if (tab === 1 && sessionId) {
@@ -376,6 +446,12 @@ export default function CometManagerSidebar({
       fetchAssetsData();
     }
   }, [tab, sessionId, fetchAssetsData]);
+
+  useEffect(() => {
+    if (tab === 2 && selectedAssetCategory === "tool" && sessionId) {
+      fetchToolsData();
+    }
+  }, [tab, selectedAssetCategory, sessionId, fetchToolsData]);
 
   // Format file size helper
   const formatFileSize = (bytes) => {
@@ -1210,13 +1286,6 @@ export default function CometManagerSidebar({
                                 {category.name}
                               </span>
                             </div>
-                            {/* <span
-                              className={`text-xs font-medium ${
-                                isActive ? "text-white/80" : "text-primary"
-                              }`}
-                            >
-                              {assetCount}
-                            </span> */}
                           </div>
                         </button>
                       );
