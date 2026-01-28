@@ -23,8 +23,8 @@ export function useCometManager(sessionData = null) {
             // Check if previous step still exists
             const stepExists = pathChapters.some((chapter) =>
               chapter.steps?.some(
-                (stepItem) => stepItem.step?.uuid === prevSelectedStepId
-              )
+                (stepItem) => stepItem.step?.uuid === prevSelectedStepId,
+              ),
             );
             return stepExists ? prevSelectedStepId : firstStepId;
           }
@@ -40,7 +40,7 @@ export function useCometManager(sessionData = null) {
 
     const pathChapters = outline.chapters || [];
     return pathChapters.map((chapter, chapterIndex) => {
-      const chapterId = chapter.uuid || `chapter-${chapterIndex}`;
+      const chapterId = chapter.uuid || chapter.id || `chapter-${chapterIndex}`;
       const chapterName = chapter.name || `Chapter ${chapterIndex + 1}`;
 
       // Transform steps for this chapter
@@ -49,7 +49,8 @@ export function useCometManager(sessionData = null) {
 
       chapterSteps.forEach((stepItem, stepIndex) => {
         const step = stepItem.step || {};
-        const stepId = step.uuid || `step-${chapterIndex}-${stepIndex}`;
+        const stepId =
+          step.uuid || step.id || `step-${chapterIndex}-${stepIndex}`;
         const stepTitle = step.title || step.name || `Step ${stepIndex + 1}`;
         const stepDescription = step.description || "";
 
@@ -64,7 +65,7 @@ export function useCometManager(sessionData = null) {
             if (contentType === "content") {
               const hasImage =
                 screen.assets?.some(
-                  (asset) => asset.type === "image" || asset.url
+                  (asset) => asset.type === "image" || asset.url,
                 ) ||
                 screen.screenContents.content?.media?.url ||
                 screen.screenContents.content?.media?.type === "image";
@@ -131,7 +132,7 @@ export function useCometManager(sessionData = null) {
           // Get first image asset for thumbnail
           const screenAssets = screen.assets || [];
           const firstImageAsset = screenAssets.find(
-            (asset) => asset.type === "image" || asset.url
+            (asset) => asset.type === "image" || asset.url,
           );
           const thumbnail = firstImageAsset?.url || null;
 
@@ -187,7 +188,7 @@ export function useCometManager(sessionData = null) {
       for (const chapter of pathChapters) {
         for (const stepItem of chapter.steps || []) {
           const screenIndex = stepItem.screens?.findIndex(
-            (s) => s.id === screenId
+            (s) => s.id === screenId,
           );
           if (screenIndex !== undefined && screenIndex >= 0) {
             // Get the current screen from the latest state (prevOutline)
@@ -282,9 +283,9 @@ export function useCometManager(sessionData = null) {
         for (const stepItem of chapter.steps || []) {
           if (stepItem.screens) {
             stepItem.screens = stepItem.screens.filter(
-              (s) => s.id !== screenId
+              (s) => s.id !== screenId,
             );
-            // Normalize positions to match array order 
+            // Normalize positions to match array order
             for (let i = 0; i < stepItem.screens.length; i++) {
               stepItem.screens[i].position = i + 1;
             }
