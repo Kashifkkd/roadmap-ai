@@ -22,7 +22,7 @@ import { getUserById } from "@/api/User/getUserById";
 import { registerClientUser } from "@/api/User/registerClientUser";
 import { updateClientUser } from "@/api/User/updateClientUser";
 import { deleteClientUser } from "@/api/User/deleteClientUser";
-import { getCohorts, getCommit } from "@/api/cohort/getCohorts";
+import { getCohorts, getUserInfo } from "@/api/cohort/getCohorts";
 import { getCohortPaths, getClientPaths } from "@/api/cohort/getCohortPaths";
 import { bulkUploadUsers } from "@/api/bulkUploadUsers";
 import { toast } from "sonner";
@@ -64,6 +64,7 @@ export default function UserManagement({ clientId, open, isActive }) {
   const [cohortsLoading, setCohortsLoading] = useState(false);
   const [cohortPaths, setCohortPaths] = useState([]);
   const [cohortPathsLoading, setCohortPathsLoading] = useState(false);
+  const [editLoadingId, setEditLoadingId] = useState(null);
 
   // Helper functions
   const normalizeSearchTerm = (term) => term.trim().toLowerCase();
@@ -162,7 +163,16 @@ export default function UserManagement({ clientId, open, isActive }) {
     fetchCohortPaths();
   }, [open, showAddUserForm, cohort]);
 
+  const getUserInfoDetail = async (user) => {
+    setEditingUser(user);
+    try {
+      const res = await getUserInfo(user.id)
+      handleEditUser(res.response)
+    } catch (error) {
+      console.log(error)
+    }
 
+  }
 
   // Auto add comet assignments for each item in dropdown
   useEffect(() => {
@@ -183,6 +193,7 @@ export default function UserManagement({ clientId, open, isActive }) {
       });
     }
   }, [cohortPaths, cohortPathsLoading]);
+
 
   const handleEditUser = (user) => {
     setEditingUser(user);
@@ -237,14 +248,14 @@ export default function UserManagement({ clientId, open, isActive }) {
     // }
 
     // Add adhoc paths as non-current comets
-    const adhocPathsList = user.adhoc_paths;
+    const adhocPathsList = user.paths;
 
     if (Array.isArray(adhocPathsList) && adhocPathsList.length > 0) {
       adhocPathsList.forEach((pathId) => {
         if (pathId) {
           assignments.push({
             id: assignmentId++,
-            isCurrent:  user.active_path_id === pathId ? true :false,
+            isCurrent: user.active_path_id === pathId ? true : false,
             cometType: String(pathId),
           });
         }
@@ -452,6 +463,7 @@ export default function UserManagement({ clientId, open, isActive }) {
 
   const handleSetCohort = (e) => {
     setCohort(e)
+    setCometAssignments([])
   }
 
   const handleBulkUpload = async (e) => {
@@ -502,7 +514,7 @@ export default function UserManagement({ clientId, open, isActive }) {
 
   return (
     <>
-      <div className="h-full flex flex-col">{console.warn(editingUser,'user')}
+      <div className="h-full flex flex-col">
         {!showAddUserForm ? (
           <div className="flex-1 overflow-y-auto overflow-x-auto">
             <div className="flex items-center justify-between mb-2">
@@ -646,7 +658,7 @@ export default function UserManagement({ clientId, open, isActive }) {
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleEditUser(user);
+                                getUserInfoDetail(user);
                               }}
                               className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
                             >
@@ -966,15 +978,18 @@ export default function UserManagement({ clientId, open, isActive }) {
                       </SelectTrigger>
                       {!cohortPathsLoading && cohortPaths.length > 0 && (
                         <SelectContent side="bottom" className="max-h-[150px]">
-                          {cohortPaths.map((path) => {
-                            const value = path.id;
-                            const label = path.name;
-                            return (
-                              <SelectItem key={value} value={String(value)}>
-                                {label}
+                          {cohortPaths
+                            .filter(path =>
+                              !cometAssignments.some(
+                                (item, i) =>
+                                  i !== index && item.cometType == path.id
+                              )
+                            )
+                            .map(path => (
+                              <SelectItem key={path.id} value={String(path.id)}>
+                                {path.name}
                               </SelectItem>
-                            );
-                          })}
+                            ))}
                         </SelectContent>
                       )}
                     </Select>
@@ -983,14 +998,14 @@ export default function UserManagement({ clientId, open, isActive }) {
                     <button
                       type="button"
                       onClick={() => {
-                        if (cometAssignments.length > 1) {
+                        if (cometAssignments.length > 0) {
                           setCometAssignments((prev) =>
                             prev.filter((item) => item.id !== assignment.id)
                           );
                         }
                       }}
                       className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0"
-                      disabled={cometAssignments.length === 1}
+                      // disabled={cometAssignments.length === 1}
                     >
                       <Trash2 className="w-4 h-4 text-white" />
                     </button>

@@ -7,7 +7,7 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from "react";
-import { X, Info, MoreHorizontal } from "lucide-react";
+import { X, Info, MoreHorizontal, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -644,8 +644,11 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
 
       if (website.trim()) payload.faq_url = website.trim();
       if (localCohort) payload.cohorts = localCohort;
-      if (finalImageUrl) payload.background_image_url = finalImageUrl;
-      if (finalBackgroundImageUrl) payload.image_url = finalBackgroundImageUrl;
+      
+      // Always send image fields - send null if empty/removed, otherwise send the URL
+      // This ensures that when images are removed, we send null to clear them in the database
+      payload.image_url = finalImageUrl && finalImageUrl.trim() ? finalImageUrl : null;
+      payload.background_image_url = finalBackgroundImageUrl && finalBackgroundImageUrl.trim() ? finalBackgroundImageUrl : null;
 
       return payload;
     },
@@ -712,106 +715,59 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         {/* General Image Upload */}
         <div>
           <Label className="text-sm font-medium text-gray-700 mb-3 block">
-            White-on-transparent Logo
+          White-on-transparent Logo
           </Label>
           <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
-            {imagePreview ? (
-              <div className="relative w-full h-[104px] rounded-lg overflow-hidden">
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="w-full h-full object-contain rounded-lg"
-                />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (pendingImagePreview) {
-                      removeImage(
-                        setPendingImageFile,
-                        setPendingImagePreview,
-                        pendingImagePreview
-                      );
-                    } else {
-                      setExistingImageUrl("");
-                    }
-                  }}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 z-10"
-                  title="Remove image"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ) : (
-              <div
-                onClick={() => handleImageClick(false)}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-4 gap-2 flex flex-col items-center justify-center bg-gray-50 cursor-pointer relative h-[104px]"
-              >
-                <input
-                  ref={imageInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload(e, false)}
-                  className="hidden"
-                />
-                <div className="text-gray-500 text-sm">
-                  {uploadingImage ? "Uploading..." : "Upload PNG"}
-                </div>
-                <Button
-                  type="button"
-                  disabled={uploadingImage}
-                  className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
-                >
-                  {uploadingImage ? "Uploading..." : "+ Browse"}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Color Logo */}
-        <div>
-          <Label className="text-sm font-medium text-gray-700 mb-3 block">
-            Color Logo
-          </Label>
-          <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
+            <input
+              ref={backgroundImageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleImageUpload(e, true)}
+              className="hidden"
+            />
             {backgroundImagePreview ? (
-              <div className="relative w-full h-[104px] rounded-lg overflow-hidden">
+              <div className="relative w-full h-[104px] rounded-lg overflow-hidden group/image">
                 <img
                   src={backgroundImagePreview}
                   alt="Preview"
                   className="w-full h-full object-contain rounded-lg"
                 />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (pendingBackgroundImagePreview) {
-                      removeImage(
-                        setPendingBackgroundImageFile,
-                        setPendingBackgroundImagePreview,
-                        pendingBackgroundImagePreview
-                      );
-                    } else {
-                      setExistingBackgroundImageUrl("");
-                    }
-                  }}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 z-10"
-                  title="Remove image"
-                >
-                  <X className="w-3 h-3" />
-                </button>
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/image:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (pendingBackgroundImagePreview) {
+                        removeImage(
+                          setPendingBackgroundImageFile,
+                          setPendingBackgroundImagePreview,
+                          pendingBackgroundImagePreview
+                        );
+                      } else {
+                        setExistingBackgroundImageUrl("");
+                      }
+                    }}
+                    className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+                    title="Delete image"
+                  >
+                    <Trash2 className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleImageClick(true);
+                    }}
+                    className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+                    title="Replace image"
+                  >
+                    <Pencil className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
               </div>
             ) : (
               <div
                 onClick={() => handleImageClick(true)}
                 className="border-2 border-dashed border-gray-300 rounded-lg p-4 gap-2 flex flex-col items-center justify-center bg-gray-50 cursor-pointer relative h-[104px]"
               >
-                <input
-                  ref={backgroundImageInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload(e, true)}
-                  className="hidden"
-                />
                 <div className="text-gray-500 text-sm">
                   {uploadingBackgroundImage ? "Uploading..." : "Upload PNG"}
                 </div>
@@ -821,6 +777,77 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
                 >
                   {uploadingBackgroundImage ? "Uploading..." : "+ Browse"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Color Logo */}
+        <div>
+          <Label className="text-sm font-medium text-gray-700 mb-3 block">
+          Color Logo
+          </Label>
+          <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleImageUpload(e, false)}
+              className="hidden"
+            />
+            {imagePreview ? (
+              <div className="relative w-full h-[104px] rounded-lg overflow-hidden group/bgimage">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-full h-full object-contain rounded-lg"
+                />
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/bgimage:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (pendingImagePreview) {
+                        removeImage(
+                          setPendingImageFile,
+                          setPendingImagePreview,
+                          pendingImagePreview
+                        );
+                      } else {
+                        setExistingImageUrl("");
+                      }
+                    }}
+                    className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+                    title="Delete image"
+                  >
+                    <Trash2 className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleImageClick(false);
+                    }}
+                    className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+                    title="Replace image"
+                  >
+                    <Pencil className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => handleImageClick(false)}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-4 gap-2 flex flex-col items-center justify-center bg-gray-50 cursor-pointer relative h-[104px]"
+              >
+                <div className="text-gray-500 text-sm">
+                  {uploadingImage ? "Uploading..." : "Upload PNG"}
+                </div>
+                <Button
+                  type="button"
+                  disabled={uploadingImage}
+                  className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                >
+                  {uploadingImage ? "Uploading..." : "+ Browse"}
                 </Button>
               </div>
             )}
@@ -1337,7 +1364,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
           label="Secure Links (Open links in default browser)"
         />
       </div>
-    </div>
+    </div >
     // </div>
   );
 });
