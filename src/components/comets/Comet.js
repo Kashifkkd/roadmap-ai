@@ -1,7 +1,6 @@
 "use client";
 import Image from "next/image";
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import StatusButton from "./StatusButton";
 import { useCometSettings } from "@/contexts/CometSettingsContext";
 
@@ -17,7 +16,6 @@ const Comet = ({
   const [disabled, setDisabled] = useState(false);
   const [imgSrc, setImgSrc] = useState(imageURL || "/fallbackImage.png");
   const { setIsCometSettingsOpen } = useCometSettings();
-  const router = useRouter();
 
   useEffect(() => {
     setImgSrc(imageURL || "/fallbackImage.png");
@@ -33,7 +31,7 @@ const Comet = ({
         return;
       }
 
-      await onCometClick(session_id ,status);
+      await onCometClick(session_id, status);
     } catch (error) {
       console.error("Comet click error", err.message);
     } finally {
@@ -77,10 +75,7 @@ const Comet = ({
       localStorage.setItem("sessionData", JSON.stringify(result));
       localStorage.setItem("sessionId", session_id);
 
-      localStorage.setItem("openCometSettingsFromAllComets", "true");
-
-      // Navigate to comet manager
-      router.push("/comet-manager");
+      setIsCometSettingsOpen(true);
     } catch (error) {
       console.error("Error fetching comet session details:", error.message);
     }
@@ -89,7 +84,7 @@ const Comet = ({
   return (
     <div
       onClick={handleClick}
-      className="relative flex flex-col  w-[310px] min-h-[270px] rounded-2xl overflow-hidden group cursor-pointer transition-transform duration-300 ease-in-out "
+      className="relative flex flex-col w-[310px] h-[280px] shrink-0 rounded-2xl overflow-hidden group cursor-default transition-transform duration-300 ease-in-out"
     >
       {/* Background image with zoom effect */}
       <Image
@@ -104,91 +99,91 @@ const Comet = ({
       />
       {/* White overlay on hover */}
       {/* new white overlay on hover  */}
-      <div className="absolute top-2 bottom-2 left-2 right-2 inset-0 rounded-lg p-2 bg-white/0 group-hover:bg-white transition-all duration-150 z-10 opacity-0 group-hover:opacity-100">
+      <div className="absolute top-2 bottom-2 left-2 right-2 rounded-lg p-3 bg-white/0 group-hover:bg-white transition-all duration-150 z-10 opacity-0 group-hover:opacity-100">
         <div className="flex flex-col w-full h-full justify-between">
           <div className="flex flex-col gap-2">
             <StatusButton status={status} />
-            <span className="text-gray-800 font-noto font-semibold text-[20px] leading-[30px] tracking-normal line-clamp-2">
-              {title}
+            <span className="text-gray-800 font-noto font-semibold text-[18px] leading-[24px] tracking-normal line-clamp-2 min-h-[48px]">
+              {title?.length > 50 ? `${title.slice(0, 50)}...` : title}
             </span>
-            <div className="flex w-[70%] rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
-              <span className="font-inter font-medium text-sm gap-2 leading-5 align-middle text-gray-900">
-                Total Active Users{" "}
+            <div className="flex items-center w-fit rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
+              <span className="font-inter font-medium text-sm leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                Total Active Users
                 <span className="bg-white py-0.5 px-2 rounded-4xl">
                   {activeUsers || 10}
                 </span>
               </span>
             </div>
             <div className="flex w-full gap-2">
-              <div className="flex rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
-                <span className="font-inter font-medium text-sm gap-2 leading-5 align-middle text-gray-900">
-                  WAU{" "}
+              <div className="flex items-center rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
+                <span className="font-inter font-medium text-sm leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                  WAU
                   <span className="bg-white py-0.5 px-2 rounded-4xl">
-                    {activeUsers}
+                    {activeUsers || 10}
                   </span>
                 </span>
               </div>
-              <div className="flex  rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
-                <span className="font-inter font-medium text-sm gap-2 leading-5 align-middle text-gray-900">
-                  MAU{" "}
+              <div className="flex items-center rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
+                <span className="font-inter font-medium text-sm leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                  MAU
                   <span className="bg-white py-0.5 px-2 rounded-4xl">
-                    {activeUsers}
+                    {activeUsers || 10}
                   </span>
                 </span>
               </div>
             </div>
           </div>
-          {/* another bottom part */}
-          <div className="flex flex-col w-full p-2 gap-2 justify-between">
-            <div className="border border-gray-300"></div>
-            <span className="font-inter font-medium text-xs align-middle">
-              Last updated at{" "}
+          {/* Bottom section */}
+          <div className="flex flex-col w-full gap-2">
+            <div className="border-t border-gray-200"></div>
+            <span className="font-inter font-normal text-xs text-gray-500">
+              Last Updated{" "}
               {new Date(date).toLocaleDateString("en-US", {
                 day: "numeric",
                 month: "short",
                 year: "numeric",
               })}
             </span>
-            <div className="flex gap-2 justify-between">
-              <button className="flex justify-center items-center rounded-sm py-2 px-3 gap-3 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6]">
-                <div className="flex gap-1">
+            <div className="flex gap-1.5 flex-nowrap">
+              <button className="flex justify-center items-center rounded-md py-1.5 px-2 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer">
+                <div className="flex items-center gap-1">
                   <Image
                     src="/edit.png"
                     alt="edit icon"
-                    height={16}
-                    width={16}
+                    height={14}
+                    width={14}
                   />
-                  <span className="font-inter font-medium text-xs text-white">
+                  <span className="font-inter font-medium text-xs text-white whitespace-nowrap">
                     Edit
                   </span>
                 </div>
               </button>
-              <button className="rounded-sm py-2 px-3 gap-3 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6]">
-                <div className="flex gap-1">
+              <button className="flex justify-center items-center rounded-md py-1.5 px-2 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer">
+                <div className="flex items-center gap-1">
                   <Image
                     src="/preview.png"
                     alt="preview icon"
-                    height={16}
-                    width={16}
+                    height={14}
+                    width={14}
                   />
-                  <span className="font-inter font-medium text-xs text-white">
+                  <span className="font-inter font-medium text-xs text-white whitespace-nowrap">
                     Preview
                   </span>
                 </div>
               </button>
               <button
                 type="button"
-                className="rounded-sm py-2 px-3 gap-3 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6]"
+                className="flex justify-center items-center rounded-md py-1.5 px-2 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer"
                 onClick={handleSettingsClick}
               >
-                <div className="flex gap-1">
+                <div className="flex items-center gap-1">
                   <Image
                     src="/settings.png"
                     alt="settings icon"
-                    height={16}
-                    width={16}
+                    height={14}
+                    width={14}
                   />
-                  <span className="font-inter font-medium text-xs text-white">
+                  <span className="font-inter font-medium text-xs text-white whitespace-nowrap">
                     Settings
                   </span>
                 </div>
@@ -203,11 +198,11 @@ const Comet = ({
         <div className="flex flex-col gap-2">
           <StatusButton status={status} />
           <span className="text-gray-800 font-noto font-semibold text-[20px] leading-[30px] tracking-normal line-clamp-2">
-            {title?.length > 50 ? `${title.slice(0, 50)}...` : title}
+            {title?.length > 20 ? `${title.slice(0, 20)}...` : title}
           </span>
-          <div className="flex w-[70%] rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
-            <span className="font-inter font-medium text-xs gap-2 leading-5 align-middle text-gray-900">
-              Total Active Users{" "}
+          <div className="flex items-center w-fit rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
+            <span className="font-inter font-medium text-xs leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+              Total Active Users
               <span className="bg-white py-0.5 px-2 rounded-4xl">
                 {activeUsers || 10}
               </span>

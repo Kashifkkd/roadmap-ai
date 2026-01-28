@@ -9,6 +9,7 @@ export const endpoints = {
   getTools: "api/n8n/tools",
   getClients: "api/clients/v1/",
   uploadAssets: "api/n8n/upload_asset_file",
+  createAsset: "api/n8n/create_asset",
 
   getUser: "api/auth/v1/users/me",
   getUserById: (clientId) => `api/auth/v1/users/1st90?client_id=${clientId}`,
@@ -35,7 +36,8 @@ export const endpoints = {
   downloadDocument: (documentId) => `api/documents/download/${documentId}`,
   feedbackEmail: (feedback) => `api/comet/feedback_email?feedback=${feedback}`,
   getCohorts: (clientId) => `api/clients/v1/cohorts?client_id=${clientId}`,
-    getCommit: (clientId) => `api/comet/sessions?client_id=${clientId}`,
+  getCommit: (clientId) => `api/comet/sessions?client_id=${clientId}`,
+  getUserInfo: (user_id) => `api/auth/v1/users/1st90/${user_id}`,
   getCohortPaths: (cohortId) => `api/clients/v1/cohorts/${cohortId}/paths`,
   getClientPaths: (clientId) => `api/clients/v1/clients/${clientId}/paths`,
   createCohort: "api/clients/v1/cohorts",
