@@ -15,6 +15,7 @@ import MiniAppForm from "./forms/MiniAppForm";
 import ProfileForm from "./forms/ProfileForm";
 import EmailPromptForm from "./forms/EmailPromptForm";
 import AccountabilityPartnerEmailForm from "./forms/AccountabilityPartnerEmailForm";
+import PathPersonalizationForm from "./forms/PathPersonalizationForm";
 import AskKyperPopup from "@/components/create-comet/AskKyperPopup";
 import { graphqlClient } from "@/lib/graphql-client";
 
@@ -53,7 +54,7 @@ const extractPlainTextFromDelta = (value) => {
       // If parsing fails, it's not valid JSON - return as-is (plain text)
       console.log(
         "🔵 Not a valid JSON delta, treating as plain text:",
-        e.message
+        e.message,
       );
       return value;
     }
@@ -183,6 +184,17 @@ const getFormValuesFromScreen = (screen) => {
     values.emails = Array.isArray(content.emails) ? content.emails : [""];
   }
 
+  if (
+    contentType === "pathPersonalization" ||
+    contentType === "pathpersonalization"
+  ) {
+    values.heading = content.heading || "";
+    values.body = content.body || "";
+    values.mediaType = content.media?.type || "";
+    values.mediaUrl = content.media?.url || "";
+    values.mediaAlt = content.media?.alt || "";
+  }
+
   return values;
 };
 
@@ -195,7 +207,7 @@ export default function DynamicForm({
   chapterNumber,
   stepNumber,
   isAskingKyper = false,
-  setIsAskingKyper = () => { },
+  setIsAskingKyper = () => {},
 }) {
   // No local state - derive form values directly from screen
   const formData = useMemo(() => {
@@ -228,7 +240,7 @@ export default function DynamicForm({
       for (const chapter of pathChapters) {
         for (const stepItem of chapter.steps || []) {
           const screenIndex = stepItem.screens?.findIndex(
-            (s) => s.id === screenId
+            (s) => s.id === screenId,
           );
           if (screenIndex !== undefined && screenIndex >= 0) {
             // Get current screen from latest state (prevOutline)
@@ -393,7 +405,7 @@ export default function DynamicForm({
                         };
                       }
                       return question;
-                    }
+                    },
                   );
                 } else {
                   currentScreen.screenContents.content.questions = value;
@@ -409,7 +421,7 @@ export default function DynamicForm({
                 if (
                   !currentScreen.screenContents.content.habit_image ||
                   typeof currentScreen.screenContents.content.habit_image ===
-                  "string"
+                    "string"
                 ) {
                   currentScreen.screenContents.content.habit_image = {
                     url: currentScreen.screenContents.content.habit_image || "",
@@ -422,7 +434,7 @@ export default function DynamicForm({
                 if (
                   !currentScreen.screenContents.content.habit_image ||
                   typeof currentScreen.screenContents.content.habit_image ===
-                  "string"
+                    "string"
                 ) {
                   currentScreen.screenContents.content.habit_image = {
                     url: value,
@@ -446,15 +458,15 @@ export default function DynamicForm({
                         const nextTitle =
                           habit.title !== undefined && habit.title !== ""
                             ? habit.title
-                            : existing.title ?? "";
+                            : (existing.title ?? "");
                         const nextReps =
                           habit.reps !== undefined && habit.reps !== ""
                             ? habit.reps
-                            : existing.reps ?? "";
+                            : (existing.reps ?? "");
                         const nextText =
                           habit.text !== undefined && habit.text !== ""
                             ? extractPlainTextFromDelta(habit.text)
-                            : existing.text ?? "";
+                            : (existing.text ?? "");
 
                         return {
                           ...existing,
@@ -465,7 +477,7 @@ export default function DynamicForm({
                         };
                       }
                       return habit;
-                    }
+                    },
                   );
                 } else {
                   currentScreen.screenContents.content.habits = value;
@@ -516,9 +528,48 @@ export default function DynamicForm({
                 const bodyValue = extractPlainTextFromDelta(value);
                 currentScreen.screenContents.content.body = bodyValue;
               } else if (field === "emails") {
-                currentScreen.screenContents.content.emails = Array.isArray(value)
+                currentScreen.screenContents.content.emails = Array.isArray(
+                  value,
+                )
                   ? value
                   : [];
+              }
+            } else if (
+              contentType === "pathPersonalization" ||
+              contentType === "pathpersonalization"
+            ) {
+              if (field === "heading") {
+                currentScreen.screenContents.content.heading = value;
+              } else if (field === "body") {
+                const bodyValue = extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.body = bodyValue;
+              } else if (field === "mediaType") {
+                if (!currentScreen.screenContents.content.media) {
+                  currentScreen.screenContents.content.media = {
+                    type: "",
+                    url: "",
+                    alt: "",
+                  };
+                }
+                currentScreen.screenContents.content.media.type = value;
+              } else if (field === "mediaUrl") {
+                if (!currentScreen.screenContents.content.media) {
+                  currentScreen.screenContents.content.media = {
+                    type: "",
+                    url: "",
+                    alt: "",
+                  };
+                }
+                currentScreen.screenContents.content.media.url = value;
+              } else if (field === "mediaAlt") {
+                if (!currentScreen.screenContents.content.media) {
+                  currentScreen.screenContents.content.media = {
+                    type: "",
+                    url: "",
+                    alt: "",
+                  };
+                }
+                currentScreen.screenContents.content.media.alt = value;
               }
             }
 
@@ -859,7 +910,7 @@ export default function DynamicForm({
         for (const chapter of pathChapters) {
           for (const stepItem of chapter.steps || []) {
             const screenIndex = stepItem.screens?.findIndex(
-              (s) => s.id === screenId
+              (s) => s.id === screenId,
             );
             if (screenIndex !== undefined && screenIndex >= 0) {
               const currentScreen = stepItem.screens[screenIndex];
@@ -896,7 +947,7 @@ export default function DynamicForm({
         for (const chapter of pathChapters) {
           for (const stepItem of chapter.steps || []) {
             const screenIndex = stepItem.screens?.findIndex(
-              (s) => s.id === screenId
+              (s) => s.id === screenId,
             );
             if (screenIndex !== undefined && screenIndex >= 0) {
               const currentScreen = stepItem.screens[screenIndex];
@@ -1112,10 +1163,7 @@ export default function DynamicForm({
     }
 
     //10-Manager Email & Accountability Partner Email
-    if (
-      screenType === "manager_email" ||
-      contentType === "manager_email"
-    ) {
+    if (screenType === "manager_email" || contentType === "manager_email") {
       return (
         <EmailPromptForm
           formTitle="Manager Email"
@@ -1136,6 +1184,25 @@ export default function DynamicForm({
     ) {
       return (
         <AccountabilityPartnerEmailForm
+          {...formProps}
+          askKyperHandlers={{
+            onTextFieldSelect: handleTextFieldSelect,
+            onFieldBlur: handleFieldBlur,
+            onRichTextSelection: handleRichTextSelection,
+            onRichTextBlur: handleFieldBlur,
+          }}
+        />
+      );
+    }
+
+    // Path Personalization
+    if (
+      screenType === "path_personalization" ||
+      contentType === "pathPersonalization" ||
+      contentType === "pathpersonalization"
+    ) {
+      return (
+        <PathPersonalizationForm
           {...formProps}
           askKyperHandlers={{
             onTextFieldSelect: handleTextFieldSelect,

@@ -29,6 +29,7 @@ import {
   Paperclip,
   Zap,
   ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import { graphqlClient } from "@/lib/graphql-client";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
@@ -92,6 +93,13 @@ const SCREEN_TYPE_GROUPS = [
         icon: <User size={20} />,
         color: "bg-violet-100 border-violet-300",
         description: "Heading, body, and profile photo upload.",
+      },
+      {
+        id: "path_personalization",
+        name: "Path Personalization",
+        icon: <Sparkles size={20} />,
+        color: "bg-pink-100 border-pink-300",
+        description: "Personalize path with heading, body, and media.",
       },
     ],
   },
@@ -574,6 +582,7 @@ export default function CometManager({
       profile: "profile",
       manager_email: "manager_email",
       accountability_partner_email: "accountability_partner_email",
+      path_personalization: "pathPersonalization",
     };
 
     const contentType = contentTypeMap[screenType.id] || screenType.id;
@@ -922,6 +931,42 @@ export default function CometManager({
         formData: {
           heading: "",
           body: "",
+        },
+        assessment: null,
+        order: allScreens.length,
+      };
+    } else if (screenType.id === "path_personalization") {
+      // Path Personalization screen structure
+      newScreen = {
+        id: screenId,
+        uuid: screenUuid,
+        screenType: "path_personalization",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "pathPersonalization",
+          content: {
+            heading: "",
+            body: "",
+            media: {
+              type: "",
+              url: "",
+              alt: "",
+            },
+          },
+        },
+        assets: [],
+        imageStatus: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: "",
+        formData: {
+          heading: "",
+          body: "",
+          mediaType: "",
+          mediaUrl: "",
+          mediaAlt: "",
         },
         assessment: null,
         order: allScreens.length,
