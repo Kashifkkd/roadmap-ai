@@ -59,6 +59,8 @@ export default function ImageUpload({
   const [assets, setAssets] = useState([]);
   const [isLoadingAssets, setIsLoadingAssets] = useState(false);
   const [assetsError, setAssetsError] = useState(null);
+  const [isCreatingAsset, setIsCreatingAsset] = useState(false);
+  const [createAssetError, setCreateAssetError] = useState(null);
 
   const artStyles = [
     "Photorealistic",
@@ -373,29 +375,75 @@ export default function ImageUpload({
   };
 
   // Handle asset selection
-  const handleSelectAsset = (asset) => {
+  const handleSelectAsset = async (asset) => {
     // Use exact API response fields: asset_url, asset_type, id
     const image_url = asset.asset_url;
     const filename = getFilenameFromUrl(image_url);
     const assetType = asset.asset_type || asset.type || "image";
+    const assetName = asset.name || filename || `Image ${asset.id}`;
 
-    // Format asset to match outline structure: { type: "image", url: "...", alt: "..." }
-    const assetToSave = {
-      status: "success",
-      ImageUrl: image_url,
-      url: image_url, // Also include url for compatibility
-      asset_id: asset.id,
-      id: asset.id,
-      asset_type: assetType,
-      alt: filename || "",
-      name: filename || "",
-    };
+    setIsCreatingAsset(true);
+    setCreateAssetError(null);
 
-    if (onUploadSuccess) {
-      onUploadSuccess(assetToSave);
+    try {
+      // Create FormData for the API call
+      const formData = new FormData();
+      formData.append("name", assetName);
+      formData.append("url", image_url);
+      formData.append("asset_type", assetType);
+      
+      // Append optional UIDs
+      if (sessionId && sessionId !== "") {
+        formData.append("session_id", String(sessionId));
+      }
+      if (chapterUid && chapterUid !== "") {
+        formData.append("chapter_uid", String(chapterUid));
+      }
+      if (stepUid && stepUid !== "") {
+        formData.append("step_uid", String(stepUid));
+      }
+      if (screenUid && screenUid !== "") {
+        formData.append("screen_uid", String(screenUid));
+      }
+
+      // Call the create_asset API
+      const { response, error } = await apiService({
+        endpoint: endpoints.createAsset,
+        method: "POST",
+        data: formData,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (error || !response) {
+        throw new Error(response?.error?.message || "Failed to create asset");
+      }
+
+      // Format asset to match outline structure using API response
+      const assetToSave = {
+        status: "success",
+        ImageUrl: response.url || image_url,
+        url: response.url || image_url, // Also include url for compatibility
+        asset_id: response.id,
+        id: response.id,
+        asset_type: response.asset_type || assetType,
+        alt: response.name || assetName,
+        name: response.name || assetName,
+        source: response.source || "direct_link",
+      };
+
+      if (onUploadSuccess) {
+        onUploadSuccess(assetToSave);
+      }
+
+      setIsAssetDialogOpen(false);
+    } catch (error) {
+      console.error("Error creating asset:", error);
+      setCreateAssetError(error.message || "Failed to create asset. Please try again.");
+    } finally {
+      setIsCreatingAsset(false);
     }
-
-    setIsAssetDialogOpen(false);
   };
 
   // Count image assets
@@ -704,6 +752,13 @@ export default function ImageUpload({
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4 overflow-y-auto flex-1 min-h-0">
+            {/* Error message for asset creation */}
+            {createAssetError && (
+              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                <X className="h-4 w-4" />
+                <span>{createAssetError}</span>
+              </div>
+            )}
             {isLoadingAssets ? (
               <div className="flex flex-col items-center justify-center gap-2 py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -759,8 +814,16 @@ export default function ImageUpload({
                       return (
                         <div
                           key={asset.id || asset.asset_id || index}
-                          className="relative border-2 border-gray-200 rounded-lg overflow-hidden group cursor-pointer hover:border-primary transition-colors aspect-square"
-                          onClick={() => handleSelectAsset(asset)}
+                          className={`relative border-2 border-gray-200 rounded-lg overflow-hidden group aspect-square transition-colors ${
+                            isCreatingAsset
+                              ? "opacity-50 cursor-not-allowed"
+                              : "cursor-pointer hover:border-primary"
+                          }`}
+                          onClick={() => {
+                            if (!isCreatingAsset) {
+                              handleSelectAsset(asset);
+                            }
+                          }}
                         >
                           {typeof image_url === "string" &&
                             image_url.startsWith("http") ? (
@@ -774,11 +837,17 @@ export default function ImageUpload({
                               {assetName}
                             </div>
                           )}
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Check className="h-6 w-6 text-white drop-shadow-lg" />
+                          {isCreatingAsset ? (
+                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                              <Loader2 className="h-6 w-6 text-white animate-spin drop-shadow-lg" />
                             </div>
-                          </div>
+                          ) : (
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Check className="h-6 w-6 text-white drop-shadow-lg" />
+                              </div>
+                            </div>
+                          )}
                           {assetName && (
                             <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate">
                               {assetName}
@@ -796,7 +865,9 @@ export default function ImageUpload({
               onClick={() => {
                 setIsAssetDialogOpen(false);
                 setAssetsError(null);
+                setCreateAssetError(null);
               }}
+              disabled={isCreatingAsset}
             >
               Cancel
             </Button>

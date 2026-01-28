@@ -14,7 +14,7 @@ export default function AllCometsContainer({ cometSessions }) {
   }, [cometSessions]);
 
   const router = useRouter();
-  const handleCometClick = async (session_id,status) => {
+  const handleCometClick = async (session_id, status) => {
     try {
       if (!session_id) {
         console.error("Invalid session id");
@@ -51,7 +51,7 @@ export default function AllCometsContainer({ cometSessions }) {
         [];
       if (Array.isArray(pathChapters) && pathChapters.length > 0) {
         router.push("/comet-manager");
-      } else if (sessionData.response_outline.length >0) {
+      } else if (sessionData.response_outline.length > 0) {
         router.push("/outline-manager");
       } else {
         router.push("/dashboard");
@@ -65,8 +65,8 @@ export default function AllCometsContainer({ cometSessions }) {
 
   // console.log("Rendering AllCometsContainer with sessions:", cometSessions);
   return (
-    <div className="flex flex-wrap flex-1 w-[90%] mx-auto rounded-2xl p-4 gap-2.5 bg-white overflow-y-auto no-scrollbar">
-      <div className="flex flex-wrap w-full h-[280px] gap-4 ">
+    <div className="flex flex-wrap flex-1 w-[90%] mx-auto rounded-2xl p-4 gap-2.5 bg-white overflow-y-auto no-scrollbar justify-center">
+      <div className="flex flex-wrap w-full gap-4 justify-center">
         {cometSessions.map((c, idx) => (
           <Comet
             key={idx} // unique key for each item

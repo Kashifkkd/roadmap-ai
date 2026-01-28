@@ -23,6 +23,13 @@ export const getCommit = async ({ clientId }) => {
   });
 };
 
+export const getUserInfo = async (user_id) => {
+  return await apiService({
+    endpoint: endpoints.getUserInfo(user_id),
+    method: "GET",
+  });
+};
+
 export const getCohortbyPath = async ({ cohortId }) => {
   if (!cohortId) {
     throw new Error("Id is required");
