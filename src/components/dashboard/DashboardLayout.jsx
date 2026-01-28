@@ -181,8 +181,14 @@ export default function DashboardLayout() {
       // Using a new object reference ensures the useEffect in CreateComet triggers
       setPrefillData(updatedSessionData);
 
-      // Navigate to outline-manager when outline is generated
-      if (isGeneratingOutline) {
+      // Navigate to outline-manager only when outline is actually generated
+      // Check if response_outline has chapters data
+      const hasOutline =
+        normalized?.response_outline?.chapters?.length > 0 ||
+        (Array.isArray(normalized?.response_outline) &&
+          normalized.response_outline.length > 0);
+
+      if (isGeneratingOutline && hasOutline) {
         router.push("/outline-manager");
       }
     },
@@ -323,6 +329,7 @@ export default function DashboardLayout() {
 
       const messageResponse =
         await graphqlClient.sendMessage(cometJsonForMessage);
+      // console.log("Message response:", messageResponse);
 
       // Step 3: Show loading - useEffect will handle the subscription
       setIsGeneratingOutline(true);

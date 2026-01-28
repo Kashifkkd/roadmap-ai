@@ -359,243 +359,105 @@
   border: 2px solid #bdb5ff;
   background: #f6f5ff;
   overflow: hidden;
-  width: 62px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
   box-shadow: 0px 4px 12px rgba(124, 92, 255, 0.08);
-  animation: pillExpand 4s ease-in-out infinite;
+  padding: 0 7px;
 }
 
 .pillContent {
-  position: relative;
+  display: flex;
+  align-items: center;
   height: 52px;
-  width: 100%;
+  gap: 0;
 }
 
 /*  icon circle */
 .pillIcon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   width: 38px;
   height: 38px;
+  min-width: 38px;
   border-radius: 9999px;
   border: 1.5px solid #bdb5ff;
   background: #edeaff;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: iconMove 4s ease-in-out infinite;
+  flex-shrink: 0;
 }
 
 /*  divider line */
 .pillDivider {
-  position: absolute;
-  top: 50%;
-  left: 70px;
-  transform: translateY(-50%);
   height: 22px;
   width: 1px;
+  min-width: 1px;
   background: #c7c2f9;
-  opacity: 0;
+  flex-shrink: 0;
+  margin-left: 12px;
   animation: dividerFade 4s ease-in-out infinite;
 }
 
 /*  text reveal */
 .pillText {
-  position: absolute;
-  top: 50%;
-  left: 86px;
-  transform: translateY(-50%);
   white-space: nowrap;
-  opacity: 0;
-  filter: blur(2px);
+  overflow: hidden;
   animation: textReveal 4s ease-in-out infinite;
-}
-
-/*  pill expand-collapse - mobile first (small screens) */
-@keyframes pillExpand {
-  0% {
-    width: 62px;
-  }
-
-  18% {
-    width: 62px;
-  }
-
-  36% {
-    width: 280px;
-  }
-
-  72% {
-    width: 280px;
-  }
-
-  90% {
-    width: 62px;
-  }
-
-  100% {
-    width: 62px;
-  }
-}
-
-/* Medium screens  */
-@media (min-width: 640px) {
-  @keyframes pillExpand {
-    0% {
-      width: 62px;
-    }
-
-    18% {
-      width: 62px;
-    }
-
-    36% {
-      width: 380px;
-    }
-
-    72% {
-      width: 380px;
-    }
-
-    90% {
-      width: 62px;
-    }
-
-    100% {
-      width: 62px;
-    }
-  }
-}
-
-/* Large screens */
-@media (min-width: 1024px) {
-  @keyframes pillExpand {
-    0% {
-      width: 62px;
-    }
-
-    18% {
-      width: 62px;
-    }
-
-    36% {
-      width: 480px;
-    }
-
-    72% {
-      width: 480px;
-    }
-
-    90% {
-      width: 62px;
-    }
-
-    100% {
-      width: 62px;
-    }
-  }
-}
-
-/* Extra large screens */
-@media (min-width: 1280px) {
-  @keyframes pillExpand {
-    0% {
-      width: 62px;
-    }
-
-    18% {
-      width: 62px;
-    }
-
-    36% {
-      width: 550px;
-    }
-
-    72% {
-      width: 550px;
-    }
-
-    90% {
-      width: 62px;
-    }
-
-    100% {
-      width: 62px;
-    }
-  }
-}
-
-/*  icon moves from center to left */
-@keyframes iconMove {
-  0% {
-    left: 50%;
-  }
-
-  18% {
-    left: 50%;
-  }
-
-  36% {
-    left: 32px;
-  }
-
-  72% {
-    left: 32px;
-  }
-
-  90% {
-    left: 50%;
-  }
-
-  100% {
-    left: 50%;
-  }
+  padding-right: 8px;
 }
 
 /*  divider only visible when expanded */
 @keyframes dividerFade {
-
   0%,
   22% {
     opacity: 0;
+    width: 0;
+    min-width: 0;
+    margin-left: 0;
   }
 
-  40%,
-  70% {
+  36%,
+  72% {
     opacity: 1;
+    width: 1px;
+    min-width: 1px;
+    margin-left: 12px;
   }
 
   86%,
   100% {
     opacity: 0;
+    width: 0;
+    min-width: 0;
+    margin-left: 0;
   }
 }
 
-/*  text fade + blur effect */
+/*  text fade + width effect */
 @keyframes textReveal {
-
   0%,
-  24% {
+  22% {
     opacity: 0;
-    transform: translateY(-50%) translateX(-6px);
+    max-width: 0;
+    padding-left: 0;
+    padding-right: 0;
     filter: blur(2px);
   }
 
-  42%,
-  70% {
+  36%,
+  72% {
     opacity: 1;
-    transform: translateY(-50%) translateX(0px);
+    max-width: 600px;
+    padding-left: 12px;
+    padding-right: 8px;
     filter: blur(0px);
   }
 
   86%,
   100% {
     opacity: 0;
-    transform: translateY(-50%) translateX(-6px);
+    max-width: 0;
+    padding-left: 0;
+    padding-right: 0;
     filter: blur(2px);
   }
 }

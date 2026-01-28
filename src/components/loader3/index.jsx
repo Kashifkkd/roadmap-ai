@@ -9,7 +9,7 @@ const Loader = ({
   inputText = "Input",
   onBack,
   backLabel = "Back",
-  pillText = "Outline draft ready for review",
+  pillText = "",
 }) => {
   const [sessionData, setSessionData] = useState(null);
   const [sessionId, setSessionId] = useState(null);
@@ -48,14 +48,13 @@ const Loader = ({
     (error) => {
       console.error("Subscription error in Loader:", error);
     },
-    { forceTemporary: true }
+    { forceTemporary: true },
   );
 
   // if meta available use it otherwise use pillText prop
   const displayPillText = sessionData?.meta?.state || pillText;
 
   return (
-
     <div className="w-full h-full flex flex-col rounded-2xl p-2 bg-white relative">
       {/* Back Button */}
       {onBack && (
