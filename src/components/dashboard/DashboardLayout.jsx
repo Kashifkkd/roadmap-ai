@@ -7,7 +7,7 @@ import CreateComet from "@/components/create-comet";
 import ChatWindow from "@/components/chat/ChatWindow";
 // import ProgressbarLoader from "@/components/loader";
 import { graphqlClient } from "@/lib/graphql-client";
-import Loader from "../loader2";
+import Loader from "../loader3";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
 export default function DashboardLayout() {
@@ -52,16 +52,24 @@ export default function DashboardLayout() {
         const normalized = { ...parsed };
 
         // Handle output.chatbot_conversation -> chatbot_conversation
-        if (parsed.output?.chatbot_conversation && !parsed.chatbot_conversation) {
+        if (
+          parsed.output?.chatbot_conversation &&
+          !parsed.chatbot_conversation
+        ) {
           normalized.chatbot_conversation = parsed.output.chatbot_conversation;
         }
 
         // Normalize Learning Objectives field name
         if (normalized.comet_creation_data?.["Audience & Objectives"]) {
-          const audienceObj = normalized.comet_creation_data["Audience & Objectives"];
+          const audienceObj =
+            normalized.comet_creation_data["Audience & Objectives"];
           // Handle "Learning Objectives" -> "Learning and Behaviour Objectives"
-          if (audienceObj["Learning Objectives"] && !audienceObj["Learning and Behaviour Objectives"]) {
-            audienceObj["Learning and Behaviour Objectives"] = audienceObj["Learning Objectives"];
+          if (
+            audienceObj["Learning Objectives"] &&
+            !audienceObj["Learning and Behaviour Objectives"]
+          ) {
+            audienceObj["Learning and Behaviour Objectives"] =
+              audienceObj["Learning Objectives"];
             delete audienceObj["Learning Objectives"];
           }
         }
@@ -142,16 +150,25 @@ export default function DashboardLayout() {
       const normalized = { ...sessionData };
 
       // Handle output.chatbot_conversation -> chatbot_conversation
-      if (sessionData.output?.chatbot_conversation && !sessionData.chatbot_conversation) {
-        normalized.chatbot_conversation = sessionData.output.chatbot_conversation;
+      if (
+        sessionData.output?.chatbot_conversation &&
+        !sessionData.chatbot_conversation
+      ) {
+        normalized.chatbot_conversation =
+          sessionData.output.chatbot_conversation;
       }
 
       // Normalize Learning Objectives field name
       if (normalized.comet_creation_data?.["Audience & Objectives"]) {
-        const audienceObj = normalized.comet_creation_data["Audience & Objectives"];
+        const audienceObj =
+          normalized.comet_creation_data["Audience & Objectives"];
         // Handle "Learning Objectives" -> "Learning and Behaviour Objectives"
-        if (audienceObj["Learning Objectives"] && !audienceObj["Learning and Behaviour Objectives"]) {
-          audienceObj["Learning and Behaviour Objectives"] = audienceObj["Learning Objectives"];
+        if (
+          audienceObj["Learning Objectives"] &&
+          !audienceObj["Learning and Behaviour Objectives"]
+        ) {
+          audienceObj["Learning and Behaviour Objectives"] =
+            audienceObj["Learning Objectives"];
           delete audienceObj["Learning Objectives"];
         }
       }
@@ -172,7 +189,7 @@ export default function DashboardLayout() {
     (error) => {
       // Enhanced error logging for debugging
       console.error("Dashboard subscription error:", {
-        message: error?.message || 'Unknown error',
+        message: error?.message || "Unknown error",
         error: error,
         sessionId: sessionId,
         errorType: error?.constructor?.name,
@@ -180,15 +197,16 @@ export default function DashboardLayout() {
 
       // Only show user-facing errors for non-connection issues
       // WebSocket connection errors are often transient and handled by retry logic
-      const isConnectionError = error?.message?.toLowerCase().includes('connection') ||
-        error?.message?.toLowerCase().includes('websocket') ||
-        error?.message?.toLowerCase().includes('network');
+      const isConnectionError =
+        error?.message?.toLowerCase().includes("connection") ||
+        error?.message?.toLowerCase().includes("websocket") ||
+        error?.message?.toLowerCase().includes("network");
 
       if (!isConnectionError && error?.message) {
         setError(error.message);
       }
       setIsGeneratingOutline(false);
-    }
+    },
   );
 
   // Handle form submission and navigation
@@ -224,17 +242,17 @@ export default function DashboardLayout() {
         "Audience & Objectives": {
           "Target Audience": formData.targetAudience || "",
           "Learning and Behaviour Objectives": Array.isArray(
-            formData.learningObjectives
+            formData.learningObjectives,
           )
             ? formData.learningObjectives
-              .map(String)
-              .map((obj) => obj.trim())
-              .filter(Boolean)
-            : typeof formData.learningObjectives === "string"
-              ? formData.learningObjectives
-                .split(",")
+                .map(String)
                 .map((obj) => obj.trim())
                 .filter(Boolean)
+            : typeof formData.learningObjectives === "string"
+              ? formData.learningObjectives
+                  .split(",")
+                  .map((obj) => obj.trim())
+                  .filter(Boolean)
               : [],
         },
         "Experience Design": {
@@ -250,7 +268,7 @@ export default function DashboardLayout() {
       try {
         const raw = localStorage.getItem("sessionData");
         if (raw) parsedSessionData = JSON.parse(raw);
-      } catch { }
+      } catch {}
 
       const chatbotConversation = parsedSessionData?.chatbot_conversation || [];
       const messageText = formData.cometTitle || "Generate outline";
@@ -303,9 +321,8 @@ export default function DashboardLayout() {
         }),
       });
 
-      const messageResponse = await graphqlClient.sendMessage(
-        cometJsonForMessage
-      );
+      const messageResponse =
+        await graphqlClient.sendMessage(cometJsonForMessage);
 
       // Step 3: Show loading - useEffect will handle the subscription
       setIsGeneratingOutline(true);

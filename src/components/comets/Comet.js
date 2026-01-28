@@ -49,7 +49,7 @@ const Comet = ({
     }
 
     try {
-      // Fetch session details from 
+      // Fetch session details from
       const response = await fetch(
         `https://kyper-stage.1st90.com/api/comet/session_details/${session_id}`,
         {
@@ -57,7 +57,7 @@ const Comet = ({
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
