@@ -33,7 +33,7 @@ const Comet = ({
         return;
       }
 
-      await onCometClick(session_id ,status);
+      await onCometClick(session_id, status);
     } catch (error) {
       console.error("Comet click error", err.message);
     } finally {
@@ -51,7 +51,7 @@ const Comet = ({
     }
 
     try {
-      // Fetch session details from 
+      // Fetch session details from
       const response = await fetch(
         `https://kyper-stage.1st90.com/api/comet/session_details/${session_id}`,
         {
@@ -59,7 +59,7 @@ const Comet = ({
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -77,10 +77,8 @@ const Comet = ({
       localStorage.setItem("sessionData", JSON.stringify(result));
       localStorage.setItem("sessionId", session_id);
 
-      localStorage.setItem("openCometSettingsFromAllComets", "true");
-
-      // Navigate to comet manager
-      router.push("/comet-manager");
+      // Open the settings dialog as a modal on the current page
+      setIsCometSettingsOpen(true);
     } catch (error) {
       console.error("Error fetching comet session details:", error.message);
     }

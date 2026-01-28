@@ -415,7 +415,7 @@
   animation: textReveal 4s ease-in-out infinite;
 }
 
-/*  pill expand-collapse */
+/*  pill expand-collapse - mobile first (small screens) */
 @keyframes pillExpand {
   0% {
     width: 62px;
@@ -426,11 +426,11 @@
   }
 
   36% {
-    width: 420px;
+    width: 280px;
   }
 
   72% {
-    width: 420px;
+    width: 280px;
   }
 
   90% {
@@ -439,6 +439,93 @@
 
   100% {
     width: 62px;
+  }
+}
+
+/* Medium screens  */
+@media (min-width: 640px) {
+  @keyframes pillExpand {
+    0% {
+      width: 62px;
+    }
+
+    18% {
+      width: 62px;
+    }
+
+    36% {
+      width: 380px;
+    }
+
+    72% {
+      width: 380px;
+    }
+
+    90% {
+      width: 62px;
+    }
+
+    100% {
+      width: 62px;
+    }
+  }
+}
+
+/* Large screens */
+@media (min-width: 1024px) {
+  @keyframes pillExpand {
+    0% {
+      width: 62px;
+    }
+
+    18% {
+      width: 62px;
+    }
+
+    36% {
+      width: 480px;
+    }
+
+    72% {
+      width: 480px;
+    }
+
+    90% {
+      width: 62px;
+    }
+
+    100% {
+      width: 62px;
+    }
+  }
+}
+
+/* Extra large screens */
+@media (min-width: 1280px) {
+  @keyframes pillExpand {
+    0% {
+      width: 62px;
+    }
+
+    18% {
+      width: 62px;
+    }
+
+    36% {
+      width: 550px;
+    }
+
+    72% {
+      width: 550px;
+    }
+
+    90% {
+      width: 62px;
+    }
+
+    100% {
+      width: 62px;
+    }
   }
 }
 

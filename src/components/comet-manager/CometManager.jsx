@@ -186,13 +186,13 @@ const EASE_CATEGORIES = ["Engagement", "Aha", "Support", "Execution"];
 
 export default function CometManager({
   sessionData,
-  setSessionData = () => { },
+  setSessionData = () => {},
   setAllMessages,
   isPreviewMode,
   setIsPreviewMode,
   onOutlineChange,
   isAskingKyper = false,
-  setIsAskingKyper = () => { },
+  setIsAskingKyper = () => {},
 }) {
   // Use comet manager hook to get actual data
   const {
@@ -235,7 +235,8 @@ export default function CometManager({
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [selectedImageAsset, setSelectedImageAsset] = useState(null);
   const [selectedVideoAsset, setSelectedVideoAsset] = useState(null);
-  const [selectedRemainingChapter, setSelectedRemainingChapter] = useState(null);
+  const [selectedRemainingChapter, setSelectedRemainingChapter] =
+    useState(null);
   const [scrollToStepIndex, setScrollToStepIndex] = useState(null);
   const [activeTab, setActiveTab] = useState(0); // Track active tab: 0=Steps, 1=Sources, 2=Assets
   const { isCometSettingsOpen, setIsCometSettingsOpen } = useCometSettings();
@@ -260,8 +261,7 @@ export default function CometManager({
         setIsCometSettingsOpen(true);
         localStorage.removeItem("openCometSettingsFromAllComets");
       }
-    } catch {
-    }
+    } catch {}
   }, [setIsCometSettingsOpen]);
   useEffect(() => {
     const outline = sessionData?.response_outline;
@@ -294,19 +294,15 @@ export default function CometManager({
     }
   }, [sessionData]);
 
-
   // Subscribe to session updates - persistent subscription for comet-manager
   // This will reuse the existing subscription if one exists
   useSessionSubscription(
     sessionId,
     (updatedSessionData) => {
       try {
-        localStorage.setItem(
-          "sessionData",
-          JSON.stringify(updatedSessionData)
-        );
+        localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
         setSessionData(updatedSessionData);
-      } catch { }
+      } catch {}
     },
     (err) => {
       console.error("Subscription error:", err);
@@ -314,15 +310,17 @@ export default function CometManager({
         setNextChapterError(err?.message || "Subscription failed");
         setIsGeneratingNextChapter(false);
       }
-    }
+    },
   );
 
   // Scroll to step in remaining chapter panel when step is clicked in sidebar
   useEffect(() => {
     if (scrollToStepIndex !== null && remainingChapterStepsRef.current) {
-      const stepElement = document.getElementById(`remaining-step-${scrollToStepIndex}`);
+      const stepElement = document.getElementById(
+        `remaining-step-${scrollToStepIndex}`,
+      );
       if (stepElement) {
-        stepElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        stepElement.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
   }, [scrollToStepIndex]);
@@ -344,9 +342,9 @@ export default function CometManager({
           try {
             localStorage.setItem(
               "sessionData",
-              JSON.stringify(JSON.parse(cometJson))
+              JSON.stringify(JSON.parse(cometJson)),
             );
-          } catch { }
+          } catch {}
         }
       }
 
@@ -355,7 +353,7 @@ export default function CometManager({
       try {
         const raw = localStorage.getItem("sessionData");
         if (raw) parsedSessionData = JSON.parse(raw);
-      } catch { }
+      } catch {}
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
@@ -397,7 +395,7 @@ export default function CometManager({
 
   // Select first screen by default when screens are first loaded
   useEffect(() => {
-    console.log("screen is not selected")
+    console.log("screen is not selected");
     console.log("screens >>>>>>>>>>>>>>>>>>>>>>>", screens);
     if (!screens || screens.length === 0) return;
 
@@ -405,7 +403,7 @@ export default function CometManager({
 
     // If no screen is selected, select the first one
     if (!selectedScreenId) {
-      console.log("no screen is selected, selecting the first one")
+      console.log("no screen is selected, selecting the first one");
       const firstScreen = screens[0];
       if (firstScreen && firstScreen.id) {
         setSelectedScreenId(firstScreen.id);
@@ -416,7 +414,7 @@ export default function CometManager({
 
     // If selected screen is no longer in the screens array, select the first one
     const selectedScreenExists = screens.some(
-      (screen) => screen.id === selectedScreenId
+      (screen) => screen.id === selectedScreenId,
     );
     if (!selectedScreenExists) {
       const firstScreen = screens[0];
@@ -436,7 +434,7 @@ export default function CometManager({
     }
 
     const screenIndex = screens.findIndex(
-      (screen) => screen.id === selectedScreenId
+      (screen) => screen.id === selectedScreenId,
     );
     if (screenIndex >= 0 && currentScreen !== screenIndex) {
       setCurrentScreen(screenIndex);
@@ -484,7 +482,7 @@ export default function CometManager({
 
   const currentChapter =
     chapters?.find((ch) =>
-      ch.steps?.some((step) => String(step.id) === String(selectedStepId))
+      ch.steps?.some((step) => String(step.id) === String(selectedStepId)),
     ) || null;
 
   const handleScreenClick = (screen) => {
@@ -531,19 +529,19 @@ export default function CometManager({
       targetChapter?.order !== undefined
         ? targetChapter.order + 1
         : chapters.findIndex(
-          (ch) => String(ch.id) === String(targetChapterId)
-        ) + 1 || 1;
+            (ch) => String(ch.id) === String(targetChapterId),
+          ) + 1 || 1;
     console.log("chapterNum>>>>>>>>>>>>>>>>>>>>>>>>", chapterNum);
     const stepNum =
       targetChapter?.steps?.findIndex(
-        (step) => String(step.id) === String(targetStepId)
+        (step) => String(step.id) === String(targetStepId),
       ) + 1 || 1;
     console.log("stepNum>>>>>>>>>>>>>>>>>>>>>>>>", stepNum);
     const screenNum =
       allScreens.filter(
         (s) =>
           String(s.chapterId) === String(targetChapterId) &&
-          String(s.stepId) === String(targetStepId)
+          String(s.stepId) === String(targetStepId),
       ).length + 1;
     console.log("screenNum>>>>>>>>>>>>>>>>>>>>>>>>", screenNum);
     const screenId = `#screen_${chapterNum}_${stepNum}_${screenNum}`;
@@ -555,7 +553,7 @@ export default function CometManager({
     // Get position: when inserting between screens use insert index + 1 (1-based);
     // when appending, use count of screens in step + 1
     const screensInStep = allScreens.filter(
-      (s) => String(s.stepId) === String(targetStepId)
+      (s) => String(s.stepId) === String(targetStepId),
     );
     const position =
       addAtIndex !== null ? addAtIndex + 1 : screensInStep.length + 1;
@@ -996,7 +994,7 @@ export default function CometManager({
       insertScreenAt(newScreen, addAtIndex);
       console.log(
         "newScreen inserted at index>>>>>>>>>>>>>>>>>>>>>>>>",
-        newScreen
+        newScreen,
       );
     } else {
       addScreenData(newScreen);
@@ -1009,11 +1007,11 @@ export default function CometManager({
     setCurrentScreen(addAtIndex !== null ? addAtIndex : screens.length);
     console.log(
       "newScreen set selected screen id>>>>>>>>>>>>>>>>>>>>>>>>",
-      newScreen.id
+      newScreen.id,
     );
     console.log(
       "newScreen set current screen>>>>>>>>>>>>>>>>>>>>>>>>",
-      addAtIndex !== null ? addAtIndex : screens.length
+      addAtIndex !== null ? addAtIndex : screens.length,
     );
   };
 
@@ -1037,12 +1035,12 @@ export default function CometManager({
     typeof currentChapter?.position === "number"
       ? currentChapter.position
       : chapters.findIndex(
-        (ch) => String(ch.id) === String(selectedScreen?.chapterId)
-      ) + 1 || 1;
+          (ch) => String(ch.id) === String(selectedScreen?.chapterId),
+        ) + 1 || 1;
 
   const stepNumber =
     (currentChapter?.steps?.findIndex(
-      (step) => String(step.id) === String(selectedScreen?.stepId)
+      (step) => String(step.id) === String(selectedScreen?.stepId),
     ) ?? -1) + 1 || 1;
 
   return (
@@ -1060,7 +1058,9 @@ export default function CometManager({
                 selectedScreen={selectedScreen}
                 onAddScreen={handleAddScreen}
                 chapters={chapters}
-                remainingChapters={sessionData?.response_path?.remaining_chapters || []}
+                remainingChapters={
+                  sessionData?.response_path?.remaining_chapters || []
+                }
                 sessionId={sessionId}
                 selectedStepId={selectedStepId}
                 setSelectedStep={setSelectedStep}
@@ -1095,7 +1095,7 @@ export default function CometManager({
                   setSelectedVideoAsset(null);
                   setSelectedRemainingChapter(null);
                 }}
-                onStepClick={(stepId, step) => { }}
+                onStepClick={(stepId, step) => {}}
                 onChapterClick={(chapterId, chapter) => {
                   // Clear material and assets when chapter is clicked
                   setSelectedMaterial(null);
@@ -1107,36 +1107,36 @@ export default function CometManager({
                   setActiveTab(0);
                   // Filter screens for this chapter (use allScreens to get screens from all steps)
                   const chapterScreens = allScreens.filter(
-                    (s) => s.chapterId === chapterId
+                    (s) => s.chapterId === chapterId,
                   );
                   console.log(
                     "chapterScreens>>>>>>>>>>>>>>>>>>>>>>>>",
-                    chapterScreens
+                    chapterScreens,
                   );
                   if (chapterScreens.length > 0) {
                     // Find the first screen's index in the filtered screens array
                     const firstScreen = chapterScreens[0];
                     console.log(
                       "firstScreen>>>>>>>>>>>>>>>>>>>>>>>>",
-                      firstScreen
+                      firstScreen,
                     );
                     const screenIndex = screens.findIndex(
-                      (s) => s.id === firstScreen.id
+                      (s) => s.id === firstScreen.id,
                     );
                     console.log(
                       "screenIndex>>>>>>>>>>>>>>>>>>>>>>>>",
-                      screenIndex
+                      screenIndex,
                     );
                     if (screenIndex >= 0) {
                       setSelectedScreenId(firstScreen.id);
                       console.log(
                         "selectedScreenId>>>>>>>>>>>>>>>>>>>>>>>>",
-                        firstScreen.id
+                        firstScreen.id,
                       );
                       setCurrentScreen(screenIndex);
                       console.log(
                         "currentScreen>>>>>>>>>>>>>>>>>>>>>>>>",
-                        screenIndex
+                        screenIndex,
                       );
                     } else {
                       // If screen is not in current filtered screens, select the first step of the chapter
@@ -1145,7 +1145,7 @@ export default function CometManager({
                         setSelectedStep(firstStep.id);
                         console.log(
                           "selectedStep>>>>>>>>>>>>>>>>>>>>>>>>",
-                          firstStep.id
+                          firstStep.id,
                         );
                         // The screens will update via useEffect, then we can select the first screen
                       }
@@ -1212,8 +1212,9 @@ export default function CometManager({
                                 assetType === "animation" ? "video" : assetType;
                               const isImage = normalizedType === "image";
                               const isVideo = normalizedType === "video";
+                              const isTool = assetType === "tool";
 
-                              // Get file name from URL
+                              // Get file name from URL or use name property
                               const getFileNameFromUrl = (url) => {
                                 if (!url) return "Untitled Asset";
                                 const urlPath = url.split("?")[0];
@@ -1221,28 +1222,143 @@ export default function CometManager({
                                 return fileName || "Untitled Asset";
                               };
 
-                              const assetName = getFileNameFromUrl(assetUrl);
+                              const assetName =
+                                asset?.name || getFileNameFromUrl(assetUrl);
 
-                              // Get icon based on asset type
-                              const getIcon = () => {
-                                if (isImage) return FileImage;
-                                if (isVideo) return FileVideo;
-                                return FileIcon;
+                              // Get file extension
+                              const getFileExtension = (url) => {
+                                if (!url) return "";
+                                const urlPath = url.split("?")[0];
+                                const parts = urlPath.split(".");
+                                return parts.length > 1
+                                  ? parts.pop()?.toLowerCase()
+                                  : "";
                               };
 
-                              const FileIconComponent = getIcon();
+                              const fileExtension = getFileExtension(assetUrl);
+
+                              // Get icon and color based on file type
+                              const getFileTypeInfo = () => {
+                                if (isImage)
+                                  return {
+                                    icon: FileImage,
+                                    color: "bg-green-100 text-green-600",
+                                    label: "Image",
+                                  };
+                                if (isVideo)
+                                  return {
+                                    icon: FileVideo,
+                                    color: "bg-purple-100 text-purple-600",
+                                    label: "Video",
+                                  };
+
+                                // For tools and documents, map extensions to icons/colors
+                                if (
+                                  isTool ||
+                                  assetType === "file" ||
+                                  !assetType
+                                ) {
+                                  switch (fileExtension) {
+                                    case "ppt":
+                                    case "pptx":
+                                      return {
+                                        icon: null,
+                                        color: "bg-orange-100 text-orange-600",
+                                        label: "PowerPoint",
+                                        customIcon: "PPT",
+                                      };
+                                    case "doc":
+                                    case "docx":
+                                      return {
+                                        icon: null,
+                                        color: "bg-blue-100 text-blue-600",
+                                        label: "Word",
+                                        customIcon: "DOC",
+                                      };
+                                    case "xls":
+                                    case "xlsx":
+                                      return {
+                                        icon: null,
+                                        color: "bg-green-100 text-green-600",
+                                        label: "Excel",
+                                        customIcon: "XLS",
+                                      };
+                                    case "pdf":
+                                      return {
+                                        icon: null,
+                                        color: "bg-red-100 text-red-600",
+                                        label: "PDF",
+                                        customIcon: "PDF",
+                                      };
+                                    case "txt":
+                                      return {
+                                        icon: File,
+                                        color: "bg-gray-100 text-gray-600",
+                                        label: "Text",
+                                      };
+                                    case "zip":
+                                    case "rar":
+                                      return {
+                                        icon: null,
+                                        color: "bg-yellow-100 text-yellow-700",
+                                        label: "Archive",
+                                        customIcon: "ZIP",
+                                      };
+                                    case "mp3":
+                                    case "wav":
+                                    case "m4a":
+                                      return {
+                                        icon: null,
+                                        color: "bg-pink-100 text-pink-600",
+                                        label: "Audio",
+                                        customIcon: "MP3",
+                                      };
+                                    case "csv":
+                                      return {
+                                        icon: null,
+                                        color: "bg-teal-100 text-teal-600",
+                                        label: "CSV",
+                                        customIcon: "CSV",
+                                      };
+                                    case "json":
+                                      return {
+                                        icon: null,
+                                        color: "bg-amber-100 text-amber-600",
+                                        label: "JSON",
+                                        customIcon: "JSON",
+                                      };
+                                    default:
+                                      return {
+                                        icon: FileIcon,
+                                        color: "bg-gray-100 text-gray-500",
+                                        label: "File",
+                                      };
+                                  }
+                                }
+
+                                return {
+                                  icon: FileIcon,
+                                  color: "bg-gray-100 text-gray-500",
+                                  label: "File",
+                                };
+                              };
+
+                              const fileTypeInfo = getFileTypeInfo();
 
                               return (
                                 <div
                                   key={asset.id}
-                                  className="flex flex-col overflow-hidden bg-white cursor-pointer hover:shadow-lg transition-shadow"
+                                  className="flex flex-col overflow-hidden bg-white border border-gray-200 rounded-lg"
                                   onClick={() => {
                                     if (!assetUrl) return;
                                     if (isImage) setSelectedImageAsset(asset);
-                                    if (isVideo) setSelectedVideoAsset(asset);
+                                    else if (isVideo)
+                                      setSelectedVideoAsset(asset);
                                   }}
                                 >
-                                  <div className="relative h-50 w-full bg-primary-50">
+                                  <div
+                                    className={`relative h-32 w-full ${fileTypeInfo.color} flex items-center justify-center`}
+                                  >
                                     {isImage && assetUrl ? (
                                       <img
                                         src={assetUrl}
@@ -1250,20 +1366,48 @@ export default function CometManager({
                                         className="h-full w-full object-cover"
                                         loading="lazy"
                                       />
+                                    ) : fileTypeInfo.customIcon ? (
+                                      <div className="flex flex-col items-center justify-center gap-2">
+                                        <span className="text-3xl font-bold">
+                                          {fileTypeInfo.customIcon}
+                                        </span>
+                                        <span className="text-xs font-medium opacity-70">
+                                          {fileTypeInfo.label}
+                                        </span>
+                                      </div>
                                     ) : (
-                                      <div className="flex h-full w-full items-center justify-center bg-primary-100 text-primary">
-                                        <FileIconComponent size={32} />
+                                      <div className="flex flex-col items-center justify-center gap-2">
+                                        {fileTypeInfo.icon && (
+                                          <fileTypeInfo.icon size={40} />
+                                        )}
+                                        <span className="text-xs font-medium opacity-70">
+                                          {fileTypeInfo.label}
+                                        </span>
                                       </div>
                                     )}
                                   </div>
-                                  <div className="flex flex-col gap-1 p-3">
-                                    <span className="text-sm font-semibold text-gray-900 line-clamp-2">
+                                  <div className="flex flex-col gap-1 p-3 border-t border-gray-100">
+                                    <span
+                                      className="text-sm font-semibold text-gray-900 line-clamp-2"
+                                      title={assetName}
+                                    >
                                       {assetName}
                                     </span>
                                     <div className="flex items-center justify-between text-xs text-gray-500">
-                                      <span className="capitalize">
-                                        {assetType || "file"}
+                                      <span
+                                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${fileTypeInfo.color}`}
+                                      >
+                                        {fileExtension?.toUpperCase() ||
+                                          fileTypeInfo.label}
                                       </span>
+                                      {asset?.description && (
+                                        <span
+                                          className="truncate ml-2"
+                                          title={asset.description}
+                                        >
+                                          {asset.description}
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
@@ -1320,111 +1464,123 @@ export default function CometManager({
                       }}
                     >
                       <div className="space-y-4 bg-primary-50 px-2 py-4 rounded">
-                        {selectedRemainingChapter.steps && selectedRemainingChapter.steps.length > 0 ? (
-                          selectedRemainingChapter.steps.map((step, stepIndex) => (
-                            <div
-                              key={stepIndex}
-                              id={`remaining-step-${stepIndex}`}
-                              className="border-b border-primary-300 pb-4"
-                            >
-                              {/* Step Header */}
-                              <div className="mb-4 ml-4">
-                                <p className="text-xs text-gray-900 mb-1">
-                                  Step {stepIndex + 1}
-                                </p>
-                                <h3 className="text-base font-semibold text-primary">
-                                  {step.title || `Step ${step.step || stepIndex + 1}`}
-                                </h3>
+                        {selectedRemainingChapter.steps &&
+                        selectedRemainingChapter.steps.length > 0 ? (
+                          selectedRemainingChapter.steps.map(
+                            (step, stepIndex) => (
+                              <div
+                                key={stepIndex}
+                                id={`remaining-step-${stepIndex}`}
+                                className="border-b border-primary-300 pb-4"
+                              >
+                                {/* Step Header */}
+                                <div className="mb-4 ml-4">
+                                  <p className="text-xs text-gray-900 mb-1">
+                                    Step {stepIndex + 1}
+                                  </p>
+                                  <h3 className="text-base font-semibold text-primary">
+                                    {step.title ||
+                                      `Step ${step.step || stepIndex + 1}`}
+                                  </h3>
+                                </div>
+
+                                {/* Step Content */}
+                                <div className="space-y-4">
+                                  {/* Aha Moment */}
+                                  {step.aha && (
+                                    <div className="flex gap-3 px-3 py-4 bg-white rounded-xl">
+                                      <div className="shrink-0 mt-1">
+                                        <img
+                                          src="/bulb.svg"
+                                          alt="Aha"
+                                          width={24}
+                                          height={24}
+                                          className="w-6 h-6"
+                                        />
+                                      </div>
+                                      <div className="flex-1">
+                                        <p className="font-medium text-gray-900 mb-1">
+                                          Aha
+                                        </p>
+                                        <p className="text-gray-700 text-sm leading-relaxed">
+                                          {step.aha}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Action */}
+                                  {step.action && (
+                                    <div className="flex gap-3 px-3 py-4 bg-white rounded-xl">
+                                      <div className="shrink-0 mt-1">
+                                        <img
+                                          src="/markup.svg"
+                                          alt="Action"
+                                          width={24}
+                                          height={24}
+                                          className="w-6 h-6"
+                                        />
+                                      </div>
+                                      <div className="flex-1">
+                                        <p className="font-medium text-gray-900 mb-1">
+                                          Action
+                                        </p>
+                                        <p className="text-gray-700 text-sm leading-relaxed">
+                                          {step.action}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Tool */}
+                                  {step.tool && (
+                                    <div className="flex gap-3 px-3 py-4 bg-white rounded-xl">
+                                      <div className="shrink-0 mt-1">
+                                        <img
+                                          src="/tool.svg"
+                                          alt="Tool"
+                                          width={24}
+                                          height={24}
+                                          className="w-6 h-6"
+                                        />
+                                      </div>
+                                      <div className="flex-1">
+                                        <p className="font-medium text-gray-900 mb-1">
+                                          Tool
+                                        </p>
+                                        <p className="text-gray-700 text-sm leading-relaxed">
+                                          {step.tool}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Description */}
+                                  {step.description && (
+                                    <div className="flex gap-3 px-3 py-4 bg-white rounded-xl">
+                                      <div className="shrink-0 mt-1">
+                                        <img
+                                          src="/tool.svg"
+                                          alt="Description"
+                                          width={24}
+                                          height={24}
+                                          className="w-6 h-6"
+                                        />
+                                      </div>
+                                      <div className="flex-1">
+                                        <p className="font-medium text-gray-900 mb-1">
+                                          Description
+                                        </p>
+                                        <p className="text-gray-700 text-sm leading-relaxed">
+                                          {step.description}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-
-                              {/* Step Content */}
-                              <div className="space-y-4">
-                                {/* Aha Moment */}
-                                {step.aha && (
-                                  <div className="flex gap-3 px-3 py-4 bg-white rounded-xl">
-                                    <div className="shrink-0 mt-1">
-                                      <img
-                                        src="/bulb.svg"
-                                        alt="Aha"
-                                        width={24}
-                                        height={24}
-                                        className="w-6 h-6"
-                                      />
-                                    </div>
-                                    <div className="flex-1">
-                                      <p className="font-medium text-gray-900 mb-1">Aha</p>
-                                      <p className="text-gray-700 text-sm leading-relaxed">
-                                        {step.aha}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Action */}
-                                {step.action && (
-                                  <div className="flex gap-3 px-3 py-4 bg-white rounded-xl">
-                                    <div className="shrink-0 mt-1">
-                                      <img
-                                        src="/markup.svg"
-                                        alt="Action"
-                                        width={24}
-                                        height={24}
-                                        className="w-6 h-6"
-                                      />
-                                    </div>
-                                    <div className="flex-1">
-                                      <p className="font-medium text-gray-900 mb-1">Action</p>
-                                      <p className="text-gray-700 text-sm leading-relaxed">
-                                        {step.action}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Tool */}
-                                {step.tool && (
-                                  <div className="flex gap-3 px-3 py-4 bg-white rounded-xl">
-                                    <div className="shrink-0 mt-1">
-                                      <img
-                                        src="/tool.svg"
-                                        alt="Tool"
-                                        width={24}
-                                        height={24}
-                                        className="w-6 h-6"
-                                      />
-                                    </div>
-                                    <div className="flex-1">
-                                      <p className="font-medium text-gray-900 mb-1">Tool</p>
-                                      <p className="text-gray-700 text-sm leading-relaxed">
-                                        {step.tool}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Description */}
-                                {step.description && (
-                                  <div className="flex gap-3 px-3 py-4 bg-white rounded-xl">
-                                    <div className="shrink-0 mt-1">
-                                      <img
-                                        src="/tool.svg"
-                                        alt="Description"
-                                        width={24}
-                                        height={24}
-                                        className="w-6 h-6"
-                                      />
-                                    </div>
-                                    <div className="flex-1">
-                                      <p className="font-medium text-gray-900 mb-1">Description</p>
-                                      <p className="text-gray-700 text-sm leading-relaxed">
-                                        {step.description}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))
+                            ),
+                          )
                         ) : (
                           <div className="flex flex-col items-center justify-center p-8 text-center">
                             <p className="text-sm text-gray-500">
@@ -1448,7 +1604,9 @@ export default function CometManager({
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-medium text-primary">
                               {currentChapter?.steps?.find(
-                                (step) => String(step.id) === String(selectedScreen?.stepId)
+                                (step) =>
+                                  String(step.id) ===
+                                  String(selectedScreen?.stepId),
                               )?.name || "Untitled Step"}
                             </span>
                             {/* <span className="text-xs text-primary truncate">
@@ -1459,27 +1617,25 @@ export default function CometManager({
                         <div>
                           <GenerateStepImageButton
                             sessionId={sessionId}
-                            chapterUid={
-                              (() => {
-                                // Find chapter UUID from outline using stepUid (more reliable than chapterId)
-                                const stepUid = selectedScreen?.stepUid;
-                                if (!stepUid || !outline?.chapters) {
-                                  return null;
-                                }
-                                // Search through chapters to find the one containing this step
-                                for (const chapter of outline.chapters) {
-                                  if (chapter.steps) {
-                                    for (const stepItem of chapter.steps) {
-                                      const step = stepItem?.step;
-                                      if (step && step.uuid === stepUid) {
-                                        return chapter.uuid || null;
-                                      }
+                            chapterUid={(() => {
+                              // Find chapter UUID from outline using stepUid (more reliable than chapterId)
+                              const stepUid = selectedScreen?.stepUid;
+                              if (!stepUid || !outline?.chapters) {
+                                return null;
+                              }
+                              // Search through chapters to find the one containing this step
+                              for (const chapter of outline.chapters) {
+                                if (chapter.steps) {
+                                  for (const stepItem of chapter.steps) {
+                                    const step = stepItem?.step;
+                                    if (step && step.uuid === stepUid) {
+                                      return chapter.uuid || null;
                                     }
                                   }
                                 }
-                                return null;
-                              })()
-                            }
+                              }
+                              return null;
+                            })()}
                             stepUid={selectedScreen?.stepUid}
                             onSuccess={(response) => {
                               console.log("Step image generated:", response);
@@ -1487,18 +1643,16 @@ export default function CometManager({
                             onError={(error) => {
                               console.error(
                                 "Step image generation failed:",
-                                error
+                                error,
                               );
                             }}
                           />
                         </div>
                         <div className="flex items-center gap-2">
-
                           <div
                             onClick={() => setIsUploadImageDialogOpen(true)}
                             className="w-20 h-10 rounded-md bg-primary-50 border border-primary-200 flex items-center justify-center overflow-hidden shrink-0 relative cursor-pointer hover:opacity-80 transition-opacity"
                           >
-
                             {selectedScreen?.stepImageUrl && (
                               <img
                                 src={selectedScreen.stepImageUrl}
@@ -1510,7 +1664,6 @@ export default function CometManager({
                               <FileImage className="w-5 h-5 text-primary-400" />
                             )}
                           </div>
-
                         </div>
                       </div>
                     )}
@@ -1597,40 +1750,6 @@ export default function CometManager({
                           />
                         </div>
                       )}
-                      {/* {selectedScreen && ( */}
-                      <div className="border-t p-3 bg-background w-full rounded-b-xl shrink-0 sticky bottom-0 mt-auto">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-3 px-1 py-1 rounded-xl bg-[#E9EAEB]">
-                            <div
-                              className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center shrink-0 cursor-pointer hover:bg-gray-50 transition-colors"
-                              onClick={() =>
-                                setIsAnalyzingTextCollapsed(
-                                  !isAnalyzingTextCollapsed
-                                )
-                              }
-                            >
-                              <Zap size={14} className="text-gray-900" />
-                            </div>
-                            {!isAnalyzingTextCollapsed && (
-                              <span className="text-gray-700 text-sm">
-                                {sessionData?.meta?.state || "Analyzing instructions and source materials"}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Right button - Next Chapter */}
-                          <Button
-                            variant="default"
-                            className="ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50 cursor-pointer"
-                            onClick={handleNextChapter}
-                            disabled={isGeneratingNextChapter}
-                          >
-                            <span>Generate Remaining Chapters</span>
-                            <ArrowRight size={16} />
-                          </Button>
-                        </div>
-                      </div>
-                      {/* )} */}
 
                       {/* {selectedScreen && (
                         <div className="shrink-0 p-4 bg-white rounded-lg overflow-auto max-h-full">
@@ -1644,6 +1763,39 @@ export default function CometManager({
                           </pre>
                         </div>
                       )} */}
+                    </div>
+
+                    <div className="border-t p-3 bg-primary-50 w-full rounded-b-xl shrink-0">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 px-1 py-1 rounded-xl bg-[#E9EAEB]">
+                          <div
+                            className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center shrink-0 cursor-pointer hover:bg-gray-50 transition-colors"
+                            onClick={() =>
+                              setIsAnalyzingTextCollapsed(
+                                !isAnalyzingTextCollapsed,
+                              )
+                            }
+                          >
+                            <Zap size={14} className="text-gray-900" />
+                          </div>
+                          {!isAnalyzingTextCollapsed && (
+                            <span className="text-gray-700 text-sm">
+                              {sessionData?.meta?.state ||
+                                "Analyzing instructions and source materials"}
+                            </span>
+                          )}
+                        </div>
+
+                        <Button
+                          variant="default"
+                          className="ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50 cursor-pointer"
+                          onClick={handleNextChapter}
+                          disabled={isGeneratingNextChapter}
+                        >
+                          <span>Generate Remaining Chapters</span>
+                          <ArrowRight size={16} />
+                        </Button>
+                      </div>
                     </div>
                   </>
                 ) : activeTab === 1 ? (
@@ -1732,10 +1884,11 @@ export default function CometManager({
         }}
       >
         <DrawerContent
-          className={`${isMaximized
-            ? "w-screen! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
-            : "w-screen! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
-            } max-w-none! h-screen! bg-primary-50 p-0`}
+          className={`${
+            isMaximized
+              ? "w-screen! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
+              : "w-screen! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
+          } max-w-none! h-screen! bg-primary-50 p-0`}
         >
           {/* Preview Header */}
           <div className="bg-primary-50 border-b border-gray-200 py-2 px-3 sm:px-4 flex items-center justify-between">
@@ -1765,8 +1918,9 @@ export default function CometManager({
 
           {/* Preview Content */}
           <div
-            className={`flex-1 overflow-hidden border-lg bg-primary-50 ${isMaximized ? "p-0 sm:p-2 md:p-3" : "p-0 sm:p-2 md:p-3"
-              }`}
+            className={`flex-1 overflow-hidden border-lg bg-primary-50 ${
+              isMaximized ? "p-0 sm:p-2 md:p-3" : "p-0 sm:p-2 md:p-3"
+            }`}
           >
             <FromDoerToEnabler
               selectedScreen={selectedScreen}
