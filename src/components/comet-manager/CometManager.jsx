@@ -235,6 +235,7 @@ export default function CometManager({
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [selectedImageAsset, setSelectedImageAsset] = useState(null);
   const [selectedVideoAsset, setSelectedVideoAsset] = useState(null);
+  const [selectedToolAsset, setSelectedToolAsset] = useState(null);
   const [selectedRemainingChapter, setSelectedRemainingChapter] =
     useState(null);
   const [scrollToStepIndex, setScrollToStepIndex] = useState(null);
@@ -492,6 +493,7 @@ export default function CometManager({
     setSelectedAssets([]);
     setSelectedImageAsset(null);
     setSelectedVideoAsset(null);
+    setSelectedToolAsset(null);
     setSelectedRemainingChapter(null);
     setActiveTab(0);
     setSelectedScreenId(screen.id);
@@ -1074,6 +1076,7 @@ export default function CometManager({
                     setSelectedAssets([]);
                     setSelectedImageAsset(null);
                     setSelectedVideoAsset(null);
+                    setSelectedToolAsset(null);
                   }
                 }}
                 onAssetCategorySelect={(category, assets) => {
@@ -1084,6 +1087,7 @@ export default function CometManager({
                   setSelectedMaterial(null);
                   setSelectedImageAsset(null);
                   setSelectedVideoAsset(null);
+                  setSelectedToolAsset(null);
                 }}
                 onTabChange={(tabIndex) => {
                   setActiveTab(tabIndex);
@@ -1093,6 +1097,7 @@ export default function CometManager({
                   setSelectedAssets([]);
                   setSelectedImageAsset(null);
                   setSelectedVideoAsset(null);
+                  setSelectedToolAsset(null);
                   setSelectedRemainingChapter(null);
                 }}
                 onStepClick={(stepId, step) => {}}
@@ -1103,6 +1108,7 @@ export default function CometManager({
                   setSelectedAssets([]);
                   setSelectedImageAsset(null);
                   setSelectedVideoAsset(null);
+                  setSelectedToolAsset(null);
                   setSelectedRemainingChapter(null);
                   setActiveTab(0);
                   // Filter screens for this chapter (use allScreens to get screens from all steps)
@@ -1159,6 +1165,7 @@ export default function CometManager({
                   setSelectedAssets([]);
                   setSelectedImageAsset(null);
                   setSelectedVideoAsset(null);
+                  setSelectedToolAsset(null);
                   setSelectedScreenId(null);
                   setSelectedRemainingChapter(chapter);
                   setScrollToStepIndex(null); // Reset scroll target when chapter changes
@@ -1189,6 +1196,63 @@ export default function CometManager({
                       category={selectedAssetCategory}
                       onClose={() => setSelectedVideoAsset(null)}
                     />
+                  </div>
+                ) : selectedToolAsset ? (
+                  <div className="flex-1 overflow-hidden p-4">
+                    <div className="flex flex-col h-full bg-white rounded-lg overflow-hidden">
+                      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-10 h-10 rounded-lg ${selectedToolAsset.fileTypeInfo?.color || "bg-gray-100"} flex items-center justify-center text-sm font-bold`}
+                          >
+                            {selectedToolAsset.fileTypeInfo?.customIcon || (
+                              <FileIcon size={20} />
+                            )}
+                          </div>
+                          <div>
+                            <h2 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                              {selectedToolAsset.name}
+                            </h2>
+                            <span className="text-xs text-gray-500 uppercase">
+                              {selectedToolAsset.fileExtension || "File"}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setSelectedToolAsset(null)}
+                          className="p-2 hover:bg-gray-100 rounded-full"
+                        >
+                          <X size={20} className="text-gray-500" />
+                        </button>
+                      </div>
+                      <div className="flex-1 overflow-hidden flex items-center justify-center">
+                        {selectedToolAsset.fileExtension === "pdf" ? (
+                          <iframe
+                            src={selectedToolAsset.asset_url}
+                            className="w-full h-full border-0"
+                            title={selectedToolAsset.name}
+                          />
+                        ) : (
+                          <a
+                            href={selectedToolAsset.asset_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex flex-col items-center gap-4 p-8 hover:opacity-80"
+                          >
+                            <div
+                              className={`w-24 h-24 rounded-2xl ${selectedToolAsset.fileTypeInfo?.color || "bg-gray-100"} flex items-center justify-center text-4xl font-bold`}
+                            >
+                              {selectedToolAsset.fileTypeInfo?.customIcon || (
+                                <FileIcon size={48} />
+                              )}
+                            </div>
+                            <span className="text-primary font-medium">
+                              Click to Open
+                            </span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ) : selectedAssetCategory && selectedAssets ? (
                   <div className="flex-1 overflow-hidden p-4">
@@ -1348,12 +1412,25 @@ export default function CometManager({
                               return (
                                 <div
                                   key={asset.id}
-                                  className="flex flex-col overflow-hidden bg-white border border-gray-200 rounded-lg"
+                                  className="flex flex-col overflow-hidden bg-white border border-gray-200 rounded-lg cursor-pointer hover:shadow-lg hover:border-primary-300 transition-all"
                                   onClick={() => {
                                     if (!assetUrl) return;
                                     if (isImage) setSelectedImageAsset(asset);
                                     else if (isVideo)
                                       setSelectedVideoAsset(asset);
+                                    else if (
+                                      isTool ||
+                                      assetType === "file" ||
+                                      !assetType
+                                    ) {
+                                      setSelectedToolAsset({
+                                        ...asset,
+                                        asset_url: assetUrl,
+                                        name: assetName,
+                                        fileExtension: fileExtension,
+                                        fileTypeInfo: fileTypeInfo,
+                                      });
+                                    }
                                   }}
                                 >
                                   <div
