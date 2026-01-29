@@ -853,8 +853,8 @@ export default function DynamicForm({
       }
     } catch (error) {
       console.error("Error asking Kyper:", error);
-    } finally {
       setIsAskingKyper(false);
+    } finally {
       clearAskContext();
     }
   };

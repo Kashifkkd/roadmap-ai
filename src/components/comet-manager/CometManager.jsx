@@ -251,7 +251,12 @@ export default function CometManager({
   const { isCometSettingsOpen, setIsCometSettingsOpen } = useCometSettings();
   const selectedScreenRef = useRef(null);
   const remainingChapterStepsRef = useRef(null);
+  const isAskingKyperRef = useRef(false);
   const [isUploadImageDialogOpen, setIsUploadImageDialogOpen] = useState(false);
+
+  useEffect(() => {
+    isAskingKyperRef.current = isAskingKyper;
+  }, [isAskingKyper]);
 
   // Next Chapter state
   const router = useRouter();
@@ -260,6 +265,8 @@ export default function CometManager({
   const [isAnalyzingTextCollapsed, setIsAnalyzingTextCollapsed] =
     useState(false);
   const [showNextChapter, setShowNextChapter] = useState(true);
+  // Bump when session updates (subscription) so DynamicForm remounts and shows fresh data
+  const [sessionUpdateKey, setSessionUpdateKey] = useState(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -303,6 +310,21 @@ export default function CometManager({
     }
   }, [sessionData]);
 
+  // Bump sessionUpdateKey when sessionData changes (subscription or chat response)
+  // so DynamicForm remounts and shows fresh data. Skip initial load.
+  const prevSessionDataRef = useRef(undefined);
+  useEffect(() => {
+    if (sessionData == null) return;
+    if (prevSessionDataRef.current === undefined) {
+      prevSessionDataRef.current = sessionData;
+      return;
+    }
+    if (prevSessionDataRef.current !== sessionData) {
+      prevSessionDataRef.current = sessionData;
+      setSessionUpdateKey((k) => k + 1);
+    }
+  }, [sessionData]);
+
   // Subscribe to session updates - persistent subscription for comet-manager
   // This will reuse the existing subscription if one exists
   useSessionSubscription(
@@ -311,6 +333,12 @@ export default function CometManager({
       try {
         localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
         setSessionData(updatedSessionData);
+        const hasPathUpdate = Boolean(
+          updatedSessionData?.response_path?.chapters?.length
+        );
+        if (isAskingKyperRef.current && hasPathUpdate) {
+          setIsAskingKyper(false);
+        }
       } catch {}
     },
     (err) => {
@@ -318,6 +346,9 @@ export default function CometManager({
       if (isGeneratingNextChapter) {
         setNextChapterError(err?.message || "Subscription failed");
         setIsGeneratingNextChapter(false);
+      }
+      if (isAskingKyperRef.current) {
+        setIsAskingKyper(false);
       }
     },
   );
@@ -1861,7 +1892,7 @@ export default function CometManager({
                       {selectedScreen && (
                         <div className="shrink-0">
                           <DynamicForm
-                            key={selectedScreen.id}
+                            key={`${selectedScreen.id}-${sessionUpdateKey}`}
                             screen={selectedScreen}
                             sessionData={sessionData}
                             setAllMessages={setAllMessages}
