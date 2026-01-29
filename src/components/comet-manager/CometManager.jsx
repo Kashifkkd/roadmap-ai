@@ -1840,7 +1840,7 @@ export default function CometManager({
                             {selectedScreen && (
                               <div className="flex items-center gap-2 min-w-0 flex-1 justify-center px-2">
                                 <p className="text-xs sm:text-sm font-semibold text-center truncate">
-                                  Screen {currentScreen + 1} -{" "}
+                                  Screen {currentScreen + 1} {" "}
                                   {selectedScreen.name}
                                 </p>
                               </div>

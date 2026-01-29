@@ -66,8 +66,8 @@ export default function AllCometsContainer({ cometSessions }) {
 
   // console.log("Rendering AllCometsContainer with sessions:", cometSessions);
   return (
-    <div className="flex flex-wrap flex-1 w-[90%] mx-auto rounded-2xl p-4 gap-2.5 bg-white overflow-y-auto no-scrollbar justify-start">
-      <div className="flex flex-wrap w-full gap-4 justify-start">
+    <div className="flex flex-1 w-[90%] mx-auto rounded-2xl p-4 bg-white overflow-y-auto no-scrollbar">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full gap-4 justify-items-center content-start items-start">
         {cometSessions.map((c, idx) => (
           <Comet
             key={idx} // unique key for each item

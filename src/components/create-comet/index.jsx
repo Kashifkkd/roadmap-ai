@@ -896,7 +896,7 @@ export default function CreateComet({
                         showInfo={true}
                       />
 
-                      <div className="relative bg-gray-100 p-1 rounded-lg">
+                      {/* <div className="relative bg-gray-100 p-1 rounded-lg">
                         <Textarea
                           id="habit"
                           rows={4}
@@ -905,7 +905,7 @@ export default function CreateComet({
                           onSelect={(e) => handleTextSelection("habit", e)}
                           className="border border-gray-200 rounded-lg outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300 resize-none"
                         />
-                      </div>
+                      </div> */}
                     </div>
 
                     {/* Separator */}
