@@ -12,6 +12,7 @@ const Comet = ({
   status,
   session_id,
   onCometClick,
+  updatedBy,
 }) => {
   const [disabled, setDisabled] = useState(false);
   const [imgSrc, setImgSrc] = useState(imageURL || "/fallbackImage.png");
@@ -50,7 +51,8 @@ const Comet = ({
 
     try {
       // Fetch session details from
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
       const response = await fetch(
         `${apiUrl}/api/comet/session_details/${session_id}`,
         {
@@ -85,7 +87,8 @@ const Comet = ({
   return (
     <div
       onClick={handleClick}
-      className="relative flex flex-col w-[310px] h-[280px] shrink-0 rounded-2xl overflow-hidden group cursor-default transition-transform duration-300 ease-in-out"
+      className="relative flex flex-col w-full max-w-[280px] h-[250px] md:max-w-[290px] md:h-[260px] lg:max-w-[310px] lg:h-[300px] xl:max-w-[350px] 
+      xl:h-[330px] 2xl:max-w-[460px] 2xl:h-[360px] shrink-0 rounded-2xl overflow-hidden group cursor-pointer transition-transform duration-300 ease-in-out"
     >
       {/* Background image with zoom effect */}
       <Image
@@ -100,7 +103,7 @@ const Comet = ({
       />
       {/* White overlay on hover */}
       {/* new white overlay on hover  */}
-      <div className="absolute top-2 bottom-2 left-2 right-2 rounded-lg p-3 bg-white/0 group-hover:bg-white transition-all duration-150 z-10 opacity-0 group-hover:opacity-100">
+      <div className="absolute top-2 bottom-2 left-2 right-2 rounded-lg p-3 bg-white/0 group-hover:bg-white transition-all duration-150 z-30 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
         <div className="flex flex-col w-full h-full justify-between">
           <div className="flex flex-col gap-2">
             <StatusButton status={status} />
@@ -145,46 +148,46 @@ const Comet = ({
                 year: "numeric",
               })}
             </span>
-            <div className="flex gap-1.5 flex-nowrap">
-              <button className="flex justify-center items-center rounded-md py-1.5 px-2 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer">
-                <div className="flex items-center gap-1">
+            <div className="flex gap-1 flex-nowrap">
+              <button className="flex justify-center items-center rounded-sm py-2 px-3 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer">
+                <div className="flex items-center gap-1.5">
                   <Image
                     src="/edit.png"
                     alt="edit icon"
-                    height={14}
-                    width={14}
+                    height={16}
+                    width={16}
                   />
-                  <span className="font-inter font-medium text-xs text-white whitespace-nowrap">
+                  <span className="font-inter font-medium text-sm text-white whitespace-nowrap">
                     Edit
                   </span>
                 </div>
               </button>
-              <button className="flex justify-center items-center rounded-md py-1.5 px-2 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer">
-                <div className="flex items-center gap-1">
+              <button className="flex justify-center items-center rounded-sm py-2 px-3 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer">
+                <div className="flex items-center gap-1.5">
                   <Image
                     src="/preview.png"
                     alt="preview icon"
-                    height={14}
-                    width={14}
+                    height={16}
+                    width={16}
                   />
-                  <span className="font-inter font-medium text-xs text-white whitespace-nowrap">
+                  <span className="font-inter font-medium text-sm text-white whitespace-nowrap">
                     Preview
                   </span>
                 </div>
               </button>
               <button
                 type="button"
-                className="flex justify-center items-center rounded-md py-1.5 px-2 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer"
+                className="flex justify-center items-center rounded-sm py-2 px-3 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer"
                 onClick={handleSettingsClick}
               >
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <Image
                     src="/settings.png"
                     alt="settings icon"
-                    height={14}
-                    width={14}
+                    height={16}
+                    width={16}
                   />
-                  <span className="font-inter font-medium text-xs text-white whitespace-nowrap">
+                  <span className="font-inter font-medium text-sm text-white whitespace-nowrap">
                     Settings
                   </span>
                 </div>
@@ -195,7 +198,7 @@ const Comet = ({
       </div>
       {/* Overlay content */}
 
-      <div className="absolute bottom-2 left-2 right-2 z-20 flex flex-col gap-2.5 rounded-lg p-4 bg-white transition-all duration-700 ease-out group-hover:opacity-0 group-hover:pointer-events-none group-hover:-translate-y-6">
+      <div className="absolute bottom-2 left-2 right-2 z-10 flex flex-col gap-2.5 rounded-lg p-4 bg-white transition-all duration-700 ease-out group-hover:opacity-0 group-hover:pointer-events-none group-hover:-translate-y-6">
         <div className="flex flex-col gap-2">
           <StatusButton status={status} />
           <span className="text-gray-800 font-noto font-semibold text-[20px] leading-[30px] tracking-normal line-clamp-2">
