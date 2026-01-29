@@ -536,7 +536,13 @@ export default function Header() {
         return;
       }
 
-      const response = await downloadDocument(documentId);
+      const session =
+        typeof window !== "undefined" ? localStorage.getItem("sessionData") : null;
+      const sessionData = session ? JSON.parse(session || "{}") : {};
+      const cometTitle =
+        sessionData?.comet_creation_data?.["Basic Information"]?.["Comet Title"];
+
+      const response = await downloadDocument(documentId, cometTitle);
 
       if (response && response.success) {
         toast.success("Document downloaded successfully!");
