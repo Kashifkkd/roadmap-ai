@@ -3,7 +3,8 @@ import { refreshAccessToken } from "./token-refresh";
 
 class GraphQLClient {
   constructor() {
-    this.baseURL = "https://kyper-stage.1st90.com/graphql";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
+    this.baseURL = `${apiUrl}/graphql`;
   }
 
 

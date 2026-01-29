@@ -47,14 +47,15 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
   };
 
   // ----------------------------
-// FETCH CLOUDFRONT COOKIES API
-// ----------------------------
-const fetchCloudfrontCookies = async (accessToken) => {
-  try {
-    console.log("➡️ Calling CloudFront cookies API...");
+  // FETCH CLOUDFRONT COOKIES API
+  // ----------------------------
+  const fetchCloudfrontCookies = async (accessToken) => {
+    try {
+      console.log("➡️ Calling CloudFront cookies API...");
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
     const res = await fetch(
-      "https://kyper-stage.1st90.com/api/auth/v1/cloudfront-cookies?expires_in_hours=10",
+      `${apiUrl}/api/auth/v1/cloudfront-cookies?expires_in_hours=24`,
       {
         method: "GET",
         credentials: "include", // IMPORTANT if server sets Set-Cookie
@@ -65,140 +66,144 @@ const fetchCloudfrontCookies = async (accessToken) => {
       }
     );
 
-    console.log("✅ CloudFront cookies API status:", res.status);
+      console.log("✅ CloudFront cookies API status:", res.status);
 
-    // Helpful: see if server actually sent Set-Cookie (browser won't expose it in JS normally)
-    // but you can still log all accessible headers:
-    console.log("📦 Response headers:");
-    for (const [k, v] of res.headers.entries()) {
-      console.log(`   ${k}: ${v}`);
-    }
-
-    const contentType = res.headers.get("content-type") || "";
-    let data = null;
-
-    if (contentType.includes("application/json")) {
-      data = await res.json();
-    } else {
-      const text = await res.text();
-      console.log("⚠️ Non-JSON response:", text);
-      data = { raw: text };
-    }
-
-    console.log("📌 CloudFront API RAW RESPONSE:", data);
-
-    if (!res.ok) {
-      throw new Error(data?.message || "CloudFront API failed");
-    }
-
-    // If backend returns cookies inside JSON (NOT Set-Cookie),
-    // you can optionally set them manually ONLY for allowed domains.
-    // Example expected shapes:
-    // data.cookies = { "CloudFront-Policy": "...", "CloudFront-Signature": "...", "CloudFront-Key-Pair-Id": "..." }
-    // OR data.cookie_header = "CloudFront-Policy=...; CloudFront-Signature=...; CloudFront-Key-Pair-Id=..."
-
-    if (data?.cookies && typeof data.cookies === "object") {
-      console.log("🧩 cookies object found in JSON. Attempting to set document.cookie...");
-
-      Object.entries(data.cookies).forEach(([name, value]) => {
-        // You can only set cookies for your current site domain (or parent), not .cloudfront.net
-        document.cookie = `${name}=${value}; path=/; secure; samesite=lax`;
-      });
-
-      console.log("🍪 document.cookie now:", document.cookie);
-    } else if (typeof data?.cookie_header === "string") {
-      console.log("🧩 cookie_header string found. Attempting to set document.cookie...");
-
-      // Split "a=b; c=d; e=f" into ["a=b", "c=d", "e=f"] (simple approach)
-      const parts = data.cookie_header
-        .split(";")
-        .map((p) => p.trim())
-        .filter(Boolean);
-
-      parts.forEach((kv) => {
-        // kv like "CloudFront-Policy=...."
-        document.cookie = `${kv}; path=/; secure; samesite=lax`;
-      });
-
-      console.log("🍪 document.cookie now:", document.cookie);
-    } else {
-      console.log(
-        "ℹ️ No cookie payload in JSON. If cookies are supposed to be saved, server must set Set-Cookie headers."
-      );
-    }
-
-    return data;
-  } catch (err) {
-    console.error("🔴 CloudFront API ERROR:", err);
-    return null;
-  }
-};
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
- 
-
-  const validationError = validateForm();
-  if (validationError) {
-    setError(validationError);
-    return;
-  }
-
-  setIsLoading(true);
-  setError({ field: "", message: "" });
-
-  try {
-    const result = await loginUser(formData);
-
-    if (result.error) {
-      throw new Error(result.response?.message || "Invalid email or password");
-    }
-
-    const data = result.response;
-
-    // ----------------------------
-    // AUTH STORAGE (same as you had)
-    // ----------------------------
-    localStorage.setItem("user_name", data.full_name);
-    localStorage.setItem("access_token", data.access_token);
-    localStorage.setItem("token_type", data.token_type);
-    localStorage.setItem("refresh_token", data.refresh_token); // optional but useful
-const cf = await fetchCloudfrontCookies(data.access_token);
-console.log("✅ CloudFront cookies fetch result:", cf);
- 
-    // ----------------------------
-    // CLOSE MODAL + EVENT (same)
-    // ----------------------------
-    if (onOpenChange) onOpenChange(false);
-
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("auth-changed"));
-    }
-
-    // ----------------------------
-    // REDIRECT (same)
-    // ----------------------------
-    const redirectPath = searchParams.get("redirect");
-    let destination = "/";
-
-    if (redirectPath) {
-      destination = decodeURIComponent(redirectPath);
-    } else if (typeof window !== "undefined") {
-      const storedRedirect =
-        window.sessionStorage.getItem("postLoginRedirect");
-      if (storedRedirect) {
-        destination = storedRedirect;
-        window.sessionStorage.removeItem("postLoginRedirect");
+      // Helpful: see if server actually sent Set-Cookie (browser won't expose it in JS normally)
+      // but you can still log all accessible headers:
+      console.log("📦 Response headers:");
+      for (const [k, v] of res.headers.entries()) {
+        console.log(`   ${k}: ${v}`);
       }
+
+      const contentType = res.headers.get("content-type") || "";
+      let data = null;
+
+      if (contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        console.log("⚠️ Non-JSON response:", text);
+        data = { raw: text };
+      }
+
+      console.log("📌 CloudFront API RAW RESPONSE:", data);
+
+      if (!res.ok) {
+        throw new Error(data?.message || "CloudFront API failed");
+      }
+
+      // If backend returns cookies inside JSON (NOT Set-Cookie),
+      // you can optionally set them manually ONLY for allowed domains.
+      // Example expected shapes:
+      // data.cookies = { "CloudFront-Policy": "...", "CloudFront-Signature": "...", "CloudFront-Key-Pair-Id": "..." }
+      // OR data.cookie_header = "CloudFront-Policy=...; CloudFront-Signature=...; CloudFront-Key-Pair-Id=..."
+
+      if (data?.cookies && typeof data.cookies === "object") {
+        console.log("🧩 cookies object found in JSON. Attempting to set document.cookie...");
+
+        Object.entries(data.cookies).forEach(([name, value]) => {
+          // You can only set cookies for your current site domain (or parent), not .cloudfront.net
+          document.cookie = `${name}=${value}; path=/; secure; samesite=lax`;
+        });
+
+        console.log("🍪 document.cookie now:", document.cookie);
+      } else if (typeof data?.cookie_header === "string") {
+        console.log("🧩 cookie_header string found. Attempting to set document.cookie...");
+
+        // Split "a=b; c=d; e=f" into ["a=b", "c=d", "e=f"] (simple approach)
+        const parts = data.cookie_header
+          .split(";")
+          .map((p) => p.trim())
+          .filter(Boolean);
+
+        parts.forEach((kv) => {
+          // kv like "CloudFront-Policy=...."
+          document.cookie = `${kv}; path=/; secure; samesite=lax`;
+        });
+
+        console.log("🍪 document.cookie now:", document.cookie);
+      } else {
+        console.log(
+          "ℹ️ No cookie payload in JSON. If cookies are supposed to be saved, server must set Set-Cookie headers."
+        );
+      }
+
+      return data;
+    } catch (err) {
+      console.error("🔴 CloudFront API ERROR:", err);
+      return null;
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
     }
 
-    router.push(destination);
-  } catch (err) {
-    setError({ field: "api", message: err?.message || "Login failed" });
-  } finally {
-    setIsLoading(false);
-  }
-};
+    setIsLoading(true);
+    setError({ field: "", message: "" });
+
+    try {
+      const result = await loginUser(formData);
+
+      if (result.error) {
+        throw new Error(result.response?.message || "Invalid email or password");
+      }
+
+      if (result.unauthorized) {
+        throw new Error(result.response?.detail || "Invalid email or password");
+      }
+
+      const data = result.response;
+
+      // ----------------------------
+      // AUTH STORAGE (same as you had)
+      // ----------------------------
+      localStorage.setItem("user_name", data.full_name);
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("token_type", data.token_type);
+      localStorage.setItem("refresh_token", data.refresh_token); // optional but useful
+      const cf = await fetchCloudfrontCookies(data.access_token);
+      console.log("✅ CloudFront cookies fetch result:", cf);
+
+      // ----------------------------
+      // CLOSE MODAL + EVENT (same)
+      // ----------------------------
+      if (onOpenChange) onOpenChange(false);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("auth-changed"));
+      }
+
+      // ----------------------------
+      // REDIRECT (same)
+      // ----------------------------
+      const redirectPath = searchParams.get("redirect");
+      let destination = "/";
+
+      if (redirectPath) {
+        destination = decodeURIComponent(redirectPath);
+      } else if (typeof window !== "undefined") {
+        const storedRedirect =
+          window.sessionStorage.getItem("postLoginRedirect");
+        if (storedRedirect) {
+          destination = storedRedirect;
+          window.sessionStorage.removeItem("postLoginRedirect");
+        }
+      }
+
+      router.push(destination);
+    } catch (err) {
+      setError({ field: "api", message: err?.message || "Login failed" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
 
@@ -212,14 +217,14 @@ console.log("✅ CloudFront cookies fetch result:", cf);
 
   const customStyle = buttonPosition
     ? {
-        position: "fixed",
-        top: `${buttonPosition.top}px`,
-        left: `${buttonPosition.left}px`,
-        transform: "none",
-        maxWidth: "350px",
-        width: "90vw",
-        margin: 0,
-      }
+      position: "fixed",
+      top: `${buttonPosition.top}px`,
+      left: `${buttonPosition.left}px`,
+      transform: "none",
+      maxWidth: "350px",
+      width: "90vw",
+      margin: 0,
+    }
     : {};
 
   return (
@@ -246,7 +251,7 @@ console.log("✅ CloudFront cookies fetch result:", cf);
                 disabled={isLoading}
                 className={`w-full pl-10 pr-4 h-11 rounded-lg border ${
                   error.field === "email" ? "border-red-500" : "border-gray-300"
-                }`}
+                  }`}
               />
             </div>
             {error.field === "email" && (
@@ -268,9 +273,9 @@ console.log("✅ CloudFront cookies fetch result:", cf);
                 disabled={isLoading}
                 className={`w-full pl-10 pr-12 h-11 rounded-lg border ${
                   error.field === "password"
-                    ? "border-red-500"
-                    : "border-gray-300"
-                }`}
+                  ? "border-red-500"
+                  : "border-gray-300"
+                  }`}
               />
 
               <button

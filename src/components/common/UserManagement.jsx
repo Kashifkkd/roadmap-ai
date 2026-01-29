@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import BulkUploadDialog from "./BulkUploadDialog";
 
 export default function UserManagement({ clientId, open, isActive }) {
+  const dropdownRef = useRef(null);
   // User list state
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -56,16 +57,18 @@ export default function UserManagement({ clientId, open, isActive }) {
     { id: 1, value: "" },
   ]);
   const [cometAssignments, setCometAssignments] = useState([
-    { id: 1, isCurrent: true, cometType: "" },
+    { id: 1, isCurrent: false, cometType: "" },
   ]);
   const [currentCometIndex, setCurrentCometIndex] = useState(0);
   const [savingUser, setSavingUser] = useState(false);
   const [cohorts, setCohorts] = useState([]);
   const [cohortsLoading, setCohortsLoading] = useState(false);
   const [cohortPaths, setCohortPaths] = useState([]);
+  const [allPaths, setAllPaths] = useState([]);
   const [cohortPathsLoading, setCohortPathsLoading] = useState(false);
   const [editLoadingId, setEditLoadingId] = useState(null);
-
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [openAllPath, setOpenAllPath] = useState(false);
   // Helper functions
   const normalizeSearchTerm = (term) => term.trim().toLowerCase();
   const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value);
@@ -149,9 +152,29 @@ export default function UserManagement({ clientId, open, isActive }) {
       let payload = {}
       if (cohort) payload.cohort_id = Number(cohort);
       try {
+        const allPath = await getClientPaths(clientId);
         const result = await getClientPaths(clientId, payload);
-        const data = result?.response || [];
-        setCohortPaths(Array.isArray(data) ? data : []);
+
+        const allPathsData = allPath?.response || [];
+        const cohortData = result?.response || [];
+
+
+
+        // get all ids already present in cohortData
+        const cohortIds = new Set(cohortData.map((item) => item.id));
+
+        // find missing paths from allPathsData that exist in editingUser.paths
+        const missingPaths = allPathsData.filter(
+          (item) =>
+            editingUser?.paths?.includes(item.id) && !cohortIds.has(item.id)
+        );
+
+        // final data = limited cohortData + missing ones
+        const finalCohortPaths = [...cohortData, ...missingPaths];
+        setSelectedItems(missingPaths)
+        setAllPaths(allPathsData.filter(item1 => !cohortData.some(item2 => item2.id === item1.id)));
+        setCohortPaths(finalCohortPaths);
+
       } catch (error) {
         console.error("Failed to fetch cohort paths:", error);
         toast.error("Failed to load cohort paths");
@@ -160,7 +183,9 @@ export default function UserManagement({ clientId, open, isActive }) {
         setCohortPathsLoading(false);
       }
     };
-    fetchCohortPaths();
+    if (showAddUserForm) {
+      fetchCohortPaths();
+    }
   }, [open, showAddUserForm, cohort]);
 
   const getUserInfoDetail = async (user) => {
@@ -176,27 +201,28 @@ export default function UserManagement({ clientId, open, isActive }) {
 
   // Auto add comet assignments for each item in dropdown
   useEffect(() => {
-    if (cohortPaths.length > 0 && !cohortPathsLoading) {
-      setCometAssignments((prev) => {
-        // Only auto-create if no assignments have values yet
-        const hasValues = prev?.some((a) => a.cometType);
-        if (hasValues) return prev;
+    // if (cohortPaths.length > 0 && !cohortPathsLoading) {
+    //   setCometAssignments((prev) => {
+    //     // Only auto-create if no assignments have values yet
+    //     const hasValues = prev?.some((a) => a.cometType);
+    //     if (hasValues) return prev;
 
-        const assignments = cohortPaths.map((path, index) => ({
-          id: index + 1,
-          isCurrent: index === 0,
-          cometType: String(path.id),
-        }));
+    //     const assignments = cohortPaths.map((path, index) => ({
+    //       id: index + 1,
+    //       isCurrent: index === 0,
+    //       cometType: String(path.id),
+    //     }));
 
-        setCurrentCometIndex(0);
-        return assignments;
-      });
-    }
+    //     setCurrentCometIndex(0);
+    //     return assignments;
+    //   });
+    // }
   }, [cohortPaths, cohortPathsLoading]);
 
 
   const handleEditUser = (user) => {
     setEditingUser(user);
+
     setFirstName(user.first_name || user.firstName || "");
     setLastName(user.last_name || user.lastName || "");
     setEmail(user.email || "");
@@ -204,7 +230,6 @@ export default function UserManagement({ clientId, open, isActive }) {
     setConfirmPassword("");
     setCohort(user.cohort_id ? String(user.cohort_id) : "");
     setEnableSSO(user.is_sso || false);
-
     // Set manager email
     const managerEmailValue = user.manager_email || user.managerEmail || "";
     if (managerEmailValue) {
@@ -287,7 +312,7 @@ export default function UserManagement({ clientId, open, isActive }) {
     setEnableSSO(false);
     setManagerEmail("");
     setAccountabilityEmails([{ id: 1, value: "" }]);
-    setCometAssignments([{ id: 1, isCurrent: true, cometType: "" }]);
+    setCometAssignments([{ id: 1, isCurrent: false, cometType: "" }]);
     setCurrentCometIndex(0);
     setCohortPaths([]);
   };
@@ -324,7 +349,8 @@ export default function UserManagement({ clientId, open, isActive }) {
       }
     }
 
-    const activeComet = cometAssignments.find((a) => a.isCurrent);
+    const activeComet = cometAssignments.find((a) => a.isCurrent === true);
+
     const activePathId = activeComet?.cometType
       ? Number(activeComet.cometType)
       : null;
@@ -357,6 +383,7 @@ export default function UserManagement({ clientId, open, isActive }) {
       enable_ai_notifications: false,
       timezone: "UTC",
     };
+  
     if (password) {
       userData.password = password;
     }
@@ -463,7 +490,7 @@ export default function UserManagement({ clientId, open, isActive }) {
 
   const handleSetCohort = (e) => {
     setCohort(e)
-    setCometAssignments([])
+    setCometAssignments([{ id: 1, isCurrent: false, cometType: "" },])
   }
 
   const handleBulkUpload = async (e) => {
@@ -497,8 +524,7 @@ export default function UserManagement({ clientId, open, isActive }) {
           }
         }
       } else {
-        const errorMessage = response?.detail || response?.message || "Failed to upload users";
-        toast.error(errorMessage);
+        toast.error("Failed to upload users");
       }
     } catch (error) {
       console.error("Bulk upload error:", error);
@@ -511,6 +537,35 @@ export default function UserManagement({ clientId, open, isActive }) {
       }
     }
   };
+
+
+  const handleAllPathChange = (item) => {
+    const exists = selectedItems.some((i) => i.id === item.id);
+
+    if (exists) {
+      setSelectedItems(selectedItems.filter((i) => i.id !== item.id));
+      setCohortPaths(cohortPaths.filter((i) => i.id !== item.id));
+    } else {
+      setCohortPaths([...cohortPaths, item]);
+      setSelectedItems([...selectedItems, item]);
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setOpenAllPath(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <>
@@ -901,9 +956,72 @@ export default function UserManagement({ clientId, open, isActive }) {
               </div>
             </div>
 
+            <div ref={dropdownRef}>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                Comets Available
+              </Label>
+
+              <div className="relative">
+                {/* Trigger */}
+                <button
+                  type="button"
+                  onClick={() => setOpenAllPath(!openAllPath)}
+                  className=" w-full flex justify-between items-center
+                        px-3 py-2 bg-white
+                        border border-gray-300 rounded-md
+                        text-sm text-gray-700
+                        outline-none
+                        focus:outline-none
+                        focus:ring-0
+                        focus:border-gray-300
+                        focus-visible:ring-0"
+                >
+                  <span className="truncate">
+                    {selectedItems.length
+                      ? `${selectedItems.length} selected`
+                      : "All Available Comets"}
+                  </span>
+                  <span className="text-gray-400">⌄</span>
+                </button>
+
+                {/* Dropdown */}
+                {openAllPath && (
+                  <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-md max-h-56 overflow-auto">
+                    {allPaths?.length === 0 && (
+                      <div className="px-4 py-2 text-sm text-gray-400">
+                        No comets available
+                      </div>
+                    )}
+
+                    {allPaths?.map((item, index) => {
+                      const checked = selectedItems.some(
+                        (i) => i.id === item.id
+                      );
+
+                      return (
+                        <label
+                          key={index}
+                          className="flex items-center gap-2 px-4 py-2 text-sm cursor-pointer hover:bg-gray-100"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => handleAllPathChange(item)}
+                            className="accent-blue-600"
+                          />
+                          <span className="text-gray-700">
+                            {item.name}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
             {/* Current Comet Assignment */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-700">
+              <h3 className="text-sm font-medium text-gray-700 mb-2 block">
                 Assigned Comets
               </h3>
               <div className="space-y-3">
@@ -966,13 +1084,15 @@ export default function UserManagement({ clientId, open, isActive }) {
                       <SelectTrigger className="flex-1 bg-white border border-gray-300">
                         <SelectValue
                           placeholder={
-                            !cohort
-                              ? "Select cohort first"
-                              : cohortPathsLoading
-                                ? "Loading..."
-                                : cohortPaths.length === 0
-                                  ? "No paths available"
-                                  : "Select"
+                            cohortPaths
+                              .filter(path =>
+                                !cometAssignments.some(
+                                  (item, i) =>
+                                    i !== index && item.cometType == path.id
+                                )
+                              ).length === 0
+                              ? "No paths available"
+                              : "Select"
                           }
                         />
                       </SelectTrigger>
@@ -998,14 +1118,15 @@ export default function UserManagement({ clientId, open, isActive }) {
                     <button
                       type="button"
                       onClick={() => {
-                        if (cometAssignments.length > 0) {
+
+                        if (cometAssignments.length > 1) {
                           setCometAssignments((prev) =>
                             prev.filter((item) => item.id !== assignment.id)
                           );
-                        }
+                        } else { setCometAssignments([{ id: 1, isCurrent: false, cometType: "" },]) }
                       }}
                       className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0"
-                      // disabled={cometAssignments.length === 1}
+                    // disabled={cometAssignments.length === 1}
                     >
                       <Trash2 className="w-4 h-4 text-white" />
                     </button>

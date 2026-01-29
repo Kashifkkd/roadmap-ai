@@ -50,8 +50,9 @@ const Comet = ({
 
     try {
       // Fetch session details from
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
       const response = await fetch(
-        `https://kyper-stage.1st90.com/api/comet/session_details/${session_id}`,
+        `${apiUrl}/api/comet/session_details/${session_id}`,
         {
           method: "GET",
           headers: {

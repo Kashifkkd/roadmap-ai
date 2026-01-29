@@ -21,8 +21,9 @@ export default function AllCometsContainer({ cometSessions }) {
         return;
       }
 
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
       const response = await fetch(
-        `https://kyper-stage.1st90.com/api/comet/session_details/${session_id}`,
+        `${apiUrl}/api/comet/session_details/${session_id}`,
         {
           method: "GET",
           headers: {
@@ -65,8 +66,8 @@ export default function AllCometsContainer({ cometSessions }) {
 
   // console.log("Rendering AllCometsContainer with sessions:", cometSessions);
   return (
-    <div className="flex flex-wrap flex-1 w-[90%] mx-auto rounded-2xl p-4 gap-2.5 bg-white overflow-y-auto no-scrollbar justify-center">
-      <div className="flex flex-wrap w-full gap-4 justify-center">
+    <div className="flex flex-wrap flex-1 w-[90%] mx-auto rounded-2xl p-4 gap-2.5 bg-white overflow-y-auto no-scrollbar justify-start">
+      <div className="flex flex-wrap w-full gap-4 justify-start">
         {cometSessions.map((c, idx) => (
           <Comet
             key={idx} // unique key for each item

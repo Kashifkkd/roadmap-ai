@@ -786,6 +786,21 @@ export default function Header() {
     return name.charAt(0).toUpperCase() || "?";
   };
 
+  const getFormattedName = (user) => {
+    if (!user) return "User";
+    const firstName = user.first_name
+      ? user.first_name.charAt(0).toUpperCase() + user.first_name.slice(1)
+      : "";
+    const lastNameInitial = user.last_name
+      ? user.last_name.charAt(0).toUpperCase() + "."
+      : "";
+
+    if (firstName && lastNameInitial) {
+      return `${firstName} ${lastNameInitial}`;
+    }
+    return firstName || user.last_name || "User";
+  };
+
   // const Collaborators = () => (
   //   <div className="flex items-center">
   //     {mockCollaborators.map((collaborator, index) => (
@@ -818,8 +833,8 @@ export default function Header() {
     <button
       onClick={handleInviteClick}
       className={`flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 rounded-sm border transition-colors duration-200 cursor-pointer shrink-0 ${isInviteButtonActive
-          ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
-          : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
+        ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
+        : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
         }`}
     >
       <UserPlus size={16} className="sm:w-[18px] sm:h-[18px] sm:hidden" />
@@ -834,8 +849,8 @@ export default function Header() {
       <button
         onClick={handleDownloadClick}
         className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-sm border transition-colors duration-200 shrink-0 ${isDownloadActive
-            ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
-            : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600 hover:cursor-pointer"
+          ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
+          : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600 hover:cursor-pointer"
           }`}
       >
         <Image
@@ -866,8 +881,8 @@ export default function Header() {
           willChange: "width",
         }}
         className={`hidden md:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${activeModeButton === "editor"
-            ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
-            : "bg-gray-50 text-gray-700 border-transparent h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 justify-center p-0 hover:bg-gray-100"
+          ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
+          : "bg-gray-50 text-gray-700 border-transparent h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 justify-center p-0 hover:bg-gray-100"
           }`}
       >
         <div
@@ -887,8 +902,8 @@ export default function Header() {
               flexShrink: 0,
             }}
             className={`${activeModeButton === "editor"
-                ? "w-5 h-3 sm:w-5 md:w-5 md:h-4 text-primary"
-                : "w-4 h-3 sm:w-5 sm:h-5 md:w-5 md:h-5 text-gray-700"
+              ? "w-5 h-3 sm:w-5 md:w-5 md:h-4 text-primary"
+              : "w-4 h-3 sm:w-5 sm:h-5 md:w-5 md:h-5 text-gray-700"
               }`}
           />
           <span
@@ -915,8 +930,8 @@ export default function Header() {
           setIsPreviewMode(!isPreviewMode);
         }}
         className={`flex items-center justify-center rounded-md border-2 hover:cursor-pointer shrink-0 transition-colors h-8 w-8 md:h-9 md:w-9 p-0 ${activeModeButton === "preview"
-            ? "bg-primary-50 text-primary border-primary-400 hover:bg-primary-100"
-            : "bg-gray-50 text-gray-700 border-transparent hover:bg-gray-100"
+          ? "bg-primary-50 text-primary border-primary-400 hover:bg-primary-100"
+          : "bg-gray-50 text-gray-700 border-transparent hover:bg-gray-100"
           }`}
       >
         <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
@@ -935,8 +950,8 @@ export default function Header() {
             willChange: "width",
           }}
           className={`hidden sm:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${activeModeButton === "settings"
-              ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
-              : "bg-gray-50 text-gray-700 border-transparent h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 justify-center p-0 hover:bg-gray-100"
+            ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
+            : "bg-gray-50 text-gray-700 border-transparent h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 justify-center p-0 hover:bg-gray-100"
             }`}
         >
           <div
@@ -956,8 +971,8 @@ export default function Header() {
                 flexShrink: 0,
               }}
               className={`${activeModeButton === "settings"
-                  ? "w-4 sm:w-4 md:w-5 md:h-5 text-primary"
-                  : "w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-700"
+                ? "w-4 sm:w-4 md:w-5 md:h-5 text-primary"
+                : "w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-700"
                 }`}
             />
             <span
@@ -982,8 +997,8 @@ export default function Header() {
       <button
         onClick={handleDownloadClick}
         className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-sm border transition-colors duration-200 shrink-0 ${isDownloadActive
-            ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
-            : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600 hover:cursor-pointer"
+          ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
+          : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600 hover:cursor-pointer"
           }`}
       >
         <Image
@@ -1048,8 +1063,8 @@ export default function Header() {
                       <div className=" p-2 border-gray-200 border-b">
                         <button
                           className={`px-4 py-1 w-full border-gray-100 flex  gap-2 cursor-pointer rounded-sm transition-all duration-200 items-center justify-start hover:cursor-pointer ${activeButton === "home"
-                              ? "bg-primary text-white"
-                              : "bg-white text-gray-900 hover:bg-primary-100"
+                            ? "bg-primary text-white"
+                            : "bg-white text-gray-900 hover:bg-primary-100"
                             } `}
                           onClick={() => {
                             handleButtonClick("home");
@@ -1074,8 +1089,8 @@ export default function Header() {
                       <div className=" p-2 py-1   gap-2 flex flex-col">
                         <button
                           className={`w-full px-4 py-1 flex items-center justify-start gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "myAccount"
-                              ? "bg-primary text-white"
-                              : "bg-white text-gray-900 hover:bg-primary-100"
+                            ? "bg-primary text-white"
+                            : "bg-white text-gray-900 hover:bg-primary-100"
                             }`}
                           onClick={handleMyAccountClick}
                         >
@@ -1087,8 +1102,8 @@ export default function Header() {
                         </button>
                         <button
                           className={`pl-4 py-1 w-full flex items-center  gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "settings"
-                              ? "bg-primary text-white"
-                              : "bg-white text-gray-900 hover:bg-primary-100"
+                            ? "bg-primary text-white"
+                            : "bg-white text-gray-900 hover:bg-primary-100"
                             }`}
                           onClick={handleClientSettingsClick}
                         >
@@ -1101,8 +1116,8 @@ export default function Header() {
                         <div className="relative">
                           <button
                             className={`pl-4 py-1 w-full flex items-center gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "theme"
-                                ? "bg-primary text-white"
-                                : "bg-white text-gray-900 hover:bg-primary-100"
+                              ? "bg-primary text-white"
+                              : "bg-white text-gray-900 hover:bg-primary-100"
                               }`}
                             onClick={handleThemeClick}
                           >
@@ -1124,8 +1139,8 @@ export default function Header() {
                               <div className="p-2">
                                 <button
                                   className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${selectedTheme === "light"
-                                      ? "bg-primary text-white"
-                                      : "bg-white text-gray-900 hover:bg-primary-100"
+                                    ? "bg-primary text-white"
+                                    : "bg-white text-gray-900 hover:bg-primary-100"
                                     }`}
                                   onClick={() => handleThemeSelect("light")}
                                 >
@@ -1133,8 +1148,8 @@ export default function Header() {
                                 </button>
                                 <button
                                   className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${selectedTheme === "dark"
-                                      ? "bg-primary text-white"
-                                      : "bg-white text-gray-900 hover:bg-primary-100"
+                                    ? "bg-primary text-white"
+                                    : "bg-white text-gray-900 hover:bg-primary-100"
                                     }`}
                                   onClick={() => handleThemeSelect("dark")}
                                 >
@@ -1142,8 +1157,8 @@ export default function Header() {
                                 </button>
                                 <button
                                   className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${selectedTheme === "system"
-                                      ? "bg-primary text-white"
-                                      : "bg-white text-gray-900 hover:bg-primary-100"
+                                    ? "bg-primary text-white"
+                                    : "bg-white text-gray-900 hover:bg-primary-100"
                                     }`}
                                   onClick={() => handleThemeSelect("system")}
                                 >
@@ -1161,8 +1176,8 @@ export default function Header() {
                             handleButtonClick("logout") || handleLogout()
                           }
                           className={`px-4 py-1 w-full flex items-center justify-start gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "logout"
-                              ? "bg-primary text-white"
-                              : "bg-white text-gray-900 hover:bg-primary-100"
+                            ? "bg-primary text-white"
+                            : "bg-white text-gray-900 hover:bg-primary-100"
                             }`}
                         >
                           <Image
@@ -1197,8 +1212,8 @@ export default function Header() {
                     <div
                       onClick={handleGoHome}
                       className={`hidden lg:flex w-9 h-9 cursor-pointer rounded-sm items-center justify-center shrink-0 transition-colors duration-200 border ${isHomeButtonActive
-                          ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
-                          : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
+                        ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
+                        : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
                         }`}
                     >
                       <img
@@ -1231,8 +1246,8 @@ export default function Header() {
                       key={item.name}
                       onClick={() => router.push(item.path)}
                       className={`relative font-medium text-base tracking-wide h-full transition-colors duration-300 group ${pathname === item.path
-                          ? "text-gray-700"
-                          : "text-gray-700 hover:text-blue-600"
+                        ? "text-gray-700"
+                        : "text-gray-700 hover:text-blue-600"
                         }`}
                     >
                       {item.name}
@@ -1272,8 +1287,8 @@ export default function Header() {
                           <div
                             onClick={handleGoHome}
                             className={`hidden lg:flex w-9 h-9 cursor-pointer rounded-sm items-center justify-center shrink-0 -ml-12 transition-colors duration-200 border ${isHomeButtonActive
-                                ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
-                                : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
+                              ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
+                              : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
                               }`}
                           >
                             <img
@@ -1307,13 +1322,11 @@ export default function Header() {
 
                       <div className="hidden sm:flex flex-col justify-start">
                         <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
-                          {user?.first_name || user?.last_name}
+                          {getFormattedName(user)}
                         </span>
-                        {isSuperAdmin() && (
-                          <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
-                            Super Admin
-                          </span>
-                        )}
+                        <span className="text-[8px] sm:text-xs font-medium text-gray-400 leading-tight">
+                          {user?.role || ""}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1364,11 +1377,9 @@ export default function Header() {
                         <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
                           {user?.first_name || user?.last_name}
                         </span>
-                        {isSuperAdmin() && (
-                          <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
-                            Super Admin
-                          </span>
-                        )}
+                        <span className="text-[8px] sm:text-xs font-medium text-gray-400 leading-tight">
+                           {user?.role || ""}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1400,18 +1411,16 @@ export default function Header() {
                   <div className="relative">
                     <div className="flex items-center gap-1.5 sm:gap-2">
                       <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
-                        <UserAvatar user={user} /> 
+                        <UserAvatar user={user} />
                       </div>
 
                       <div className="hidden sm:flex flex-col justify-start">
                         <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
                           {user?.first_name || user?.last_name || "User"}
                         </span>
-                        {isSuperAdmin() && (
-                          <span className="text-[10px] sm:text-xs font-medium text-gray-300 leading-tight">
-                            Super Admin
-                          </span>
-                        )}
+                        <span className="text-[8px] sm:text-xs font-medium text-gray-400 leading-tight">
+                           {user?.role || ""}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1460,8 +1469,8 @@ export default function Header() {
                       setIsMobileMenuOpen(false);
                     }}
                     className={`w-full text-left px-3 py-2 font-medium rounded-lg transition-colors ${pathname === item.path
-                        ? "text-blue-600 bg-blue-50"
-                        : "text-gray-700 hover:bg-gray-50"
+                      ? "text-blue-600 bg-blue-50"
+                      : "text-gray-700 hover:bg-gray-50"
                       }`}
                   >
                     {item.name}

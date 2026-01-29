@@ -635,11 +635,6 @@ export default function CreateComet({
     </div>
   );
 
-  const handleGenerateHabit = () => {
-    // TODO: Implement habit generation logic
-    console.log("Generate Habit clicked");
-  };
-
   const handleAddObjective = () => {
     const current = watch("learningObjectives") || [""];
     setValue("learningObjectives", [...current, ""]);
@@ -910,17 +905,6 @@ export default function CreateComet({
                           onSelect={(e) => handleTextSelection("habit", e)}
                           className="border border-gray-200 rounded-lg outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300 resize-none"
                         />
-                        <div className="flex justify-end p-2">
-                          <Button
-                            size="sm"
-                            type="button"
-                            onClick={handleGenerateHabit}
-                            variant="outline"
-                            className="border-primary text-primary hover:bg-primary hover:text-white bg-transparent"
-                          >
-                            Generate Habit
-                          </Button>
-                        </div>
                       </div>
                     </div>
 

@@ -1,7 +1,7 @@
 import axios from "axios";
 import { endpoints } from "./endpoint";
 
-const BACKEND_URL = "https://kyper-stage.1st90.com";
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
 
 export const downloadDocument = async (documentId) => {
   try {

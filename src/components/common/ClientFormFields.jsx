@@ -690,14 +690,31 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
 
       <div className="flex flex-col gap-6">
         <div className="w-full">
-          <Label className="text-sm font-medium text-gray-700 mb-2 block">
-            Client Name<span className="text-red-500">*</span>
-          </Label>
-          <Input
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
-            className="w-full"
-          />
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                Client Name<span className="text-red-500">*</span>
+              </Label>
+              <Input
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            {getClientId() && (
+              <div className="w-32">
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Client ID
+                </Label>
+                <Input
+                  value={getClientId()}
+                  readOnly
+                  disabled
+                  className="w-full bg-gray-50 text-gray-600 cursor-not-allowed"
+                />
+              </div>
+            )}
+          </div>
         </div>
         <div>
           <Label className="text-sm font-medium text-gray-700 mb-2 block">
@@ -856,7 +873,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       </div>
 
       {/* Brand Colors */}
-      <div>
+      {/* <div>
         <Label className="text-sm font-medium text-gray-700 mb-4 block">
           Brand Colors
         </Label>
@@ -908,7 +925,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
             );
           })}
         </div>
-      </div>
+      </div> */}
       <div className="space-y-0">
         <ToggleSwitch
           checked={enableFoozi}
@@ -1244,8 +1261,8 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                 {/* Header */}
                 <div className="grid grid-cols-3 bg-gray-100 font-medium">
                   <div className="px-4 py-2">Comet Name</div>
-                  <div className="px-4 py-2">Commit Id</div>
-                  <div className="px-4 py-2 text-right">Commit status</div>
+                  <div className="px-4 py-2">Comet Id</div>
+                  <div className="px-4 py-2 text-right">Comet Status</div>
                 </div>
 
                 {/* Rows */}

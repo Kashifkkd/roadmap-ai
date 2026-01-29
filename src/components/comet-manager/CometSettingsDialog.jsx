@@ -1565,151 +1565,63 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                     </div>
 
                     {/* Path Colors Section */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Path Colors
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-                        {brandColors.map((color, index) => (
-                          <div
-                            key={index}
-                            className="border border-gray-200 rounded-lg p-3 sm:p-4 flex flex-col gap-3 min-w-0"
-                          >
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              {editingColorIndex === index ? (
-                                <div className="flex gap-2 items-center flex-1 w-full">
-                                  <Input
-                                    type="color"
-                                    value={editingColorHex}
-                                    onChange={(e) => setEditingColorHex(e.target.value)}
-                                    className="w-16 h-10 rounded-lg border-gray-300 cursor-pointer shrink-0"
-                                  />
-                                  <Input
-                                    type="text"
-                                    value={editingColorHex}
-                                    onChange={(e) => {
-                                      let value = e.target.value.trim();
-                                      // Auto-add # if user types hex without it
-                                      if (value && !value.startsWith("#") && /^[0-9A-Fa-f]{0,6}$/.test(value)) {
-                                        value = "#" + value;
-                                      }
-                                      setEditingColorHex(value);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        handleSaveColorEdit(index);
-                                      } else if (e.key === "Escape") {
-                                        handleCancelColorEdit();
-                                      }
-                                    }}
-                                    placeholder="#000000"
-                                    className="flex-1 rounded-lg border-gray-300 text-xs"
-                                    maxLength={7}
-                                    autoFocus
-                                  />
-                                </div>
-                              ) : (
-                                <>
-                                  <div
-                                    className="w-12 h-8 sm:w-16 sm:h-10 rounded border border-gray-300 shrink-0"
-                                    style={{ backgroundColor: color.color }}
-                                  >
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-xs sm:text-sm font-medium text-gray-700 truncate">
-                                      {color.name}
-                                    </div>
-                                    <div className="text-xs text-gray-500 truncate">
-                                      {color.hex}
-                                    </div>
-                                  </div>
-                                </>
-                              )}
-                            </div>
+                    {/* Path Colors Section */}
+<div className="space-y-4">
+  <h3 className="text-lg font-semibold text-gray-900">Path Colors</h3>
 
-                            {editingColorIndex === index ? (
-                              <div className="flex gap-2 justify-end">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleSaveColorEdit(index)}
-                                  className="text-xs px-2 py-1 h-7"
-                                >
-                                  Save
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={handleCancelColorEdit}
-                                  className="text-xs px-2 py-1 h-7"
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            ) : (
-                              <></>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+    {brandColors.map((color, index) => {
+      const displayColor = (color?.hex || color?.color || "#000000").toUpperCase();
 
-                      {/* Add Color Form */}
-                      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                        <h4 className="text-sm font-medium text-gray-700 mb-3">
-                          Add New Color
-                        </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Color Name
-                            </Label>
-                            <Input
-                              value={newColorName}
-                              onChange={(e) => setNewColorName(e.target.value)}
-                              className="w-full rounded-lg border-gray-300"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
-                              Color Hex
-                            </Label>
-                            <div className="flex gap-2">
-                              <Input
-                                type="color"
-                                value={newColorHex}
-                                onChange={(e) => setNewColorHex(e.target.value)}
-                                className="w-16 h-10 rounded-lg border-gray-300 cursor-pointer"
-                              />
-                              <Input
-                                value={newColorHex}
-                                onChange={(e) => {
-                                  let value = e.target.value.trim();
-                                  // Auto-add # if user types hex without it
-                                  if (value && !value.startsWith("#") && /^[0-9A-Fa-f]{0,6}$/.test(value)) {
-                                    value = "#" + value;
-                                  }
-                                  setNewColorHex(value);
-                                }}
-                                placeholder="#000000"
-                                className="flex-1 rounded-lg border-gray-300"
-                                maxLength={7}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex justify-end mt-3">
-                          <Button
-                            variant="outline"
-                            onClick={handleAddColor}
-                            className="text-primary hover:text-primary-dark rounded-lg px-4 py-2"
-                            disabled={!newColorName.trim() || !newColorHex}
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Add Color
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+      return (
+        <div
+          key={`${color?.name || "color"}-${index}`}
+          className="flex items-center gap-2 border border-gray-200 hover:border-gray-300 rounded-lg p-2 cursor-pointer transition-all"
+        >
+          {/* Swatch (click opens palette) */}
+          <div className="relative w-12 h-8 sm:w-16 sm:h-10 shrink-0 overflow-hidden">
+            <div className="relative w-16 h-10 rounded-sm overflow-hidden">
+              <input
+                type="color"
+                value={displayColor}
+                onChange={(e) => {
+                  const newHex = String(e.target.value || "").toUpperCase();
+                  setBrandColors((prev) => {
+                    const updated = [...prev];
+                    updated[index] = {
+                      ...updated[index],
+                      hex: newHex,
+                      color: newHex,
+                    };
+                    return updated;
+                  });
+                }}
+                className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                onClick={(e) => e.stopPropagation()}
+              />
+
+              <div
+                className="w-full h-full rounded-sm"
+                style={{ backgroundColor: displayColor }}
+              />
+            </div>
+          </div>
+
+          {/* Name + Hex */}
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm font-medium text-gray-700 truncate">
+              {color?.name || `Color ${index + 1}`}
+            </span>
+            <span className="text-sm font-medium text-gray-700 truncate">
+              {displayColor}
+            </span>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</div>
+
                   </div>
                 </div>
 

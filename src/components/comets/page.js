@@ -92,7 +92,8 @@ export default function AllComet() {
     if (sortBy) data.sort_order = sortBy
     if (sortOrder) data.sort_by = sortOrder
 
-    const res = await axios.get("https://kyper-stage.1st90.com/api/comet/sessions",
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
+    const res = await axios.get(`${apiUrl}/api/comet/sessions`,
       {
         params: data,
         headers: {

@@ -1739,6 +1739,8 @@ export default function CometManager({
                         <div>
                           <GenerateStepImageButton
                             sessionId={sessionId}
+                            sessionData={sessionData}
+                            setSessionData={setSessionData}
                             chapterUid={(() => {
                               // Find chapter UUID from outline using stepUid (more reliable than chapterId)
                               const stepUid = selectedScreen?.stepUid;

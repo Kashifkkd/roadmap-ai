@@ -68,8 +68,9 @@
 
 import axios from "axios";
 import { endpoints } from "./endpoint";
+import { toast } from "sonner";
 
-const BACKEND_URL = "https://kyper-stage.1st90.com";
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
 
 export const apiService = async ({
   endpoint,
@@ -127,6 +128,7 @@ export const apiService = async ({
         try {
           localStorage.removeItem("access_token");
           window.dispatchEvent(new Event("auth-changed"));
+          toast.error("Session expired. Please login again.");
         } catch {
           // ignore storage/event issues
         }
@@ -136,6 +138,7 @@ export const apiService = async ({
         success: false,
         unauthorized: true,
         status: 401,
+        response: response.data,
       };
     }
 
