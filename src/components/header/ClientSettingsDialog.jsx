@@ -521,10 +521,13 @@ export default function ClientSettingsDialog({
 
       if (response) {
         toast.success("Client details updated successfully");
-        setClientData(response);
-        // Refresh clients to update Header automatically
         refreshClients();
         onOpenChange(false);
+
+        setTimeout(() => {
+          window.location.reload();
+      },2000)
+        
       } else {
         const errorMessage =
           response?.detail ||

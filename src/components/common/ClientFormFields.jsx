@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { toast } from "sonner";
-import { uploadProfile } from "@/api/User/uploadProfile";
+import { uploadAssetFileNoSession } from "@/api/uploadAssetFileNoSession";
 import { getCohorts, getCommit, getCohortbyPath } from "@/api/cohort/getCohorts";
 import { createCohort } from "@/api/cohort/createCohort";
 import { updateCohort } from "@/api/cohort/updateCohort";
@@ -27,14 +27,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-//function to upload image
+//function to upload image (uses asset API without session ID)
 const uploadImageFile = async (file) => {
-  const uploadResponse = await uploadProfile(file);
+  const uploadResponse = await uploadAssetFileNoSession(file, "image");
 
-  // Support both camelCase and snake_case keys from the backend
   const uploadedUrl =
-    uploadResponse?.response?.ImageUrl ||
     uploadResponse?.response?.image_url ||
+    uploadResponse?.response?.ImageUrl ||
     uploadResponse?.response?.url;
 
   if (uploadedUrl) {
@@ -332,8 +331,8 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       setEditingCohort(null);
       setIsCohortFormOpen(false);
 
-      // Refresh cohorts list
       await refreshCohortsList();
+      window.location.reload();
     } catch (error) {
       console.error("Failed to create cohort:", error);
       const errorMessage =
@@ -376,8 +375,8 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       setEditingCohort(null);
       setIsCohortFormOpen(false);
 
-      // Refresh cohorts list
       await refreshCohortsList();
+      window.location.reload();
     } catch (error) {
       console.error("Failed to update cohort:", error);
       const errorMessage =
@@ -484,6 +483,8 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         setAvailablePaths([]);
         setSelectedPathIds(new Set());
         setPathIdsError("");
+        await refreshCohortsList();
+        window.location.reload();
       } else {
         toast.success(res.response.detail);
       }
@@ -526,8 +527,8 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       await deleteCohort({ cohortId });
       toast.success("Cohort deleted successfully");
 
-      // Refresh cohorts list
       await refreshCohortsList();
+      window.location.reload();
     } catch (error) {
       console.error("Failed to delete cohort:", error);
       const errorMessage =
