@@ -1031,6 +1031,7 @@ const ActionScreenPreview = ({ deviceView, content }) => {
 };
 
 const SocialDiscussionScreenPreview = ({ deviceView, content }) => {
+  console.log(">>>content", content);
   const title = content?.title || "";
   const question = content?.question || "";
   const posts = content?.posts || [];
@@ -1129,6 +1130,81 @@ const SocialDiscussionScreenPreview = ({ deviceView, content }) => {
               ))}
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const NotificationPreview = ({ deviceView, content, selectedScreen }) => {
+  const fd = selectedScreen?.formData || {};
+  const title =
+    content?.title ||
+    content?.heading ||
+    fd?.title ||
+    fd?.heading ||
+    content?.notificationsTitle ||
+    "Notification";
+  const message =
+    content?.message ||
+    content?.body ||
+    fd?.message ||
+    fd?.body ||
+    content?.notificationsMessage ||
+    "";
+  const channels = Array.isArray(content?.channels)
+    ? content.channels
+    : Array.isArray(fd?.channels)
+      ? fd.channels
+      : [];
+
+  const containerWidth =
+    deviceView === DEVICE_VIEWS.mobile
+      ? "w-full max-w-[300px]"
+      : deviceView === DEVICE_VIEWS.tablet
+        ? "w-full max-w-2xl"
+        : "w-full max-w-5xl";
+
+  const paddingClass =
+    deviceView === DEVICE_VIEWS.mobile ? "px-4 py-4" : "px-8 py-8";
+
+  return (
+    <div className={`w-full ${containerWidth} mx-auto h-[72vh]`}>
+      <div className="bg-gray-100 overflow-hidden shadow-sm h-full">
+        <div className={`${paddingClass} space-y-4 h-full flex flex-col`}>
+          <div>
+            <h2 className="font-bold text-gray-900 text-2xl">{title}</h2>
+            {channels.length > 0 && (
+              <div className="mt-2 flex gap-2">
+                {channels.map((c, i) => (
+                  <span
+                    key={`ch-${i}`}
+                    className="text-xs px-2 py-1 bg-white border rounded text-gray-700"
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            <div className="mt-4 bg-white p-4 rounded shadow-sm">
+              <p className="text-gray-800 text-base leading-relaxed">
+                {message}
+              </p>
+            </div>
+
+            {/* Small toast preview for mobile */}
+            {deviceView === DEVICE_VIEWS.mobile && (
+              <div className="mt-6 flex justify-center">
+                <div className="bg-white border rounded-lg px-3 py-2 shadow-lg max-w-xs w-full">
+                  <p className="font-semibold text-sm">{title}</p>
+                  <p className="text-xs text-gray-600 truncate">{message}</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -1376,6 +1452,16 @@ export default function FromDoerToEnabler({
           description: content.prompt || content.question || content.text || "",
         });
         break;
+      case "notifications":
+        addSection({
+          id: "notifications",
+          sectionTitle: content.title || content.notificationsTitle || title,
+          description: content.message || content.notificationsMessage || "",
+          secondaryText: Array.isArray(content.channels)
+            ? content.channels.join(", ")
+            : null,
+        });
+        break;
       case "action":
         addSection({
           id: "action",
@@ -1523,11 +1609,17 @@ export default function FromDoerToEnabler({
           <HabitsScreenPreview deviceView={deviceView} content={content} />
         ) : contentType === "reflection" ? (
           <ReflectionScreenPreview deviceView={deviceView} content={content} />
+        ) : contentType === "notifications" ? (
+          <NotificationPreview
+            deviceView={deviceView}
+            content={content}
+            selectedScreen={selectedScreen}
+          />
         ) : contentType === "linear" ? (
           <LinearPollScreenPreview deviceView={deviceView} content={content} />
         ) : contentType === "action" || contentType === "actions" ? (
           <ActionScreenPreview deviceView={deviceView} content={content} />
-        ) : contentType === "social_discussion" ? (
+        ) : contentType === "socialDiscussion" ? (
           <SocialDiscussionScreenPreview
             deviceView={deviceView}
             content={content}
