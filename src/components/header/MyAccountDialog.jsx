@@ -152,20 +152,20 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
   };
 
   const updateProfileData = async (data) => {
-    
+
     const payload = {
       email: data.email || userData?.email || "",
       first_name: data.first_name || firstName,
       last_name: data.last_name || lastName,
       image_url:
-        data.ImageUrl ,
+        data.ImageUrl,
       timezone: data.timezone || userData?.timezone || "",
       ...(password && confirmPassword && password === confirmPassword
         ? {
-            current_password: currentPassword,
-            new_password: password,
-            new_password_confirm: confirmPassword,
-          }
+          current_password: currentPassword,
+          new_password: password,
+          new_password_confirm: confirmPassword,
+        }
         : {}),
     };
 
@@ -185,7 +185,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
 
 
   const handleSave = async () => {
- 
+
     // Validate first name before saving
     if (!firstName || firstName.trim() === "") {
       setFirstNameError("First name is required");
@@ -286,7 +286,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[572px] max-h-[485px] border-0 bg-transparent p-0 shadow-none [&>button]:hidden">
+      <DialogContent className="max-w-[630px] border-0 bg-transparent p-0 shadow-none [&>button]:hidden">
         <div className="rounded-[32px] bg-white">
           <div className="rounded-[28px]  bg-white px-2 py-2 sm:px-4 sm:py-2">
             <DialogHeader className="py-6">
@@ -306,14 +306,14 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                 onSubmit={(event) => event.preventDefault()}
                 className="flex flex-col gap-6 md:flex-row bg-white rounded-t-2xl p-2"
               >
-                <section className="flex flex-col  gap-4 rounded-2xl bg-[#F1F0FE] p-2 md:w-1/3">
+                <section className="flex flex-col gap-3 rounded-2xl bg-[#F1F0FE] p-3 md:w-[160px] md:min-w-[160px] md:max-w-[160px] items-center overflow-hidden">
                   <span className="text-sm font-medium text-center text-gray-900">
                     Profile Picture
                   </span>
-                  <div className="relative flex h-38 w-38 items-center justify-center rounded-full bg-gray-100 ">
+                  <div className="relative flex h-[140px] w-[140px] items-center justify-center rounded-full bg-gray-100 flex-shrink-0">
                     <div className="relative h-full w-full overflow-hidden rounded-full bg-white">
                       {isPictureDeleted ||
-                      !(newImageUrl.current || profileUrl) ? (
+                        !(newImageUrl.current || profileUrl) ? (
                         <div className="flex h-full w-full items-center justify-center bg-gray-100 text-4xl font-semibold">
                           {firstName?.charAt(0)?.toUpperCase() ||
                             lastName?.charAt(0)?.toUpperCase() ||
@@ -321,7 +321,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                         </div>
                       ) : (
                         <img
-                          src={ newImageUrl.current || profileUrl || defaultAvatar}
+                          src={newImageUrl.current || profileUrl || defaultAvatar}
                           alt="Profile preview"
                           className="rounded-full h-full w-full object-cover"
                         />
@@ -342,12 +342,12 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                     accept="image/*"
                     className="hidden"
                   />
-                  <div className="flex flex-1 justify-between gap-2">
+                  <div className="flex justify-center items-center gap-2 w-full flex-nowrap">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleChangeClick}
-                      className=" border-primary-400 text-[#6B5AE0] hover:bg-[#6B5AE0]/10 py-4 px-6 cursor-pointer"
+                      className="border-primary-400 text-[#6B5AE0] hover:bg-[#6B5AE0]/10 py-1.5 px-3 text-sm cursor-pointer flex-shrink-0"
                     >
                       Change
                     </Button>
@@ -355,7 +355,7 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                       type="button"
                       variant="ghost"
                       onClick={handleDeletePicture}
-                      className=" text-sm bg-gray-100 text-gray-500 hover:text-[#6B5AE0] cursor-pointer"
+                      className="text-sm bg-gray-100 text-gray-500 hover:text-[#6B5AE0] cursor-pointer p-1.5 flex-shrink-0"
                     >
                       <Trash2 className="size-4" />
                     </Button>
@@ -407,9 +407,8 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                         value={currentPassword}
                         onChange={handleCurrentPasswordChange}
                         placeholder="Enter your current password"
-                        className={`pr-12 ${
-                          currentPasswordError ? "border-red-500" : ""
-                        }`}
+                        className={`pr-12 ${currentPasswordError ? "border-red-500" : ""
+                          }`}
                       />
                       <button
                         type="button"
@@ -442,9 +441,8 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                         value={password}
                         onChange={handlePasswordChange}
                         placeholder="Enter a new password"
-                        className={`pr-12 ${
-                          passwordError ? "border-red-500" : ""
-                        }`}
+                        className={`pr-12 ${passwordError ? "border-red-500" : ""
+                          }`}
                       />
                       <button
                         type="button"
@@ -477,9 +475,8 @@ export default function MyAccountDialog({ open, onOpenChange, user }) {
                         value={confirmPassword}
                         onChange={handleConfirmPasswordChange}
                         placeholder="Re-enter password"
-                        className={`pr-12 ${
-                          confirmPasswordError ? "border-red-500" : ""
-                        }`}
+                        className={`pr-12 ${confirmPasswordError ? "border-red-500" : ""
+                          }`}
                       />
                       <button
                         type="button"

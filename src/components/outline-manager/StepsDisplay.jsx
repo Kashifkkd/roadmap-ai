@@ -655,7 +655,7 @@ const StepsDisplay = ({
               Add Step
             </Button>
           </div>
-          <p className="text-lg text-start text-gray-900 font-semibold w-full">
+          <p className="text-lg text-start text-gray-900 font-semibold w-full" style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
             {selectedChapter?.chapter || "Untitled Chapter"}
           </p>
         </div>
@@ -681,11 +681,11 @@ const StepsDisplay = ({
                   className="border-b border-primary-300 pb-4"
                 >
                   {/* Step Header */}
-                  <div className="mb-4 ml-4">
+                  <div className="mb-4 ml-4 overflow-hidden">
                     <p className="text-xs text-gray-900 mb-1">
                       Step {index + 1}
                     </p>
-                    <h3 className="text-base font-semibold text-primary">
+                    <h3 className="text-base font-semibold text-primary" style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
                       {step?.title || "Untitled Step"}
                     </h3>
                   </div>
@@ -1051,6 +1051,7 @@ const AddStepModal = ({
           className="absolute right-4 top-4 rounded-full p-1.5 text-gray-500 transition-colors hover:bg-gray-100 disabled:pointer-events-none"
           aria-label="Close add step modal"
         >
+          <X className="h-5 w-5" />
         </button>
 
         <h3 className="text-lg font-semibold text-gray-900">Add New Step</h3>

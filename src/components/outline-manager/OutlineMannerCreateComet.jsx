@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
+import ReactDOM from "react-dom";
 import { isArrayWithValues } from "@/utils/isArrayWithValues";
 import SectionHeader from "@/components/section-header";
 import OutlineMannerFooter from "./OutlineMannerFooter";
@@ -18,9 +19,9 @@ export default function OutlineMannerCreateComet({
   prefillData,
   setAllMessages,
   isAskingKyper = false,
-  setIsAskingKyper = () => {},
+  setIsAskingKyper = () => { },
   isSubmittingStep = false,
-  setIsSubmittingStep = () => {},
+  setIsSubmittingStep = () => { },
 }) {
   // console.log("sessionData in OutlineMannerCreateComet:", sessionData);
   // console.log("prefillData in OutlineMannerCreateComet:", prefillData);
@@ -71,6 +72,7 @@ export default function OutlineMannerCreateComet({
 
   // Chapter editing state
   const [openMenuIndex, setOpenMenuIndex] = useState(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [editingChapterIndex, setEditingChapterIndex] = useState(null);
   const [chapterEditValue, setChapterEditValue] = useState("");
 
@@ -156,7 +158,16 @@ export default function OutlineMannerCreateComet({
 
   const handleChapterMenuClick = (e, index) => {
     e.stopPropagation();
-    setOpenMenuIndex(openMenuIndex === index ? null : index);
+    if (openMenuIndex === index) {
+      setOpenMenuIndex(null);
+    } else {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + 4,
+        left: rect.right - 100, 
+      });
+      setOpenMenuIndex(index);
+    }
   };
 
   const handleEditChapterClick = (e, index, title) => {
@@ -279,31 +290,39 @@ export default function OutlineMannerCreateComet({
 
   // Chapter drag handlers
   const handleChapterDragStart = (e, index) => {
+    e.stopPropagation();
     setDraggedChapterIndex(index);
     e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/chapter", index.toString());
   };
 
-  const handleChapterDragEnd = () => {
+  const handleChapterDragEnd = (e) => {
+    e.stopPropagation();
     setDraggedChapterIndex(null);
     setDropTargetChapter(null);
   };
 
   const handleChapterDragOver = (e, index) => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = "move";
     if (draggedChapterIndex !== null && draggedChapterIndex !== index) {
       setDropTargetChapter(index);
     }
   };
 
-  const handleChapterDragLeave = () => {
-    setDropTargetChapter(null);
+  const handleChapterDragLeave = (e) => {
+    e.stopPropagation();
+    // Don't reset here - dragOver will set the correct target
+    // and dragEnd/drop will reset it
   };
 
   const handleChapterDrop = (e, dropIndex) => {
     e.preventDefault();
+    e.stopPropagation();
     if (draggedChapterIndex === null || draggedChapterIndex === dropIndex) {
       setDraggedChapterIndex(null);
+      setDropTargetChapter(null);
       return;
     }
 
@@ -339,6 +358,7 @@ export default function OutlineMannerCreateComet({
     setDraggedStepChapterIndex(chapterIndex);
     setDraggedStepIndex(stepIndex);
     e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/step", `${chapterIndex}-${stepIndex}`);
   };
 
   const handleStepDragEnd = (e) => {
@@ -349,6 +369,9 @@ export default function OutlineMannerCreateComet({
   };
 
   const handleStepDragOver = (e, chapterIndex, stepIndex) => {
+    if (draggedChapterIndex !== null) {
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = "move";
@@ -357,11 +380,18 @@ export default function OutlineMannerCreateComet({
     }
   };
 
-  const handleStepDragLeave = () => {
+  const handleStepDragLeave = (e) => {
+    // If a chapter is being dragged, don't intercept
+    if (draggedChapterIndex !== null) {
+      return;
+    }
     setDropTargetStep(null);
   };
 
   const handleStepDrop = (e, chapterIndex, dropIndex) => {
+    if (draggedChapterIndex !== null) {
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
 
@@ -508,8 +538,8 @@ export default function OutlineMannerCreateComet({
       <div className="p-2 w-full flex-1 overflow-hidden">
         <div className="flex flex-col sm:flex-row gap-4 bg-accent rounded-md h-full p-2">
           {/* Left Column */}
-          <div className="flex p-2 w-full sm:w-1/3 bg-background rounded-xl overflow-hidden">
-            <div className="flex flex-1 flex-col border-2 p-2 overflow-y-auto">
+          <div className="flex p-2 w-full sm:w-1/3 h-full bg-background rounded-xl min-h-0 overflow-hidden">
+            <div className="flex flex-1 flex-col border-2 p-2 h-full min-h-0 overflow-hidden">
               <div className="p-2 border-b border-gray-300 flex justify-between items-center">
                 <Label className="text-base text-[#7367F0] font-medium">
                   Chapters
@@ -532,25 +562,29 @@ export default function OutlineMannerCreateComet({
                   />
                 </div>
               ) : null}
-              <div className="py-2 flex flex-col gap-2">
+              <div className="py-2 flex flex-col gap-2 flex-1 overflow-y-auto">
+
                 {isArrayWithValues(chapters) ? (
                   chapters.map((chapter, index) => (
-                    <React.Fragment key={index}>
+                    <div
+                      key={index}
+                      className="flex flex-col rounded-sm transition-all duration-200"
+                      onDragOver={(e) => handleChapterDragOver(e, index)}
+                      onDragLeave={(e) => handleChapterDragLeave(e)}
+                      onDrop={(e) => handleChapterDrop(e, index)}
+                    >
                       {dropTargetChapter === index && draggedChapterIndex !== null && (
-                        <div className="h-1 bg-primary rounded-full mx-2 my-1 transition-all" />
+                        <div className="h-1.5 bg-primary rounded-full mx-2 my-1 transition-all shadow-sm pointer-events-none" />
                       )}
                       <div
                         draggable
                         onDragStart={(e) => handleChapterDragStart(e, index)}
-                        onDragEnd={handleChapterDragEnd}
-                        onDragOver={(e) => handleChapterDragOver(e, index)}
-                        onDragLeave={handleChapterDragLeave}
-                        onDrop={(e) => handleChapterDrop(e, index)}
+                        onDragEnd={(e) => handleChapterDragEnd(e)}
                         className={`border rounded-sm transition-all duration-200  ${
                           selectedChapter?.chapter === chapter?.chapter &&
-                            expandedChapters[index]
-                            ? "border-gray-300 bg-primary-100 shadow-sm"
-                            : "border-gray-300 bg-white shadow-sm "
+                          expandedChapters[index]
+                          ? "border-gray-300 bg-primary-100 shadow-sm"
+                          : "border-gray-300 bg-white shadow-sm "
                           } ${draggedChapterIndex === index ? "opacity-50" : ""}`}
                       >
                         <div
@@ -579,16 +613,16 @@ export default function OutlineMannerCreateComet({
                               <div
                                 className={`p-1 flex gap-2 rounded-full text-nowrap ${
                                   selectedChapter?.chapter === chapter?.chapter
-                                    ? "bg-gray-200"
-                                    : "bg-gray-200"
+                                  ? "bg-gray-200"
+                                  : "bg-gray-200"
                                   }`}
                               >
                                 <div
                                   className={`flex justify-center items-center size-[18px] rounded-full ${
                                     selectedChapter?.chapter ===
-                                      chapter?.chapter
-                                      ? "bg-white text-gray-800"
-                                      : "bg-white text-gray-800"
+                                    chapter?.chapter
+                                    ? "bg-white text-gray-800"
+                                    : "bg-white text-gray-800"
                                     }`}
                                 >
                                   <Zap size={12} />
@@ -620,45 +654,61 @@ export default function OutlineMannerCreateComet({
                                 size={18}
                                 className={`transition-transform duration-200 text-primary-600 ${
                                   expandedChapters[index]
-                                    ? "rotate-180"
-                                    : "rotate-0"
+                                  ? "rotate-180"
+                                  : "rotate-0"
                                   }`}
                               />
                             </div>
                             {editingChapterIndex === index ? (
-                              <div className="flex-1 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                <input
-                                  type="text"
+                              <div className="flex-1 flex flex-col gap-1 min-w-0 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                                <textarea
                                   value={chapterEditValue}
-                                  onChange={(e) => setChapterEditValue(e.target.value)}
-                                  onKeyDown={(e) => handleChapterEditKeyDown(e, index)}
-                                  className="flex-1 px-2 py-1 text-base font-medium border border-primary rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                  onChange={(e) => {
+                                    setChapterEditValue(e.target.value);
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Escape') {
+                                      handleCancelChapterEdit(e);
+                                    }
+                                  }}
+                                  className="w-full min-w-0 px-2 py-1 text-base font-medium border border-primary rounded-md focus:outline-none focus:ring-2 focus:ring-primary resize-none overflow-hidden"
                                   autoFocus
+                                  rows={1}
+                                  ref={(el) => {
+                                    if (el) {
+                                      el.style.height = 'auto';
+                                      el.style.height = el.scrollHeight + 'px';
+                                    }
+                                  }}
                                 />
-                                <button
-                                  onClick={(e) => handleSaveChapterTitle(e, index)}
-                                  className="p-1 text-green-600 hover:bg-green-100 rounded"
-                                  title="Save"
-                                >
-                                  ✓
-                                </button>
-                                <button
-                                  onClick={handleCancelChapterEdit}
-                                  className="p-1 text-red-600 hover:bg-red-100 rounded"
-                                  title="Cancel"
-                                >
-                                  ✕
-                                </button>
+                                <div className="flex gap-1 justify-end">
+                                  <button
+                                    onClick={(e) => handleSaveChapterTitle(e, index)}
+                                    className="p-1 text-green-600 hover:bg-green-100 rounded flex-shrink-0"
+                                    title="Save"
+                                  >
+                                    ✓
+                                  </button>
+                                  <button
+                                    onClick={handleCancelChapterEdit}
+                                    className="p-1 text-red-600 hover:bg-red-100 rounded flex-shrink-0"
+                                    title="Cancel"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
                               </div>
                             ) : (
-                              <div className="flex-1 flex items-center gap-2">
+                              <div className="flex-1 flex items-center gap-2 min-w-0 overflow-hidden">
                                 <p
-                                  className={`text-base font-medium ${
-                                    selectedChapter?.chapter === chapter?.chapter &&
-                                      expandedChapters[index]
-                                      ? "text-primary font-medium"
-                                      : "text-gray-900"
+                                  className={`text-base font-medium line-clamp-2 ${selectedChapter?.chapter === chapter?.chapter &&
+                                    expandedChapters[index]
+                                    ? "text-primary font-medium"
+                                    : "text-gray-900"
                                     }`}
+                                  style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
                                 >
                                   {chapter?.chapter || "Untitled Chapter"}
                                 </p>
@@ -671,23 +721,32 @@ export default function OutlineMannerCreateComet({
                                     >
                                       <MoreHorizontal className="w-4 h-4 text-gray-500" />
                                     </button>
-                                    {openMenuIndex === index && (
-                                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 min-w-[100px]">
-                                        <button
-                                          onClick={(e) => handleEditChapterClick(e, index, chapter?.chapter)}
-                                          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                                    {openMenuIndex === index && ReactDOM.createPortal(
+                                      <>
+                                        <div
+                                          className="fixed inset-0 z-[99]"
+                                          onClick={() => setOpenMenuIndex(null)}
+                                        />
+                                        <div
+                                          className="fixed bg-white border border-gray-100 rounded-xl shadow-xl z-[100] min-w-[100px] py-1 overflow-hidden"
+                                          style={{ top: menuPosition.top, left: menuPosition.left }}
                                         >
-                                          Edit
-                                        </button>
+                                          <button
+                                            onClick={(e) => handleEditChapterClick(e, index, chapter?.chapter)}
+                                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                          >
+                                            Edit
+                                          </button>
 
-                                        <button
-                                          onClick={(e) => handleDeleteChapter(e, index)}
-                                          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                                        >
-                                          Delete
-                                        </button>
-
-                                      </div>
+                                          <button
+                                            onClick={(e) => handleDeleteChapter(e, index)}
+                                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                          >
+                                            Delete
+                                          </button>
+                                        </div>
+                                      </>,
+                                      document.body
                                     )}
                                   </div>
                                 )}
@@ -737,16 +796,15 @@ export default function OutlineMannerCreateComet({
                                       onDragStart={(e) =>
                                         handleStepDragStart(e, index, stepIndex)
                                       }
-                                      onDragEnd={handleStepDragEnd}
+                                      onDragEnd={(e) => handleStepDragEnd(e)}
                                       onDragOver={(e) => handleStepDragOver(e, index, stepIndex)}
-                                      onDragLeave={handleStepDragLeave}
+                                      onDragLeave={(e) => handleStepDragLeave(e)}
                                       onDrop={(e) =>
                                         handleStepDrop(e, index, stepIndex)
                                       }
-                                      className={`group relative flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all duration-200 ${
-                                        selectedStep?.title === step?.title
-                                          ? "bg-primary-700 border border-primary shadow-sm text-white"
-                                          : "bg-white hover:bg-accent hover:shadow-md text-gray-900"
+                                      className={`group relative flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all duration-200 ${selectedStep?.title === step?.title
+                                        ? "bg-primary-700 border border-primary shadow-sm text-white"
+                                        : "bg-white hover:bg-accent hover:shadow-md text-gray-900"
                                         } ${
                                           draggedStepIndex === stepIndex &&
                                           draggedStepChapterIndex === index
@@ -794,39 +852,65 @@ export default function OutlineMannerCreateComet({
                                       </div>
                                       <div className="flex-1 min-w-0 pr-6">
                                         <div
-                                          className={`font-medium base text-gray-900 shrink-0 mt-0.5
-                                          `}
+                                          className={`font-medium base shrink-0 mt-0.5 ${selectedStep?.title === step?.title
+                                            ? "text-white"
+                                            : "text-gray-900"
+                                            }`}
                                         >
                                           Step {stepIndex + 1}
                                         </div>
                                         <div className="flex-1 min-w-0 overflow-hidden">
                                           {editingStepKey === `${index}-${stepIndex}` ? (
-                                            <div className="flex items-center gap-1 min-w-0" onClick={(e) => e.stopPropagation()}>
-                                              <input
-                                                type="text"
+                                            <div className="flex flex-col gap-1 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
+                                              <textarea
                                                 value={stepEditValue}
-                                                onChange={(e) => setStepEditValue(e.target.value)}
-                                                onKeyDown={(e) => handleStepEditKeyDown(e, index, stepIndex)}
-                                                className="flex-1 min-w-0 px-1 py-0.5 text-sm font-medium border border-primary rounded focus:outline-none focus:ring-1 focus:ring-primary text-gray-900"
+                                                onChange={(e) => {setStepEditValue(e.target.value);
+                                                  e.target.style.height = 'auto';
+                                                  e.target.style.height = e.target.scrollHeight + 'px';
+                                                }}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Escape') {
+                                                    handleCancelStepEdit(e);
+                                                  }
+                                                }}
+                                                className={`w-full min-w-0 px-2 py-1 text-sm font-medium border rounded focus:outline-none focus:ring-1 resize-none overflow-hidden ${selectedStep?.title === step?.title
+                                                  ? "bg-white/20 border-white/50 text-white placeholder-white/70 focus:ring-white/50"
+                                                  : "bg-white border-primary text-gray-900 focus:ring-primary"
+                                                  }`}
                                                 autoFocus
+                                                rows={1}
+                                                ref={(el) => {
+                                                  if (el) {
+                                                    el.style.height = 'auto';
+                                                    el.style.height = el.scrollHeight + 'px';
+                                                  }
+                                                }}
                                               />
-                                              <button
-                                                onClick={(e) => handleSaveStepTitle(e, index, stepIndex)}
-                                                className="p-0.5 text-green-600 hover:bg-green-100 rounded"
-                                                title="Save"
-                                              >
-                                                ✓
-                                              </button>
-                                              <button
-                                                onClick={handleCancelStepEdit}
-                                                className="p-0.5 text-red-600 hover:bg-red-100 rounded"
-                                                title="Cancel"
-                                              >
-                                                ✕
-                                              </button>
+                                              <div className="flex gap-1 justify-end">
+                                                <button
+                                                  onClick={(e) => handleSaveStepTitle(e, index, stepIndex)}
+                                                  className={`p-1 rounded flex-shrink-0 ${selectedStep?.title === step?.title
+                                                    ? "text-white hover:bg-white/20"
+                                                    : "text-green-600 hover:bg-green-100"
+                                                    }`}
+                                                  title="Save"
+                                                >
+                                                  ✓
+                                                </button>
+                                                <button
+                                                  onClick={handleCancelStepEdit}
+                                                  className={`p-1 rounded flex-shrink-0 ${selectedStep?.title === step?.title
+                                                    ? "text-white hover:bg-white/20"
+                                                    : "text-red-600 hover:bg-red-100"
+                                                    }`}
+                                                  title="Cancel"
+                                                >
+                                                  ✕
+                                                </button>
+                                              </div>
                                             </div>
                                           ) : (
-                                            <p className={`text-sm text-gray-700`}>
+                                            <p className={`text-sm line-clamp-2 ${selectedStep?.title === step?.title ? "text-white" : "text-gray-700"}`}>
                                               {step?.title ||
                                                 `Step ${stepIndex + 1}`}
                                             </p>
@@ -840,7 +924,7 @@ export default function OutlineMannerCreateComet({
                             </div>
                           )}
                       </div>
-                    </React.Fragment>
+                    </div>
                   ))
                 ) : (
                   <div className="flex flex-col items-center justify-center p-8 text-center">
