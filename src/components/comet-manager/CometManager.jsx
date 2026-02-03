@@ -334,7 +334,7 @@ export default function CometManager({
         localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
         setSessionData(updatedSessionData);
         const hasPathUpdate = Boolean(
-          updatedSessionData?.response_path?.chapters?.length
+          updatedSessionData?.response_path?.chapters?.length,
         );
         if (isAskingKyperRef.current && hasPathUpdate) {
           setIsAskingKyper(false);
@@ -679,7 +679,7 @@ export default function CometManager({
           content: {
             heading: contentTitle,
             body: "",
-            fullBleed: false,
+            fullBleed: true,
             media: {
               type: "",
               url: "",
@@ -697,7 +697,7 @@ export default function CometManager({
           contentSimpleTitle: contentTitle,
           contentSimpleDescription: "",
           contentMediaLink: "",
-          contentFullBleed: false,
+          contentFullBleed: true,
         },
         assessment: null,
         order: allScreens.length,
@@ -1871,7 +1871,7 @@ export default function CometManager({
                             {selectedScreen && (
                               <div className="flex items-center gap-2 min-w-0 flex-1 justify-center px-2">
                                 <p className="text-xs sm:text-sm font-semibold text-center truncate">
-                                  Screen {currentScreen + 1} {" "}
+                                  Screen {currentScreen + 1}{" "}
                                   {selectedScreen.name}
                                 </p>
                               </div>

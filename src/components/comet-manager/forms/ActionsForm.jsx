@@ -144,7 +144,7 @@ export default function ActionsForm({
         </div>
 
         {/* Reflection Prompt - only visible when hasReflectionQuestion is true */}
-        {formData.hasReflectionQuestion && (
+        {/* {formData.hasReflectionQuestion && (
           <div className="mb-6">
             <Label className="block text-sm font-medium text-gray-700 mb-2">
               Reflection Prompt
@@ -165,7 +165,7 @@ export default function ActionsForm({
               onBlur={onFieldBlur}
             />
           </div>
-        )}
+        )} */}
 
         {/* Toggle switches */}
         <div className="mb-4 pt-6 border-t border-gray-300">

@@ -79,7 +79,7 @@ const getFormValuesFromScreen = (screen) => {
     values.body = content.body || "";
     values.mediaUrl = content.media?.url || "";
     values.mediaType = content.media?.type || "";
-    values.contentFullBleed = content.fullBleed ?? false;
+    values.contentFullBleed = content.fullBleed ?? true;
     values.media = content.media || {};
   }
 
