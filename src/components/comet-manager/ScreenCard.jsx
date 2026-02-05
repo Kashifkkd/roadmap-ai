@@ -81,7 +81,20 @@ export default function ScreenCard({
                   : "text-gray-700"
                   }`}
               >
-                {((str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase())((screen.screenContents?.contentType || "Content").replace(/_/g, " "))}
+                {((str) => {
+                  const words = str
+                    .replace(/_/g, " ")
+                    .replace(/([a-z])([A-Z])/g, "$1 $2")
+                    .split(" ");
+                  return words
+                    .map((word, i) =>
+                      i === 0
+                        ? word.charAt(0).toUpperCase() +
+                          word.slice(1).toLowerCase()
+                        : word.toLowerCase(),
+                    )
+                    .join(" ");
+                })(screen.screenContents?.contentType || "Content")}{" "}
               </div>
               <div
                 className={`flex flex-col items-start bg-white p-2 mt-0.5 shrink-0 
