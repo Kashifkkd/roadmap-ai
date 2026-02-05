@@ -432,7 +432,7 @@ const StepsDisplay = ({
         input_type: "outline_updation",
         comet_creation_data: snapshot?.comet_creation_data || {},
         response_outline: snapshot?.response_outline || {},
-        response_path: snapshot?.response_path || {},
+        response_path: {},
         // additional_data: {
         //   personalization_enabled:
         //     snapshot?.additional_data?.personalization_enabled || false,

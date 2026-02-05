@@ -32,7 +32,7 @@ export default function ChapterTextarea({
         try {
           localStorage.setItem(
             "sessionData",
-            JSON.stringify(JSON.parse(cometJson))
+            JSON.stringify(JSON.parse(cometJson)),
           );
         } catch {}
       }
@@ -55,7 +55,7 @@ export default function ChapterTextarea({
         if (stored) {
           freshSessionData = JSON.parse(stored);
         }
-      } catch { }
+      } catch {}
 
       // Append to existing conversation instead of overwriting
       const existingConversation = freshSessionData?.chatbot_conversation || [];
@@ -67,7 +67,7 @@ export default function ChapterTextarea({
         input_type: "outline_updation",
         comet_creation_data: freshSessionData?.comet_creation_data || {},
         response_outline: freshSessionData?.response_outline || {},
-        response_path: freshSessionData?.response_path || {},
+        response_path: {},
         // additional_data: {
         //   personalization_enabled: sessionData?.additional_data?.personalization_enabled || false,
         //   habit_enabled: sessionData?.additional_data?.habit_enabled || false,
@@ -80,9 +80,8 @@ export default function ChapterTextarea({
         const conversationMessage = `{ 'chapter': '${chapter 3}', 'value': '${currentFieldValue}', 'instruction': '${query}' }`;
          const conversationMessage = `{ 'field': '${fieldLabel}', 'value': '${currentFieldValue}', 'instruction': '${query}' }`;
    */
-      const messageResponse = await graphqlClient.sendMessage(
-        cometJsonForMessage
-      );
+      const messageResponse =
+        await graphqlClient.sendMessage(cometJsonForMessage);
 
       const botMessage = messageResponse.sendMessage;
       const processingMessages = [
@@ -94,7 +93,7 @@ export default function ChapterTextarea({
       const isProcessingMessage =
         typeof botMessage === "string" &&
         processingMessages.some((msg) =>
-          botMessage.toLowerCase().includes(msg.toLowerCase())
+          botMessage.toLowerCase().includes(msg.toLowerCase()),
         );
 
       setAllMessages((prev) => [

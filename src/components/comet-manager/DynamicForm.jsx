@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import ForceRankForm from "./forms/ForceRankForm";
 import PollMcqForm from "./forms/PollMcqForm";
 import PollLinearForm from "./forms/PollLinearForm";
@@ -224,6 +224,14 @@ export default function DynamicForm({
   const [fieldPosition, setFieldPosition] = useState(null);
   const [askContext, setAskContext] = useState(null);
   const [blurTimeout, setBlurTimeout] = useState(null);
+  const [loadingFieldName, setLoadingFieldName] = useState(null);
+
+  // if response recived clear loading field name
+  useEffect(() => {
+    if (!isAskingKyper && loadingFieldName) {
+      setLoadingFieldName(null);
+    }
+  }, [isAskingKyper, loadingFieldName]);
 
   // Update field directly in outline - use setOutline(prev => ...) to always work with latest state
   const updateField = (field, value) => {
@@ -743,6 +751,8 @@ export default function DynamicForm({
   const handleAskKyper = async (query) => {
     if (!askContext || !query?.trim()) return;
 
+    setLoadingFieldName(focusedField);
+
     try {
       setIsAskingKyper(true);
 
@@ -853,6 +863,7 @@ export default function DynamicForm({
       }
     } catch (error) {
       console.error("Error asking Kyper:", error);
+      setLoadingFieldName(null);
       setIsAskingKyper(false);
     } finally {
       clearAskContext();
@@ -994,6 +1005,7 @@ export default function DynamicForm({
             onFieldBlur: handleFieldBlur,
             onRichTextSelection: handleRichTextSelection,
             onRichTextBlur: handleFieldBlur,
+            loadingField: loadingFieldName,
           }}
         />
       );

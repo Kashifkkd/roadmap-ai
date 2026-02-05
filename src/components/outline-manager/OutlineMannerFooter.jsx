@@ -49,8 +49,10 @@ export default function OutlineMannerFooter() {
     if (Array.isArray(chaptersB)) return chaptersB.length;
 
     // sometimes it can be an object like { 0: {...}, 1: {...} }
-    if (chaptersA && typeof chaptersA === "object") return Object.keys(chaptersA).length;
-    if (chaptersB && typeof chaptersB === "object") return Object.keys(chaptersB).length;
+    if (chaptersA && typeof chaptersA === "object")
+      return Object.keys(chaptersA).length;
+    if (chaptersB && typeof chaptersB === "object")
+      return Object.keys(chaptersB).length;
 
     return 0;
   };
@@ -61,7 +63,7 @@ export default function OutlineMannerFooter() {
     (sessionData) => {
       try {
         localStorage.setItem("sessionData", JSON.stringify(sessionData));
-      } catch { }
+      } catch {}
 
       // Only navigate when generating and chapters > 1
       if (isGenerating) {
@@ -75,9 +77,8 @@ export default function OutlineMannerFooter() {
       console.error("Subscription error:", err);
       setError(err?.message || "Subscription failed");
       setIsGenerating(false);
-    }
+    },
   );
-
 
   const handleSubmit = async () => {
     // Check if user is authenticated
@@ -86,9 +87,9 @@ export default function OutlineMannerFooter() {
         try {
           window.sessionStorage.setItem(
             "postLoginRedirect",
-            pathname || "/outline-manager"
+            pathname || "/outline-manager",
           );
-        } catch { }
+        } catch {}
 
         const buttonRect = loginButtonRef.current?.getBoundingClientRect();
         let buttonPosition = null;
@@ -120,7 +121,7 @@ export default function OutlineMannerFooter() {
               source: "outline-footer",
               redirectPath: pathname || "/outline-manager",
             },
-          })
+          }),
         );
       }
       return;
@@ -141,9 +142,9 @@ export default function OutlineMannerFooter() {
           try {
             localStorage.setItem(
               "sessionData",
-              JSON.stringify(JSON.parse(cometJson))
+              JSON.stringify(JSON.parse(cometJson)),
             );
-          } catch { }
+          } catch {}
         }
       }
 
@@ -154,7 +155,7 @@ export default function OutlineMannerFooter() {
       try {
         const raw = localStorage.getItem("sessionData");
         if (raw) parsedSessionData = JSON.parse(raw);
-      } catch { }
+      } catch {}
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
@@ -171,7 +172,7 @@ export default function OutlineMannerFooter() {
         //     parsedSessionData?.additional_data?.habit_description || "",
         // },
         response_outline: parsedSessionData?.response_outline || {},
-        response_path: parsedSessionData?.response_path || {},
+        response_path: {},
         chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
         to_modify: {},
       });
