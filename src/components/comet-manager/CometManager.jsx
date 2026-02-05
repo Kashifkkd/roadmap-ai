@@ -591,6 +591,7 @@ export default function CometManager({
     console.log("screenContentId>>>>>>>>>>>>>>>>>>>>>>>>", screenContentId);
     const screenUuid = crypto.randomUUID();
     console.log("screenUuid>>>>>>>>>>>>>>>>>>>>>>>>", screenUuid);
+    console.log(currentChapter, "currentChapter>>>>>>>>>>>>>>>>>>>>>>>>");
     // Get position: when inserting between screens use insert index + 1 (1-based);
     // when appending, use count of screens in step + 1
     const screensInStep = allScreens.filter(
@@ -1750,17 +1751,22 @@ export default function CometManager({
                       <div className="shrink-0 p-3 ml-4 sm:p-4 flex justify-between items-center rounded-t-2xl">
                         <div className="flex flex-col gap-1">
                           <h2 className="text-sm sm:text-md font-bold text-gray-900 truncate">
-                            {currentChapter?.chapter ||
-                              currentChapter?.name ||
-                              "Untitled Chapter"}
+                            {currentChapter?.steps?.find(
+                              (step) =>
+                                String(step.id) ===
+                                String(selectedScreen?.stepId),
+                            )?.name || "Untitled Step"}
                           </h2>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-medium text-primary">
-                              {currentChapter?.steps?.find(
-                                (step) =>
-                                  String(step.id) ===
-                                  String(selectedScreen?.stepId),
-                              )?.name || "Untitled Step"}
+                            <span className="text-sm font-medium text-primary text-truncate">
+                              {(
+                                currentChapter?.steps?.find(
+                                  (step) =>
+                                    String(step.id) ===
+                                    String(selectedScreen?.stepId),
+                                )?.description || "Untitled Step"
+                              ).slice(0, 80)}
+                              ...
                             </span>
                             {/* <span className="text-xs text-primary truncate">
                               {selectedScreen.name || "Untitled Step"}
