@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { SectionHeader, TextField, RichTextArea } from "./FormFields";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
-import { Link as LinkIcon, Check, X, Loader2, Trash2 } from "lucide-react";
+import { Link as LinkIcon, Check, X, Loader2, Trash2, Pencil, FileText, FileVideo, FileAudio, File } from "lucide-react";
 import ImageUpload from "@/components/common/ImageUpload";
 import { uploadAssetFile } from "@/api/uploadAssets";
 
@@ -225,68 +225,155 @@ export default function ContentForm({
               Upload Media/Files
             </Label>
             <div className="relative p-2 bg-gray-100 rounded-lg hover:border-primary transition-colors mb-4">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 mb-2 bg-white">
-                <Input
-                  type="file"
-                  onChange={async (e) => {
-                    const file =
-                      e.target.files && e.target.files[0]
-                        ? e.target.files[0]
-                        : null;
-                    if (file) {
-                      setIsUploadingMedia(true);
-                      setUploadErrorMedia(null);
-                      // Update form field
-                      updateField("contentMediaFile", file);
-
-                      // Determine asset type based on file type
-                      const assetType = getAssetType(file);
-
-                      // Upload asset with all necessary fields
-                      try {
-                        const uploadResponse = await uploadAssetFile(
-                          file,
-                          assetType,
-                          sessionId || "",
-                          chapterUuid || chapterId || "",
-                          stepUuid || stepId || "",
-                          screenUuid || screenId || ""
-                        );
-
-                        if (uploadResponse?.response) {
-                          const mediaUrl = uploadResponse.response.url;
-                          const mediaName = uploadResponse.response.name || file.name;
-
-                          if (mediaUrl) {
-                            updateField("mediaUrl", mediaUrl);
-                            updateField("mediaType", assetType);
-                            updateField("mediaName", mediaName);
-                            setUploadedMedia(mediaName);
-                          } else {
-                            throw new Error("No media URL in response");
-                          }
-                        } else {
-                          throw new Error("Invalid upload response");
-                        }
-                      } catch (error) {
-                        setUploadErrorMedia("Upload failed. Please try again.");
-                        console.error("Error uploading media:", error);
-                      } finally {
-                        setIsUploadingMedia(false);
-                      }
-                    }
-                  }}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-                <div className="flex flex-col items-center justify-center text-center cursor-pointer">
-                  <p className="text-sm text-gray-600 mb-4">Upload File</p>
-                  <span className="bg-primary text-white hover:bg-primary-700 px-4 py-2 text-sm rounded-lg inline-flex items-center gap-2 cursor-pointer">
-                    + Browse
-                  </span>
+              {/* Show preview or upload area */}
+              {existingMediaAsset || uploadedMedia ? (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-0 mb-2 bg-white overflow-hidden">
+                  <div className="relative w-full h-[120px] group/media">
+                    {/* Media preview based on type */}
+                    {formData.mediaType === "video" || existingMediaAsset?.type === "video" ? (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                        <video
+                          src={formData.mediaUrl || existingMediaAsset?.url || existingMediaAsset?.videoUrl}
+                          className="max-w-full max-h-full object-contain"
+                          controls={false}
+                        />
+                      </div>
+                    ) : formData.mediaType === "audio" || existingMediaAsset?.type === "audio" ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 gap-2">
+                        <FileAudio className="w-12 h-12 text-gray-400" />
+                        <span className="text-xs text-gray-500 truncate max-w-[80%]">{uploadedMedia || "Audio file"}</span>
+                      </div>
+                    ) : formData.mediaType === "image" || existingMediaAsset?.type === "image" ? (
+                      <img
+                        src={formData.mediaUrl || existingMediaAsset?.url || existingMediaAsset?.ImageUrl}
+                        alt="Media preview"
+                        className="w-full h-full object-contain bg-gray-50"
+                      />
+                    ) : formData.mediaType === "pdf" || existingMediaAsset?.type === "pdf" ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 gap-2">
+                        <FileText className="w-12 h-12 text-red-400" />
+                        <span className="text-xs text-gray-500 truncate max-w-[80%]">{uploadedMedia || "PDF file"}</span>
+                      </div>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 gap-2">
+                        <File className="w-12 h-12 text-gray-400" />
+                        <span className="text-xs text-gray-500 truncate max-w-[80%]">{uploadedMedia || "File"}</span>
+                      </div>
+                    )}
+                    {/* Hover overlay with delete/replace buttons */}
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/media:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleRemoveMedia}
+                        className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+                        title="Delete media"
+                      >
+                        <Trash2 className="w-4 h-4 text-gray-600" />
+                      </button>
+                      <div className="relative inline-block">
+                        <Input
+                          type="file"
+                          onChange={async (e) => {
+                            const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+                            if (file) {
+                              handleRemoveMedia();
+                              setIsUploadingMedia(true);
+                              setUploadErrorMedia(null);
+                              updateField("contentMediaFile", file);
+                              const assetType = getAssetType(file);
+                              try {
+                                const uploadResponse = await uploadAssetFile(
+                                  file, assetType, sessionId || "", chapterUuid || chapterId || "", stepUuid || stepId || "", screenUuid || screenId || ""
+                                );
+                                if (uploadResponse?.response) {
+                                  const mediaUrl = uploadResponse.response.url;
+                                  const mediaName = uploadResponse.response.name || file.name;
+                                  if (mediaUrl) {
+                                    updateField("mediaUrl", mediaUrl);
+                                    updateField("mediaType", assetType);
+                                    updateField("mediaName", mediaName);
+                                    setUploadedMedia(mediaName);
+                                  } else { throw new Error("No media URL in response"); }
+                                } else { throw new Error("Invalid upload response"); }
+                              } catch (error) {
+                                setUploadErrorMedia("Upload failed. Please try again.");
+                                console.error("Error uploading media:", error);
+                              } finally { setIsUploadingMedia(false); }
+                            }
+                          }}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        />
+                        <div className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm">
+                          <Pencil className="w-4 h-4 text-gray-600" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              {/* File name display */}
-              {(uploadedMedia || isUploadingMedia || uploadErrorMedia) && (
+              ) : (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 mb-2 bg-white">
+                  <Input
+                    type="file"
+                    onChange={async (e) => {
+                      const file =
+                        e.target.files && e.target.files[0]
+                          ? e.target.files[0]
+                          : null;
+                      if (file) {
+                        setIsUploadingMedia(true);
+                        setUploadErrorMedia(null);
+                        // Update form field
+                        updateField("contentMediaFile", file);
+
+                        // Determine asset type based on file type
+                        const assetType = getAssetType(file);
+
+                        // Upload asset with all necessary fields
+                        try {
+                          const uploadResponse = await uploadAssetFile(
+                            file,
+                            assetType,
+                            sessionId || "",
+                            chapterUuid || chapterId || "",
+                            stepUuid || stepId || "",
+                            screenUuid || screenId || ""
+                          );
+
+                          if (uploadResponse?.response) {
+                            const mediaUrl = uploadResponse.response.url;
+                            const mediaName = uploadResponse.response.name || file.name;
+
+                            if (mediaUrl) {
+                              updateField("mediaUrl", mediaUrl);
+                              updateField("mediaType", assetType);
+                              updateField("mediaName", mediaName);
+                              setUploadedMedia(mediaName);
+                            } else {
+                              throw new Error("No media URL in response");
+                            }
+                          } else {
+                            throw new Error("Invalid upload response");
+                          }
+                        } catch (error) {
+                          setUploadErrorMedia("Upload failed. Please try again.");
+                          console.error("Error uploading media:", error);
+                        } finally {
+                          setIsUploadingMedia(false);
+                        }
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="flex flex-col items-center justify-center text-center cursor-pointer">
+                    <p className="text-sm text-gray-600 mb-4">Upload File</p>
+                    <span className="bg-primary text-white hover:bg-primary-700 px-4 py-2 text-sm rounded-lg inline-flex items-center gap-2 cursor-pointer">
+                      + Browse
+                    </span>
+                  </div>
+                </div>
+              )}
+              {/* Loading/Error display */}
+              {(isUploadingMedia || uploadErrorMedia) && (
                 <div className="mb-2 p-2 bg-white rounded-lg border border-gray-200">
                   {isUploadingMedia ? (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -297,26 +384,6 @@ export default function ContentForm({
                     <div className="flex items-center gap-2 text-sm text-red-600">
                       <X className="h-4 w-4" />
                       <span>{uploadErrorMedia}</span>
-                    </div>
-                  ) : uploadedMedia ? (
-                    <div className="flex items-center justify-between gap-2 text-sm">
-                      <div className="flex items-center gap-2 text-green-600 flex-1">
-                        <Check className="h-4 w-4 shrink-0" />
-                        <span className="font-medium">Uploaded:</span>
-                        <span className="text-gray-700 truncate">
-                          {uploadedMedia}
-                        </span>
-                        <span className="text-xs text-gray-500 shrink-0">
-                          ({formData.mediaType || "media"})
-                        </span>
-                      </div>
-                      <button
-                        onClick={handleRemoveMedia}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors shrink-0"
-                        title="Remove media"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
                     </div>
                   ) : null}
                 </div>

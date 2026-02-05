@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import { Plus, X, Loader2, Check } from "lucide-react";
+import { Plus, X, Loader2, Check, Trash2, Pencil } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,11 @@ import { Button } from "@/components/ui/Button";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import { uploadAssetFile } from "@/api/uploadAssets";
-import { getImageAttributes, setImageAttributes, getSuggestPrompt } from "@/api/generateStepImages";
+import {
+  getImageAttributes,
+  setImageAttributes,
+  getSuggestPrompt,
+} from "@/api/generateStepImages";
 
 export default function ImageUpload({
   label = "Upload Image/Icon",
@@ -41,6 +45,7 @@ export default function ImageUpload({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadErrorImage, setUploadErrorImage] = useState(null);
   const [uploadedImage, setUploadedImage] = useState(null);
+  console.log("Existing assets passed to ImageUpload:", existingAssets);
 
   // AI Generate Image Dialog State
   const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
@@ -96,7 +101,7 @@ export default function ImageUpload({
         chapterUid || "",
         stepUid || "",
         screenUid || "",
-        "" // link parameter (optional, not used for file uploads)
+        "", // link parameter (optional, not used for file uploads)
       );
 
       // console.log(uploadResponse, "uploadResponse")
@@ -112,6 +117,7 @@ export default function ImageUpload({
             uploadResponse.response.id || uploadResponse.response.asset_id,
           asset_type: "image",
           title: uploadResponse.response.name || file.name,
+          source: "computer",
         };
         if (onUploadSuccess) {
           onUploadSuccess(assetData);
@@ -146,12 +152,14 @@ export default function ImageUpload({
       const response = await getImageAttributes({ sessionId });
 
       if (response?.error) {
-        throw new Error(response?.error?.message || "Failed to fetch image attributes");
+        throw new Error(
+          response?.error?.message || "Failed to fetch image attributes",
+        );
       }
 
       // Handle different response structures
       const attributes = response?.response || response || {};
-      
+
       // Set the fields from the API response
       if (attributes.art_style) {
         setAiArtStyle(attributes.art_style);
@@ -176,14 +184,16 @@ export default function ImageUpload({
       if (!chapterUid) missingParams.push("chapterUid");
       if (!stepUid) missingParams.push("stepUid");
       if (!screenUid) missingParams.push("screenUid");
-      
-      setPromptError(`Missing required parameters: ${missingParams.join(", ")}`);
+
+      setPromptError(
+        `Missing required parameters: ${missingParams.join(", ")}`,
+      );
       console.error("Missing parameters for getSuggestPrompt:", {
         sessionId: !!sessionId,
         chapterUid: !!chapterUid,
         stepUid: !!stepUid,
         screenUid: !!screenUid,
-        values: { sessionId, chapterUid, stepUid, screenUid }
+        values: { sessionId, chapterUid, stepUid, screenUid },
       });
       return;
     }
@@ -211,7 +221,10 @@ export default function ImageUpload({
       // apiService returns: { success: true, response: {...}, status: 200 }
       // or: { success: false, error: true, message: "..." }
       if (!apiResponse?.success || apiResponse?.error) {
-        const errorMessage = apiResponse?.message || apiResponse?.error?.message || "Failed to get suggested prompt";
+        const errorMessage =
+          apiResponse?.message ||
+          apiResponse?.error?.message ||
+          "Failed to get suggested prompt";
         console.error("❌ API returned error:", errorMessage);
         throw new Error(errorMessage);
       }
@@ -219,7 +232,7 @@ export default function ImageUpload({
       // Extract the actual response data
       // apiService wraps it: { success: true, response: { status: "success", prompt: "...", ... } }
       const responseData = apiResponse?.response || {};
-      
+
       console.log("🔵 Extracted response data:", responseData);
 
       // The build-prompt API returns: { status: "success", prompt: "...", ... }
@@ -228,12 +241,17 @@ export default function ImageUpload({
         console.log("✅ Prompt set successfully:", responseData.prompt);
       } else {
         // If prompt is not found, log the full response for debugging
-        console.warn("⚠️ Prompt not found in response. Full response structure:", {
-          responseData,
-          keys: Object.keys(responseData),
-          hasStatus: !!responseData.status,
-        });
-        setPromptError("Prompt not found in API response. Check console for details.");
+        console.warn(
+          "⚠️ Prompt not found in response. Full response structure:",
+          {
+            responseData,
+            keys: Object.keys(responseData),
+            hasStatus: !!responseData.status,
+          },
+        );
+        setPromptError(
+          "Prompt not found in API response. Check console for details.",
+        );
       }
     } catch (error) {
       console.error("❌ Error getting suggested prompt:", error);
@@ -266,7 +284,10 @@ export default function ImageUpload({
       });
 
       if (setAttributesResponse?.error) {
-        throw new Error(setAttributesResponse?.error?.message || "Failed to set image attributes");
+        throw new Error(
+          setAttributesResponse?.error?.message ||
+            "Failed to set image attributes",
+        );
       }
 
       // Then, generate the image
@@ -299,6 +320,7 @@ export default function ImageUpload({
           prompt_used: response.prompt_used,
           type: response.type || "image",
           generated_by: response.generated_by || "generative_ai",
+          source: "ai_generated",
         };
 
         if (onAIGenerateSuccess) {
@@ -309,7 +331,9 @@ export default function ImageUpload({
         setAiPrompt("");
       }
     } catch (error) {
-      setAiGenerateError(error.message || "Failed to generate image. Please try again.");
+      setAiGenerateError(
+        error.message || "Failed to generate image. Please try again.",
+      );
       console.error("Error generating image:", error);
     } finally {
       setIsGeneratingImage(false);
@@ -391,7 +415,7 @@ export default function ImageUpload({
       formData.append("name", assetName);
       formData.append("url", image_url);
       formData.append("asset_type", assetType);
-      
+
       // Append optional UIDs
       if (sessionId && sessionId !== "") {
         formData.append("session_id", String(sessionId));
@@ -440,7 +464,9 @@ export default function ImageUpload({
       setIsAssetDialogOpen(false);
     } catch (error) {
       console.error("Error creating asset:", error);
-      setCreateAssetError(error.message || "Failed to create asset. Please try again.");
+      setCreateAssetError(
+        error.message || "Failed to create asset. Please try again.",
+      );
     } finally {
       setIsCreatingAsset(false);
     }
@@ -450,6 +476,44 @@ export default function ImageUpload({
   const imageAssetsCount = assets.filter((asset) => {
     return asset.asset_type === "image";
   }).length;
+
+  // Get images by source for each section
+  const computerImageAsset = existingAssets.find(
+    (asset) =>
+      asset.ImageUrl &&
+      !asset.audioUrl &&
+      !asset.videoUrl &&
+      asset.source === "computer",
+  );
+  const assetImageAsset = existingAssets.find(
+    (asset) =>
+      asset.ImageUrl &&
+      !asset.audioUrl &&
+      !asset.videoUrl &&
+      (asset.source === "direct_link" || asset.source === "assets"),
+  );
+  const aiImageAsset = existingAssets.find(
+    (asset) =>
+      asset.ImageUrl &&
+      !asset.audioUrl &&
+      !asset.videoUrl &&
+      (asset.source === "ai_generated" ||
+        asset.generated_by === "generative_ai"),
+  );
+
+  const computerImageUrl = computerImageAsset?.ImageUrl;
+  const assetImageUrl = assetImageAsset?.ImageUrl;
+  const aiImageUrl = aiImageAsset?.ImageUrl;
+
+  const computerImageIndex = computerImageAsset
+    ? existingAssets.findIndex((a) => a === computerImageAsset)
+    : -1;
+  const assetImageIndex = assetImageAsset
+    ? existingAssets.findIndex((a) => a === assetImageAsset)
+    : -1;
+  const aiImageIndex = aiImageAsset
+    ? existingAssets.findIndex((a) => a === aiImageAsset)
+    : -1;
 
   return (
     <>
@@ -462,131 +526,214 @@ export default function ImageUpload({
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
           <div className="grid grid-cols-3 gap-4">
             {/* Option 1: Upload from Computer */}
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white flex flex-col items-center cursor-pointer">
-              <h3 className="text-sm font-medium text-gray-700 mb-3 text-center">
-                Upload from Computer
-              </h3>
-              <div className="relative inline-block">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file =
-                      e.target.files && e.target.files[0]
-                        ? e.target.files[0]
-                        : null;
-                    if (file) {
-                      handleFileUpload(file);
-                    }
-                  }}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                />
-                <div className="border border-primary rounded-lg px-4 py-2 bg-white hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-primary text-sm font-medium cursor-pointer">
-                  <Plus className="h-4 w-4" />
-                  Browse
+            <div
+              className={`border-2 border-dashed border-gray-300 rounded-lg  bg-white flex flex-col items-center ${computerImageUrl ? "p-0" : "p-4"} relative`}
+            >
+              {computerImageUrl ? (
+                <div className="relative w-full h-[100px] rounded-lg overflow-hidden group/computer bg-gray-50">
+                  <img
+                    src={computerImageUrl}
+                    alt="Computer upload"
+                    className="w-full h-full object-contain rounded-lg"
+                  />
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/computer:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+                    {onRemoveAsset && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveAsset(computerImageIndex);
+                        }}
+                        className="bg-white rounded-full p-1.5 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+                        title="Delete image"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-gray-600" />
+                      </button>
+                    )}
+                    <div className="relative inline-block">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file =
+                            e.target.files && e.target.files[0]
+                              ? e.target.files[0]
+                              : null;
+                          if (file) {
+                            if (onRemoveAsset && computerImageIndex >= 0) {
+                              onRemoveAsset(computerImageIndex);
+                            }
+                            handleFileUpload(file);
+                          }
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      />
+                      <div className="bg-white rounded-full p-1.5 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm">
+                        <Pencil className="w-3.5 h-3.5 text-gray-600" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <h3 className="text-sm font-medium text-gray-700 mb-3 text-center">
+                    Upload from Computer
+                  </h3>
+                  {isUploadingImage ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Uploading...</span>
+                    </div>
+                  ) : (
+                    <div className="relative inline-block">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file =
+                            e.target.files && e.target.files[0]
+                              ? e.target.files[0]
+                              : null;
+                          if (file) {
+                            handleFileUpload(file);
+                          }
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      />
+                      <div className="border border-primary rounded-lg px-4 py-2 bg-white hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-primary text-sm font-medium cursor-pointer">
+                        <Plus className="h-4 w-4" />
+                        Browse
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Option 2: Select from Assets */}
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white flex flex-col items-center cursor-pointer">
-              <h3 className="text-sm font-medium text-gray-700 mb-3 text-center">
-                Select from Assets
-              </h3>
-              <button
-                type="button"
-                className="border border-primary rounded-lg px-4 py-2 bg-white hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-primary text-sm font-medium"
-                onClick={handleOpenAssetDialog}
-              >
-                <Plus className="h-4 w-4" />
-                Select
-              </button>
+            <div
+              className={`border-2 border-dashed border-gray-300 rounded-lg  bg-white flex flex-col items-center ${assetImageUrl ? "p-0" : "p-4"} relative`}
+            >
+              {assetImageUrl ? (
+                <div className="relative w-full h-[100px] rounded-lg overflow-hidden group/asset bg-gray-50">
+                  <img
+                    src={assetImageUrl}
+                    alt="Asset image"
+                    className="w-full h-full object-contain rounded-lg"
+                  />
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/asset:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+                    {onRemoveAsset && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveAsset(assetImageIndex);
+                        }}
+                        className="bg-white rounded-full p-1.5 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+                        title="Delete image"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-gray-600" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onRemoveAsset && assetImageIndex >= 0) {
+                          onRemoveAsset(assetImageIndex);
+                        }
+                        handleOpenAssetDialog();
+                      }}
+                      className="bg-white rounded-full p-1.5 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+                      title="Replace image"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-gray-600" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-sm font-medium text-gray-700 mb-3 text-center">
+                    Select from Assets
+                  </h3>
+                  <button
+                    type="button"
+                    className="border border-primary rounded-lg px-4 py-2 bg-white hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-primary text-sm font-medium"
+                    onClick={handleOpenAssetDialog}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Select
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Option 3: AI-Generate Image */}
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white flex flex-col items-center">
-              <h3 className="text-sm font-medium text-gray-700 mb-3 text-center">
-                AI-Generate Image
-              </h3>
-              <button
-                type="button"
-                className="border border-primary rounded-lg px-4 py-2 bg-white hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-primary text-sm font-medium"
-                onClick={handleOpenAIDialog}
-              >
-                <Plus className="h-4 w-4" />
-                Create
-              </button>
+            <div
+              className={`border-2 border-dashed border-gray-300 rounded-lg  bg-white flex flex-col items-center ${aiImageUrl ? "p-0" : "p-4"} relative`}
+            >
+              {aiImageUrl ? (
+                <div className="relative w-full h-[100px] rounded-lg overflow-hidden group/ai bg-gray-50">
+                  <img
+                    src={aiImageUrl}
+                    alt="AI generated"
+                    className="w-full h-full object-contain rounded-lg"
+                  />
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/ai:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+                    {onRemoveAsset && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveAsset(aiImageIndex);
+                        }}
+                        className="bg-white rounded-full p-1.5 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+                        title="Delete image"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-gray-600" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onRemoveAsset && aiImageIndex >= 0) {
+                          onRemoveAsset(aiImageIndex);
+                        }
+                        handleOpenAIDialog();
+                      }}
+                      className="bg-white rounded-full p-1.5 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+                      title="Replace image"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-gray-600" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-sm font-medium text-gray-700 mb-3 text-center">
+                    AI-Generate Image
+                  </h3>
+                  <button
+                    type="button"
+                    className="border border-primary rounded-lg px-4 py-2 bg-white hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-primary text-sm font-medium"
+                    onClick={handleOpenAIDialog}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Loading/Error display */}
-        {(isUploadingImage || uploadErrorImage) && (
+        {/* Error display */}
+        {uploadErrorImage && (
           <div className="mt-3 p-2 bg-white rounded-lg border border-gray-200">
-            {isUploadingImage ? (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Uploading...</span>
-              </div>
-            ) : uploadErrorImage ? (
-              <div className="flex items-center gap-2 text-sm text-red-600">
-                <X className="h-4 w-4" />
-                <span>{uploadErrorImage}</span>
-              </div>
-            ) : null}
-          </div>
-        )}
-
-        {/* Display All Saved Images */}
-        {showSavedImages && existingAssets.length > 0 && (
-          <div className="mt-4">
-            <Label className="block text-sm font-medium text-gray-700 mb-2">
-              Saved Images
-            </Label>
-            <div className="grid grid-cols-3 gap-3">
-              {existingAssets
-                .filter(
-                  (asset) =>
-                    asset.ImageUrl && !asset.audioUrl && !asset.videoUrl
-                )
-                .map((asset, index) => {
-                  const image_url = asset.ImageUrl;
-                  const assetId = asset.id || asset.asset_id;
-                  return (
-                    <div
-                      key={assetId || asset.id || index}
-                      className="relative border border-gray-300 rounded-lg overflow-hidden group"
-                    >
-                      {typeof image_url === "string" &&
-                        image_url.startsWith("http") ? (
-                        <img
-                          src={image_url}
-                          alt={assetId}
-                          className="w-full h-24 object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-24 bg-gray-100 flex items-center justify-center text-xs text-gray-500 p-2 text-center">
-                          {assetId}
-                        </div>
-                      )}
-                      {onRemoveAsset && (
-                        <button
-                          type="button"
-                          onClick={() => onRemoveAsset(index)}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                          title="Remove image"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
-                      {assetId && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1">
-                          ID: {assetId}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+            <div className="flex items-center gap-2 text-sm text-red-600">
+              <X className="h-4 w-4" />
+              <span>{uploadErrorImage}</span>
             </div>
           </div>
         )}
@@ -602,7 +749,9 @@ export default function ImageUpload({
             {isLoadingAttributes ? (
               <div className="flex flex-col items-center justify-center gap-2 py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-gray-600">Loading image attributes...</p>
+                <p className="text-sm text-gray-600">
+                  Loading image attributes...
+                </p>
               </div>
             ) : attributesError ? (
               <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
@@ -613,7 +762,9 @@ export default function ImageUpload({
                   <p className="text-sm font-medium text-gray-700">
                     Unable to load image attributes
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">{attributesError}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {attributesError}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -627,18 +778,24 @@ export default function ImageUpload({
                       variant="outline"
                       size="sm"
                       onClick={handleSuggestPrompt}
-                      disabled={isLoadingPrompt || !sessionId || !chapterUid || !stepUid || !screenUid}
+                      disabled={
+                        isLoadingPrompt ||
+                        !sessionId ||
+                        !chapterUid ||
+                        !stepUid ||
+                        !screenUid
+                      }
                       className="text-xs"
                       title={
                         !sessionId
                           ? "Session ID is required"
                           : !chapterUid
-                          ? "Chapter UUID is required"
-                          : !stepUid
-                          ? "Step UUID is required"
-                          : !screenUid
-                          ? "Screen UUID is required"
-                          : "Get AI-suggested prompt"
+                            ? "Chapter UUID is required"
+                            : !stepUid
+                              ? "Step UUID is required"
+                              : !screenUid
+                                ? "Screen UUID is required"
+                                : "Get AI-suggested prompt"
                       }
                     >
                       {isLoadingPrompt ? (
@@ -687,7 +844,10 @@ export default function ImageUpload({
                 {/* Image Guidance Field */}
                 <div className="space-y-2">
                   <Label htmlFor="image-guidance">Image Guidance</Label>
-                  <Select value={imageGuidance} onValueChange={setImageGuidance}>
+                  <Select
+                    value={imageGuidance}
+                    onValueChange={setImageGuidance}
+                  >
                     <SelectTrigger id="image-guidance" className="w-full">
                       <SelectValue placeholder="Select image guidance" />
                     </SelectTrigger>
@@ -727,7 +887,12 @@ export default function ImageUpload({
             </Button>
             <Button
               onClick={handleGenerateImage}
-              disabled={isGeneratingImage || isLoadingAttributes || !aiPrompt.trim() || !!attributesError}
+              disabled={
+                isGeneratingImage ||
+                isLoadingAttributes ||
+                !aiPrompt.trim() ||
+                !!attributesError
+              }
             >
               {isGeneratingImage ? (
                 <>
@@ -826,7 +991,7 @@ export default function ImageUpload({
                           }}
                         >
                           {typeof image_url === "string" &&
-                            image_url.startsWith("http") ? (
+                          image_url.startsWith("http") ? (
                             <img
                               src={image_url}
                               alt={assetName}
