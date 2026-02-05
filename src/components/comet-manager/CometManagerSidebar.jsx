@@ -96,8 +96,12 @@ export default function CometManagerSidebar({
   // No local selectedStep state needed - use selectedStepId directly
   const [expandedChapters, setExpandedChapters] = useState(new Set());
   const [expandedSteps, setExpandedSteps] = useState(new Set());
-  const [expandedRemainingChapters, setExpandedRemainingChapters] = useState(new Set());
-  const [expandedRemainingSteps, setExpandedRemainingSteps] = useState(new Set());
+  const [expandedRemainingChapters, setExpandedRemainingChapters] = useState(
+    new Set(),
+  );
+  const [expandedRemainingSteps, setExpandedRemainingSteps] = useState(
+    new Set(),
+  );
 
   // Source materials state
   const [sourceMaterials, setSourceMaterials] = useState([]);
@@ -140,10 +144,9 @@ export default function CometManagerSidebar({
   useEffect(() => {
     if (selectedAssetCategory && onAssetCategorySelectRef.current) {
       const category = ASSET_CATEGORIES.find(
-        (cat) => cat.id === selectedAssetCategory
+        (cat) => cat.id === selectedAssetCategory,
       );
       if (category) {
-
         let assetsForCategory = filteredAssets;
 
         if (selectedAssetCategory === "tool") {
@@ -191,7 +194,7 @@ export default function CometManagerSidebar({
     const chapterIndex = chapters.findIndex((chapter) =>
       Array.isArray(chapter.steps)
         ? chapter.steps.some((step) => step.id === selectedStepId)
-        : false
+        : false,
     );
 
     if (chapterIndex === -1) {
@@ -551,10 +554,11 @@ export default function CometManagerSidebar({
               variant="default"
               key={index}
               onClick={button.onClick}
-              className={`text-xs sm:text-sm p-2 ${index === tab
-                ? "bg-primary text-background"
-                : "bg-background text-gray-400 hover:bg-primary-100 hover:text-primary shadow-none"
-                }`}
+              className={`text-xs sm:text-sm p-2 ${
+                index === tab
+                  ? "bg-primary text-background"
+                  : "bg-background text-gray-400 hover:bg-primary-100 hover:text-primary shadow-none"
+              }`}
             >
               {button.children}
             </Button>
@@ -579,8 +583,9 @@ export default function CometManagerSidebar({
                   return (
                     <div
                       key={chapterKey}
-                      className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${isExpanded ? "bg-primary-100" : "bg-white"
-                        }`}
+                      className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
+                        isExpanded ? "bg-primary-100" : "bg-white"
+                      }`}
                     >
                       {/* Chapter Header */}
                       <div
@@ -600,23 +605,34 @@ export default function CometManagerSidebar({
                         className="flex items-center gap-2 p-3 sm:p-4 cursor-pointer transition-all"
                       >
                         <div
-                          className={`rounded-full p-1 ${isSelected ? "bg-primary" : "bg-primary-100"
-                            }`}
+                          className={`rounded-full p-1 ${
+                            isSelected ? "bg-primary" : "bg-primary-100"
+                          }`}
                         >
                           <ChevronDown
                             size={16}
-                            className={`${isSelected ? "text-white" : "text-primary"
-                              } transition-transform ${isExpanded ? "rotate-180" : ""
-                              }`}
+                            className={`${
+                              isSelected ? "text-white" : "text-primary"
+                            } transition-transform ${
+                              isExpanded ? "rotate-180" : ""
+                            }`}
                           />
                         </div>
                         <div className="flex flex-col flex-1 min-w-0">
-                          <p className="text-[10px] font-medium text-gray-900">
-                            Chapter {index}
-                          </p>
+                          <div className="flex items-center gap-2 justify-between">
+                            <p className="text-[10px] font-medium text-gray-900">
+                              Chapter {index}
+                            </p>
+                            <p
+                              className={`rounded-lg px-2 bg-primary-100 text-[8px] text-primary-600 ${isExpanded ? "bg-primary-700 text-white" : "bg-primary-100 text-primary-600"}`}
+                            >
+                              Ready for Review
+                            </p>
+                          </div>
                           <p
-                            className={`text-sm sm:text-sm font-medium ${isSelected ? "text-gray-900 " : "text-primary"
-                              }`}
+                            className={`text-sm sm:text-sm font-medium ${
+                              isSelected ? "text-gray-900 " : "text-primary"
+                            }`}
                           >
                             {chapter.chapter ||
                               chapter.name ||
@@ -643,19 +659,20 @@ export default function CometManagerSidebar({
                               return (
                                 <div
                                   key={stepId}
-                                  className={`flex flex-col rounded-sm transition-all ${isStepExpanded
-                                    ? "bg-primary-700"
-                                    : isStepSelected
+                                  className={`flex flex-col rounded-sm transition-all ${
+                                    isStepExpanded
                                       ? "bg-primary-700"
-                                      : "bg-white"
-                                    }`}
+                                      : isStepSelected
+                                        ? "bg-primary-700"
+                                        : "bg-white"
+                                  }`}
                                 >
                                   {/* Step Header */}
                                   <div
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       // Don't handle click if it's on the chevron (let chevron handler do it)
-                                      if (e.target.closest('.step-chevron')) {
+                                      if (e.target.closest(".step-chevron")) {
                                         return;
                                       }
                                       // Select this step (only one can be selected at a time)
@@ -664,10 +681,11 @@ export default function CometManagerSidebar({
                                         setSelectedStepFromHook(stepId);
                                       }
                                     }}
-                                    className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${isStepSelected || isStepExpanded
-                                      ? "text-white"
-                                      : "hover:bg-gray-200"
-                                      }`}
+                                    className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
+                                      isStepSelected || isStepExpanded
+                                        ? "text-white"
+                                        : "hover:bg-gray-200"
+                                    }`}
                                   >
                                     <div
                                       onClick={(e) => {
@@ -679,37 +697,43 @@ export default function CometManagerSidebar({
                                         }
                                         toggleStep(stepId);
                                       }}
-                                      className={`step-chevron rounded-full p-1 shrink-0 ${isStepSelected || isStepExpanded
-                                        ? "bg-white"
-                                        : "bg-primary-100"
-                                        }`}
+                                      className={`step-chevron rounded-full p-1 shrink-0 ${
+                                        isStepSelected || isStepExpanded
+                                          ? "bg-white"
+                                          : "bg-primary-100"
+                                      }`}
                                     >
                                       <ChevronDown
                                         size={12}
-                                        className={`transition-transform ${isStepExpanded ? "rotate-180" : ""
-                                          } ${isStepSelected || isStepExpanded
+                                        className={`transition-transform ${
+                                          isStepExpanded ? "rotate-180" : ""
+                                        } ${
+                                          isStepSelected || isStepExpanded
                                             ? "text-primary-700"
                                             : "text-primary"
-                                          }`}
+                                        }`}
                                       />
                                     </div>
                                     <div className="flex flex-col py-1 flex-1 min-w-0">
                                       <p
-                                        className={`text-xs sm:text-xs  ${isStepSelected || isStepExpanded
-                                          ? "text-white"
-                                          : "text-gray-900"
-                                          }`}
+                                        className={`text-xs sm:text-xs  ${
+                                          isStepSelected || isStepExpanded
+                                            ? "text-white"
+                                            : "text-gray-900"
+                                        }`}
                                       >
                                         Step {stepIndex + 1}
                                       </p>
                                       <p
-                                        className={`text-xs sm:text-sm font-semibold ${isStepSelected || isStepExpanded
-                                          ? ""
-                                          : ""
-                                          } ${isStepSelected || isStepExpanded
+                                        className={`text-xs sm:text-sm font-semibold ${
+                                          isStepSelected || isStepExpanded
+                                            ? ""
+                                            : ""
+                                        } ${
+                                          isStepSelected || isStepExpanded
                                             ? "text-white"
                                             : "text-gray-900"
-                                          }`}
+                                        }`}
                                       >
                                         {step.name || `Step ${stepIndex + 1}`}
                                       </p>
@@ -754,88 +778,114 @@ export default function CometManagerSidebar({
               )}
 
               {/* line between regular chapters and remaining chapters */}
-              {remainingChapters && remainingChapters.length > 0 && chapters && chapters.length > 0 && (
-                <div className="h-0.5 bg-gray-300 "></div>
-              )}
+              {remainingChapters &&
+                remainingChapters.length > 0 &&
+                chapters &&
+                chapters.length > 0 && (
+                  <div className="h-0.5 bg-gray-300 "></div>
+                )}
 
               {/* Remaining Chapters Section */}
               {remainingChapters && remainingChapters.length > 0 && (
                 <>
-                  {remainingChapters
-                    .map((remainingChapter, index) => {
-                      const isDeactivated = remainingChapter.state === "deactivated";
-                      const isGenerating = remainingChapter.state === "generating";
-                      const isActive = remainingChapter.state === "active";
-                      const chapterIndex = remainingChapter.chapter_index ?? index;
-                      const chapterKey = `remaining-${chapterIndex}-${index}`;
-                      const isExpanded = !isDeactivated && expandedRemainingChapters.has(chapterKey);
-                      const isSelected = selectedChapter === chapterKey;
+                  {remainingChapters.map((remainingChapter, index) => {
+                    const isDeactivated =
+                      remainingChapter.state === "deactivated";
+                    const isGenerating =
+                      remainingChapter.state === "generating";
+                    const isActive = remainingChapter.state === "active";
+                    const chapterIndex =
+                      remainingChapter.chapter_index ?? index;
+                    const chapterKey = `remaining-${chapterIndex}-${index}`;
+                    const isExpanded =
+                      !isDeactivated &&
+                      expandedRemainingChapters.has(chapterKey);
+                    const isSelected = selectedChapter === chapterKey;
 
-                      if (isActive) return null;
+                    if (isActive) return null;
 
-                      return (
-                        <div key={chapterKey}>
-                          {index > 0 && remainingChapters[index - 1]?.state === "generating" && isDeactivated && (
+                    return (
+                      <div key={chapterKey}>
+                        {index > 0 &&
+                          remainingChapters[index - 1]?.state ===
+                            "generating" &&
+                          isDeactivated && (
                             // line between generating and deactivated chapters
                             <div className="h-0.5 bg-gray-300 mb-2"></div>
                           )}
+                        <div
+                          className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${isExpanded ? "bg-[#D1FADF]" : " bg-white"}`}
+                        >
+                          {/* Chapter Header */}
                           <div
-                            className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${isGenerating ? "bg-[#D1FADF]" : " bg-white"}`}
+                            onClick={() => {
+                              if (isDeactivated) return;
+                              setSelectedChapter(chapterKey);
+                              toggleRemainingChapter(chapterKey);
+                              if (onRemainingChapterClick) {
+                                onRemainingChapterClick(remainingChapter);
+                              }
+                            }}
+                            className={`flex items-center gap-2 p-3 sm:p-4 transition-all cursor-pointer`}
                           >
-                            {/* Chapter Header */}
                             <div
-                              onClick={() => {
-                                if (isDeactivated) return;
-                                setSelectedChapter(chapterKey);
-                                toggleRemainingChapter(chapterKey);
-                                if (onRemainingChapterClick) {
-                                  onRemainingChapterClick(remainingChapter);
-                                }
-                              }}
-                              className={`flex items-center gap-2 p-3 sm:p-4 transition-all cursor-pointer`}
+                              className={`rounded-full p-1 ${isGenerating ? "bg-[#A6F4C5]" : "bg-gray-100"}`}
                             >
-                              <div
-                                className={`rounded-full p-1 ${isGenerating ? "bg-[#A6F4C5]" : "bg-gray-100"}`}
-                              >
-                                <ChevronDown
-
-                                  size={16}
-                                  className={`${isGenerating ? "text-[#12B76A]" : "text-gray-800"
-                                    } transition-transform ${isExpanded ? "rotate-180" : ""
-                                    }`}
-                                />
-                              </div>
-                              <div className="flex flex-col flex-1 min-w-0">
+                              <ChevronDown
+                                size={16}
+                                className={`${
+                                  isGenerating
+                                    ? "text-[#12B76A]"
+                                    : "text-gray-800"
+                                } transition-transform ${
+                                  isExpanded ? "rotate-180" : ""
+                                }`}
+                              />
+                            </div>
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <div className="flex items-center gap-2 justify-between">
                                 <p className="text-[10px] font-medium text-gray-900">
                                   Chapter {chapterIndex}
                                 </p>
                                 <p
-                                  className={`text-sm sm:text-sm font-medium ${isGenerating ? "text-[#12B76A]" : "text-gray-400"} ${isExpanded ? "text-gray-800" : "text-gray"}
-                                  `}
+                                  className={`rounded-lg px-2  text-[8px]  ${isExpanded ? "bg-green-700 text-white" : ""} ${isGenerating ? "bg-green-100 text-green-600" : "bg-gray-200 text-gray-800"}`}
                                 >
-                                  {remainingChapter.chapter || "Untitled Chapter"}
+                                  {isGenerating
+                                    ? "In Progress"
+                                    : "Not Built Yet"}
                                 </p>
                               </div>
+                              <p
+                                className={`text-sm sm:text-sm font-medium ${isGenerating ? "text-[#12B76A]" : "text-gray-400"} ${isExpanded ? "text-gray-800" : "text-gray"}
+                                  `}
+                              >
+                                {remainingChapter.chapter || "Untitled Chapter"}
+                              </p>
                             </div>
+                          </div>
 
-                            {/* Expanded Steps - Inside the same card */}
-                            {isExpanded &&
-                              remainingChapter.steps &&
-                              remainingChapter.steps.length > 0 && (
-                                <div className="flex flex-col gap-2 px-3 pb-3">
-                                  {remainingChapter.steps.map((stepItem, stepIndex) => {
+                          {/* Expanded Steps - Inside the same card */}
+                          {isExpanded &&
+                            remainingChapter.steps &&
+                            remainingChapter.steps.length > 0 && (
+                              <div className="flex flex-col gap-2 px-3 pb-3">
+                                {remainingChapter.steps.map(
+                                  (stepItem, stepIndex) => {
                                     const stepTitle =
-                                      stepItem.title || `Step ${stepItem.step || stepIndex + 1}`;
+                                      stepItem.title ||
+                                      `Step ${stepItem.step || stepIndex + 1}`;
                                     const stepKey = `${chapterKey}-step-${stepIndex}`;
-                                    const isStepExpanded = expandedRemainingSteps.has(stepKey);
+                                    const isStepExpanded =
+                                      expandedRemainingSteps.has(stepKey);
 
                                     return (
                                       <div
                                         key={stepKey}
-                                        className={`flex flex-col rounded-sm transition-all ${isStepExpanded
-                                          ? "bg-[#027A48]"
-                                          : "bg-white"
-                                          }`}
+                                        className={`flex flex-col rounded-sm transition-all ${
+                                          isStepExpanded
+                                            ? "bg-[#027A48]"
+                                            : "bg-white"
+                                        }`}
                                       >
                                         {/* Step Header */}
                                         <div
@@ -847,36 +897,48 @@ export default function CometManagerSidebar({
                                               onRemainingStepClick(stepIndex);
                                             }
                                           }}
-                                          className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${isStepExpanded
-                                            ? "text-white"
-                                            : "hover:bg-gray-200"
-                                            }`}
+                                          className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
+                                            isStepExpanded
+                                              ? "text-white"
+                                              : "hover:bg-gray-200"
+                                          }`}
                                         >
                                           <div
-                                            className={`rounded-full p-1 shrink-0 ${isStepExpanded
-                                              ? "bg-white"
-                                              : "bg-[#A6F4C5]"
-                                              }`}
+                                            className={`rounded-full p-1 shrink-0 ${
+                                              isStepExpanded
+                                                ? "bg-white"
+                                                : "bg-[#A6F4C5]"
+                                            }`}
                                           >
                                             <ChevronDown
                                               size={12}
-                                              className={`transition-transform ${isStepExpanded ? "rotate-180" : ""
-                                                } ${isStepExpanded
+                                              className={`transition-transform ${
+                                                isStepExpanded
+                                                  ? "rotate-180"
+                                                  : ""
+                                              } ${
+                                                isStepExpanded
                                                   ? "text-[#12B76A]"
                                                   : "text-primary"
-                                                }`}
+                                              }`}
                                             />
                                           </div>
                                           <div className="flex flex-col py-1 flex-1 min-w-0">
                                             <p
-                                              className={`text-xs sm:text-xs ${isStepExpanded ? "text-white" : "text-gray-900"
-                                                }`}
+                                              className={`text-xs sm:text-xs ${
+                                                isStepExpanded
+                                                  ? "text-white"
+                                                  : "text-gray-900"
+                                              }`}
                                             >
                                               Step {stepIndex + 1}
                                             </p>
                                             <p
-                                              className={`text-xs sm:text-sm font-semibold ${isStepExpanded ? "text-white" : "text-gray-900"
-                                                }`}
+                                              className={`text-xs sm:text-sm font-semibold ${
+                                                isStepExpanded
+                                                  ? "text-white"
+                                                  : "text-gray-900"
+                                              }`}
                                             >
                                               {stepTitle}
                                             </p>
@@ -891,8 +953,16 @@ export default function CometManagerSidebar({
                                                 <div className="flex flex-col gap-2">
                                                   <div className="flex flex-col gap-2">
                                                     <div className="flex items-center gap-2">
-                                                      <img src="/bulb.svg" alt="Aha" width={20} height={20} className="w-5 h-5" />
-                                                      <span className="font-semibold text-sm">Aha</span>
+                                                      <img
+                                                        src="/bulb.svg"
+                                                        alt="Aha"
+                                                        width={20}
+                                                        height={20}
+                                                        className="w-5 h-5"
+                                                      />
+                                                      <span className="font-semibold text-sm">
+                                                        Aha
+                                                      </span>
                                                     </div>
                                                     <p className="text-sm text-black leading-relaxed">
                                                       {stepItem.aha}
@@ -907,8 +977,16 @@ export default function CometManagerSidebar({
                                                 <div className="flex flex-col gap-2">
                                                   <div className="flex flex-col gap-2">
                                                     <div className="flex items-center gap-2">
-                                                      <img src="/markup.svg" alt="Action" width={20} height={20} className="w-5 h-5" />
-                                                      <span className="font-semibold text-sm">Action</span>
+                                                      <img
+                                                        src="/markup.svg"
+                                                        alt="Action"
+                                                        width={20}
+                                                        height={20}
+                                                        className="w-5 h-5"
+                                                      />
+                                                      <span className="font-semibold text-sm">
+                                                        Action
+                                                      </span>
                                                     </div>
                                                     <p className="text-sm text-black leading-relaxed">
                                                       {stepItem.action}
@@ -922,8 +1000,16 @@ export default function CometManagerSidebar({
                                                 <div className="flex flex-col gap-2">
                                                   <div className="flex flex-col gap-2">
                                                     <div className="flex items-center gap-2">
-                                                      <img src="/tool.svg" alt="Tool" width={20} height={20} className="w-5 h-5" />
-                                                      <span className="font-semibold text-sm">Tool</span>
+                                                      <img
+                                                        src="/tool.svg"
+                                                        alt="Tool"
+                                                        width={20}
+                                                        height={20}
+                                                        className="w-5 h-5"
+                                                      />
+                                                      <span className="font-semibold text-sm">
+                                                        Tool
+                                                      </span>
                                                     </div>
                                                     <p className="text-sm text-black leading-relaxed">
                                                       {stepItem.tool}
@@ -938,7 +1024,9 @@ export default function CometManagerSidebar({
                                                   <div className="flex flex-col gap-2">
                                                     <div className="flex items-center gap-2">
                                                       {/* <img src="/description.svg" alt="Description" width={20} height={20} className="w-5 h-5" /> */}
-                                                      <span className="font-semibold text-sm">Description</span>
+                                                      <span className="font-semibold text-sm">
+                                                        Description
+                                                      </span>
                                                     </div>
                                                     <p className="text-sm text-black leading-relaxed">
                                                       {stepItem.description}
@@ -951,13 +1039,14 @@ export default function CometManagerSidebar({
                                         )}
                                       </div>
                                     );
-                                  })}
-                                </div>
-                              )}
-                          </div>
+                                  },
+                                )}
+                              </div>
+                            )}
                         </div>
-                      );
-                    })}
+                      </div>
+                    );
+                  })}
                 </>
               )}
 
@@ -1027,7 +1116,7 @@ export default function CometManagerSidebar({
                 </div>
                 {/* Categories */}
                 {organizeMaterialsByCategory(filteredSourceMaterials).length >
-                  0 ? (
+                0 ? (
                   organizeMaterialsByCategory(filteredSourceMaterials).map(
                     (category, categoryIndex) => {
                       const categoryId =
@@ -1038,10 +1127,11 @@ export default function CometManagerSidebar({
                       return (
                         <div
                           key={categoryId}
-                          className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${isSelected && isExpanded
-                            ? "bg-primary-100"
-                            : "bg-white"
-                            }`}
+                          className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
+                            isSelected && isExpanded
+                              ? "bg-primary-100"
+                              : "bg-white"
+                          }`}
                         >
                           {/* Category Header */}
                           <div
@@ -1054,20 +1144,24 @@ export default function CometManagerSidebar({
                             className="flex items-center gap-2 p-3 sm:p-4 cursor-pointer transition-all"
                           >
                             <div
-                              className={`rounded-full p-1 ${isSelected ? "bg-primary" : "bg-primary-100"
-                                }`}
+                              className={`rounded-full p-1 ${
+                                isSelected ? "bg-primary" : "bg-primary-100"
+                              }`}
                             >
                               <ChevronDown
                                 size={16}
-                                className={`${isSelected ? "text-white" : "text-primary"
-                                  } transition-transform ${isExpanded ? "rotate-180" : ""
-                                  }`}
+                                className={`${
+                                  isSelected ? "text-white" : "text-primary"
+                                } transition-transform ${
+                                  isExpanded ? "rotate-180" : ""
+                                }`}
                               />
                             </div>
                             <div className="flex flex-col flex-1 min-w-0">
                               <p
-                                className={`text-sm sm:text-sm font-medium ${isSelected ? "text-gray-900" : "text-gray-900"
-                                  }`}
+                                className={`text-sm sm:text-sm font-medium ${
+                                  isSelected ? "text-gray-900" : "text-gray-900"
+                                }`}
                               >
                                 {category.name}
                               </p>
@@ -1097,10 +1191,11 @@ export default function CometManagerSidebar({
                                     return (
                                       <div
                                         key={materialId}
-                                        className={`flex flex-col rounded-sm transition-all ${isMaterialSelected
-                                          ? "bg-primary-700"
-                                          : "bg-gray-100"
-                                          }`}
+                                        className={`flex flex-col rounded-sm transition-all ${
+                                          isMaterialSelected
+                                            ? "bg-primary-700"
+                                            : "bg-gray-100"
+                                        }`}
                                       >
                                         {/* Material Header */}
                                         <div
@@ -1112,7 +1207,7 @@ export default function CometManagerSidebar({
                                                 ? null
                                                 : materialId;
                                             setSelectedMaterial(
-                                              newSelectedState
+                                              newSelectedState,
                                             );
 
                                             if (
@@ -1126,14 +1221,15 @@ export default function CometManagerSidebar({
                                               onMaterialSelect(
                                                 newSelectedState
                                                   ? material
-                                                  : null
+                                                  : null,
                                               );
                                             }
                                           }}
-                                          className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${isMaterialSelected
-                                            ? "text-white"
-                                            : "hover:bg-gray-200"
-                                            }`}
+                                          className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
+                                            isMaterialSelected
+                                              ? "text-white"
+                                              : "hover:bg-gray-200"
+                                          }`}
                                         >
                                           <div className="flex flex-col py-1 flex-1 min-w-0">
                                             {/* <p
@@ -1147,10 +1243,11 @@ export default function CometManagerSidebar({
                                             {materialIndex + 1}
                                           </p> */}
                                             <p
-                                              className={`text-xs sm:text-sm font-semibold truncate ${isMaterialSelected
-                                                ? "text-white"
-                                                : "text-gray-900"
-                                                }`}
+                                              className={`text-xs sm:text-sm font-semibold truncate ${
+                                                isMaterialSelected
+                                                  ? "text-white"
+                                                  : "text-gray-900"
+                                              }`}
                                               title={
                                                 material.source_name ||
                                                 `Document ${materialIndex + 1}`
@@ -1161,10 +1258,11 @@ export default function CometManagerSidebar({
                                             </p>
                                             {fileSize && (
                                               <p
-                                                className={`text-xs mt-0.5 ${isMaterialSelected
-                                                  ? "text-white"
-                                                  : "text-gray-500"
-                                                  }`}
+                                                className={`text-xs mt-0.5 ${
+                                                  isMaterialSelected
+                                                    ? "text-white"
+                                                    : "text-gray-500"
+                                                }`}
                                               >
                                                 {fileSize || "123"}
                                               </p>
@@ -1173,13 +1271,13 @@ export default function CometManagerSidebar({
                                         </div>
                                       </div>
                                     );
-                                  }
+                                  },
                                 )}
                               </div>
                             )}
                         </div>
                       );
-                    }
+                    },
                   )
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center p-4">
@@ -1259,7 +1357,7 @@ export default function CometManagerSidebar({
                       const isActive = selectedAssetCategory === category.id;
                       const categoryAssets = filterAssetsByType(
                         assets,
-                        category.id
+                        category.id,
                       );
                       const assetCount = categoryAssets.length;
 
@@ -1275,10 +1373,11 @@ export default function CometManagerSidebar({
                               setSelectedMaterial(null);
                             }
                           }}
-                          className={`flex flex-col gap-1 rounded-sm border px-4 py-3 text-left transition-all ${isActive
-                            ? "border-primary bg-primary-600 text-white shadow-md"
-                            : "border-gray-300 bg-white text-gray-700 hover:border-primary/40 hover:bg-primary-100/60"
-                            }`}
+                          className={`flex flex-col gap-1 rounded-sm border px-4 py-3 text-left transition-all ${
+                            isActive
+                              ? "border-primary bg-primary-600 text-white shadow-md"
+                              : "border-gray-300 bg-white text-gray-700 hover:border-primary/40 hover:bg-primary-100/60"
+                          }`}
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center p-2 gap-2">
