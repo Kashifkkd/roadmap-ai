@@ -81,7 +81,7 @@ export default function ScreenCard({
                   : "text-gray-700"
                   }`}
               >
-                {(screen.screenContents?.contentType || "Content").replace(/_/g, " ")} Screen
+                {((str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase())((screen.screenContents?.contentType || "Content").replace(/_/g, " "))}
               </div>
               <div
                 className={`flex flex-col items-start bg-white p-2 mt-0.5 shrink-0 

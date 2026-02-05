@@ -2,7 +2,6 @@
 import Image from "next/image";
 import React, { useState, useEffect } from "react";
 import StatusButton from "./StatusButton";
-import styles from "./Comet.module.css";
 import { useCometSettings } from "@/contexts/CometSettingsContext";
 
 const Comet = ({
@@ -88,7 +87,8 @@ const Comet = ({
   return (
     <div
       onClick={handleClick}
-      className={`${styles.comet} relative flex flex-col w-full shrink-0 rounded-2xl overflow-hidden group cursor-pointer transition-transform duration-300 ease-in-out`}
+      className="relative flex flex-col w-full max-w-[280px] h-[250px] md:max-w-[290px] md:h-[260px] lg:max-w-[310px] lg:h-[300px] xl:max-w-[350px] 
+      xl:h-[330px] 2xl:max-w-[460px] 2xl:h-[360px] shrink-0 rounded-2xl overflow-hidden group cursor-pointer transition-transform duration-300 ease-in-out"
     >
       {/* Background image with zoom effect */}
       <Image
@@ -107,7 +107,7 @@ const Comet = ({
         <div className="flex flex-col w-full h-full justify-between">
           <div className="flex flex-col gap-2">
             <StatusButton status={status} />
-            <span className="text-gray-800 font-noto font-semibold text-[1em] leading-[24px] tracking-normal line-clamp-2 min-h-[48px]">
+            <span className="text-gray-800 font-noto font-semibold text-[18px] leading-[24px] tracking-normal line-clamp-2 min-h-[48px]">
               {title?.length > 50 ? `${title.slice(0, 50)}...` : title}
             </span>
             <div className="flex items-center w-fit rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">

@@ -1,15 +1,22 @@
 import React, { useMemo, useState } from "react";
 import { AppWindow, Code2, FileCode } from "lucide-react";
+import { TextField } from "./FormFields";
 
-export default function MiniAppForm({ formData, screen }) {
+export default function MiniAppForm({ formData, screen, updateField, askKyperHandlers = {} }) {
+  const { onTextFieldSelect, onFieldBlur } = askKyperHandlers;
   const [isLoading, setIsLoading] = useState(true);
 
-  // Get HTML content from screen
+  // Get HTML content from screen or formData
   const htmlContent = useMemo(() => {
     const content = screen?.screenContents?.content;
+    // If content is a string (old format), return it directly
     if (typeof content === "string") return content;
-    if (typeof formData === "string") return formData;
-    if (typeof screen?.formData === "string") return screen.formData;
+    // If content is an object with htmlContent (new format), use that
+    if (content && typeof content === "object" && content.htmlContent) {
+      return content.htmlContent;
+    }
+    // Fallback to formData.htmlContent (derived from getFormValuesFromScreen)
+    if (formData?.htmlContent) return formData.htmlContent;
     return null;
   }, [screen, formData]);
 
@@ -35,27 +42,40 @@ export default function MiniAppForm({ formData, screen }) {
     }
   }, [iframeSrc]);
 
-  if (!htmlContent) {
-    return (
-      <div className="rounded-xl border border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-slate-100 p-8">
-        <div className="flex flex-col items-center justify-center text-center space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center shadow-sm">
-            <FileCode className="w-8 h-8 text-indigo-500" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-gray-700">
-              No Mini App Content
-            </h3>
-            <p className="text-sm text-gray-500 max-w-xs">
-              Add HTML content to see your mini app preview here
-            </p>
+  return (
+    <>
+      {/* Title Field */}
+      <div className="mb-6">
+        <TextField
+          label="Title"
+          value={formData.title || ""}
+          onChange={(value) => updateField("title", value)}
+          inputProps={{
+            onSelect: (event) =>
+              onTextFieldSelect?.("title", event, formData.title),
+            onBlur: onFieldBlur,
+          }}
+        />
+      </div>
+
+      {/* Mini App Preview */}
+      {!htmlContent ? (
+        <div className="rounded-xl border border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-slate-100 p-8">
+          <div className="flex flex-col items-center justify-center text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center shadow-sm">
+              <FileCode className="w-8 h-8 text-indigo-500" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-gray-700">
+                No Mini App Content
+              </h3>
+              <p className="text-sm text-gray-500 max-w-xs">
+                Add HTML content to see your mini app preview here
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  return (
+      ) : (
     <div className="rounded-xl overflow-hidden shadow-lg border border-gray-200">
       <div className="bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-3">
         <div className="flex items-center justify-between">
@@ -131,5 +151,7 @@ export default function MiniAppForm({ formData, screen }) {
         </span>
       </div>
     </div>
+      )}
+    </>
   );
 }

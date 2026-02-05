@@ -89,6 +89,10 @@ export default function AskOutlineKyper({
         e.stopPropagation();
         if (onPopupInteract) onPopupInteract();
       }}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+        if (onPopupInteract) onPopupInteract();
+      }}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="bg-gray-100 rounded-2xl shadow-2xl border border-gray-200 min-w-[450px] transition-all duration-200">
@@ -156,6 +160,7 @@ export default function AskOutlineKyper({
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    onFocus={() => onPopupInteract?.()}
                     disabled={isLoading}
                     placeholder="Ask me anything..."
                     className="w-full pl-10 pr-12 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"

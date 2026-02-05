@@ -32,7 +32,11 @@ export function useUpsertClient() {
         res = await updateClientCohortDetails(clientData)
       }
       if (res?.error) {
-        throw new Error(errorMessage || "Unable to save client");
+        throw new Error(errorMessage);
+      }
+
+      if (res?.response?.detail && res?.status > 400) {
+        throw new Error(res.response.detail || "Unable to save client");
       }
       return res?.response || null;
     },

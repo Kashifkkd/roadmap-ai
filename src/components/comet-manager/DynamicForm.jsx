@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import ForceRankForm from "./forms/ForceRankForm";
 import PollMcqForm from "./forms/PollMcqForm";
 import PollLinearForm from "./forms/PollLinearForm";
@@ -164,8 +164,15 @@ const getFormValuesFromScreen = (screen) => {
   }
 
   if (contentType === "miniapp" || contentType === "miniApp") {
-    // For miniApp, the content itself is HTML string
-    values.htmlContent = typeof content === "string" ? content : "";
+    // For miniApp, title is stored at screen level (screen.title), not in content
+    values.title = screen.title || "";
+    // htmlContent can be either a string (old format) or in content.htmlContent (new format)
+    if (typeof content === "string") {
+      values.htmlContent = content;
+    } else {
+      values.htmlContent = content.htmlContent || content.content || "";
+    }
+    console.log("📖 MiniApp: title from screen.title:", values.title);
   }
 
   if (contentType === "profile") {
@@ -224,14 +231,6 @@ export default function DynamicForm({
   const [fieldPosition, setFieldPosition] = useState(null);
   const [askContext, setAskContext] = useState(null);
   const [blurTimeout, setBlurTimeout] = useState(null);
-  const [loadingFieldName, setLoadingFieldName] = useState(null);
-
-  // if response recived clear loading field name
-  useEffect(() => {
-    if (!isAskingKyper && loadingFieldName) {
-      setLoadingFieldName(null);
-    }
-  }, [isAskingKyper, loadingFieldName]);
 
   // Update field directly in outline - use setOutline(prev => ...) to always work with latest state
   const updateField = (field, value) => {
@@ -520,6 +519,21 @@ export default function DynamicForm({
                 const bodyValue = extractPlainTextFromDelta(value);
                 currentScreen.screenContents.content.body = bodyValue;
               }
+            } else if (contentType === "miniapp" || contentType === "miniApp") {
+              // For miniApp, title is stored at screen level (screen.title)
+              if (field === "title") {
+                currentScreen.title = value;
+                console.log("📝 MiniApp title updated (screen.title):", value);
+              } else if (field === "htmlContent") {
+                // htmlContent stays in screenContents.content
+                if (typeof currentScreen.screenContents.content === "string") {
+                  currentScreen.screenContents.content = {
+                    htmlContent: value,
+                  };
+                } else {
+                  currentScreen.screenContents.content.htmlContent = value;
+                }
+              }
             } else if (contentType === "manager_email") {
               if (field === "heading") {
                 currentScreen.screenContents.content.heading = value;
@@ -751,8 +765,6 @@ export default function DynamicForm({
   const handleAskKyper = async (query) => {
     if (!askContext || !query?.trim()) return;
 
-    setLoadingFieldName(focusedField);
-
     try {
       setIsAskingKyper(true);
 
@@ -863,7 +875,6 @@ export default function DynamicForm({
       }
     } catch (error) {
       console.error("Error asking Kyper:", error);
-      setLoadingFieldName(null);
       setIsAskingKyper(false);
     } finally {
       clearAskContext();
@@ -1005,7 +1016,6 @@ export default function DynamicForm({
             onFieldBlur: handleFieldBlur,
             onRichTextSelection: handleRichTextSelection,
             onRichTextBlur: handleFieldBlur,
-            loadingField: loadingFieldName,
           }}
         />
       );
@@ -1156,7 +1166,15 @@ export default function DynamicForm({
       screen?.screenType === "miniApp" ||
       screen?.screenContents?.contentType === "miniApp"
     ) {
-      return <MiniAppForm {...formProps} />;
+      return (
+        <MiniAppForm
+          {...formProps}
+          askKyperHandlers={{
+            onTextFieldSelect: handleTextFieldSelect,
+            onFieldBlur: handleFieldBlur,
+          }}
+        />
+      );
     }
 
     //9-Profile

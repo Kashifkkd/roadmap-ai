@@ -26,7 +26,6 @@ export default function ContentForm({
     onFieldBlur,
     onRichTextSelection,
     onRichTextBlur,
-    loadingField,
   } = askKyperHandlers;
 
   const [uploadedMedia, setUploadedMedia] = useState(null);
@@ -47,19 +46,19 @@ export default function ContentForm({
     if (
       fileType === "application/vnd.ms-powerpoint" ||
       fileType ===
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation"
     )
       return "ppt";
     if (
       fileType === "application/vnd.ms-excel" ||
       fileType ===
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
       return "excel";
     if (
       fileType === "application/msword" ||
       fileType ===
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
       return "doc";
     if (fileType.startsWith("text/")) return "text";
@@ -78,7 +77,7 @@ export default function ContentForm({
           asset.url === mediaUrl ||
           asset.ImageUrl === mediaUrl ||
           asset.videoUrl === mediaUrl ||
-          asset.audioUrl === mediaUrl,
+          asset.audioUrl === mediaUrl
       );
     }
     // Find any media asset
@@ -90,7 +89,7 @@ export default function ContentForm({
         asset.type === "pdf" ||
         asset.type === "ppt" ||
         asset.type === "document" ||
-        asset.type === "file",
+        asset.type === "file"
     );
   }, [existingAssets, formData.mediaUrl, formData.media]);
 
@@ -100,8 +99,8 @@ export default function ContentForm({
     if (mediaUrl && mediaType && mediaType !== "link") {
       setUploadedMedia(
         formData.contentMediaFile?.title ||
-          mediaUrl.split("/").pop() ||
-          "Uploaded media",
+        mediaUrl.split("/").pop() ||
+        "Uploaded media"
       );
     } else {
       setUploadedMedia(null);
@@ -126,7 +125,7 @@ export default function ContentForm({
         asset.type === "document" ||
         asset.type === "file" ||
         asset.url === formData.mediaUrl ||
-        asset.ImageUrl === formData.mediaUrl,
+        asset.ImageUrl === formData.mediaUrl
     );
     if (mediaIndex >= 0 && removeScreenAsset) {
       removeScreenAsset(mediaIndex);
@@ -149,7 +148,6 @@ export default function ContentForm({
             label="Title"
             value={formData.heading || ""}
             onChange={(value) => updateField("heading", value)}
-            disabled={loadingField === "heading"}
             inputProps={{
               onSelect: (event) =>
                 onTextFieldSelect?.("heading", event, formData.heading),
@@ -164,7 +162,6 @@ export default function ContentForm({
               onRichTextSelection?.("body", selectionInfo, formData.body)
             }
             onBlur={onRichTextBlur}
-            disabled={loadingField === "body"}
           />
 
           {/* Upload Image/Icon Section */}
@@ -253,13 +250,12 @@ export default function ContentForm({
                           sessionId || "",
                           chapterUuid || chapterId || "",
                           stepUuid || stepId || "",
-                          screenUuid || screenId || "",
+                          screenUuid || screenId || ""
                         );
 
                         if (uploadResponse?.response) {
                           const mediaUrl = uploadResponse.response.url;
-                          const mediaName =
-                            uploadResponse.response.name || file.name;
+                          const mediaName = uploadResponse.response.name || file.name;
 
                           if (mediaUrl) {
                             updateField("mediaUrl", mediaUrl);
@@ -330,28 +326,23 @@ export default function ContentForm({
                   Or paste your link here
                 </p>
               </div>
-              <div className="relative">
+             <div className="relative">
                 <LinkIcon
-                  className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
-                    formData.mediaUrl && formData.mediaUrl.trim() !== ""
+                  className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${formData.mediaUrl && formData.mediaUrl.trim() !== ""
                       ? "text-primary cursor-pointer hover:text-primary-700 transition-colors"
                       : "text-gray-400"
-                  }`}
+                    }`}
                   size={18}
                   onClick={() => {
                     const url = formData.mediaUrl?.trim();
                     if (url) {
                       // Ensure URL has a protocol
-
+                    
                       const urlWithProtocol =
                         url.startsWith("http://") || url.startsWith("https://")
                           ? url
                           : `https://${url}`;
-                      window.open(
-                        urlWithProtocol,
-                        "_blank",
-                        "noopener,noreferrer",
-                      );
+                      window.open(urlWithProtocol, "_blank", "noopener,noreferrer");
                     }
                   }}
                   title={
