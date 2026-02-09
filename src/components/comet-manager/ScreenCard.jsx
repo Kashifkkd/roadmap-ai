@@ -27,8 +27,9 @@ export default function ScreenCard({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const AddButton = ({ position, insertIndex }) => (
     <div
-      className={`absolute ${position === "left" ? "-left-4" : "-right-4"
-        } top-1/4 transform -translate-y-1/2 z-10`}
+      className={`absolute ${
+        position === "left" ? "-left-4" : "-right-4"
+      } top-1/4 transform -translate-y-1/2 z-10`}
     >
       <button
         onClick={(e) => {
@@ -37,7 +38,7 @@ export default function ScreenCard({
         }}
         className=" bg-primary-700 text-white rounded-full p-2 shadow-lg transition-all"
       >
-        <Plus size={20} />
+        <Plus style={{ width: '1.25em', height: '1.25em' }} />
       </button>
     </div>
   );
@@ -58,9 +59,10 @@ export default function ScreenCard({
           shrink-0 shadow-sm hover:shadow-md cursor-pointer 
           border border-transparent hover:border-primary-600
           transition-all duration-300 ease-in-out
-          ${selectedScreen?.id === screen.id
-            ? "bg-primary-700 hover:bg-primary-600 min-w-[140px] sm:min-w-[150px] max-w-[150px] sm:max-w-[180px]"
-            : "bg-gray-100 hover:bg-primary-100 min-w-[110px] sm:min-w-[150px] max-w-[150px] sm:max-w-[150px]"
+          ${
+            selectedScreen?.id === screen.id
+              ? "bg-primary-700 hover:bg-primary-600 min-w-35 sm:min-w-37.5 max-w-37.5 sm:max-w-45"
+              : "bg-gray-100 hover:bg-primary-100 min-w-27.5 sm:min-w-37.5 max-w-37.5 sm:max-w-37.5"
           }
         `}
       >
@@ -68,18 +70,20 @@ export default function ScreenCard({
           <div className="flex justify-between items-center gap-1 w-full">
             <div className="flex flex-col items-center">
               <div
-                className={`flex items-start gap-2 font-medium w-full transition-colors duration-300 ${selectedScreen?.id === screen.id
-                  ? "text-white"
-                  : "text-gray-700"
-                  }`}
+                className={`flex items-start gap-2 font-medium w-full transition-colors duration-300 ${
+                  selectedScreen?.id === screen.id
+                    ? "text-white"
+                    : "text-gray-700"
+                }`}
               >
                 Screen {index + 1}
               </div>
               <div
-                className={`flex text-sm items-start gap-2 font-medium w-full transition-colors duration-300 text-wrap truncate ${selectedScreen?.id === screen.id
-                  ? "text-white"
-                  : "text-gray-700"
-                  }`}
+                className={`flex text-sm items-start gap-2 font-medium w-full transition-colors duration-300 text-wrap truncate ${
+                  selectedScreen?.id === screen.id
+                    ? "text-white"
+                    : "text-gray-700"
+                }`}
               >
                 {((str) => {
                   const words = str
@@ -97,19 +101,19 @@ export default function ScreenCard({
                 })(screen.screenContents?.contentType || "Content")}{" "}
               </div>
               <div
-                className={`flex flex-col items-start bg-white p-2 mt-0.5 shrink-0 
-  transition-all duration-300  shadow-sm overflow-hidden
-  ${selectedScreen?.id === screen.id
-                    ? "h-[210px] w-[145px]"
-                    : "h-[170px] w-[135px]" // normal screen size
-                  }`}
+                className={`flex flex-col items-start bg-white p-2 mt-0.5 shrink-0 transition-all duration-300  shadow-sm overflow-hidden${
+                  selectedScreen?.id === screen.id
+                    ? " h-52.5 w-36.25"
+                    : " h-42.5 w-33.75" // normal screen size
+                }`}
               >
                 {/* Title */}
                 <div
-                  className={`flex items-start gap-2 text-sm font-medium w-full transition-colors duration-300 mb-1 text-wrap ${selectedScreen?.id === screen.id
-                    ? "text-black"
-                    : "text-black"
-                    }`}
+                  className={`flex items-start gap-2 text-sm font-medium w-full transition-colors duration-300 mb-1 text-wrap ${
+                    selectedScreen?.id === screen.id
+                      ? "text-black"
+                      : "text-black"
+                  }`}
                   title={screen.screenContents?.name || screen.title}
                 >
                   {screen.screenContents?.name || screen.title}
@@ -117,8 +121,9 @@ export default function ScreenCard({
 
                 {/* Thumbnail */}
                 <div
-                  className={`w-full mb-2 ${selectedScreen?.id === screen.id ? "h-[100px]" : "h-[90px]"
-                    }`}
+                  className={`w-full mb-2 ${
+                    selectedScreen?.id === screen.id ? "h-25" : "h-22.5"
+                  }`}
                 >
                   <img
                     src={
@@ -142,12 +147,14 @@ export default function ScreenCard({
                 </div> */}
 
                 <div
-                  className={`w-full text-xs font-medium overflow-hidden text-ellipsis line-clamp-3 transition-colors duration-300 ${selectedScreen?.id === screen.id
-                    ? "text-black"
-                    : "text-gray-700"
-                    }`}
+                  className={`w-full text-xs font-medium overflow-hidden text-ellipsis line-clamp-3 transition-colors duration-300 ${
+                    selectedScreen?.id === screen.id
+                      ? "text-black"
+                      : "text-gray-700"
+                  }`}
                 >
-                  {screen.screenContents?.content?.body || screen.screenContents?.content?.keyLearning ||
+                  {screen.screenContents?.content?.body ||
+                    screen.screenContents?.content?.keyLearning ||
                     "No content available"}
                 </div>
               </div>
@@ -156,26 +163,29 @@ export default function ScreenCard({
         </div>
         <div className=" w-full flex justify-between items-center">
           <Expand
-            size={16}
+            style={{ width: '1em', height: '1em' }}
             onClick={(e) => {
               e.stopPropagation();
               setIsDialogOpen(true);
             }}
-            className={`cursor-pointer hover:scale-110 transition-all duration-300 ${selectedScreen?.id === screen.id ? "text-white" : "text-gray-500"
-              }`}
+            className={`cursor-pointer hover:scale-110 transition-all duration-300 ${
+              selectedScreen?.id === screen.id ? "text-white" : "text-gray-500"
+            }`}
           />
           <div
-            className={`p-1 rounded transition-colors duration-300 ${selectedScreen?.id === screen.id
-              ? "bg-primary-800"
-              : "bg-background"
-              }`}
+            className={`p-1 rounded transition-colors duration-300 ${
+              selectedScreen?.id === screen.id
+                ? "bg-primary-800"
+                : "bg-background"
+            }`}
           >
             <GripVertical
-              size={16}
-              className={`cursor-grab active:cursor-grabbing transition-colors duration-300 ${selectedScreen?.id === screen.id
-                ? "text-white"
-                : "text-gray-500"
-                }`}
+              style={{ width: '1em', height: '1em' }}
+              className={`cursor-grab active:cursor-grabbing transition-colors duration-300 ${
+                selectedScreen?.id === screen.id
+                  ? "text-white"
+                  : "text-gray-500"
+              }`}
             />
           </div>
         </div>
@@ -199,24 +209,24 @@ export default function ScreenCard({
             {/* Heading */}
             {(screen.screenContents?.content?.heading ||
               screen.formData?.heading) && (
-                <div>
-                  <h3 className="text-2xl font-semibold mb-3 text-gray-900">
-                    {screen.screenContents?.content?.heading ||
-                      screen.formData?.heading}
-                  </h3>
-                </div>
-              )}
+              <div>
+                <h3 className="text-2xl font-semibold mb-3 text-gray-900">
+                  {screen.screenContents?.content?.heading ||
+                    screen.formData?.heading}
+                </h3>
+              </div>
+            )}
 
             {/* Body */}
             {(screen.screenContents?.content?.body ||
               screen.formData?.body) && (
-                <div>
-                  <p className="text-base text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {screen.screenContents?.content?.body ||
-                      screen.formData?.body}
-                  </p>
-                </div>
-              )}
+              <div>
+                <p className="text-base text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {screen.screenContents?.content?.body ||
+                    screen.formData?.body}
+                </p>
+              </div>
+            )}
 
             {/* Assets */}
             {screen.assets && screen.assets.length > 0 && (

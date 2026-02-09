@@ -51,16 +51,14 @@ export default function CometManagerLayout() {
     }
   }, [sessionData?.response_path, sessionData?.session_id]);
 
-
   useEffect(() => {
-  if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
 
-  const stored = localStorage.getItem("sessionData");
-  if (stored && !sessionData) {
-    setSessionData(JSON.parse(stored));
-  }
-}, []);
-
+    const stored = localStorage.getItem("sessionData");
+    if (stored && !sessionData) {
+      setSessionData(JSON.parse(stored));
+    }
+  }, []);
 
   // Load ALL chat messages from sessionData.chatbot_conversation
   useEffect(() => {
@@ -219,7 +217,7 @@ export default function CometManagerLayout() {
               };
               localStorage.setItem(
                 "sessionData",
-                JSON.stringify(updatedSessionData)
+                JSON.stringify(updatedSessionData),
               );
               setPrevOutline(currentOutline);
             }
@@ -258,7 +256,7 @@ export default function CometManagerLayout() {
   return (
     <div className="flex h-full w-full bg-primary-50 overflow-y-auto">
       <div className="flex flex-1 lg:flex-row flex-col gap-2 p-2 overflow-y-auto">
-        <div className="lg:block w-full lg:w-[360px] h-full">
+        <div className="lg:block w-full lg:w-[22.5em] xl:w-[25.5em] h-full">
           <ChatWindow
             inputType="path_updation"
             pageIdentifier={3}
@@ -277,7 +275,7 @@ export default function CometManagerLayout() {
           />
         </div>
 
-        <div className="w-full lg:w-3/4 h-full">
+        <div className="w-full lg:w-[72.5em] xl:w-[74.5em] h-full">
           <CometManager
             sessionData={sessionData}
             setSessionData={setSessionData}
