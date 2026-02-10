@@ -774,6 +774,10 @@ export default function Header() {
 
       if (response && response.response && !response.error) {
         toast.success("Comet published successfully!");
+        
+        if (isCometManager) {
+          setIsCometSettingsOpen(true);
+        }
       } else {
         const errorResponse =
           response?.response?.data?.detail ||
