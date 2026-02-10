@@ -22,6 +22,7 @@ import {
   SquareKanban,
   Search,
   Plus,
+  GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Stack } from "@mui/material";
@@ -67,6 +68,7 @@ export default function CometManagerSidebar({
   selectedScreen,
   onAddScreen,
   chapters = [],
+  onReorderChapters,
   remainingChapters = [],
   onChapterClick,
   onRemainingChapterClick,
@@ -102,6 +104,76 @@ export default function CometManagerSidebar({
   const [expandedRemainingSteps, setExpandedRemainingSteps] = useState(
     new Set(),
   );
+
+  
+  const [draggedChapterIndex, setDraggedChapterIndex] = useState(null);
+  const [dropTargetChapter, setDropTargetChapter] = useState(null);
+
+  // Chapter drag handlers - chapter 0 cannot be dragged
+  const handleChapterDragStart = (e, index) => {
+    if (index === 0) {
+      e.preventDefault();
+      return;
+    }
+    e.stopPropagation();
+    setDraggedChapterIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/chapter", index.toString());
+  };
+
+  const handleChapterDragEnd = () => {
+    setDraggedChapterIndex(null);
+    setDropTargetChapter(null);
+  };
+
+  const handleChapterDragOver = (e, index) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Cannot drop on chapter 0
+    if (index === 0) {
+      e.dataTransfer.dropEffect = "none";
+      return;
+    }
+    e.dataTransfer.dropEffect = "move";
+    if (draggedChapterIndex !== null && draggedChapterIndex !== index) {
+      setDropTargetChapter(index);
+    }
+  };
+
+  const handleChapterDragLeave = (e) => {
+    e.stopPropagation();
+    setDropTargetChapter(null);
+  };
+
+  const handleChapterDrop = (e, dropIndex) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Cannot drop on chapter 0
+    if (dropIndex === 0) {
+      setDraggedChapterIndex(null);
+      setDropTargetChapter(null);
+      return;
+    }
+
+    if (draggedChapterIndex === null || draggedChapterIndex === dropIndex) {
+      setDraggedChapterIndex(null);
+      setDropTargetChapter(null);
+      return;
+    }
+
+    // Build new order of chapters
+    const newOrder = chapters.map((_, i) => i);
+    const [draggedIdx] = newOrder.splice(draggedChapterIndex, 1);
+    newOrder.splice(dropIndex, 0, draggedIdx);
+
+    if (onReorderChapters) {
+      onReorderChapters(newOrder);
+    }
+
+    setDraggedChapterIndex(null);
+    setDropTargetChapter(null);
+  };
 
   // Source materials state
   const [sourceMaterials, setSourceMaterials] = useState([]);
@@ -579,14 +651,32 @@ export default function CometManagerSidebar({
                   const stepCount = chapter.steps?.length || 0;
                   const isSelected = selectedChapter === chapterId;
                   const isExpanded = expandedChapters.has(chapterId);
+                  const isDraggable = index !== 0; // Chapter 0 cannot be dragged
+                  const isDraggedOver =
+                    dropTargetChapter === index &&
+                    draggedChapterIndex !== null &&
+                    index !== 0;
 
                   return (
                     <div
                       key={chapterKey}
-                      className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
-                        isExpanded ? "bg-primary-100" : "bg-white"
-                      }`}
+                      className="flex flex-col transition-all"
+                      onDragOver={(e) => handleChapterDragOver(e, index)}
+                      onDragLeave={(e) => handleChapterDragLeave(e)}
+                      onDrop={(e) => handleChapterDrop(e, index)}
                     >
+                      
+                      {isDraggedOver && (
+                        <div className="h-1.5 bg-primary rounded-full mx-2 my-1 transition-all shadow-sm pointer-events-none" />
+                      )}
+                      <div
+                        draggable={isDraggable}
+                        onDragStart={(e) => handleChapterDragStart(e, index)}
+                        onDragEnd={handleChapterDragEnd}
+                        className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
+                          isExpanded ? "bg-primary-100" : "bg-white"
+                        } ${draggedChapterIndex === index ? "opacity-50" : ""}`}
+                      >
                       {/* Chapter Header */}
                       <div
                         onClick={() => {
@@ -604,6 +694,14 @@ export default function CometManagerSidebar({
                         }}
                         className="flex items-center gap-2 p-3 sm:p-4 cursor-pointer transition-all"
                       >
+                        {isDraggable ? (
+                          <GripVertical
+                            size={18}
+                            className="cursor-grab active:cursor-grabbing text-gray-400 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-[18px] shrink-0" />
+                        )}
                         <div
                           className={`rounded-full p-1 ${
                             isSelected ? "bg-primary" : "bg-primary-100"
@@ -638,9 +736,6 @@ export default function CometManagerSidebar({
                               chapter.name ||
                               "Untitled Chapter"}
                           </p>
-                          {/* <p className="text-xs text-gray-500 mt-1">
-                          {stepCount} {stepCount === 1 ? "step" : "steps"}
-                        </p> */}
                         </div>
                       </div>
 
@@ -765,6 +860,7 @@ export default function CometManagerSidebar({
                             })}
                           </div>
                         )}
+                      </div>
                     </div>
                   );
                 })

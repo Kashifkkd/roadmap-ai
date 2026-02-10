@@ -410,6 +410,26 @@ export function useCometManager(sessionData = null) {
     });
   };
 
+  // Reorder chapters in outline
+  const reorderChapters = (newChapterOrder) => {
+    setOutline((prevOutline) => {
+      if (!prevOutline || !prevOutline.chapters) return prevOutline;
+
+      const newOutline = JSON.parse(JSON.stringify(prevOutline));
+      const oldChapters = newOutline.chapters;
+
+      const reordered = newChapterOrder.map((oldIndex) => oldChapters[oldIndex]);
+
+      // Update positions to match new array order 
+      for (let i = 0; i < reordered.length; i++) {
+        reordered[i].position = i + 1;
+      }
+
+      newOutline.chapters = reordered;
+      return newOutline;
+    });
+  };
+
   const setSelectedStep = (stepId) => {
     setSelectedStepId(stepId);
   };
@@ -425,6 +445,7 @@ export function useCometManager(sessionData = null) {
     addScreen,
     deleteScreen,
     reorderScreensList,
+    reorderChapters,
     insertScreenAt,
     outline, // Expose outline for direct access if needed
     setOutline, // Expose setter for outline updates
