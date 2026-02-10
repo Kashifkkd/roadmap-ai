@@ -107,8 +107,8 @@ const Comet = ({
         <div className="flex flex-col w-full h-full justify-between">
           <div className="flex flex-col gap-2">
             <StatusButton status={status} />
-            <span className="text-gray-800 font-noto font-semibold text-[18px] leading-[24px] tracking-normal line-clamp-2 min-h-[48px]">
-              {title?.length > 50 ? `${title.slice(0, 50)}...` : title}
+            <span className="text-gray-800 font-noto font-semibold text-[18px] leading-[24px] tracking-normal line-clamp-3 min-h-[48px]">
+              {title}
             </span>
             <div className="flex items-center w-fit rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
               <span className="font-inter font-medium text-sm leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
@@ -201,8 +201,8 @@ const Comet = ({
       <div className="absolute bottom-2 left-2 right-2 z-10 flex flex-col gap-2.5 rounded-lg p-4 bg-white transition-all duration-700 ease-out group-hover:opacity-0 group-hover:pointer-events-none group-hover:-translate-y-6">
         <div className="flex flex-col gap-2">
           <StatusButton status={status} />
-          <span className="text-gray-800 font-noto font-semibold text-[20px] leading-[30px] tracking-normal line-clamp-2">
-            {title?.length > 20 ? `${title.slice(0, 20)}...` : title}
+          <span className="text-gray-800 font-noto font-semibold text-[20px] leading-[30px] tracking-normal line-clamp-2 min-h-[60px]">
+            {title}
           </span>
           <div className="flex items-center w-fit rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
             <span className="font-inter font-medium text-xs leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">

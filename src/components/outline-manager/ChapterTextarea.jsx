@@ -67,7 +67,7 @@ export default function ChapterTextarea({
         input_type: "outline_updation",
         comet_creation_data: freshSessionData?.comet_creation_data || {},
         response_outline: freshSessionData?.response_outline || {},
-        response_path: {},
+        response_path: freshSessionData?.response_path || {},
         // additional_data: {
         //   personalization_enabled: sessionData?.additional_data?.personalization_enabled || false,
         //   habit_enabled: sessionData?.additional_data?.habit_enabled || false,

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -17,6 +18,7 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
   const [rememberMe, setRememberMe] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
 
   const validateForm = () => {
     const email = formData.email.trim();
@@ -53,18 +55,18 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
     try {
       console.log("➡️ Calling CloudFront cookies API...");
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
-    const res = await fetch(
-      `${apiUrl}/api/auth/v1/cloudfront-cookies?expires_in_hours=24`,
-      {
-        method: "GET",
-        credentials: "include", // IMPORTANT if server sets Set-Cookie
-        headers: {
-          accept: "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
+      const res = await fetch(
+        `${apiUrl}/api/auth/v1/cloudfront-cookies?expires_in_hours=24`,
+        {
+          method: "GET",
+          credentials: "include", // IMPORTANT if server sets Set-Cookie
+          headers: {
+            accept: "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
 
       console.log("✅ CloudFront cookies API status:", res.status);
 
@@ -176,6 +178,11 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
       // ----------------------------
       if (onOpenChange) onOpenChange(false);
 
+      // Invalidate user-related queries to force immediate refetch
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+      queryClient.invalidateQueries({ queryKey: ["recentClients"] });
+      queryClient.invalidateQueries({ queryKey: ["clientDetails"] });
+
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("auth-changed"));
       }
@@ -273,8 +280,8 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
                 disabled={isLoading}
                 className={`w-full pl-10 pr-12 h-11 rounded-lg border ${
                   error.field === "password"
-                  ? "border-red-500"
-                  : "border-gray-300"
+                    ? "border-red-500"
+                    : "border-gray-300"
                   }`}
               />
 

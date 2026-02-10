@@ -11,13 +11,23 @@ export default function MiniAppForm({ formData, screen, updateField, askKyperHan
     const content = screen?.screenContents?.content;
     // If content is a string (old format), return it directly
     if (typeof content === "string") return content;
-    // If content is an object with htmlContent (new format), use that
-    if (content && typeof content === "object" && content.htmlContent) {
-      return content.htmlContent;
+    // If content is an object: prefer html, then htmlContent, then content
+    if (content && typeof content === "object") {
+      if (content.html) return content.html;
+      if (content.htmlContent) return content.htmlContent;
+      if (content.content) return content.content;
     }
     // Fallback to formData.htmlContent (derived from getFormValuesFromScreen)
     if (formData?.htmlContent) return formData.htmlContent;
     return null;
+  }, [screen, formData]);
+
+  // Title: heading from content, or screen.title, or formData.title
+  const displayTitle = useMemo(() => {
+    const content = screen?.screenContents?.content;
+    if (content?.heading) return content.heading;
+    if (screen?.title) return screen.title;
+    return formData?.title || "";
   }, [screen, formData]);
 
   // Create a blob URL for the iframe
@@ -44,11 +54,11 @@ export default function MiniAppForm({ formData, screen, updateField, askKyperHan
 
   return (
     <>
-      {/* Title Field */}
+      {/* Title Field - uses heading from content */}
       <div className="mb-6">
         <TextField
           label="Title"
-          value={formData.title || ""}
+          value={formData.title ?? displayTitle ?? ""}
           onChange={(value) => updateField("title", value)}
           inputProps={{
             onSelect: (event) =>
@@ -89,7 +99,7 @@ export default function MiniAppForm({ formData, screen, updateField, askKyperHan
             <div className="flex items-center gap-2">
               <AppWindow className="w-4 h-4 text-indigo-400" />
               <span className="text-sm font-medium text-slate-200">
-                {screen?.title || "Mini App Preview"}
+                {displayTitle || "Mini App Preview"}
               </span>
             </div>
           </div>
@@ -127,7 +137,7 @@ export default function MiniAppForm({ formData, screen, updateField, askKyperHan
         <iframe
           id="mini-app-iframe"
           src={iframeSrc}
-          title={screen?.title || "Mini App"}
+          title={displayTitle || "Mini App"}
           className="w-full border-0 transition-opacity duration-300"
           style={{
             minHeight: "500px",

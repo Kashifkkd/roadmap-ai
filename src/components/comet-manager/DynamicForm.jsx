@@ -164,15 +164,14 @@ const getFormValuesFromScreen = (screen) => {
   }
 
   if (contentType === "miniapp" || contentType === "miniApp") {
-    // For miniApp, title is stored at screen level (screen.title), not in content
-    values.title = screen.title || "";
-    // htmlContent can be either a string (old format) or in content.htmlContent (new format)
+    // For miniApp: title from content.heading, screen.title, or ""
+    values.title = content?.heading || screen.title || "";
+    // htmlContent: prefer content.html, then htmlContent, content, or string
     if (typeof content === "string") {
       values.htmlContent = content;
     } else {
-      values.htmlContent = content.htmlContent || content.content || "";
+      values.htmlContent = content?.html || content?.htmlContent || content?.content || "";
     }
-    console.log("📖 MiniApp: title from screen.title:", values.title);
   }
 
   if (contentType === "profile") {
@@ -520,18 +519,24 @@ export default function DynamicForm({
                 currentScreen.screenContents.content.body = bodyValue;
               }
             } else if (contentType === "miniapp" || contentType === "miniApp") {
-              // For miniApp, title is stored at screen level (screen.title)
+              // For miniApp: title → content.heading, htmlContent → content.html
               if (field === "title") {
                 currentScreen.title = value;
-                console.log("📝 MiniApp title updated (screen.title):", value);
+                if (typeof currentScreen.screenContents.content !== "string") {
+                  if (!currentScreen.screenContents.content) {
+                    currentScreen.screenContents.content = {};
+                  }
+                  currentScreen.screenContents.content.heading = value;
+                }
               } else if (field === "htmlContent") {
-                // htmlContent stays in screenContents.content
                 if (typeof currentScreen.screenContents.content === "string") {
-                  currentScreen.screenContents.content = {
-                    htmlContent: value,
-                  };
+                  currentScreen.screenContents.content = { html: value };
                 } else {
-                  currentScreen.screenContents.content.htmlContent = value;
+                  if (!currentScreen.screenContents.content) {
+                    currentScreen.screenContents.content = {};
+                  }
+                  currentScreen.screenContents.content.html = value;
+                  currentScreen.screenContents.content.htmlContent = value; // backward compat
                 }
               }
             } else if (contentType === "manager_email") {

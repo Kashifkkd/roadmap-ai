@@ -165,12 +165,18 @@ export default function AllComet() {
   // }
 
   return (
-    <div className="h-screen w-[100vw] flex flex-col pt-2 pr-2 pl-2 bg-[#F1F0FE]">
-      <div className="flex-1 flex w-[98%] flex-col m-auto pt-8 pb-8 gap-2.5 overflow-y-auto">
-        <CometFilter handleChange={handleChange} selected={selected} handleStatus={handleStatus} sessionName={sessionName} handleSortBy={handleSortBy} handleSortOrder={handleSortOrder} sortBy={sortBy} sortOrder={sortOrder} />
-        {noComet ? <div className="w-screen h-screen flex justify-center items-center">
-          No comet sessions found.
-        </div> : <AllCometsContainer cometSessions={cometSessions} />}
+    <div className="h-screen w-[100vw] flex flex-col bg-[#F1F0FE]">
+      <div className="flex-1 flex flex-col min-h-0 pt-2 pr-2 pl-2">
+        <div className="shrink-0 w-[98%] mx-auto pt-6 pb-2.5">
+          <CometFilter handleChange={handleChange} selected={selected} handleStatus={handleStatus} sessionName={sessionName} handleSortBy={handleSortBy} handleSortOrder={handleSortOrder} sortBy={sortBy} sortOrder={sortOrder} />
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto pb-8">
+          <div className="w-[98%] mx-auto">
+            {noComet ? <div className="w-full h-64 flex justify-center items-center">
+              No comet sessions found.
+            </div> : <AllCometsContainer cometSessions={cometSessions} />}
+          </div>
+        </div>
       </div>
       {/* Comet Settings Dialog */}
       <CometSettingsDialog
