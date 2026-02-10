@@ -15,7 +15,8 @@ import MultipleChoiceField from "./MultipleChoiceField";
 import SliderField from "./SliderField";
 import AskKyperPopup from "./AskKyperPopup";
 import { graphqlClient } from "@/lib/graphql-client";
-import { Info, Trash2 } from "lucide-react";
+import { Info, Trash2, Link2, X } from "lucide-react";
+import { toast } from "sonner";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
 export default function CreateComet({
@@ -36,6 +37,7 @@ export default function CreateComet({
   setIsAskingKyper = () => {},
 }) {
   const [files, setFiles] = useState([]);
+  const [webpageUrls, setWebpageUrls] = useState([]);
   const [focusedField, setFocusedField] = useState(null);
   const [blurTimeout, setBlurTimeout] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
@@ -109,134 +111,125 @@ export default function CreateComet({
 
       // Update entire form with comet_creation_data when asking Kyper
       if (sessionData.comet_creation_data) {
-            // console.log(
-            //   "Updating entire form with comet_creation_data:",
-            //   sessionData.comet_creation_data
-            // );
+        // console.log(
+        //   "Updating entire form with comet_creation_data:",
+        //   sessionData.comet_creation_data
+        // );
 
-            const basicInfo =
-              sessionData.comet_creation_data["Basic Information"];
-            const audienceObjectives =
-              sessionData.comet_creation_data["Audience & Objectives"];
-            const experienceDesign =
-              sessionData.comet_creation_data["Experience Design"];
+        const basicInfo = sessionData.comet_creation_data["Basic Information"];
+        const audienceObjectives =
+          sessionData.comet_creation_data["Audience & Objectives"];
+        const experienceDesign =
+          sessionData.comet_creation_data["Experience Design"];
 
-            setAllMessages((prev) => {
-              const filteredPrev = prev.filter((msg, index) => {
-                if (msg.from === "bot" && index === prev.length - 1) {
-                  return false;
-                }
-                return true;
-              });
-              return [
-                ...filteredPrev,
-                {
-                  from: "bot",
-                  content:
-                    basicInfo["Comet Title"] ||
-                    basicInfo["Client Organization"],
-                },
-              ];
-            });
-
-            if (basicInfo) {
-              if (basicInfo["Comet Title"])
-                setValue("cometTitle", basicInfo["Comet Title"]);
-              if (basicInfo["Description"])
-                setValue("description", basicInfo["Description"]);
-              if (basicInfo["Client Organization"])
-                setValue("clientOrg", basicInfo["Client Organization"]);
-              if (basicInfo["Client Website"])
-                setValue("clientWebsite", basicInfo["Client Website"]);
+        setAllMessages((prev) => {
+          const filteredPrev = prev.filter((msg, index) => {
+            if (msg.from === "bot" && index === prev.length - 1) {
+              return false;
             }
+            return true;
+          });
+          return [
+            ...filteredPrev,
+            {
+              from: "bot",
+              content:
+                basicInfo["Comet Title"] || basicInfo["Client Organization"],
+            },
+          ];
+        });
 
-            if (audienceObjectives) {
-              if (audienceObjectives["Target Audience"])
-                setValue(
-                  "targetAudience",
-                  audienceObjectives["Target Audience"]
-                );
-              // Handle both "Learning Objectives" and "Learning and Behaviour Objectives"
-              const learningObjectives = 
-                audienceObjectives["Learning and Behaviour Objectives"] || 
-                audienceObjectives["Learning Objectives"];
-              if (learningObjectives) {
-                const objectivesArray = Array.isArray(learningObjectives)
-                  ? learningObjectives
-                  : typeof learningObjectives === "string"
-                  ? learningObjectives.split("\n").filter((obj) => obj.trim())
-                  : [learningObjectives];
-                setValue("learningObjectives", objectivesArray);
-              }
-            }
+        if (basicInfo) {
+          if (basicInfo["Comet Title"])
+            setValue("cometTitle", basicInfo["Comet Title"]);
+          if (basicInfo["Description"])
+            setValue("description", basicInfo["Description"]);
+          if (basicInfo["Client Organization"])
+            setValue("clientOrg", basicInfo["Client Organization"]);
+          if (basicInfo["Client Website"])
+            setValue("clientWebsite", basicInfo["Client Website"]);
+        }
 
-            if (experienceDesign) {
-              if (experienceDesign["Focus"]) {
-                const focusValue = experienceDesign["Focus"];
-                const lowerFocus = focusValue.toLowerCase();
-                if (lowerFocus.includes("teaching new things")) {
-                  setValue("cometFocus", "Teaching new things");
-                } else if (lowerFocus.includes("reinforcing")) {
-                  setValue("cometFocus", "reinforcing_applying");
-                } else {
-                  setValue("cometFocus", focusValue);
-                }
-              }
-
-              if (experienceDesign["Duration"]) {
-                setValue("lengthFrequency", experienceDesign["Duration"]);
-              } else if (experienceDesign["Length & Frequency"]) {
-                setValue(
-                  "lengthFrequency",
-                  experienceDesign["Length & Frequency"]
-                );
-              }
-
-              if (experienceDesign["Engagement Frequency"]) {
-                const engagementValue =
-                  experienceDesign["Engagement Frequency"];
-                if (engagementValue.toLowerCase().includes("weekly")) {
-                  setValue("engagementFrequency", "weekly");
-                } else if (engagementValue.toLowerCase().includes("daily")) {
-                  setValue("engagementFrequency", "daily");
-                } else {
-                  setValue("engagementFrequency", engagementValue);
-                }
-              }
-
-              if (experienceDesign["Source Alignment"]) {
-                const sourceValue = experienceDesign["Source Alignment"];
-                if (sourceValue.toLowerCase().includes("fidelity")) {
-                  setValue("sourceMaterialFidelity", "fidelity");
-                } else if (sourceValue.toLowerCase().includes("balanced")) {
-                  setValue("sourceMaterialFidelity", "balanced");
-                } else if (sourceValue.toLowerCase().includes("extension")) {
-                  setValue("sourceMaterialFidelity", "extension");
-                } else {
-                  setValue("sourceMaterialFidelity", sourceValue);
-                }
-              }
-
-              if (experienceDesign["Experience Type"])
-                setValue("experienceType", experienceDesign["Experience Type"]);
-              if (experienceDesign["Special Instructions"])
-                setValue(
-                  "specialInstructions",
-                  experienceDesign["Special Instructions"]
-                );
-            }
-
-            setIsAskingKyper(false);
+        if (audienceObjectives) {
+          if (audienceObjectives["Target Audience"])
+            setValue("targetAudience", audienceObjectives["Target Audience"]);
+          // Handle both "Learning Objectives" and "Learning and Behaviour Objectives"
+          const learningObjectives =
+            audienceObjectives["Learning and Behaviour Objectives"] ||
+            audienceObjectives["Learning Objectives"];
+          if (learningObjectives) {
+            const objectivesArray = Array.isArray(learningObjectives)
+              ? learningObjectives
+              : typeof learningObjectives === "string"
+                ? learningObjectives.split("\n").filter((obj) => obj.trim())
+                : [learningObjectives];
+            setValue("learningObjectives", objectivesArray);
           }
-        },
-        (error) => {
-          console.error("Subscription error:", error);
-          if (isAskingKyperRef.current) {
-            setIsAskingKyper(false);
+        }
+
+        if (experienceDesign) {
+          if (experienceDesign["Focus"]) {
+            const focusValue = experienceDesign["Focus"];
+            const lowerFocus = focusValue.toLowerCase();
+            if (lowerFocus.includes("teaching new things")) {
+              setValue("cometFocus", "Teaching new things");
+            } else if (lowerFocus.includes("reinforcing")) {
+              setValue("cometFocus", "reinforcing_applying");
+            } else {
+              setValue("cometFocus", focusValue);
+            }
           }
-        },
-        { forceTemporary: true }
-      );
+
+          if (experienceDesign["Duration"]) {
+            setValue("lengthFrequency", experienceDesign["Duration"]);
+          } else if (experienceDesign["Length & Frequency"]) {
+            setValue("lengthFrequency", experienceDesign["Length & Frequency"]);
+          }
+
+          if (experienceDesign["Engagement Frequency"]) {
+            const engagementValue = experienceDesign["Engagement Frequency"];
+            if (engagementValue.toLowerCase().includes("weekly")) {
+              setValue("engagementFrequency", "weekly");
+            } else if (engagementValue.toLowerCase().includes("daily")) {
+              setValue("engagementFrequency", "daily");
+            } else {
+              setValue("engagementFrequency", engagementValue);
+            }
+          }
+
+          if (experienceDesign["Source Alignment"]) {
+            const sourceValue = experienceDesign["Source Alignment"];
+            if (sourceValue.toLowerCase().includes("fidelity")) {
+              setValue("sourceMaterialFidelity", "fidelity");
+            } else if (sourceValue.toLowerCase().includes("balanced")) {
+              setValue("sourceMaterialFidelity", "balanced");
+            } else if (sourceValue.toLowerCase().includes("extension")) {
+              setValue("sourceMaterialFidelity", "extension");
+            } else {
+              setValue("sourceMaterialFidelity", sourceValue);
+            }
+          }
+
+          if (experienceDesign["Experience Type"])
+            setValue("experienceType", experienceDesign["Experience Type"]);
+          if (experienceDesign["Special Instructions"])
+            setValue(
+              "specialInstructions",
+              experienceDesign["Special Instructions"],
+            );
+        }
+
+        setIsAskingKyper(false);
+      }
+    },
+    (error) => {
+      console.error("Subscription error:", error);
+      if (isAskingKyperRef.current) {
+        setIsAskingKyper(false);
+      }
+    },
+    { forceTemporary: true },
+  );
 
   useEffect(() => {
     if (prefillData) {
@@ -264,8 +257,8 @@ export default function CreateComet({
           if (audienceObjectives["Target Audience"])
             setValue("targetAudience", audienceObjectives["Target Audience"]);
           // Handle both "Learning Objectives" and "Learning and Behaviour Objectives"
-          const learningObjectives = 
-            audienceObjectives["Learning and Behaviour Objectives"] || 
+          const learningObjectives =
+            audienceObjectives["Learning and Behaviour Objectives"] ||
             audienceObjectives["Learning Objectives"];
           if (learningObjectives) {
             setValue("learningObjectives", learningObjectives);
@@ -331,7 +324,7 @@ export default function CreateComet({
           if (experienceDesign["Special Instructions"])
             setValue(
               "specialInstructions",
-              experienceDesign["Special Instructions"]
+              experienceDesign["Special Instructions"],
             );
         }
 
@@ -350,10 +343,10 @@ export default function CreateComet({
           const objectives = Array.isArray(prefillData.learningObjectives)
             ? prefillData.learningObjectives
             : typeof prefillData.learningObjectives === "string"
-            ? prefillData.learningObjectives
-                .split("\n")
-                .filter((obj) => obj.trim())
-            : [prefillData.learningObjectives];
+              ? prefillData.learningObjectives
+                  .split("\n")
+                  .filter((obj) => obj.trim())
+              : [prefillData.learningObjectives];
           setValue("learningObjectives", objectives);
         }
         if (prefillData.cometFocus)
@@ -361,7 +354,7 @@ export default function CreateComet({
         if (prefillData.sourceMaterialFidelity)
           setValue(
             "sourceMaterialFidelity",
-            prefillData.sourceMaterialFidelity
+            prefillData.sourceMaterialFidelity,
           );
         if (prefillData.engagementFrequency)
           setValue("engagementFrequency", prefillData.engagementFrequency);
@@ -401,6 +394,7 @@ export default function CreateComet({
           habitEnabled,
           habitText: data.habit || "",
           personalizationEnabled,
+          webpage_url: webpageUrls.filter((u) => u.trim()),
         };
         await onSubmit(formData);
       }
@@ -529,17 +523,16 @@ export default function CreateComet({
         ],
         to_modify: {},
       });
-      const messageResponse = await graphqlClient.sendMessage(
-        cometJsonForMessage
-      );
+      const messageResponse =
+        await graphqlClient.sendMessage(cometJsonForMessage);
       console.log(
         "Message sent, waiting for AI response via WebSocket:",
-        messageResponse
+        messageResponse,
       );
 
       console.log(
         "messageResponse>>>>>>>>>>>.test",
-        messageResponse.sendMessage
+        messageResponse.sendMessage,
       );
       setAllMessages((prev) => [
         ...prev,
@@ -758,7 +751,7 @@ export default function CreateComet({
                                 value={objective || ""}
                                 onChange={(e) => {
                                   const current = watch(
-                                    "learningObjectives"
+                                    "learningObjectives",
                                   ) || [""];
                                   const updated = [...current];
                                   updated[index] = e.target.value;
@@ -767,7 +760,7 @@ export default function CreateComet({
                                 onSelect={(e) =>
                                   handleTextSelection(
                                     `learningObjectives.${index}`,
-                                    e
+                                    e,
                                   )
                                 }
                                 className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300 min-h-10 flex-1"
@@ -783,7 +776,7 @@ export default function CreateComet({
                                 <Trash2 size={16} />
                               </Button>
                             </div>
-                          )
+                          ),
                         )}
                         <Button
                           size="sm"
@@ -931,6 +924,8 @@ export default function CreateComet({
                   files={files}
                   setFiles={setFiles}
                   isNewComet={isNewComet}
+                  webpageUrls={webpageUrls}
+                  setWebpageUrls={setWebpageUrls}
                 />
               </div>
             </div>

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
 
-import { Plus, CircleX } from "lucide-react";
+import { Plus, CircleX, Link2, Trash2 } from "lucide-react";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import Image from "next/image";
@@ -15,6 +15,8 @@ export default function SourceMaterialCard({
   files,
   setFiles,
   isNewComet = false,
+  webpageUrls = [],
+  setWebpageUrls = () => {},
 }) {
   const [sessionId, setSessionId] = useState(null);
 
@@ -102,7 +104,7 @@ export default function SourceMaterialCard({
         console.error("Error uploading file:", error);
       }
     },
-    [sessionId]
+    [sessionId],
   );
 
   const handleFileSelect = (event) => {
@@ -111,7 +113,7 @@ export default function SourceMaterialCard({
     // Check for duplicate file
     const existingFile = new Set(files.map((f) => f.name));
     const duplicateFiles = selectedFiles.filter((file) =>
-      existingFile.has(file.name)
+      existingFile.has(file.name),
     );
 
     if (duplicateFiles.length > 0) {
@@ -119,12 +121,12 @@ export default function SourceMaterialCard({
       toast.error(
         duplicateFiles.length === 1
           ? `"${duplicateNames}" is already uploaded`
-          : `These files are already uploaded: ${duplicateNames}`
+          : `These files are already uploaded: ${duplicateNames}`,
       );
     }
 
     const newFiles = selectedFiles.filter(
-      (file) => !existingFile.has(file.name)
+      (file) => !existingFile.has(file.name),
     );
 
     if (newFiles.length > 0) {
@@ -161,6 +163,20 @@ export default function SourceMaterialCard({
     };
   }, [files, sessionId, uploadFile]);
 
+  const handleAddLink = () => {
+    setWebpageUrls([...webpageUrls, ""]);
+  };
+
+  const handleRemoveLink = (index) => {
+    setWebpageUrls(webpageUrls.filter((_, i) => i !== index));
+  };
+
+  const handleLinkChange = (index, value) => {
+    const updated = [...webpageUrls];
+    updated[index] = value;
+    setWebpageUrls(updated);
+  };
+
   return (
     <Card className="border-none shadow-none p-0">
       <CardHeader>
@@ -170,7 +186,7 @@ export default function SourceMaterialCard({
       </CardHeader>
 
       <CardContent>
-        <div className="flex flex-col w-full border-2 border-gray-200 rounded-xl bg-gray-100 p-2 sm:p-2">
+        <div className="flex flex-col w-full border-2 border-gray-200 rounded-xl bg-gray-100 p-2 sm:p-2 gap-2">
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center transition-colors bg-white">
             <input
               type="file"
@@ -191,7 +207,7 @@ export default function SourceMaterialCard({
               <Button
                 variant="outline"
                 className={cn(
-                  "flex items-center gap-2 border-primary text-primary cursor-pointer"
+                  "flex items-center gap-2 border-primary text-primary cursor-pointer",
                 )}
                 onClick={(e) => {
                   e.preventDefault();
@@ -202,6 +218,40 @@ export default function SourceMaterialCard({
                 <span>Upload File</span>
               </Button>
             </label>
+          </div>
+          <div className="flex flex-col gap-2 bg-white p-2 rounded-lg">
+            {webpageUrls.map((url, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-2 bg-white rounded-lg  py-2"
+              >
+                <div className="flex items-center gap-2 bg-gray-100 p-2 rounded-lg">
+                  <Link2 className="w-4 h-4 text-primary-500 flex-shrink-0" />
+                </div>
+                <input
+                  type="url"
+                  placeholder="Paste link here"
+                  value={url}
+                  onChange={(e) => handleLinkChange(index, e.target.value)}
+                  className="flex-1 bg-white text-sm border border-gray-200 rounded-lg px-3 py-1.5 outline-none placeholder:text-gray-400 focus:border-primary-400 min-w-0"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveLink(index)}
+                  className="p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex-shrink-0"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              onClick={handleAddLink}
+              className="w-full border-primary text-white bg-primary"
+            >
+              + Add Link
+            </Button>
           </div>
         </div>
       </CardContent>

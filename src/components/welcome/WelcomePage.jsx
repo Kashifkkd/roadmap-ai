@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { ArrowUp, Paperclip, Search, X, FileText } from "lucide-react";
+import { ArrowUp, Paperclip, Search, X, FileText, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import Stars from "@/components/icons/Stars";
@@ -47,6 +47,12 @@ export default function WelcomePage() {
   const [isUploading, setIsUploading] = useState(false);
   const [sourceMaterialUid, setSourceMaterialUid] = useState(null);
 
+  // Link input state
+  const [webpageUrls, setWebpageUrls] = useState([]);
+  const [isLinkInputVisible, setIsLinkInputVisible] = useState(false);
+  const [linkInputValue, setLinkInputValue] = useState("");
+  const linkInputRef = useRef(null);
+
   const handleSuggestionSelect = (suggestion) => {
     setInputText(suggestion);
   };
@@ -83,10 +89,7 @@ export default function WelcomePage() {
   useSessionSubscription(
     sessionId,
     (receivedSessionData) => {
-      localStorage.setItem(
-        "sessionData",
-        JSON.stringify(receivedSessionData)
-      );
+      localStorage.setItem("sessionData", JSON.stringify(receivedSessionData));
       setSessionData(receivedSessionData);
 
       // Update chatbot_conversation
@@ -139,7 +142,7 @@ export default function WelcomePage() {
       console.error("Subscription error:", error);
       setError(error.message);
     },
-    { forceTemporary: true }
+    { forceTemporary: true },
   );
 
   const handleMessageTypingComplete = () => {
@@ -208,6 +211,7 @@ export default function WelcomePage() {
         chatbot_conversation: chatbotConversation,
         to_modify: sessionData?.to_modify ?? {},
         source_material_uid: uploadedFileUid || sourceMaterialUid || null,
+        webpage_url: webpageUrls.length > 0 ? webpageUrls : [],
         execution_id: executionId,
         retry_count: 0,
         error_history: [],
@@ -326,7 +330,7 @@ export default function WelcomePage() {
         setIsUploading(false);
       }
     },
-    [attachedFile, uploadFile]
+    [attachedFile, uploadFile],
   );
 
   // Handle file selection (single file only)
@@ -351,6 +355,46 @@ export default function WelcomePage() {
   const handleAttach = () => {
     // Trigger file input click
     fileInputRef.current?.click();
+  };
+
+  // Link handlers
+  const handleToggleLinkInput = () => {
+    setIsLinkInputVisible((prev) => !prev);
+    setLinkInputValue("");
+    setTimeout(() => linkInputRef.current?.focus(), 100);
+  };
+
+  const handleAddLink = () => {
+    const url = linkInputValue.trim();
+    if (!url) return;
+    // URL validation
+    try {
+      new URL(url);
+    } catch {
+      toast.error("Please enter a valid URL");
+      return;
+    }
+    if (webpageUrls.includes(url)) {
+      toast.error("This link has already been added");
+      return;
+    }
+    setWebpageUrls((prev) => [...prev, url]);
+    setLinkInputValue("");
+    setIsLinkInputVisible(false);
+  };
+
+  const handleRemoveLink = (urlToRemove) => {
+    setWebpageUrls((prev) => prev.filter((url) => url !== urlToRemove));
+  };
+
+  const handleLinkInputKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddLink();
+    } else if (e.key === "Escape") {
+      setIsLinkInputVisible(false);
+      setLinkInputValue("");
+    }
   };
 
   // Auto-resize textarea
@@ -399,10 +443,11 @@ export default function WelcomePage() {
           <div className="space-y-4">
             <div className="relative w-full max-w-3xl mx-auto rounded-xl border-primary-200 p-1.5 bg-[#E3E1FC] bg-[linear-gradient(147deg,rgba(227, 225, 252, 1) 0%, rgba(248, 247, 254, 1) 100%)]">
               <div
-                className={`w-full flex flex-col relative transition-all duration-200 rounded-xl bg-white ${isExpanded || messages.length > 0
-                  ? "min-h-[500px] max-h-[600px]"
-                  : ""
-                  }`}
+                className={`w-full flex flex-col relative transition-all duration-200 rounded-xl bg-white ${
+                  isExpanded || messages.length > 0
+                    ? "min-h-[500px] max-h-[600px]"
+                    : ""
+                }`}
               >
                 {/* Chat Messages */}
                 {messages.length > 0 && (
@@ -411,7 +456,7 @@ export default function WelcomePage() {
                       <ChatMessage
                         key={`${idx}-${msg.from}-${msg.content.substring(
                           0,
-                          20
+                          20,
                         )}`}
                         role={msg.from === "user" ? "user" : "bot"}
                         text={msg.content}
@@ -426,8 +471,9 @@ export default function WelcomePage() {
 
                 {/* Input Area */}
                 <div
-                  className={`relative w-full bg-white rounded-xl border border-primary-300 shadow-sm ${messages.length > 0 ? "mt-auto" : ""
-                    }`}
+                  className={`relative w-full bg-white rounded-xl border border-primary-300 shadow-sm ${
+                    messages.length > 0 ? "mt-auto" : ""
+                  }`}
                 >
                   <div className="relative w-full">
                     {messages.length === 0 && (
@@ -450,9 +496,11 @@ export default function WelcomePage() {
                       disabled={
                         isDisabled || isLoading || isAnimating || cometCreated
                       }
-                      className={`w-full ${messages.length === 0 ? "pl-10" : "pl-3"
-                        } pr-3 ${messages.length > 0 ? "pt-2.5 pb-2.5" : "pt-3 pb-3"
-                        } text-md shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text overflow-y-auto`}
+                      className={`w-full ${
+                        messages.length === 0 ? "pl-10" : "pl-3"
+                      } pr-3 ${
+                        messages.length > 0 ? "pt-2.5 pb-2.5" : "pt-3 pb-3"
+                      } text-md shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text overflow-y-auto`}
                       rows={1}
                       style={{
                         minHeight:
@@ -495,34 +543,115 @@ export default function WelcomePage() {
                   />
 
                   {/* Action Bar */}
-                  <div className="w-full flex flex-row justify-between items-center gap-2 px-3 py-3">
-                    <Button
-                      variant="default"
-                      className={`cursor-pointer flex items-center gap-2 ${attachedFile
-                        ? "text-white bg-primary-600"
-                        : "text-white bg-primary hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
-                        }`}
-                      onClick={handleAttach}
-                      disabled={isLoading || cometCreated || isUploading}
-                    >
-                      <Paperclip className="w-4 h-4" />
-                      <span>Attach</span>
-                    </Button>
+                  <div className="w-full flex flex-col gap-2 px-3 py-3">
+                    {/* Buttons + chips row */}
+                    <div className="flex flex-row justify-between items-center gap-2">
+                      <div className="flex items-center flex-wrap">
+                        <Button
+                          variant="ghost"
+                          className={`cursor-pointer flex items-center gap-2 ${
+                            attachedFile
+                              ? "text-white bg-primary-600"
+                              : "text-gray-500 hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
+                          }`}
+                          onClick={handleAttach}
+                          disabled={isLoading || cometCreated || isUploading}
+                        >
+                          <Paperclip className="w-4 h-4" />
+                          <span>Attach</span>
+                        </Button>
 
-                    <button
-                      onClick={(e) => handleSubmitWrapper(e)}
-                      disabled={
-                        isDisabled ||
-                        !inputText.trim() ||
-                        isLoading ||
-                        isAnimating ||
-                        cometCreated ||
-                        isUploading
-                      }
-                      className="p-2 bg-primary text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors flex items-center justify-center w-8 h-8"
-                    >
-                      <ArrowUp className="w-4 h-4" />
-                    </button>
+                        {/* Link button */}
+                        <div className="relative">
+                          <Button
+                            variant="ghost"
+                            className={`cursor-pointer flex items-center gap-2 ${
+                              webpageUrls.length > 0 || isLinkInputVisible
+                                ? "text-gray-500"
+                                : "text-gray-500 hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
+                            }`}
+                            onClick={handleToggleLinkInput}
+                            disabled={isLoading || cometCreated}
+                          >
+                            <Link2 className="w-4 h-4" />
+                            <span>Link</span>
+                          </Button>
+
+                          {/* Link input dialog*/}
+                          {isLinkInputVisible && (
+                            <div className="absolute left-0 top-full mt-2 z-50 flex items-center gap-2 bg-primary-50 border border-primary-400 rounded-lg p-1  min-w-[280px]">
+                              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg">
+                                <input
+                                  ref={linkInputRef}
+                                  type="url"
+                                  placeholder="Paste link here"
+                                  value={linkInputValue}
+                                  onChange={(e) =>
+                                    setLinkInputValue(e.target.value)
+                                  }
+                                  onKeyDown={handleLinkInputKeyDown}
+                                  className="flex-1 bg-transparent text-sm border-0 outline-none placeholder:text-gray-400 min-w-0"
+                                />
+                                <Button
+                                  variant="outline"
+                                  className="px-3 text-sm bg-primary text-white hover:bg-primary/90 flex-shrink-0 "
+                                  onClick={handleAddLink}
+                                >
+                                  Add
+                                </Button>
+                                <button
+                                  onClick={() => {
+                                    setIsLinkInputVisible(false);
+                                    setLinkInputValue("");
+                                  }}
+                                  className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Link chips */}
+                        {webpageUrls.map((url, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1 rounded-full text-xs max-w-[200px]"
+                          >
+                            <Link2 className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate" title={url}>
+                              {url.replace(/^https?:\/\//, "").slice(0, 30)}
+                              {url.replace(/^https?:\/\//, "").length > 30
+                                ? "..."
+                                : ""}
+                            </span>
+                            <button
+                              onClick={() => handleRemoveLink(url)}
+                              className="hover:text-red-500 transition-colors flex-shrink-0 p-0.5 rounded-full hover:bg-primary-100"
+                              disabled={isLoading}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={(e) => handleSubmitWrapper(e)}
+                        disabled={
+                          isDisabled ||
+                          !inputText.trim() ||
+                          isLoading ||
+                          isAnimating ||
+                          cometCreated ||
+                          isUploading
+                        }
+                        className="p-2 bg-primary text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors flex items-center justify-center w-8 h-8 flex-shrink-0"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
