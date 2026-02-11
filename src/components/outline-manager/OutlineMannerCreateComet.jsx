@@ -8,7 +8,15 @@ import OutlineMannerFooter from "./OutlineMannerFooter";
 import StepsDisplay from "./StepsDisplay";
 import { Label } from "@/components/ui/Label";
 import { Button } from "@/components/ui/Button";
-import { Plus, GripVertical, Zap, ChevronDown, Trash2, MoreHorizontal, Pencil } from "lucide-react";
+import {
+  Plus,
+  GripVertical,
+  Zap,
+  ChevronDown,
+  Trash2,
+  MoreHorizontal,
+  Pencil,
+} from "lucide-react";
 import SelectIcon from "@/components/icons/SelectIcon";
 import ChapterTextarea from "./ChapterTextarea";
 import Loader from "@/components/loader2";
@@ -19,9 +27,9 @@ export default function OutlineMannerCreateComet({
   prefillData,
   setAllMessages,
   isAskingKyper = false,
-  setIsAskingKyper = () => { },
+  setIsAskingKyper = () => {},
   isSubmittingStep = false,
-  setIsSubmittingStep = () => { },
+  setIsSubmittingStep = () => {},
 }) {
   // console.log("sessionData in OutlineMannerCreateComet:", sessionData);
   // console.log("prefillData in OutlineMannerCreateComet:", prefillData);
@@ -97,7 +105,7 @@ export default function OutlineMannerCreateComet({
     const chapterName = selectedChapterNameRef.current;
     if (chapterName) {
       const chapterIndex = chapters.findIndex(
-        (ch) => ch?.chapter === chapterName
+        (ch) => ch?.chapter === chapterName,
       );
 
       if (chapterIndex !== -1) {
@@ -107,7 +115,7 @@ export default function OutlineMannerCreateComet({
         const stepTitle = selectedStepTitleRef.current;
         if (stepTitle && isArrayWithValues(updatedChapter?.steps)) {
           const stepIndex = updatedChapter.steps.findIndex(
-            (step) => step?.title === stepTitle
+            (step) => step?.title === stepTitle,
           );
           if (stepIndex !== -1) {
             setSelectedStep(updatedChapter.steps[stepIndex]);
@@ -164,7 +172,7 @@ export default function OutlineMannerCreateComet({
       const rect = e.currentTarget.getBoundingClientRect();
       setMenuPosition({
         top: rect.bottom + 4,
-        left: rect.right - 100, 
+        left: rect.right - 100,
       });
       setOpenMenuIndex(index);
     }
@@ -202,7 +210,7 @@ export default function OutlineMannerCreateComet({
 
     try {
       const storedData = JSON.parse(
-        localStorage.getItem("sessionData") || "{}"
+        localStorage.getItem("sessionData") || "{}",
       );
       if (storedData) {
         storedData.response_outline = newChapters;
@@ -263,7 +271,7 @@ export default function OutlineMannerCreateComet({
 
     try {
       const storedData = JSON.parse(
-        localStorage.getItem("sessionData") || "{}"
+        localStorage.getItem("sessionData") || "{}",
       );
       if (storedData) {
         storedData.response_outline = newChapters;
@@ -338,7 +346,7 @@ export default function OutlineMannerCreateComet({
     // Update localStorage to persist changes
     try {
       const storedData = JSON.parse(
-        localStorage.getItem("sessionData") || "{}"
+        localStorage.getItem("sessionData") || "{}",
       );
       if (storedData) {
         storedData.response_outline = newChapters;
@@ -375,7 +383,13 @@ export default function OutlineMannerCreateComet({
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = "move";
-    if (draggedStepIndex !== null && !(draggedStepChapterIndex === chapterIndex && draggedStepIndex === stepIndex)) {
+    if (
+      draggedStepIndex !== null &&
+      !(
+        draggedStepChapterIndex === chapterIndex &&
+        draggedStepIndex === stepIndex
+      )
+    ) {
       setDropTargetStep({ chapterIndex, stepIndex });
     }
   };
@@ -425,7 +439,7 @@ export default function OutlineMannerCreateComet({
     // Update localStorage to persist changes
     try {
       const storedData = JSON.parse(
-        localStorage.getItem("sessionData") || "{}"
+        localStorage.getItem("sessionData") || "{}",
       );
       if (storedData) {
         storedData.response_outline = newChapters;
@@ -463,7 +477,7 @@ export default function OutlineMannerCreateComet({
     // Update localStorage to persist changes
     try {
       const storedData = JSON.parse(
-        localStorage.getItem("sessionData") || "{}"
+        localStorage.getItem("sessionData") || "{}",
       );
       if (storedData) {
         storedData.response_outline = newChapters;
@@ -496,7 +510,7 @@ export default function OutlineMannerCreateComet({
     // Update localStorage to persist changes
     try {
       const storedData = JSON.parse(
-        localStorage.getItem("sessionData") || "{}"
+        localStorage.getItem("sessionData") || "{}",
       );
       if (storedData) {
         storedData.response_outline = newChapters;
@@ -510,12 +524,12 @@ export default function OutlineMannerCreateComet({
   useEffect(() => {
     try {
       const sessionData = JSON.parse(
-        localStorage.getItem("sessionData") || "{}"
+        localStorage.getItem("sessionData") || "{}",
       );
       setText(
         sessionData?.comet_creation_data?.["Basic Information"]?.[
-        "Comet Title"
-        ] || "New Manager Essentials"
+          "Comet Title"
+        ] || "New Manager Essentials",
       );
     } catch {
       setText("New Manager Essentials");
@@ -563,7 +577,6 @@ export default function OutlineMannerCreateComet({
                 </div>
               ) : null}
               <div className="py-2 flex flex-col gap-2 flex-1 overflow-y-auto">
-
                 {isArrayWithValues(chapters) ? (
                   chapters.map((chapter, index) => (
                     <div
@@ -573,9 +586,10 @@ export default function OutlineMannerCreateComet({
                       onDragLeave={(e) => handleChapterDragLeave(e)}
                       onDrop={(e) => handleChapterDrop(e, index)}
                     >
-                      {dropTargetChapter === index && draggedChapterIndex !== null && (
-                        <div className="h-1.5 bg-primary rounded-full mx-2 my-1 transition-all shadow-sm pointer-events-none" />
-                      )}
+                      {dropTargetChapter === index &&
+                        draggedChapterIndex !== null && (
+                          <div className="h-1.5 bg-primary rounded-full mx-2 my-1 transition-all shadow-sm pointer-events-none" />
+                        )}
                       <div
                         draggable
                         onDragStart={(e) => handleChapterDragStart(e, index)}
@@ -583,9 +597,9 @@ export default function OutlineMannerCreateComet({
                         className={`border rounded-sm transition-all duration-200  ${
                           selectedChapter?.chapter === chapter?.chapter &&
                           expandedChapters[index]
-                          ? "border-gray-300 bg-primary-100 shadow-sm"
-                          : "border-gray-300 bg-white shadow-sm "
-                          } ${draggedChapterIndex === index ? "opacity-50" : ""}`}
+                            ? "border-gray-300 bg-primary-100 shadow-sm"
+                            : "border-gray-300 bg-white shadow-sm "
+                        } ${draggedChapterIndex === index ? "opacity-50" : ""}`}
                       >
                         <div
                           onClick={() => handleChapterClick(index, chapter)}
@@ -613,17 +627,17 @@ export default function OutlineMannerCreateComet({
                               <div
                                 className={`p-1 flex gap-2 rounded-full text-nowrap ${
                                   selectedChapter?.chapter === chapter?.chapter
-                                  ? "bg-gray-200"
-                                  : "bg-gray-200"
-                                  }`}
+                                    ? "bg-gray-200"
+                                    : "bg-gray-200"
+                                }`}
                               >
                                 <div
                                   className={`flex justify-center items-center size-[18px] rounded-full ${
                                     selectedChapter?.chapter ===
                                     chapter?.chapter
-                                    ? "bg-white text-gray-800"
-                                    : "bg-white text-gray-800"
-                                    }`}
+                                      ? "bg-white text-gray-800"
+                                      : "bg-white text-gray-800"
+                                  }`}
                                 >
                                   <Zap size={12} />
                                 </div>
@@ -654,38 +668,44 @@ export default function OutlineMannerCreateComet({
                                 size={18}
                                 className={`transition-transform duration-200 text-primary-600 ${
                                   expandedChapters[index]
-                                  ? "rotate-180"
-                                  : "rotate-0"
-                                  }`}
+                                    ? "rotate-180"
+                                    : "rotate-0"
+                                }`}
                               />
                             </div>
                             {editingChapterIndex === index ? (
-                              <div className="flex-1 flex flex-col gap-1 min-w-0 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                              <div
+                                className="flex-1 flex flex-col gap-1 min-w-0 overflow-hidden"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <textarea
                                   value={chapterEditValue}
                                   onChange={(e) => {
                                     setChapterEditValue(e.target.value);
-                                    e.target.style.height = 'auto';
-                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                    e.target.style.height = "auto";
+                                    e.target.style.height =
+                                      e.target.scrollHeight + "px";
                                   }}
                                   onKeyDown={(e) => {
-                                    if (e.key === 'Escape') {
+                                    if (e.key === "Escape") {
                                       handleCancelChapterEdit(e);
                                     }
                                   }}
-                                  className="w-full min-w-0 px-2 py-1 text-base font-medium border border-primary rounded-md focus:outline-none focus:ring-2 focus:ring-primary resize-none overflow-hidden"
+                                  className="w-full min-w-0 px-2 py-1 text-base font-medium border border-primary rounded-md focus:outline-none focus:ring-primary resize-none overflow-hidden"
                                   autoFocus
                                   rows={1}
                                   ref={(el) => {
                                     if (el) {
-                                      el.style.height = 'auto';
-                                      el.style.height = el.scrollHeight + 'px';
+                                      el.style.height = "auto";
+                                      el.style.height = el.scrollHeight + "px";
                                     }
                                   }}
                                 />
                                 <div className="flex gap-1 justify-end">
                                   <button
-                                    onClick={(e) => handleSaveChapterTitle(e, index)}
+                                    onClick={(e) =>
+                                      handleSaveChapterTitle(e, index)
+                                    }
                                     className="p-1 text-green-600 hover:bg-green-100 rounded flex-shrink-0"
                                     title="Save"
                                   >
@@ -703,51 +723,74 @@ export default function OutlineMannerCreateComet({
                             ) : (
                               <div className="flex-1 flex items-center gap-2 min-w-0 overflow-hidden">
                                 <p
-                                  className={`text-base font-medium line-clamp-2 ${selectedChapter?.chapter === chapter?.chapter &&
+                                  className={`text-base font-medium line-clamp-2 ${
+                                    selectedChapter?.chapter ===
+                                      chapter?.chapter &&
                                     expandedChapters[index]
-                                    ? "text-primary font-medium"
-                                    : "text-gray-900"
-                                    }`}
-                                  style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                                      ? "text-primary font-medium"
+                                      : "text-gray-900"
+                                  }`}
+                                  style={{
+                                    wordBreak: "break-word",
+                                    overflowWrap: "break-word",
+                                  }}
                                 >
                                   {chapter?.chapter || "Untitled Chapter"}
                                 </p>
-                                {(selectedChapter?.chapter === chapter?.chapter || expandedChapters[index]) && (
+                                {(selectedChapter?.chapter ===
+                                  chapter?.chapter ||
+                                  expandedChapters[index]) && (
                                   <div className="relative">
                                     <button
-                                      onClick={(e) => handleChapterMenuClick(e, index)}
+                                      onClick={(e) =>
+                                        handleChapterMenuClick(e, index)
+                                      }
                                       className="p-1 rounded-md hover:bg-gray-200 transition-colors"
                                       title="Options"
                                     >
                                       <MoreHorizontal className="w-4 h-4 text-gray-500" />
                                     </button>
-                                    {openMenuIndex === index && ReactDOM.createPortal(
-                                      <>
-                                        <div
-                                          className="fixed inset-0 z-[99]"
-                                          onClick={() => setOpenMenuIndex(null)}
-                                        />
-                                        <div
-                                          className="fixed bg-white border border-gray-100 rounded-xl shadow-xl z-[100] min-w-[100px] py-1 overflow-hidden"
-                                          style={{ top: menuPosition.top, left: menuPosition.left }}
-                                        >
-                                          <button
-                                            onClick={(e) => handleEditChapterClick(e, index, chapter?.chapter)}
-                                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                    {openMenuIndex === index &&
+                                      ReactDOM.createPortal(
+                                        <>
+                                          <div
+                                            className="fixed inset-0 z-[99]"
+                                            onClick={() =>
+                                              setOpenMenuIndex(null)
+                                            }
+                                          />
+                                          <div
+                                            className="fixed bg-white border border-gray-100 rounded-xl shadow-xl z-[100] min-w-[100px] py-1 overflow-hidden"
+                                            style={{
+                                              top: menuPosition.top,
+                                              left: menuPosition.left,
+                                            }}
                                           >
-                                            Edit
-                                          </button>
+                                            <button
+                                              onClick={(e) =>
+                                                handleEditChapterClick(
+                                                  e,
+                                                  index,
+                                                  chapter?.chapter,
+                                                )
+                                              }
+                                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                            >
+                                              Edit
+                                            </button>
 
-                                          <button
-                                            onClick={(e) => handleDeleteChapter(e, index)}
-                                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                          >
-                                            Delete
-                                          </button>
-                                        </div>
-                                      </>,
-                                      document.body
-                                    )}
+                                            <button
+                                              onClick={(e) =>
+                                                handleDeleteChapter(e, index)
+                                              }
+                                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                            >
+                                              Delete
+                                            </button>
+                                          </div>
+                                        </>,
+                                        document.body,
+                                      )}
                                   </div>
                                 )}
                               </div>
@@ -788,61 +831,85 @@ export default function OutlineMannerCreateComet({
                               <div className="flex flex-col gap-2 p-2">
                                 {chapter?.steps.map((step, stepIndex) => (
                                   <React.Fragment key={stepIndex}>
-                                    {dropTargetStep?.chapterIndex === index && dropTargetStep?.stepIndex === stepIndex && draggedStepIndex !== null && (
-                                      <div className="h-1 bg-primary rounded-full mx-2 my-1 transition-all" />
-                                    )}
+                                    {dropTargetStep?.chapterIndex === index &&
+                                      dropTargetStep?.stepIndex === stepIndex &&
+                                      draggedStepIndex !== null && (
+                                        <div className="h-1 bg-primary rounded-full mx-2 my-1 transition-all" />
+                                      )}
                                     <div
                                       draggable
                                       onDragStart={(e) =>
                                         handleStepDragStart(e, index, stepIndex)
                                       }
                                       onDragEnd={(e) => handleStepDragEnd(e)}
-                                      onDragOver={(e) => handleStepDragOver(e, index, stepIndex)}
-                                      onDragLeave={(e) => handleStepDragLeave(e)}
+                                      onDragOver={(e) =>
+                                        handleStepDragOver(e, index, stepIndex)
+                                      }
+                                      onDragLeave={(e) =>
+                                        handleStepDragLeave(e)
+                                      }
                                       onDrop={(e) =>
                                         handleStepDrop(e, index, stepIndex)
                                       }
-                                      className={`group relative flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all duration-200 ${selectedStep?.title === step?.title
-                                        ? "bg-primary-700 border border-primary shadow-sm text-white"
-                                        : "bg-white hover:bg-accent hover:shadow-md text-gray-900"
-                                        } ${
-                                          draggedStepIndex === stepIndex &&
-                                          draggedStepChapterIndex === index
+                                      className={`group relative flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all duration-200 ${
+                                        selectedStep?.title === step?.title
+                                          ? "bg-primary-700 border border-primary shadow-sm text-white"
+                                          : "bg-white hover:bg-accent hover:shadow-md text-gray-900"
+                                      } ${
+                                        draggedStepIndex === stepIndex &&
+                                        draggedStepChapterIndex === index
                                           ? "opacity-50"
                                           : ""
-                                        }`}
+                                      }`}
                                       onClick={(e) =>
                                         handleStepClick(e, chapter, step, index)
                                       }
                                     >
                                       {/* Delete Step Button - Top Right */}
                                       <button
-                                        onClick={(e) => handleDeleteStep(e, index, stepIndex, step?.title)}
-                                        className={`absolute top-1 right-1 p-1 rounded-md transition-colors z-10 opacity-0 group-hover:opacity-100 ${selectedStep?.title === step?.title
-                                          ? "hover:bg-red-500/30 text-white"
-                                          : "hover:bg-red-100 text-red-500"
-                                          }`}
+                                        onClick={(e) =>
+                                          handleDeleteStep(
+                                            e,
+                                            index,
+                                            stepIndex,
+                                            step?.title,
+                                          )
+                                        }
+                                        className={`absolute top-1 right-1 p-1 rounded-md transition-colors z-10 opacity-0 group-hover:opacity-100 ${
+                                          selectedStep?.title === step?.title
+                                            ? "hover:bg-red-500/30 text-white"
+                                            : "hover:bg-red-100 text-red-500"
+                                        }`}
                                         title="Delete Step"
                                       >
                                         <Trash2 className="w-4 h-4" />
                                       </button>
 
                                       <button
-                                        onClick={(e) => handleEditStepClick(e, index, stepIndex, step?.title)}
-                                        className={`absolute top-10 right-1 p-1 rounded-md transition-colors z-10 opacity-0 group-hover:opacity-100 ${selectedStep?.title === step?.title
-                                          ? "hover:bg-white/20 text-white"
-                                          : "hover:bg-gray-200 text-gray-500"
-                                          }`}
+                                        onClick={(e) =>
+                                          handleEditStepClick(
+                                            e,
+                                            index,
+                                            stepIndex,
+                                            step?.title,
+                                          )
+                                        }
+                                        className={`absolute top-10 right-1 p-1 rounded-md transition-colors z-10 opacity-0 group-hover:opacity-100 ${
+                                          selectedStep?.title === step?.title
+                                            ? "hover:bg-white/20 text-white"
+                                            : "hover:bg-gray-200 text-gray-500"
+                                        }`}
                                         title="Edit Step Title"
                                       >
                                         <Pencil className="w-3 h-3" />
                                       </button>
 
                                       <div
-                                        className={`flex justify-center items-center gap-4 h-full shrink-0 ${selectedStep?.title === step?.title
-                                          ? "text-white bg-primary-700 py-1 rounded-[4px]"
-                                          : "text-gray-500"
-                                          }`}
+                                        className={`flex justify-center items-center gap-4 h-full shrink-0 ${
+                                          selectedStep?.title === step?.title
+                                            ? "text-white bg-primary-700 py-1 rounded-[4px]"
+                                            : "text-gray-500"
+                                        }`}
                                       >
                                         <GripVertical
                                           width={18}
@@ -852,57 +919,83 @@ export default function OutlineMannerCreateComet({
                                       </div>
                                       <div className="flex-1 min-w-0 pr-6">
                                         <div
-                                          className={`font-medium base shrink-0 mt-0.5 ${selectedStep?.title === step?.title
-                                            ? "text-white"
-                                            : "text-gray-900"
-                                            }`}
+                                          className={`font-medium base shrink-0 mt-0.5 ${
+                                            selectedStep?.title === step?.title
+                                              ? "text-white"
+                                              : "text-gray-900"
+                                          }`}
                                         >
                                           Step {stepIndex + 1}
                                         </div>
                                         <div className="flex-1 min-w-0 overflow-hidden">
-                                          {editingStepKey === `${index}-${stepIndex}` ? (
-                                            <div className="flex flex-col gap-1 min-w-0 w-full" onClick={(e) => e.stopPropagation()}>
+                                          {editingStepKey ===
+                                          `${index}-${stepIndex}` ? (
+                                            <div
+                                              className="flex flex-col gap-1 min-w-0 w-full"
+                                              onClick={(e) =>
+                                                e.stopPropagation()
+                                              }
+                                            >
                                               <textarea
                                                 value={stepEditValue}
-                                                onChange={(e) => {setStepEditValue(e.target.value);
-                                                  e.target.style.height = 'auto';
-                                                  e.target.style.height = e.target.scrollHeight + 'px';
+                                                onChange={(e) => {
+                                                  setStepEditValue(
+                                                    e.target.value,
+                                                  );
+                                                  e.target.style.height =
+                                                    "auto";
+                                                  e.target.style.height =
+                                                    e.target.scrollHeight +
+                                                    "px";
                                                 }}
                                                 onKeyDown={(e) => {
-                                                  if (e.key === 'Escape') {
+                                                  if (e.key === "Escape") {
                                                     handleCancelStepEdit(e);
                                                   }
                                                 }}
-                                                className={`w-full min-w-0 px-2 py-1 text-sm font-medium border rounded focus:outline-none focus:ring-1 resize-none overflow-hidden ${selectedStep?.title === step?.title
-                                                  ? "bg-white/20 border-white/50 text-white placeholder-white/70 focus:ring-white/50"
-                                                  : "bg-white border-primary text-gray-900 focus:ring-primary"
-                                                  }`}
+                                                className={`w-full min-w-0 px-2 py-1 text-sm font-medium border rounded focus:outline-none focus:ring-1 resize-none overflow-hidden ${
+                                                  selectedStep?.title ===
+                                                  step?.title
+                                                    ? "bg-white/20 border-white/50 text-white placeholder-white/70 focus:ring-white/50"
+                                                    : "bg-white border-primary text-gray-900 focus:ring-primary"
+                                                }`}
                                                 autoFocus
                                                 rows={1}
                                                 ref={(el) => {
                                                   if (el) {
-                                                    el.style.height = 'auto';
-                                                    el.style.height = el.scrollHeight + 'px';
+                                                    el.style.height = "auto";
+                                                    el.style.height =
+                                                      el.scrollHeight + "px";
                                                   }
                                                 }}
                                               />
                                               <div className="flex gap-1 justify-end">
                                                 <button
-                                                  onClick={(e) => handleSaveStepTitle(e, index, stepIndex)}
-                                                  className={`p-1 rounded flex-shrink-0 ${selectedStep?.title === step?.title
-                                                    ? "text-white hover:bg-white/20"
-                                                    : "text-green-600 hover:bg-green-100"
-                                                    }`}
+                                                  onClick={(e) =>
+                                                    handleSaveStepTitle(
+                                                      e,
+                                                      index,
+                                                      stepIndex,
+                                                    )
+                                                  }
+                                                  className={`p-1 rounded flex-shrink-0 ${
+                                                    selectedStep?.title ===
+                                                    step?.title
+                                                      ? "text-white hover:bg-white/20"
+                                                      : "text-green-600 hover:bg-green-100"
+                                                  }`}
                                                   title="Save"
                                                 >
                                                   ✓
                                                 </button>
                                                 <button
                                                   onClick={handleCancelStepEdit}
-                                                  className={`p-1 rounded flex-shrink-0 ${selectedStep?.title === step?.title
-                                                    ? "text-white hover:bg-white/20"
-                                                    : "text-red-600 hover:bg-red-100"
-                                                    }`}
+                                                  className={`p-1 rounded flex-shrink-0 ${
+                                                    selectedStep?.title ===
+                                                    step?.title
+                                                      ? "text-white hover:bg-white/20"
+                                                      : "text-red-600 hover:bg-red-100"
+                                                  }`}
                                                   title="Cancel"
                                                 >
                                                   ✕
@@ -910,7 +1003,9 @@ export default function OutlineMannerCreateComet({
                                               </div>
                                             </div>
                                           ) : (
-                                            <p className={`text-sm line-clamp-2 ${selectedStep?.title === step?.title ? "text-white" : "text-gray-700"}`}>
+                                            <p
+                                              className={`text-sm line-clamp-2 ${selectedStep?.title === step?.title ? "text-white" : "text-gray-700"}`}
+                                            >
                                               {step?.title ||
                                                 `Step ${stepIndex + 1}`}
                                             </p>

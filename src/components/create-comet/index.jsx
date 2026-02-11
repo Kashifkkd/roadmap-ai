@@ -739,7 +739,7 @@ export default function CreateComet({
 
                     <div className="space-y-2">
                       <Label htmlFor="learning-objectives">
-                        Learning and Behaviour Objectives
+                        Learning and Behavior Objectives
                       </Label>
                       <div className="space-y-2">
                         {(watch("learningObjectives") || [""]).map(

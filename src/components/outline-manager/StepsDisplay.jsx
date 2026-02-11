@@ -40,7 +40,7 @@ const StepsDisplay = ({
   const selectionRef = useRef(null);
   const inputRef = useRef(null);
   const [chapterSteps, setChapterSteps] = useState(
-    selectedChapter?.steps || []
+    selectedChapter?.steps || [],
   );
   const [isAddStepModalOpen, setIsAddStepModalOpen] = useState(false);
   const [stepPrompt, setStepPrompt] = useState("");
@@ -51,6 +51,7 @@ const StepsDisplay = ({
   const targetChapterRef = useRef(null);
   const targetChapterIndexRef = useRef(null);
   const stepRefs = useRef({});
+  const stepsContainerRef = useRef(null);
   const handledUpdateRef = useRef(false);
   const isSubmittingStepRef = useRef(false);
   const isAskingKyperRef = useRef(false);
@@ -82,10 +83,7 @@ const StepsDisplay = ({
 
       if (typeof window !== "undefined") {
         try {
-          localStorage.setItem(
-            "sessionData",
-            JSON.stringify(sessionPayload)
-          );
+          localStorage.setItem("sessionData", JSON.stringify(sessionPayload));
         } catch {}
       }
 
@@ -124,8 +122,15 @@ const StepsDisplay = ({
       }
       handledUpdateRef.current = false;
     },
-    { forceTemporary: true }
+    { forceTemporary: true },
   );
+
+  // Scroll to top when chapter changes
+  useEffect(() => {
+    if (stepsContainerRef.current) {
+      stepsContainerRef.current.scrollTo({ top: 0 });
+    }
+  }, [selectedChapter]);
 
   // Scroll to selected step when it changes
   useEffect(() => {
@@ -195,7 +200,7 @@ const StepsDisplay = ({
         try {
           localStorage.setItem(
             "sessionData",
-            JSON.stringify(JSON.parse(cometJson))
+            JSON.stringify(JSON.parse(cometJson)),
           );
         } catch {}
       }
@@ -219,7 +224,7 @@ const StepsDisplay = ({
 
     if (targetName) {
       updatedChapter = sessionPayload.response_outline.find(
-        (chapter) => chapter?.chapter === targetName
+        (chapter) => chapter?.chapter === targetName,
       );
     }
 
@@ -299,7 +304,7 @@ const StepsDisplay = ({
       }, 10);
       console.log("<<<<<<<chapterSteps>>>>>>>>>>>>", chapterSteps);
     },
-    [chapterSteps, chapterNumber, isSelecting, selectedChapter]
+    [chapterSteps, chapterNumber, isSelecting, selectedChapter],
   );
 
   useEffect(() => {
@@ -592,7 +597,7 @@ const StepsDisplay = ({
     // Update localStorage
     try {
       const storedData = JSON.parse(
-        localStorage.getItem("sessionData") || "{}"
+        localStorage.getItem("sessionData") || "{}",
       );
       if (storedData && storedData.response_outline) {
         const chapterName = selectedChapter?.chapter;
@@ -655,13 +660,17 @@ const StepsDisplay = ({
               Add Step
             </Button>
           </div>
-          <p className="text-lg text-start text-gray-900 font-semibold w-full" style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
+          <p
+            className="text-lg text-start text-gray-900 font-semibold w-full"
+            style={{ wordBreak: "break-all", overflowWrap: "anywhere" }}
+          >
             {selectedChapter?.chapter || "Untitled Chapter"}
           </p>
         </div>
 
         {/* Steps List */}
         <div
+          ref={stepsContainerRef}
           className="flex-1 overflow-y-scroll py-2"
           style={{
             scrollbarWidth: "thin",
@@ -685,7 +694,13 @@ const StepsDisplay = ({
                     <p className="text-xs text-gray-900 mb-1">
                       Step {index + 1}
                     </p>
-                    <h3 className="text-base font-semibold text-primary" style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
+                    <h3
+                      className="text-base font-semibold text-primary"
+                      style={{
+                        wordBreak: "break-all",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
                       {step?.title || "Untitled Step"}
                     </h3>
                   </div>
@@ -716,7 +731,7 @@ const StepsDisplay = ({
                                 ref={inputRef}
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
-                                className="w-full min-h-20 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                className="w-full min-h-20 p-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
                                 rows={3}
                               />
                               <div className="flex gap-2">
@@ -779,7 +794,7 @@ const StepsDisplay = ({
                                 ref={inputRef}
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
-                                className="w-full min-h-20 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                className="w-full min-h-20 p-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
                                 rows={3}
                               />
                               <div className="flex gap-2">
@@ -842,7 +857,7 @@ const StepsDisplay = ({
                                 ref={inputRef}
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
-                                className="w-full min-h-20 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                className="w-full min-h-20 p-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
                                 rows={3}
                               />
                               <div className="flex gap-2">
@@ -1072,9 +1087,9 @@ const AddStepModal = ({
               onClick={onToggleSourceMaterial}
               className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
                 includeSourceMaterial
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-gray-200 text-gray-600 hover:border-gray-300"
-                }`}
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-gray-200 text-gray-600 hover:border-gray-300"
+              }`}
               disabled={isSubmitting}
             >
               <Paperclip className="h-4 w-4" />
