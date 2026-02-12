@@ -446,6 +446,7 @@ const StepsDisplay = ({
         // },
         chatbot_conversation: updatedConversation,
         to_modify: {},
+        webpage_url: snapshot?.webpage_url || [],
       });
 
       const messageResponse = await graphqlClient.sendMessage(payloadObject);
@@ -526,6 +527,7 @@ const StepsDisplay = ({
         // },
         chatbot_conversation: updatedConversation,
         to_modify: {},
+        webpage_url: snapshot?.webpage_url || [],
       });
       console.log(">>>>>>>payloadObject>>>>>>>>>>", payloadObject);
 

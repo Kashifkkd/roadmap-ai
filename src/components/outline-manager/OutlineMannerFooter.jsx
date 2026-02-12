@@ -175,6 +175,7 @@ export default function OutlineMannerFooter() {
         response_path: parsedSessionData?.response_path || {},
         chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
         to_modify: {},
+        webpage_url: parsedSessionData?.webpage_url || [],
       });
 
       await graphqlClient.sendMessage(cometJsonForMessage);

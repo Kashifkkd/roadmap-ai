@@ -75,6 +75,7 @@ export default function ChapterTextarea({
         // },
         chatbot_conversation: chatbotConversation,
         to_modify: {},
+        webpage_url: freshSessionData?.webpage_url || [],
       });
       /*
         const conversationMessage = `{ 'chapter': '${chapter 3}', 'value': '${currentFieldValue}', 'instruction': '${query}' }`;

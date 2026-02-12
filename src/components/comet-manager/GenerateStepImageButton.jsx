@@ -180,6 +180,7 @@ export default function GenerateStepImageButton({
           response_path: updatedSessionData.response_path || {},
           chatbot_conversation: updatedSessionData.chatbot_conversation || [],
           to_modify: updatedSessionData.to_modify || {},
+          webpage_url: updatedSessionData.webpage_url || [],
         });
 
         const { graphqlClient } = await import("@/lib/graphql-client");

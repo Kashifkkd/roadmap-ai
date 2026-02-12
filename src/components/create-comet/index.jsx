@@ -235,6 +235,11 @@ export default function CreateComet({
     if (prefillData) {
       // console.log("CreateComet: Prefilling form with data:", prefillData);
 
+      // Restore webpage URLs from local/session so they show in the UI
+      if (prefillData.webpage_url && Array.isArray(prefillData.webpage_url) && prefillData.webpage_url.length > 0) {
+        setWebpageUrls(prefillData.webpage_url);
+      }
+
       if (prefillData.comet_creation_data) {
         const basicInfo = prefillData.comet_creation_data["Basic Information"];
         const audienceObjectives =
@@ -508,6 +513,7 @@ export default function CreateComet({
           { user: conversationMessage },
         ],
         to_modify: {},
+        webpage_url: webpageUrls.filter((u) => u.trim()),
       });
 
       console.log("Final payload:", cometJsonForMessage, {

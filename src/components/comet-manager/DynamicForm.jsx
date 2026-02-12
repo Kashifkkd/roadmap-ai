@@ -867,6 +867,7 @@ export default function DynamicForm({
         // },
         chatbot_conversation: chatbotConversation,
         to_modify: {},
+        webpage_url: sessionData?.webpage_url || [],
       });
 
       const messageResponse = await graphqlClient.sendMessage(payloadObject);

@@ -348,6 +348,7 @@ export default function ChatWindow({
         chatbot_conversation: chatbotConversation,
         to_modify: sessionData?.to_modify ?? {},
         source_material_uid: null,
+        webpage_url: sessionData?.webpage_url ?? [],
         execution_id: executionId,
         retry_count: 0,
         error_history: [],

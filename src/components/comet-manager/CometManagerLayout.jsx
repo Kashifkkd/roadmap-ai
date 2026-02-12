@@ -181,6 +181,7 @@ export default function CometManagerLayout() {
             // },
             chatbot_conversation: sessionData?.chatbot_conversation || [],
             to_modify: sessionData?.to_modify || {},
+            webpage_url: sessionData?.webpage_url || [],
           });
 
           const response = await graphqlClient.autoSaveComet(cometJsonForSave);
