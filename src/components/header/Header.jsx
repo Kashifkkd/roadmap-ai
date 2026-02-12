@@ -1657,7 +1657,7 @@ export default function Header() {
         onOpenChange={setIsClientSettingsDialogOpen}
         selectedClient={selectedClient}
       />
-      <FloatingFeedbackButton />
+      {/* <FloatingFeedbackButton /> */}
     </>
   );
 }
