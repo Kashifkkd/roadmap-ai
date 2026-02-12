@@ -1132,8 +1132,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       </div>
                     </div>
                     {/* Generative AI Settings Section */}
-                    <div className="pt-6 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-2 px-4  text-gray-700">
+                    <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
+                      <p className=" font-bold mb-4 px-4  text-gray-700">
                         Generative AI Settings
                       </p>
                       <div className="space-y-4 bg-white p-2 rounded-lg">
@@ -1192,7 +1192,14 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                             <Label className="text-sm font-medium text-gray-700">
                               Image Guidance
                             </Label>
-                            <Select
+                            <Input
+                              type="text"
+                              value={imageGuidance}
+                              onChange={(e) => setImageGuidance(e.target.value)}
+                              placeholder="Enter image guidance"
+                              className="w-full rounded-lg border-gray-300"
+                            />
+                            {/* <Select
                               value={imageGuidance || undefined}
                               onValueChange={setImageGuidance}
                             >
@@ -1209,14 +1216,14 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                   Very Detailed
                                 </SelectItem>
                               </SelectContent>
-                            </Select>
+                            </Select> */}
                           </div>
                         </div>
                       </div>
                     </div>
                     {/* Toggles Section */}
-                    <div className="pt-6 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-2 px-4  text-gray-700">
+                    <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
+                      <p className=" font-bold mb-4 px-4  text-gray-700">
                         Experience Design
                       </p>
                       <div className="space-y-4 bg-white p-2 rounded-lg">
@@ -1235,8 +1242,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                         />
                       </div>
                     </div>
-                    <div className="pt-6 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-2 px-4  text-gray-700">
+                    <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
+                      <p className=" font-bold mb-4 px-4  text-gray-700">
                         Stakeholder Engagement
                       </p>
                       <div className="space-y-4 bg-white p-2 rounded-lg">
@@ -1255,8 +1262,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                         />
                       </div>
                     </div>
-                    <div className="pt-6 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-2 px-4  text-gray-700">
+                    <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
+                      <p className=" font-bold mb-4 px-4  text-gray-700">
                         Community Settings
                       </p>
                       <div className="space-y-4 bg-white p-2 rounded-lg">
@@ -1275,8 +1282,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                         />
                       </div>
                     </div>
-                    <div className="pt-6 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-2 px-4  text-gray-700">
+                    <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
+                      <p className=" font-bold mb-4 px-4  text-gray-700">
                         Leaderboard Settings
                       </p>
                       <div className="space-y-4 bg-white p-2 rounded-lg">
@@ -1290,8 +1297,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                     </div>
 
                     {/* Feature Toggles Section */}
-                    <div className="pt-6 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-2 px-4  text-gray-700">
+                    <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
+                      <p className=" font-bold mb-4 px-4  text-gray-700">
                         Feature Settings
                       </p>
                       <div className="space-y-4 bg-white p-2 rounded-lg">

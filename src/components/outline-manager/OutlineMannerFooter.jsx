@@ -68,7 +68,7 @@ export default function OutlineMannerFooter() {
       // Only navigate when generating and chapters > 1
       if (isGenerating) {
         const chaptersCount = getChaptersCount(sessionData);
-        if (chaptersCount > 1) {
+        if (chaptersCount >= 1) {
           router.push("/comet-manager");
         }
       }
