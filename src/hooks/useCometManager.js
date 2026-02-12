@@ -430,6 +430,45 @@ export function useCometManager(sessionData = null) {
     });
   };
 
+  // Reorder steps inside a chapter in outline
+  const reorderSteps = (chapterId, newStepOrder) => {
+    setOutline((prevOutline) => {
+      if (!prevOutline || !prevOutline.chapters) return prevOutline;
+
+      const newOutline = JSON.parse(JSON.stringify(prevOutline));
+      const pathChapters = newOutline.chapters || [];
+      const chapterIndex = pathChapters.findIndex((chapter) => {
+        const chapterMatchId = chapter.uuid || chapter.id;
+        return String(chapterMatchId) === String(chapterId);
+      });
+
+      if (chapterIndex < 0) return prevOutline;
+
+      const oldSteps = pathChapters[chapterIndex].steps || [];
+      if (!Array.isArray(oldSteps) || oldSteps.length === 0) {
+        return prevOutline;
+      }
+
+      const reordered = newStepOrder
+        .map((oldIndex) => oldSteps[oldIndex])
+        .filter(Boolean);
+
+      if (reordered.length !== oldSteps.length) {
+        return prevOutline;
+      }
+
+      for (let i = 0; i < reordered.length; i++) {
+        reordered[i].position = i + 1;
+        if (reordered[i].step && typeof reordered[i].step === "object") {
+          reordered[i].step.position = i + 1;
+        }
+      }
+
+      pathChapters[chapterIndex].steps = reordered;
+      return newOutline;
+    });
+  };
+
   const setSelectedStep = (stepId) => {
     setSelectedStepId(stepId);
   };
@@ -446,6 +485,7 @@ export function useCometManager(sessionData = null) {
     deleteScreen,
     reorderScreensList,
     reorderChapters,
+    reorderSteps,
     insertScreenAt,
     outline, // Expose outline for direct access if needed
     setOutline, // Expose setter for outline updates
