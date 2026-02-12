@@ -48,6 +48,7 @@ export const endpoints = {
   getImageAttributes: "api/generative-ai/v2/get-image-attributes",
   setImageAttributes: "api/generative-ai/v2/set-image-attributes",
   getSuggestPrompt: "api/generative-ai/v2/build-prompt",
+  getStepPrompts: "api/generative-ai/v2/step-prompts",
   replaceStepImage: (stepId) => `api/comet/step/replace-image/${stepId}`,
     uploadPathImage: (sessionId) => `api/comet/path/upload-image/${sessionId}`,
   //  getImageAttributes: "api/generative-ai/v2/get-image-attributes",

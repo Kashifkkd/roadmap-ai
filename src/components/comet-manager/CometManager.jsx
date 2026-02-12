@@ -1864,6 +1864,9 @@ export default function CometManager({
                                     onAddScreen={(insertIndex) =>
                                       handleAddScreen(insertIndex)
                                     }
+                                    onDeleteScreen={(screenId) =>
+                                      deleteScreenData(screenId)
+                                    }
                                   />
                                 </div>
                               ))}
