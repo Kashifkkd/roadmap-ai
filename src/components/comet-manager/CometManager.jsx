@@ -215,6 +215,7 @@ export default function CometManager({
     deleteScreen: deleteScreenData,
     reorderScreensList,
     reorderChapters,
+    reorderSteps,
     insertScreenAt,
     outline,
     setOutline,
@@ -1139,6 +1140,7 @@ export default function CometManager({
                 onAddScreen={handleAddScreen}
                 chapters={chapters}
                 onReorderChapters={reorderChapters}
+                onReorderSteps={reorderSteps}
                 remainingChapters={
                   sessionData?.response_path?.remaining_chapters || []
                 }

@@ -69,6 +69,7 @@ export default function CometManagerSidebar({
   onAddScreen,
   chapters = [],
   onReorderChapters,
+  onReorderSteps,
   remainingChapters = [],
   onChapterClick,
   onRemainingChapterClick,
@@ -108,6 +109,8 @@ export default function CometManagerSidebar({
   
   const [draggedChapterIndex, setDraggedChapterIndex] = useState(null);
   const [dropTargetChapter, setDropTargetChapter] = useState(null);
+  const [draggedStep, setDraggedStep] = useState(null);
+  const [dropTargetStep, setDropTargetStep] = useState(null);
 
   // Chapter drag handlers - chapter 0 cannot be dragged
   const handleChapterDragStart = (e, index) => {
@@ -173,6 +176,63 @@ export default function CometManagerSidebar({
 
     setDraggedChapterIndex(null);
     setDropTargetChapter(null);
+  };
+
+  const handleStepDragStart = (e, chapterId, stepIndex) => {
+    e.stopPropagation();
+    setDraggedStep({ chapterId, stepIndex });
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/step", `${chapterId}:${stepIndex}`);
+  };
+
+  const handleStepDragEnd = () => {
+    setDraggedStep(null);
+    setDropTargetStep(null);
+  };
+
+  const handleStepDragOver = (e, chapterId, stepIndex) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+
+    if (
+      draggedStep &&
+      draggedStep.chapterId === chapterId &&
+      draggedStep.stepIndex !== stepIndex
+    ) {
+      setDropTargetStep({ chapterId, stepIndex });
+    }
+  };
+
+  const handleStepDragLeave = (e) => {
+    e.stopPropagation();
+    setDropTargetStep(null);
+  };
+
+  const handleStepDrop = (e, chapterId, stepIndex, steps) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (
+      !draggedStep ||
+      draggedStep.chapterId !== chapterId ||
+      draggedStep.stepIndex === stepIndex
+    ) {
+      setDraggedStep(null);
+      setDropTargetStep(null);
+      return;
+    }
+
+    const newOrder = steps.map((_, i) => i);
+    const [draggedIdx] = newOrder.splice(draggedStep.stepIndex, 1);
+    newOrder.splice(stepIndex, 0, draggedIdx);
+
+    if (onReorderSteps) {
+      onReorderSteps(chapterId, newOrder);
+    }
+
+    setDraggedStep(null);
+    setDropTargetStep(null);
   };
 
   // Source materials state
@@ -751,17 +811,48 @@ export default function CometManagerSidebar({
                               // Use selectedStepId directly from hook - ensures only one step is selected
                               const isStepSelected = selectedStepId === stepId;
                               const isStepExpanded = expandedSteps.has(stepId);
+                              const isStepDragged =
+                                draggedStep &&
+                                draggedStep.chapterId === chapterId &&
+                                draggedStep.stepIndex === stepIndex;
+                              const isStepDraggedOver =
+                                dropTargetStep &&
+                                dropTargetStep.chapterId === chapterId &&
+                                dropTargetStep.stepIndex === stepIndex;
                               return (
                                 <div
                                   key={stepId}
-                                  className={`flex flex-col rounded-sm transition-all ${
-                                    isStepExpanded
-                                      ? "bg-primary-700"
-                                      : isStepSelected
-                                        ? "bg-primary-700"
-                                        : "bg-white"
-                                  }`}
+                                  className="flex flex-col transition-all"
+                                  onDragOver={(e) =>
+                                    handleStepDragOver(e, chapterId, stepIndex)
+                                  }
+                                  onDragLeave={handleStepDragLeave}
+                                  onDrop={(e) =>
+                                    handleStepDrop(
+                                      e,
+                                      chapterId,
+                                      stepIndex,
+                                      chapter.steps,
+                                    )
+                                  }
                                 >
+                                  {isStepDraggedOver && (
+                                    <div className="h-1 bg-primary rounded-full mx-2 mb-1 transition-all shadow-sm pointer-events-none" />
+                                  )}
+                                  <div
+                                    draggable
+                                    onDragStart={(e) =>
+                                      handleStepDragStart(e, chapterId, stepIndex)
+                                    }
+                                    onDragEnd={handleStepDragEnd}
+                                    className={`flex flex-col rounded-sm transition-all ${
+                                      isStepExpanded
+                                        ? "bg-primary-700"
+                                        : isStepSelected
+                                          ? "bg-primary-700"
+                                          : "bg-white"
+                                    } ${isStepDragged ? "opacity-50" : ""}`}
+                                  >
                                   {/* Step Header */}
                                   <div
                                     onClick={(e) => {
@@ -782,6 +873,14 @@ export default function CometManagerSidebar({
                                         : "hover:bg-gray-200"
                                     }`}
                                   >
+                                    <GripVertical
+                                      size={14}
+                                      className={`cursor-grab active:cursor-grabbing shrink-0 ${
+                                        isStepSelected || isStepExpanded
+                                          ? "text-white"
+                                          : "text-gray-400"
+                                      }`}
+                                    />
                                     <div
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -855,6 +954,7 @@ export default function CometManagerSidebar({
                                       </div>
                                     </div>
                                   )}
+                                </div>
                                 </div>
                               );
                             })}
