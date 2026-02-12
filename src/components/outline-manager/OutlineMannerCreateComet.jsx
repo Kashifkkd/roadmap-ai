@@ -691,7 +691,7 @@ export default function OutlineMannerCreateComet({
                                       handleCancelChapterEdit(e);
                                     }
                                   }}
-                                  className="w-full min-w-0 px-2 py-1 text-base font-medium border border-primary rounded-md focus:outline-none focus:ring-primary resize-none overflow-hidden"
+                                  className="w-full min-w-0 px-2 py-1 text-base font-medium border-2 shadow-md border-primary-400 rounded-md focus:outline-none focus:ring-primary resize-none overflow-hidden"
                                   autoFocus
                                   rows={1}
                                   ref={(el) => {
@@ -953,11 +953,11 @@ export default function OutlineMannerCreateComet({
                                                     handleCancelStepEdit(e);
                                                   }
                                                 }}
-                                                className={`w-full min-w-0 px-2 py-1 text-sm font-medium border rounded focus:outline-none focus:ring-1 resize-none overflow-hidden ${
+                                                className={`w-full min-w-0 px-2 py-1 text-sm font-medium border rounded-md focus:outline-none resize-none overflow-hidden ${
                                                   selectedStep?.title ===
                                                   step?.title
                                                     ? "bg-white/20 border-white/50 text-white placeholder-white/70 focus:ring-white/50"
-                                                    : "bg-white border-primary text-gray-900 focus:ring-primary"
+                                                    : "bg-white border-primary-400 shadow-md border-2 text-gray-900 focus:ring-primary"
                                                 }`}
                                                 autoFocus
                                                 rows={1}
