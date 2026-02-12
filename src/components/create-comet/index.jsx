@@ -236,7 +236,11 @@ export default function CreateComet({
       // console.log("CreateComet: Prefilling form with data:", prefillData);
 
       // Restore webpage URLs from local/session so they show in the UI
-      if (prefillData.webpage_url && Array.isArray(prefillData.webpage_url) && prefillData.webpage_url.length > 0) {
+      if (
+        prefillData.webpage_url &&
+        Array.isArray(prefillData.webpage_url) &&
+        prefillData.webpage_url.length > 0
+      ) {
         setWebpageUrls(prefillData.webpage_url);
       }
 

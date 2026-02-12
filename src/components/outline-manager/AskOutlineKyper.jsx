@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   X,
   Grid3x3,
@@ -24,6 +24,29 @@ export default function AskOutlineKyper({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [query, setQuery] = useState("");
+  const popupRef = useRef(null);
+
+  // Reset the state whenever the popup reopens 
+  useEffect(() => {
+    setIsExpanded(false);
+    setQuery("");
+  }, [focusedField]);
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    if (!focusedField) return;
+
+    const handleClickOutside = (e) => {
+      if (popupRef.current && !popupRef.current.contains(e.target)) {
+        setIsExpanded(false);
+        setQuery("");
+        onClose();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [focusedField, onClose]);
 
   const position = useMemo(() => {
     if (!fieldPosition) {
@@ -83,6 +106,7 @@ export default function AskOutlineKyper({
 
   return (
     <div
+      ref={popupRef}
       className="fixed z-50 animate-in slide-in-from-bottom-4"
       style={position}
       onMouseEnter={(e) => {

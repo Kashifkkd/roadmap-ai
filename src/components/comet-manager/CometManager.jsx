@@ -29,6 +29,7 @@ import {
   Paperclip,
   Zap,
   ArrowRight,
+  ArrowLeft,
   Sparkles,
 } from "lucide-react";
 import { graphqlClient } from "@/lib/graphql-client";
@@ -1933,6 +1934,15 @@ export default function CometManager({
 
                     <div className="border-t p-3 bg-primary-50 w-full rounded-b-xl shrink-0">
                       <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <Button
+                            className="bg-muted text-primary flex items-center justify-center gap-2"
+                            onClick={() => router.push("/outline-manager")}
+                          >
+                            <ArrowLeft size={16} />
+                            <span>Back</span>
+                          </Button>
+                        </div>
                         <div className="flex items-center gap-3 px-1 py-1 rounded-xl bg-[#E9EAEB]">
                           <div
                             className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center shrink-0 cursor-pointer hover:bg-gray-50 transition-colors"

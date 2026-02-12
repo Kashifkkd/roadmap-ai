@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import ForceRankForm from "./forms/ForceRankForm";
 import PollMcqForm from "./forms/PollMcqForm";
 import PollLinearForm from "./forms/PollLinearForm";
@@ -229,7 +229,7 @@ export default function DynamicForm({
   const [focusedField, setFocusedField] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
   const [askContext, setAskContext] = useState(null);
-  const [blurTimeout, setBlurTimeout] = useState(null);
+  const blurTimeoutRef = useRef(null);
 
   // Update field directly in outline - use setOutline(prev => ...) to always work with latest state
   const updateField = (field, value) => {
@@ -660,9 +660,9 @@ export default function DynamicForm({
   };
 
   const clearBlurTimeout = () => {
-    if (blurTimeout) {
-      clearTimeout(blurTimeout);
-      setBlurTimeout(null);
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+      blurTimeoutRef.current = null;
     }
   };
 
@@ -675,10 +675,9 @@ export default function DynamicForm({
 
   const handleFieldBlur = () => {
     clearBlurTimeout();
-    const timeout = setTimeout(() => {
+    blurTimeoutRef.current = setTimeout(() => {
       clearAskContext();
     }, 1500);
-    setBlurTimeout(timeout);
   };
 
   const handlePopupInteract = () => {
