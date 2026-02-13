@@ -229,12 +229,14 @@ export const ListField = ({
   );
 };
 
+/** When "html", value is always simple HTML for backend; delta is normalized to HTML on load. */
 export const RichTextArea = ({
   label,
   value,
   onChange,
   onSelectionChange,
   onBlur,
+  valueFormat = "delta",
 }) => {
   const quillEditorRef = useRef(null);
   const editorRef = useRef(null);
@@ -242,6 +244,11 @@ export const RichTextArea = ({
   const selectionCallbackRef = useRef(onSelectionChange);
   const blurCallbackRef = useRef(onBlur);
   const blurHandlerRef = useRef(null);
+  const valueFormatRef = useRef(valueFormat);
+
+  useEffect(() => {
+    valueFormatRef.current = valueFormat;
+  }, [valueFormat]);
 
   useEffect(() => {
     selectionCallbackRef.current = onSelectionChange;
@@ -254,6 +261,12 @@ export const RichTextArea = ({
   useEffect(() => {
     if (quillEditorRef.current || !editorRef.current)
       return;
+
+    const isHtmlFormat = valueFormat === "html";
+    const isHtmlString = (v) =>
+      typeof v === "string" && v.trim().length > 0 && v.trim().startsWith("<");
+    const isDeltaString = (v) =>
+      typeof v === "string" && v.trim().length > 0 && v.trim().startsWith("{");
 
     // Dynamically import Quill only on client side
     const initEditor = async () => {
@@ -274,31 +287,58 @@ export const RichTextArea = ({
         },
       });
 
-      // Set initial content
+      // Set initial content — when valueFormat is "html", we only use HTML; delta is normalized to HTML
       if (value) {
-        try {
-          // Try to parse as Quill delta
-          const parsed = JSON.parse(value);
-          if (parsed && parsed.ops && Array.isArray(parsed.ops)) {
-            editor.setContents(parsed);
-          } else {
-            // Not a valid delta, treat as plain text
+        if (isHtmlFormat && isHtmlString(value)) {
+          try {
+            editor.root.innerHTML = value;
+          } catch (htmlError) {
+            console.error("Failed to set HTML in Quill editor:", htmlError);
+          }
+        } else if (isHtmlFormat && isDeltaString(value)) {
+          // Backend sent delta; load it — text-change will fire and we'll emit HTML (normalize to simple HTML)
+          try {
+            const parsed = JSON.parse(value);
+            if (parsed && parsed.ops && Array.isArray(parsed.ops)) {
+              editor.setContents(parsed);
+              // Normalize: push HTML to parent so stored value is always simple HTML
+              onChange(editor.root.innerHTML);
+            }
+          } catch {
+            // ignore
+          }
+        } else if (!isHtmlFormat) {
+          try {
+            const parsed = JSON.parse(value);
+            if (parsed && parsed.ops && Array.isArray(parsed.ops)) {
+              editor.setContents(parsed);
+            } else {
+              const textValue =
+                typeof value === "string" ? value : String(value || "");
+              if (textValue.trim() !== "") editor.setText(textValue);
+            }
+          } catch {
             const textValue =
               typeof value === "string" ? value : String(value || "");
             if (textValue.trim() !== "") {
-              editor.setText(textValue);
+              try {
+                editor.setText(textValue);
+              } catch (error) {
+                try {
+                  editor.root.innerHTML = textValue;
+                } catch (htmlError) {
+                  console.error("Failed to set HTML in Quill editor:", htmlError);
+                }
+              }
             }
           }
-        } catch {
-          // Not JSON, treat as plain text
+        } else {
           const textValue =
             typeof value === "string" ? value : String(value || "");
           if (textValue.trim() !== "") {
             try {
               editor.setText(textValue);
             } catch (error) {
-              // If setText fails, try setting HTML content
-              console.warn("Failed to set text in Quill editor:", error);
               try {
                 editor.root.innerHTML = textValue;
               } catch (htmlError) {
@@ -309,9 +349,13 @@ export const RichTextArea = ({
         }
       }
 
-      // Handle content change
+      // Emit simple HTML when valueFormat is "html", else delta
       editor.on("text-change", () => {
-        onChange(JSON.stringify(editor.getContents()));
+        if (valueFormatRef.current === "html") {
+          onChange(editor.root.innerHTML);
+        } else {
+          onChange(JSON.stringify(editor.getContents()));
+        }
       });
 
       editor.on("selection-change", (range, _oldRange, source) => {
@@ -379,6 +423,16 @@ export const RichTextArea = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // When valueFormat is "html", sync editor when value prop changes (e.g. after delta→HTML normalization)
+  useEffect(() => {
+    if (valueFormat !== "html" || !value || !quillEditorRef.current) return;
+    const editor = quillEditorRef.current;
+    const html = typeof value === "string" ? value : "";
+    if (html.trim().startsWith("<") && editor.root.innerHTML !== html) {
+      editor.root.innerHTML = html;
+    }
+  }, [valueFormat, value]);
 
   return (
     <div className="mb-4">

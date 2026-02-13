@@ -162,6 +162,7 @@ export default function ContentForm({
               onRichTextSelection?.("body", selectionInfo, formData.body)
             }
             onBlur={onRichTextBlur}
+            valueFormat="html"
           />
 
           {/* Upload Image/Icon Section */}

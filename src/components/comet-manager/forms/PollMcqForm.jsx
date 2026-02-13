@@ -14,28 +14,6 @@ const generateId = (prefix) => {
   return `${prefix}_${crypto.randomUUID()}`;
 };
 
-
-// Helper to extract plain text from Quill delta JSON
-const extractPlainTextFromDelta = (value) => {
-  if (value == null) return "";
-  if (typeof value !== "string") return value;
-  if (value.trim() === "") return value;
-
-  if (value.trim().startsWith("{")) {
-    try {
-      const parsed = JSON.parse(value);
-      if (parsed && parsed.ops && Array.isArray(parsed.ops)) {
-        return parsed.ops
-          .map((op) => (op.insert && typeof op.insert === "string" ? op.insert : ""))
-          .join("");
-      }
-    } catch {
-      // Not valid JSON, return as-is
-    }
-  }
-  return value;
-};
-
 export default function PollMcqForm({
   formData,
   updateField,
@@ -159,11 +137,7 @@ export default function PollMcqForm({
         <RichTextArea
           label="Question"
           value={formData.question || ""}
-          onChange={(value) => {
-            // RichTextArea provides delta format, but we need to extract plain text for the form field
-            const plainText = extractPlainTextFromDelta(value);
-            updateField("question", plainText);
-          }}
+          onChange={(value) => updateField("question", value)}
           onSelectionChange={(selectionInfo) =>
             onRichTextSelection?.(
               "mcqQuestion",
@@ -172,6 +146,7 @@ export default function PollMcqForm({
             )
           }
           onBlur={onRichTextBlur}
+          valueFormat="html"
         />
         <TextArea
           label="Key Learning"

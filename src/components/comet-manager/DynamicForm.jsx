@@ -267,9 +267,8 @@ export default function DynamicForm({
               if (field === "heading") {
                 currentScreen.screenContents.content.heading = value;
               } else if (field === "body") {
-                // RichTextArea stores Quill delta as JSON string - extract plain text
-                const bodyValue = extractPlainTextFromDelta(value);
-                currentScreen.screenContents.content.body = bodyValue;
+                // Body is rich text HTML (valueFormat="html") - store as-is for backend
+                currentScreen.screenContents.content.body = value;
               } else if (field === "mediaUrl") {
                 if (!currentScreen.screenContents.content.media) {
                   currentScreen.screenContents.content.media = {};
@@ -292,9 +291,8 @@ export default function DynamicForm({
               if (field === "title") {
                 currentScreen.screenContents.content.title = value;
               } else if (field === "text") {
-                // RichTextArea - extract plain text from Quill delta
-                const textValue = extractPlainTextFromDelta(value);
-                currentScreen.screenContents.content.text = textValue;
+                // Rich text HTML - store as-is for backend
+                currentScreen.screenContents.content.text = value;
               } else if (field === "canSchedule") {
                 currentScreen.screenContents.content.canSchedule = value;
               } else if (field === "canCompleteNow") {
@@ -323,8 +321,7 @@ export default function DynamicForm({
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
               else if (field === "question") {
-                currentScreen.screenContents.content.question =
-                  extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.question = value;
               } else if (field === "top_label")
                 currentScreen.screenContents.content.top_label = value;
               else if (field === "bottom_label")
@@ -337,8 +334,7 @@ export default function DynamicForm({
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
               else if (field === "question") {
-                currentScreen.screenContents.content.question =
-                  extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.question = value;
               } else if (field === "highLabel")
                 currentScreen.screenContents.content.highLabel = value;
               else if (field === "lowLabel")
@@ -351,8 +347,7 @@ export default function DynamicForm({
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
               else if (field === "question") {
-                currentScreen.screenContents.content.question =
-                  extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.question = value;
               } else if (field === "highLabel")
                 currentScreen.screenContents.content.highLabel = value;
               else if (field === "lowLabel")
@@ -373,10 +368,9 @@ export default function DynamicForm({
                   currentScreen.screenContents.content.heading = value;
                 }
               } else if (field === "prompt") {
-                const promptValue = extractPlainTextFromDelta(value);
-                currentScreen.screenContents.content.prompt = promptValue;
+                currentScreen.screenContents.content.prompt = value;
                 if (!currentScreen.screenContents.content.body) {
-                  currentScreen.screenContents.content.body = promptValue;
+                  currentScreen.screenContents.content.body = value;
                 }
               }
             } else if (contentType === "socialdiscussion") {
@@ -386,10 +380,9 @@ export default function DynamicForm({
                   currentScreen.screenContents.content.heading = value;
                 }
               } else if (field === "question") {
-                const questionValue = extractPlainTextFromDelta(value);
-                currentScreen.screenContents.content.question = questionValue;
+                currentScreen.screenContents.content.question = value;
                 if (!currentScreen.screenContents.content.body) {
-                  currentScreen.screenContents.content.body = questionValue;
+                  currentScreen.screenContents.content.body = value;
                 }
               }
             } else if (contentType === "assessment") {
@@ -407,7 +400,7 @@ export default function DynamicForm({
                       ) {
                         return {
                           ...question,
-                          text: extractPlainTextFromDelta(question.text),
+                          text: question.text,
                         };
                       }
                       return question;
@@ -421,8 +414,7 @@ export default function DynamicForm({
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
               else if (field === "habitDescription") {
-                currentScreen.screenContents.content.habitDescription =
-                  extractPlainTextFromDelta(value);
+                currentScreen.screenContents.content.habitDescription = value;
               } else if (field === "description") {
                 if (
                   !currentScreen.screenContents.content.habit_image ||
@@ -435,7 +427,7 @@ export default function DynamicForm({
                   };
                 }
                 currentScreen.screenContents.content.habit_image.description =
-                  extractPlainTextFromDelta(value);
+                  value;
               } else if (field === "habit_image") {
                 if (
                   !currentScreen.screenContents.content.habit_image ||
@@ -471,7 +463,7 @@ export default function DynamicForm({
                             : (existing.reps ?? "");
                         const nextText =
                           habit.text !== undefined && habit.text !== ""
-                            ? extractPlainTextFromDelta(habit.text)
+                            ? habit.text
                             : (existing.text ?? "");
 
                         return {
@@ -493,11 +485,10 @@ export default function DynamicForm({
               if (field === "title") {
                 currentScreen.screenContents.content.heading = value;
               } else if (field === "message") {
-                const messageValue = extractPlainTextFromDelta(value);
-                currentScreen.screenContents.content.message = messageValue;
+                currentScreen.screenContents.content.message = value;
                 // Also update body for backward compatibility
                 if (!currentScreen.screenContents.content.body) {
-                  currentScreen.screenContents.content.body = messageValue;
+                  currentScreen.screenContents.content.body = value;
                 }
               } else if (field === "icon") {
                 if (
@@ -515,8 +506,7 @@ export default function DynamicForm({
               if (field === "heading") {
                 currentScreen.screenContents.content.heading = value;
               } else if (field === "body") {
-                const bodyValue = extractPlainTextFromDelta(value);
-                currentScreen.screenContents.content.body = bodyValue;
+                currentScreen.screenContents.content.body = value;
               }
             } else if (contentType === "miniapp" || contentType === "miniApp") {
               // For miniApp: title → content.heading, htmlContent → content.html
@@ -543,8 +533,7 @@ export default function DynamicForm({
               if (field === "heading") {
                 currentScreen.screenContents.content.heading = value;
               } else if (field === "body") {
-                const bodyValue = extractPlainTextFromDelta(value);
-                currentScreen.screenContents.content.body = bodyValue;
+                currentScreen.screenContents.content.body = value;
               } else if (field === "email") {
                 currentScreen.screenContents.content.email = value;
               }
@@ -552,8 +541,7 @@ export default function DynamicForm({
               if (field === "heading") {
                 currentScreen.screenContents.content.heading = value;
               } else if (field === "body") {
-                const bodyValue = extractPlainTextFromDelta(value);
-                currentScreen.screenContents.content.body = bodyValue;
+                currentScreen.screenContents.content.body = value;
               } else if (field === "emails") {
                 currentScreen.screenContents.content.emails = Array.isArray(
                   value,
@@ -568,8 +556,7 @@ export default function DynamicForm({
               if (field === "heading") {
                 currentScreen.screenContents.content.heading = value;
               } else if (field === "body") {
-                const bodyValue = extractPlainTextFromDelta(value);
-                currentScreen.screenContents.content.body = bodyValue;
+                currentScreen.screenContents.content.body = value;
               } else if (field === "mediaType") {
                 if (!currentScreen.screenContents.content.media) {
                   currentScreen.screenContents.content.media = {

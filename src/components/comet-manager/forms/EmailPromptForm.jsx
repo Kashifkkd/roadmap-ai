@@ -61,6 +61,7 @@ export default function EmailPromptForm({
             )
           }
           onBlur={onRichTextBlur}
+          valueFormat="html"
         />
         <TextField
           label="Email"

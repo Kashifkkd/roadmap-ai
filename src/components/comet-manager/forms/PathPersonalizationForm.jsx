@@ -51,7 +51,7 @@ export default function PathPersonalizationForm({
           }}
         />
 
-        {/* Body */}
+        {/* Body (rich text: sent as HTML to backend, displayed with formatting when loaded) */}
         <RichTextArea
           label="Body"
           value={formData.body || ""}
@@ -60,6 +60,7 @@ export default function PathPersonalizationForm({
             onRichTextSelection?.("body", selectionInfo, formData.body)
           }
           onBlur={onRichTextBlur}
+          valueFormat="html"
         />
 
         {/* Media Upload */}

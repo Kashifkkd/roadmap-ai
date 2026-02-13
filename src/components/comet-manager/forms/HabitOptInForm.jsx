@@ -97,6 +97,7 @@ export default function HabitOptInForm({
               )
             }
             onBlur={onRichTextBlur}
+            valueFormat="html"
           />
         </div>
 
@@ -171,6 +172,7 @@ export default function HabitOptInForm({
                       )
                     }
                     onBlur={onRichTextBlur}
+                    valueFormat="html"
                   />
                 </div>
 

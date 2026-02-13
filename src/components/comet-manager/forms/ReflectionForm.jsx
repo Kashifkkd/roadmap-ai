@@ -69,6 +69,7 @@ export default function ReflectionForm({
             )
           }
           onBlur={onRichTextBlur}
+          valueFormat="html"
         />
 
         <ImageUpload

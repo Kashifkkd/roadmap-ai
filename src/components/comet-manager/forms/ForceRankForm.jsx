@@ -87,6 +87,7 @@ export default function ForceRankForm({
             )
           }
           onBlur={onRichTextBlur}
+          valueFormat="html"
         />
         <ListField
           label="Options"

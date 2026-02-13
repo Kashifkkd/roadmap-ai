@@ -10,6 +10,15 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
+// Strip all HTML to plain text only (no bold, italic, or line breaks)
+function stripHtmlToPlainText(html) {
+  if (!html || typeof html !== "string") return html || "";
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export default function ScreenCard({
   screen,
   chapter,
@@ -170,9 +179,11 @@ export default function ScreenCard({
                       : "text-gray-700"
                   }`}
                 >
-                  {screen.screenContents?.content?.body ||
-                    screen.screenContents?.content?.keyLearning ||
-                    "No content available"}
+                  {stripHtmlToPlainText(
+                    screen.screenContents?.content?.body ||
+                      screen.screenContents?.content?.keyLearning ||
+                      "No content available"
+                  )}
                 </div>
               </div>
             </div>
@@ -234,14 +245,14 @@ export default function ScreenCard({
               </div>
             )}
 
-            {/* Body */}
+            {/* Body (rich text: bold, italic, etc.) */}
             {(screen.screenContents?.content?.body ||
               screen.formData?.body) && (
-              <div>
-                <p className="text-base text-gray-700 leading-relaxed whitespace-pre-wrap">
-                  {screen.screenContents?.content?.body ||
-                    screen.formData?.body}
-                </p>
+              <div className="text-base text-gray-700 leading-relaxed">
+                {stripHtmlToPlainText(
+                  screen.screenContents?.content?.body ||
+                    screen.formData?.body
+                )}
               </div>
             )}
 

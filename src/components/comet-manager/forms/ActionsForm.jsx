@@ -93,6 +93,7 @@ export default function ActionsForm({
               onRichTextSelection?.("actionText", selectionInfo, formData.text)
             }
             onBlur={onRichTextBlur}
+            valueFormat="html"
           />
         </div>
 

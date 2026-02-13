@@ -67,6 +67,7 @@ export default function AccountabilityPartnerEmailForm({
             )
           }
           onBlur={onRichTextBlur}
+          valueFormat="html"
         />
         <div className="mb-4">
           <Label className="block text-sm font-medium text-gray-700 mb-2">

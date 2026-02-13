@@ -389,6 +389,7 @@ export default function AssessmentForm({
                 )
               }
               onBlur={onRichTextBlur}
+              valueFormat="html"
             />
 
             {/* Options Section */}

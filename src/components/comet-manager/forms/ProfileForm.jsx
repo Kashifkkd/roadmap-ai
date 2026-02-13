@@ -56,6 +56,7 @@ export default function ProfileForm({
               onRichTextSelection?.("profileBody", selectionInfo, formData.body)
             }
             onBlur={onRichTextBlur}
+            valueFormat="html"
           />
 
           <div className="mb-6">

@@ -71,6 +71,7 @@ export default function NotificationsForm({
             )
           }
           onBlur={onRichTextBlur}
+          valueFormat="html"
         />
 
         <ImageUpload

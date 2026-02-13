@@ -41,6 +41,7 @@ export default function SocialDiscussionForm({
             )
           }
           onBlur={onRichTextBlur}
+          valueFormat="html"
         />
       </div>
     </div>
