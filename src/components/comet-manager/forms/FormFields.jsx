@@ -238,7 +238,7 @@ export const RichTextArea = ({
 }) => {
   const quillEditorRef = useRef(null);
   const editorRef = useRef(null);
-  // const toolbarRef = useRef(null);
+  const toolbarRef = useRef(null);
   const selectionCallbackRef = useRef(onSelectionChange);
   const blurCallbackRef = useRef(onBlur);
   const blurHandlerRef = useRef(null);
@@ -263,15 +263,14 @@ export const RichTextArea = ({
       const Quill = QuillModule.default;
 
       const editorElement = editorRef.current;
-      // const toolbarElement = toolbarRef.current;
+      const toolbarElement = toolbarRef.current;
 
-      if (!editorElement || quillEditorRef.current) return;
+      if (!editorElement || !toolbarElement || quillEditorRef.current) return;
 
       const editor = new Quill(editorElement, {
         theme: "snow",
         modules: {
-          // toolbar: toolbarElement,
-          toolbar: false,
+          toolbar: toolbarElement,
         },
       });
 
@@ -374,9 +373,9 @@ export const RichTextArea = ({
       }
 
       const editorElement = editorRef.current;
-      // const toolbarElement = toolbarRef.current;
+      const toolbarElement = toolbarRef.current;
       if (editorElement) editorElement.innerHTML = "";
-      // if (toolbarElement) toolbarElement.innerHTML = "";
+      if (toolbarElement) toolbarElement.innerHTML = "";
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -395,7 +394,7 @@ export const RichTextArea = ({
         />
 
         {/* Custom toolbar container */}
-        {/* <div
+        <div
           ref={toolbarRef}
           className="p-1 flex gap-1"
           style={{ border: "none" }}
@@ -409,7 +408,7 @@ export const RichTextArea = ({
           <button className="ql-image" title="Image" />
           <button className="ql-undo" title="Undo" />
           <button className="ql-redo" title="Redo" />
-        </div> */}
+        </div>
       </div>
     </div>
   );
