@@ -47,10 +47,11 @@ export default function WelcomePage() {
   const [isUploading, setIsUploading] = useState(false);
   const [sourceMaterialUid, setSourceMaterialUid] = useState(null);
 
-  // Link input state
+  // Link input state: each entry is { url, comment }
   const [webpageUrls, setWebpageUrls] = useState([]);
   const [isLinkInputVisible, setIsLinkInputVisible] = useState(false);
   const [linkInputValue, setLinkInputValue] = useState("");
+  const [linkCommentValue, setLinkCommentValue] = useState("");
   const linkInputRef = useRef(null);
 
   const handleSuggestionSelect = (suggestion) => {
@@ -211,7 +212,7 @@ export default function WelcomePage() {
         chatbot_conversation: chatbotConversation,
         to_modify: sessionData?.to_modify ?? {},
         source_material_uid: uploadedFileUid || sourceMaterialUid || null,
-        webpage_url: webpageUrls.length > 0 ? webpageUrls : [],
+        webpage_url: webpageUrls.length > 0 ? webpageUrls.map((e) => ({ webpage_url: e.url, comment: e.comment || "" })) : [],
         execution_id: executionId,
         retry_count: 0,
         error_history: [],
@@ -361,6 +362,7 @@ export default function WelcomePage() {
   const handleToggleLinkInput = () => {
     setIsLinkInputVisible((prev) => !prev);
     setLinkInputValue("");
+    setLinkCommentValue("");
     setTimeout(() => linkInputRef.current?.focus(), 100);
   };
 
@@ -374,17 +376,20 @@ export default function WelcomePage() {
       toast.error("Please enter a valid URL");
       return;
     }
-    if (webpageUrls.includes(url)) {
+    const comment = linkCommentValue.trim();
+    const alreadyAdded = webpageUrls.some((entry) => entry.url === url);
+    if (alreadyAdded) {
       toast.error("This link has already been added");
       return;
     }
-    setWebpageUrls((prev) => [...prev, url]);
+    setWebpageUrls((prev) => [...prev, { url, comment }]);
     setLinkInputValue("");
+    setLinkCommentValue("");
     setIsLinkInputVisible(false);
   };
 
-  const handleRemoveLink = (urlToRemove) => {
-    setWebpageUrls((prev) => prev.filter((url) => url !== urlToRemove));
+  const handleRemoveLink = (indexToRemove) => {
+    setWebpageUrls((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
   const handleLinkInputKeyDown = (e) => {
@@ -577,57 +582,84 @@ export default function WelcomePage() {
                             <span>Link</span>
                           </Button>
 
-                          {/* Link input dialog*/}
+                          {/* Link input dialog: URL + optional comment */}
                           {isLinkInputVisible && (
-                            <div className="absolute left-0 top-full mt-2 z-50 flex items-center gap-2 bg-primary-50 border border-primary-400 rounded-lg p-1  min-w-[280px]">
-                              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg">
-                                <input
-                                  ref={linkInputRef}
-                                  type="url"
-                                  placeholder="Paste link here"
-                                  value={linkInputValue}
-                                  onChange={(e) =>
-                                    setLinkInputValue(e.target.value)
-                                  }
-                                  onKeyDown={handleLinkInputKeyDown}
-                                  className="flex-1 bg-transparent text-sm border-0 outline-none placeholder:text-gray-400 min-w-0"
-                                />
-                                <Button
-                                  variant="outline"
-                                  className="px-3 text-sm bg-primary text-white hover:bg-primary/90 flex-shrink-0 "
-                                  onClick={handleAddLink}
-                                >
-                                  Add
-                                </Button>
-                                <button
-                                  onClick={() => {
-                                    setIsLinkInputVisible(false);
-                                    setLinkInputValue("");
-                                  }}
-                                  className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
+                            <div className="absolute left-0 top-full mt-2 z-50 w-full min-w-[320px] max-w-[380px] bg-primary-50 border border-primary-400 rounded-lg p-2 shadow-lg">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-primary-200">
+                                  <input
+                                    ref={linkInputRef}
+                                    type="url"
+                                    placeholder="Paste link here"
+                                    value={linkInputValue}
+                                    onChange={(e) =>
+                                      setLinkInputValue(e.target.value)
+                                    }
+                                    onKeyDown={handleLinkInputKeyDown}
+                                    className="flex-1 bg-transparent text-sm border-0 outline-none placeholder:text-gray-400 min-w-0"
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      setIsLinkInputVisible(false);
+                                      setLinkInputValue("");
+                                      setLinkCommentValue("");
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    placeholder="Add a comment (optional)"
+                                    value={linkCommentValue}
+                                    onChange={(e) =>
+                                      setLinkCommentValue(e.target.value)
+                                    }
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        handleAddLink();
+                                      }
+                                    }}
+                                    className="flex-1 bg-white text-sm border border-primary-200 rounded-lg px-3 py-2 outline-none placeholder:text-gray-400 focus:border-primary-400"
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    className="px-3 text-sm bg-primary text-white hover:bg-primary/90 flex-shrink-0"
+                                    onClick={handleAddLink}
+                                  >
+                                    Add
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           )}
                         </div>
 
-                        {/* Link chips */}
-                        {webpageUrls.map((url, index) => (
+                        {/* Link chips: url + comment */}
+                        {webpageUrls.map((entry, index) => (
                           <div
                             key={index}
-                            className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1 rounded-full text-xs max-w-[200px]"
+                            className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-primary-200/60"
+                            title={entry.url + (entry.comment ? ` — ${entry.comment}` : "")}
                           >
-                            <Link2 className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate" title={url}>
-                              {url.replace(/^https?:\/\//, "").slice(0, 30)}
-                              {url.replace(/^https?:\/\//, "").length > 30
-                                ? "..."
-                                : ""}
-                            </span>
+                            <Link2 className="w-3 h-3 flex-shrink-0 mt-0.5 self-start" />
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="truncate font-medium">
+                                {entry.url.replace(/^https?:\/\//, "").slice(0, 28)}
+                                {entry.url.replace(/^https?:\/\//, "").length > 28 ? "…" : ""}
+                              </span>
+                              {entry.comment ? (
+                                <span className="truncate text-gray-600 mt-0.5" title={entry.comment}>
+                                  {entry.comment.slice(0, 25)}
+                                  {entry.comment.length > 25 ? "…" : ""}
+                                </span>
+                              ) : null}
+                            </div>
                             <button
-                              onClick={() => handleRemoveLink(url)}
+                              onClick={() => handleRemoveLink(index)}
                               className="hover:text-red-500 transition-colors flex-shrink-0 p-0.5 rounded-full hover:bg-primary-100"
                               disabled={isLoading}
                             >

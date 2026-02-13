@@ -140,6 +140,7 @@ export default function GenerateStepImageButton({
     if (!sessionId || !chapterUid || !stepUid) return;
 
     setIsSuggestingPrompt(true);
+    setGenerateError(null);
     try {
       const response = await getStepPrompts({
         sessionId,
@@ -147,20 +148,30 @@ export default function GenerateStepImageButton({
         stepUid,
       });
 
-      if (response?.success && response?.response) {
-        // Handle response 
-        const data = response.response;
-        const suggestedPrompt =
-          typeof data === "string"
-            ? data
-            : data?.prompt || data?.suggested_prompt || data?.text || JSON.stringify(data);
+      // API may return data directly or wrapped in response.response
+      const data = response?.response ?? response;
+      if (!data) {
+        throw new Error(response?.message || "Failed to get suggested prompt");
+      }
+
+      // Use step_wallpaper_prompt from API response for the prompt text field
+      const suggestedPrompt =
+        typeof data === "string"
+          ? data
+          : data?.step_wallpaper_prompt ??
+            data?.prompt ??
+            data?.suggested_prompt ??
+            data?.text ??
+            (typeof data === "object" ? "" : String(data));
+
+      if (suggestedPrompt) {
         setPrompt(suggestedPrompt);
       } else {
-        throw new Error(response?.message || "Failed to get suggested prompt");
+        throw new Error("No step wallpaper prompt in response");
       }
     } catch (error) {
       console.error("Error fetching suggested prompt:", error);
-      setGenerateError(error.message || "Failed to get suggested prompt");
+      setGenerateError(error?.message || "Failed to get suggested prompt");
     } finally {
       setIsSuggestingPrompt(false);
     }

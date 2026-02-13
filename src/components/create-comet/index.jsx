@@ -235,13 +235,21 @@ export default function CreateComet({
     if (prefillData) {
       // console.log("CreateComet: Prefilling form with data:", prefillData);
 
-      // Restore webpage URLs from local/session so they show in the UI
+      // Restore webpage URLs (with comments) from local/session so they show in the UI
       if (
         prefillData.webpage_url &&
         Array.isArray(prefillData.webpage_url) &&
         prefillData.webpage_url.length > 0
       ) {
-        setWebpageUrls(prefillData.webpage_url);
+        const normalized = prefillData.webpage_url.map((item) =>
+          typeof item === "string"
+            ? { url: item, comment: "" }
+            : {
+                url: item.webpage_url ?? item.url ?? "",
+                comment: item.comment ?? "",
+              }
+        );
+        setWebpageUrls(normalized);
       }
 
       if (prefillData.comet_creation_data) {
@@ -403,7 +411,10 @@ export default function CreateComet({
           habitEnabled,
           habitText: data.habit || "",
           personalizationEnabled,
-          webpage_url: webpageUrls.filter((u) => u.trim()),
+          webpage_url: (webpageUrls || [])
+            .map((e) => (typeof e === "string" ? { url: e, comment: "" } : e))
+            .filter((e) => e?.url?.trim())
+            .map((e) => ({ webpage_url: e.url.trim(), comment: e.comment ?? "" })),
         };
         await onSubmit(formData);
       }
@@ -517,7 +528,10 @@ export default function CreateComet({
           { user: conversationMessage },
         ],
         to_modify: {},
-        webpage_url: webpageUrls.filter((u) => u.trim()),
+        webpage_url: (webpageUrls || [])
+          .map((e) => (typeof e === "string" ? { url: e, comment: "" } : e))
+          .filter((e) => e?.url?.trim())
+          .map((e) => ({ webpage_url: e.url.trim(), comment: e.comment ?? "" })),
       });
 
       console.log("Final payload:", cometJsonForMessage, {

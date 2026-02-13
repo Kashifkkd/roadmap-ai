@@ -163,17 +163,27 @@ export default function SourceMaterialCard({
     };
   }, [files, sessionId, uploadFile]);
 
+  // Normalize: ensure each entry is { url, comment }
+  const normalizedUrls = Array.isArray(webpageUrls)
+    ? webpageUrls.map((item) =>
+        typeof item === "string"
+          ? { url: item, comment: "" }
+          : { url: item?.url ?? "", comment: item?.comment ?? "" }
+      )
+    : [];
+
   const handleAddLink = () => {
-    setWebpageUrls([...webpageUrls, ""]);
+    setWebpageUrls([...normalizedUrls, { url: "", comment: "" }]);
   };
 
   const handleRemoveLink = (index) => {
-    setWebpageUrls(webpageUrls.filter((_, i) => i !== index));
+    setWebpageUrls(normalizedUrls.filter((_, i) => i !== index));
   };
 
-  const handleLinkChange = (index, value) => {
-    const updated = [...webpageUrls];
-    updated[index] = value;
+  const handleLinkChange = (index, field, value) => {
+    const updated = normalizedUrls.map((entry, i) =>
+      i === index ? { ...entry, [field]: value } : entry
+    );
     setWebpageUrls(updated);
   };
 
@@ -219,29 +229,43 @@ export default function SourceMaterialCard({
               </Button>
             </label>
           </div>
-          <div className="flex flex-col gap-2 bg-white p-2 rounded-lg">
-            {webpageUrls.map((url, index) => (
+          <div className="flex flex-col gap-3 bg-white p-2 rounded-lg">
+            {normalizedUrls.map((entry, index) => (
               <div
                 key={index}
-                className="flex items-center gap-2 bg-white rounded-lg  py-2"
+                className="flex flex-col gap-2 bg-gray-50 rounded-lg p-2 border border-gray-200"
               >
-                <div className="flex items-center gap-2 bg-gray-100 p-2 rounded-lg">
-                  <Link2 className="w-4 h-4 text-primary-500 flex-shrink-0" />
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary-50 flex-shrink-0">
+                    <Link2 className="w-4 h-4 text-primary-500" />
+                  </div>
+                  <input
+                    type="url"
+                    placeholder="Paste link here"
+                    value={entry.url}
+                    onChange={(e) =>
+                      handleLinkChange(index, "url", e.target.value)
+                    }
+                    className="flex-1 bg-white text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none placeholder:text-gray-400 focus:border-primary-400 min-w-0"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveLink(index)}
+                    className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex-shrink-0"
+                    title="Remove link"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
                 <input
-                  type="url"
-                  placeholder="Paste link here"
-                  value={url}
-                  onChange={(e) => handleLinkChange(index, e.target.value)}
-                  className="flex-1 bg-white text-sm border border-gray-200 rounded-lg px-3 py-1.5 outline-none placeholder:text-gray-400 focus:border-primary-400 min-w-0"
+                  type="text"
+                  placeholder="Add a comment (optional)"
+                  value={entry.comment}
+                  onChange={(e) =>
+                    handleLinkChange(index, "comment", e.target.value)
+                  }
+                  className="w-full bg-white text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none placeholder:text-gray-400 focus:border-primary-400"
                 />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveLink(index)}
-                  className="p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex-shrink-0"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
               </div>
             ))}
 
