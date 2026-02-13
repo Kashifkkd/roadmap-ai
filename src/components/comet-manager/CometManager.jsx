@@ -229,6 +229,62 @@ export default function CometManager({
     }
   }, [outline, onOutlineChange]);
 
+  // Edit a step's description 
+  const handleEditStep = (chapterId, stepId, _name, newDescription) => {
+    setOutline((prevOutline) => {
+      if (!prevOutline || !prevOutline.chapters) return prevOutline;
+      const newOutline = JSON.parse(JSON.stringify(prevOutline));
+      const pathChapters = newOutline.chapters || [];
+
+      for (const chapter of pathChapters) {
+        const cId = chapter.uuid || chapter.id;
+        if (cId !== chapterId) continue;
+        const chapterSteps = chapter.steps || [];
+        for (const stepItem of chapterSteps) {
+          const step = stepItem.step || {};
+          const sId = step.uuid || step.id;
+          if (sId === stepId) {
+            step.description = newDescription;
+            break;
+          }
+        }
+        break;
+      }
+      return newOutline;
+    });
+  };
+
+  // Delete a step 
+  const handleDeleteStep = (chapterId, stepId) => {
+    setOutline((prevOutline) => {
+      if (!prevOutline || !prevOutline.chapters) return prevOutline;
+      const newOutline = JSON.parse(JSON.stringify(prevOutline));
+      const pathChapters = newOutline.chapters || [];
+
+      for (const chapter of pathChapters) {
+        const cId = chapter.uuid || chapter.id;
+        if (cId !== chapterId) continue;
+        const chapterSteps = chapter.steps || [];
+        const stepIndex = chapterSteps.findIndex((stepItem) => {
+          const step = stepItem.step || {};
+          return (step.uuid || step.id) === stepId;
+        });
+        if (stepIndex !== -1) {
+          chapterSteps.splice(stepIndex, 1);
+          chapter.steps = chapterSteps;
+        }
+        break;
+      }
+
+      // Clear selected step if it was the deleted one
+      if (selectedStepId === stepId) {
+        setSelectedStep(null);
+      }
+
+      return newOutline;
+    });
+  };
+
   // Extract session_id from sessionData or temp
   const sessionId =
     sessionData?.session_id ||
@@ -1143,6 +1199,8 @@ export default function CometManager({
                 chapters={chapters}
                 onReorderChapters={reorderChapters}
                 onReorderSteps={reorderSteps}
+                onEditStep={handleEditStep}
+                onDeleteStep={handleDeleteStep}
                 remainingChapters={
                   sessionData?.response_path?.remaining_chapters || []
                 }

@@ -23,6 +23,11 @@ import {
   Search,
   Plus,
   GripVertical,
+  Pencil,
+  Trash2,
+  Check,
+  X,
+  MoreVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Stack } from "@mui/material";
@@ -81,6 +86,8 @@ export default function CometManagerSidebar({
   onAssetCategorySelect,
   onTabChange,
   externalTab,
+  onEditStep,
+  onDeleteStep,
 }) {
   // console.log(selectedScreen, "selectedScreen >>>>>>>>>>>>");
   // console.log(chapters, "chapters >>>>>>>>>>>><<<<<<<<<<<<<<");
@@ -106,11 +113,79 @@ export default function CometManagerSidebar({
     new Set(),
   );
 
-  
   const [draggedChapterIndex, setDraggedChapterIndex] = useState(null);
   const [dropTargetChapter, setDropTargetChapter] = useState(null);
   const [draggedStep, setDraggedStep] = useState(null);
   const [dropTargetStep, setDropTargetStep] = useState(null);
+
+  // Step description editing state
+  const [openStepMenuId, setOpenStepMenuId] = useState(null);
+  const [editingStepId, setEditingStepId] = useState(null);
+  const [editStepDescription, setEditStepDescription] = useState("");
+  const editInputRef = useRef(null);
+  const menuRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpenStepMenuId(null);
+      }
+    };
+    if (openStepMenuId) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [openStepMenuId]);
+
+  useEffect(() => {
+    if (editingStepId && editInputRef.current) {
+      editInputRef.current.focus();
+    }
+  }, [editingStepId]);
+
+  const toggleStepMenu = (e, stepId) => {
+    e.stopPropagation();
+    setOpenStepMenuId((prev) => (prev === stepId ? null : stepId));
+  };
+
+  const handleEditStepClick = (e, step, stepId) => {
+    e.stopPropagation();
+    setOpenStepMenuId(null);
+    setEditingStepId(stepId);
+    setEditStepDescription(step.description || "");
+  };
+
+  const handleSaveStepEdit = (e, chapterId, stepId, stepName) => {
+    e.stopPropagation();
+    if (onEditStep) {
+      onEditStep(chapterId, stepId, stepName, editStepDescription.trim());
+    }
+    setEditingStepId(null);
+    setEditStepDescription("");
+  };
+
+  const handleCancelStepEdit = (e) => {
+    e.stopPropagation();
+    setEditingStepId(null);
+    setEditStepDescription("");
+  };
+
+  const handleStepEditKeyDown = (e, chapterId, stepId, stepName) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      handleSaveStepEdit(e, chapterId, stepId, stepName);
+    } else if (e.key === "Escape") {
+      handleCancelStepEdit(e);
+    }
+  };
+
+  const handleDeleteStepClick = (e, chapterId, stepId) => {
+    e.stopPropagation();
+    setOpenStepMenuId(null);
+    if (onDeleteStep) {
+      onDeleteStep(chapterId, stepId);
+    }
+  };
 
   // Chapter drag handlers - chapter 0 cannot be dragged
   const handleChapterDragStart = (e, index) => {
@@ -725,7 +800,6 @@ export default function CometManagerSidebar({
                       onDragLeave={(e) => handleChapterDragLeave(e)}
                       onDrop={(e) => handleChapterDrop(e, index)}
                     >
-                      
                       {isDraggedOver && (
                         <div className="h-1.5 bg-primary rounded-full mx-2 my-1 transition-all shadow-sm pointer-events-none" />
                       )}
@@ -737,229 +811,314 @@ export default function CometManagerSidebar({
                           isExpanded ? "bg-primary-100" : "bg-white"
                         } ${draggedChapterIndex === index ? "opacity-50" : ""}`}
                       >
-                      {/* Chapter Header */}
-                      <div
-                        onClick={() => {
-                          setSelectedChapter(chapterId);
-                          toggleChapter(chapterId);
-                          // Clear step selection when clicking chapter
-                          // Use the hook's setSelectedStep which manages selectedStepId
-                          if (setSelectedStepFromHook) {
-                            setSelectedStepFromHook(null);
-                          }
-                          setExpandedSteps(new Set());
-                          if (onChapterClick) {
-                            onChapterClick(chapterId, chapter);
-                          }
-                        }}
-                        className="flex items-center gap-2 p-3 sm:p-4 cursor-pointer transition-all"
-                      >
-                        {isDraggable ? (
-                          <GripVertical
-                            size={18}
-                            className="cursor-grab active:cursor-grabbing text-gray-400 shrink-0"
-                          />
-                        ) : (
-                          <div className="w-[18px] shrink-0" />
-                        )}
+                        {/* Chapter Header */}
                         <div
-                          className={`rounded-full p-1 ${
-                            isSelected ? "bg-primary" : "bg-primary-100"
-                          }`}
+                          onClick={() => {
+                            setSelectedChapter(chapterId);
+                            toggleChapter(chapterId);
+                            // Clear step selection when clicking chapter
+                            // Use the hook's setSelectedStep which manages selectedStepId
+                            if (setSelectedStepFromHook) {
+                              setSelectedStepFromHook(null);
+                            }
+                            setExpandedSteps(new Set());
+                            if (onChapterClick) {
+                              onChapterClick(chapterId, chapter);
+                            }
+                          }}
+                          className="flex items-center gap-2 p-3 sm:p-4 cursor-pointer transition-all"
                         >
-                          <ChevronDown
-                            size={16}
-                            className={`${
-                              isSelected ? "text-white" : "text-primary"
-                            } transition-transform ${
-                              isExpanded ? "rotate-180" : ""
-                            }`}
-                          />
-                        </div>
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <div className="flex items-center gap-2 justify-between">
-                            <p className="text-[10px] font-medium text-gray-900">
-                              Chapter {index}
-                            </p>
-                            <p
-                              className={`rounded-lg px-2 bg-primary-100 text-[8px] text-primary-600 ${isExpanded ? "bg-primary-700 text-white" : "bg-primary-100 text-primary-600"}`}
-                            >
-                              Ready for Review
-                            </p>
-                          </div>
-                          <p
-                            className={`text-sm sm:text-sm font-medium ${
-                              isSelected ? "text-gray-900 " : "text-primary"
+                          {isDraggable ? (
+                            <GripVertical
+                              size={18}
+                              className="cursor-grab active:cursor-grabbing text-gray-400 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-[18px] shrink-0" />
+                          )}
+                          <div
+                            className={`rounded-full p-1 ${
+                              isSelected ? "bg-primary" : "bg-primary-100"
                             }`}
                           >
-                            {chapter.chapter ||
-                              chapter.name ||
-                              "Untitled Chapter"}
-                          </p>
+                            <ChevronDown
+                              size={16}
+                              className={`${
+                                isSelected ? "text-white" : "text-primary"
+                              } transition-transform ${
+                                isExpanded ? "rotate-180" : ""
+                              }`}
+                            />
+                          </div>
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <div className="flex items-center gap-2 justify-between">
+                              <p className="text-[10px] font-medium text-gray-900">
+                                Chapter {index}
+                              </p>
+                              <p
+                                className={`rounded-lg px-2 bg-primary-100 text-[8px] text-primary-600 ${isExpanded ? "bg-primary-700 text-white" : "bg-primary-100 text-primary-600"}`}
+                              >
+                                Ready for Review
+                              </p>
+                            </div>
+                            <p
+                              className={`text-sm sm:text-sm font-medium ${
+                                isSelected ? "text-gray-900 " : "text-primary"
+                              }`}
+                            >
+                              {chapter.chapter ||
+                                chapter.name ||
+                                "Untitled Chapter"}
+                            </p>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Expanded Steps - Inside the same card */}
-                      {isExpanded &&
-                        chapter.steps &&
-                        chapter.steps.length > 0 && (
-                          <div className="flex flex-col gap-2 px-3 pb-3">
-                            {chapter.steps.map((step, stepIndex) => {
-                              // Create unique step ID that includes chapter index and step index
-                              const stepId =
-                                step.id || `step-${chapterId}-${stepIndex}`;
-                              // Use selectedStepId directly from hook - ensures only one step is selected
-                              const isStepSelected = selectedStepId === stepId;
-                              const isStepExpanded = expandedSteps.has(stepId);
-                              const isStepDragged =
-                                draggedStep &&
-                                draggedStep.chapterId === chapterId &&
-                                draggedStep.stepIndex === stepIndex;
-                              const isStepDraggedOver =
-                                dropTargetStep &&
-                                dropTargetStep.chapterId === chapterId &&
-                                dropTargetStep.stepIndex === stepIndex;
-                              return (
-                                <div
-                                  key={stepId}
-                                  className="flex flex-col transition-all"
-                                  onDragOver={(e) =>
-                                    handleStepDragOver(e, chapterId, stepIndex)
-                                  }
-                                  onDragLeave={handleStepDragLeave}
-                                  onDrop={(e) =>
-                                    handleStepDrop(
-                                      e,
-                                      chapterId,
-                                      stepIndex,
-                                      chapter.steps,
-                                    )
-                                  }
-                                >
-                                  {isStepDraggedOver && (
-                                    <div className="h-1 bg-primary rounded-full mx-2 mb-1 transition-all shadow-sm pointer-events-none" />
-                                  )}
+                        {/* Expanded Steps - Inside the same card */}
+                        {isExpanded &&
+                          chapter.steps &&
+                          chapter.steps.length > 0 && (
+                            <div className="flex flex-col gap-2 px-3 pb-3">
+                              {chapter.steps.map((step, stepIndex) => {
+                                // Create unique step ID that includes chapter index and step index
+                                const stepId =
+                                  step.id || `step-${chapterId}-${stepIndex}`;
+                                // Use selectedStepId directly from hook - ensures only one step is selected
+                                const isStepSelected =
+                                  selectedStepId === stepId;
+                                const isStepExpanded =
+                                  expandedSteps.has(stepId);
+                                const isStepDragged =
+                                  draggedStep &&
+                                  draggedStep.chapterId === chapterId &&
+                                  draggedStep.stepIndex === stepIndex;
+                                const isStepDraggedOver =
+                                  dropTargetStep &&
+                                  dropTargetStep.chapterId === chapterId &&
+                                  dropTargetStep.stepIndex === stepIndex;
+                                return (
                                   <div
-                                    draggable
-                                    onDragStart={(e) =>
-                                      handleStepDragStart(e, chapterId, stepIndex)
+                                    key={stepId}
+                                    className="flex flex-col transition-all"
+                                    onDragOver={(e) =>
+                                      handleStepDragOver(
+                                        e,
+                                        chapterId,
+                                        stepIndex,
+                                      )
                                     }
-                                    onDragEnd={handleStepDragEnd}
-                                    className={`flex flex-col rounded-sm transition-all ${
-                                      isStepExpanded
-                                        ? "bg-primary-700"
-                                        : isStepSelected
-                                          ? "bg-primary-700"
-                                          : "bg-white"
-                                    } ${isStepDragged ? "opacity-50" : ""}`}
+                                    onDragLeave={handleStepDragLeave}
+                                    onDrop={(e) =>
+                                      handleStepDrop(
+                                        e,
+                                        chapterId,
+                                        stepIndex,
+                                        chapter.steps,
+                                      )
+                                    }
                                   >
-                                  {/* Step Header */}
-                                  <div
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      // Don't handle click if it's on the chevron (let chevron handler do it)
-                                      if (e.target.closest(".step-chevron")) {
-                                        return;
-                                      }
-                                      // Select this step (only one can be selected at a time)
-                                      // Use the hook's setSelectedStep which manages selectedStepId
-                                      if (setSelectedStepFromHook) {
-                                        setSelectedStepFromHook(stepId);
-                                      }
-                                    }}
-                                    className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
-                                      isStepSelected || isStepExpanded
-                                        ? "text-white"
-                                        : "hover:bg-gray-200"
-                                    }`}
-                                  >
-                                    <GripVertical
-                                      size={14}
-                                      className={`cursor-grab active:cursor-grabbing shrink-0 ${
-                                        isStepSelected || isStepExpanded
-                                          ? "text-white"
-                                          : "text-gray-400"
-                                      }`}
-                                    />
+                                    {isStepDraggedOver && (
+                                      <div className="h-1 bg-primary rounded-full mx-2 mb-1 transition-all shadow-sm pointer-events-none" />
+                                    )}
                                     <div
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        // Select the step first, then toggle expansion
-                                        // Use the hook's setSelectedStep which manages selectedStepId
-                                        if (setSelectedStepFromHook) {
-                                          setSelectedStepFromHook(stepId);
-                                        }
-                                        toggleStep(stepId);
-                                      }}
-                                      className={`step-chevron rounded-full p-1 shrink-0 ${
-                                        isStepSelected || isStepExpanded
-                                          ? "bg-white"
-                                          : "bg-primary-100"
-                                      }`}
+                                      draggable
+                                      onDragStart={(e) =>
+                                        handleStepDragStart(
+                                          e,
+                                          chapterId,
+                                          stepIndex,
+                                        )
+                                      }
+                                      onDragEnd={handleStepDragEnd}
+                                      className={`flex flex-col rounded-sm transition-all ${
+                                        isStepExpanded
+                                          ? "bg-primary-700"
+                                          : isStepSelected
+                                            ? "bg-primary-700"
+                                            : "bg-white"
+                                      } ${isStepDragged ? "opacity-50" : ""}`}
                                     >
-                                      <ChevronDown
-                                        size={12}
-                                        className={`transition-transform ${
-                                          isStepExpanded ? "rotate-180" : ""
-                                        } ${
-                                          isStepSelected || isStepExpanded
-                                            ? "text-primary-700"
-                                            : "text-primary"
-                                        }`}
-                                      />
-                                    </div>
-                                    <div className="flex flex-col py-1 flex-1 min-w-0">
-                                      <p
-                                        className={`text-xs sm:text-xs  ${
-                                          isStepSelected || isStepExpanded
-                                            ? "text-white"
-                                            : "text-gray-900"
-                                        }`}
-                                      >
-                                        Step {stepIndex + 1}
-                                      </p>
-                                      <p
-                                        className={`text-xs sm:text-sm font-semibold ${
-                                          isStepSelected || isStepExpanded
-                                            ? ""
-                                            : ""
-                                        } ${
+                                      {/* Step Header */}
+                                      <div
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Don't handle click if it's on the chevron (let chevron handler do it)
+                                          if (
+                                            e.target.closest(".step-chevron") ||
+                                            e.target.closest(".step-actions")
+                                          ) {
+                                            return;
+                                          }
+                                          // Select this step (only one can be selected at a time)
+                                          // Use the hook's setSelectedStep which manages selectedStepId
+                                          if (setSelectedStepFromHook) {
+                                            setSelectedStepFromHook(stepId);
+                                          }
+                                        }}
+                                        className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
                                           isStepSelected || isStepExpanded
                                             ? "text-white"
-                                            : "text-gray-900"
+                                            : "hover:bg-gray-200"
                                         }`}
                                       >
-                                        {step.name || `Step ${stepIndex + 1}`}
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  {/* Step Details (Expanded) - Inside the same card */}
-                                  {isStepExpanded && (
-                                    <div className="px-2 pb-2">
-                                      <div className="px-3 py-3 bg-white rounded-lg">
-                                        <div className="flex flex-col gap-2">
-                                          <div>
-                                            <h4 className="text-sm font-semibold text-black mb-1">
-                                              {step.name ||
-                                                `Step ${stepIndex + 1}`}
-                                            </h4>
-                                            {step.description && (
-                                              <p className="text-xs text-black leading-relaxed">
-                                                {step.description}
-                                              </p>
-                                            )}
-                                          </div>
+                                        <GripVertical
+                                          size={14}
+                                          className={`cursor-grab active:cursor-grabbing shrink-0 ${
+                                            isStepSelected || isStepExpanded
+                                              ? "text-white"
+                                              : "text-gray-400"
+                                          }`}
+                                        />
+                                        <div
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Select the step first, then toggle expansion
+                                            // Use the hook's setSelectedStep which manages selectedStepId
+                                            if (setSelectedStepFromHook) {
+                                              setSelectedStepFromHook(stepId);
+                                            }
+                                            toggleStep(stepId);
+                                          }}
+                                          className={`step-chevron rounded-full p-1 shrink-0 ${
+                                            isStepSelected || isStepExpanded
+                                              ? "bg-white"
+                                              : "bg-primary-100"
+                                          }`}
+                                        >
+                                          <ChevronDown
+                                            size={12}
+                                            className={`transition-transform ${
+                                              isStepExpanded ? "rotate-180" : ""
+                                            } ${
+                                              isStepSelected || isStepExpanded
+                                                ? "text-primary-700"
+                                                : "text-primary"
+                                            }`}
+                                          />
+                                        </div>
+                                        <div className="flex flex-col py-1 flex-1 min-w-0">
+                                          <p
+                                            className={`text-xs sm:text-xs  ${
+                                              isStepSelected || isStepExpanded
+                                                ? "text-white"
+                                                : "text-gray-900"
+                                            }`}
+                                          >
+                                            Step {stepIndex + 1}
+                                          </p>
+                                          <p
+                                            className={`text-xs sm:text-sm font-semibold ${
+                                              isStepSelected || isStepExpanded
+                                                ? ""
+                                                : ""
+                                            } ${
+                                              isStepSelected || isStepExpanded
+                                                ? "text-white"
+                                                : "text-gray-900"
+                                            }`}
+                                          >
+                                            {step.name ||
+                                              `Step ${stepIndex + 1}`}
+                                          </p>
                                         </div>
                                       </div>
+
+                                      {/* Step Details (Expanded) - Inside the same card */}
+                                      {isStepExpanded && (
+                                        <div className="px-2 pb-2">
+                                          <div className="px-3 py-3 bg-white rounded-lg">
+                                            <div className="flex flex-col gap-2">
+                                              {editingStepId === stepId ? (
+                                                /* Inline Edit Form*/
+                                                <div className="flex flex-col gap-2">
+                                                  <h4 className="text-sm font-semibold text-black mb-1">
+                                                    {step.name ||
+                                                      `Step ${stepIndex + 1}`}
+                                                  </h4>
+                                                  <div>
+                                                    <label className="text-xs font-medium text-gray-600 mb-1 block">
+                                                      Description
+                                                    </label>
+                                                    <textarea
+                                                      ref={editInputRef}
+                                                      value={editStepDescription}
+                                                      onChange={(e) => setEditStepDescription(e.target.value)}
+                                                      onKeyDown={(e) => handleStepEditKeyDown(e, chapterId, stepId, step.name)}
+                                                      className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none"
+                                                      rows={3}
+                                                      placeholder="Step description"
+                                                    />
+                                                  </div>
+                                                  <div className="flex gap-2">
+                                                    <button
+                                                      onClick={(e) => handleSaveStepEdit(e, chapterId, stepId, step.name)}
+                                                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-md hover:bg-primary-700 transition-colors"
+                                                    >
+                                                      <Check className="w-3 h-3" />
+                                                      Save
+                                                    </button>
+                                                    <button
+                                                      onClick={handleCancelStepEdit}
+                                                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                                                    >
+                                                      <X className="w-3 h-3" />
+                                                      Cancel
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              ) : (
+                                                /* Normal Display with 3-dot menu */
+                                                <div className="relative">
+                                                  <div className="flex items-start justify-between">
+                                                    <h4 className="text-sm font-semibold text-black mb-1">
+                                                      {step.name ||
+                                                        `Step ${stepIndex + 1}`}
+                                                    </h4>
+                                                    {/* 3-dot menu */}
+                                                    <div className="relative" ref={openStepMenuId === stepId ? menuRef : null}>
+                                                      <button
+                                                        onClick={(e) => toggleStepMenu(e, stepId)}
+                                                        className="p-1 rounded-md hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
+                                                        title="More options"
+                                                      >
+                                                        <MoreVertical className="w-4 h-4" />
+                                                      </button>
+                                                      {openStepMenuId === stepId && (
+                                                        <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                                                          <button
+                                                            onClick={(e) => handleEditStepClick(e, step, stepId)}
+                                                            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                                          >
+                                                            <Pencil className="w-3.5 h-3.5" />
+                                                            Edit
+                                                          </button>
+                                                          <button
+                                                            onClick={(e) => handleDeleteStepClick(e, chapterId, stepId)}
+                                                            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                                                          >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                            Delete
+                                                          </button>
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                  {step.description && (
+                                                    <p className="text-xs text-black leading-relaxed">
+                                                      {step.description}
+                                                    </p>
+                                                  )}
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
-                                </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                       </div>
                     </div>
                   );
