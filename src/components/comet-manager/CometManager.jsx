@@ -1969,7 +1969,7 @@ export default function CometManager({
                           variant="default"
                           className="ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50 cursor-pointer"
                           onClick={handleNextChapter}
-                          disabled={isGeneratingNextChapter || !chapters?.length}
+                          disabled={isGeneratingNextChapter || !chapters?.length || chapters.length < 2}
                         >
                           <span>Generate Remaining Chapters</span>
                           <ArrowRight size={16} />
