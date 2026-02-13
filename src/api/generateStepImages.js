@@ -5,11 +5,13 @@ export const generateStepImages = async ({
   sessionId,
   chapterUid,
   stepUid,
+  prompt,
 }) => {
   const payload = {
     session_id: sessionId,
     chapter_uid: chapterUid,
     step_uid: stepUid,
+    prompt: prompt,
   };
 
   const response = await apiService({
@@ -79,6 +81,23 @@ export const getSuggestPrompt = async ({
     endpoint: endpoints.getSuggestPrompt,
     method: "POST",
     data: payload,
+  });
+  return response;
+};
+
+export const getStepPrompts = async ({
+  sessionId,
+  chapterUid,
+  stepUid,
+}) => {
+  const response = await apiService({
+    endpoint: endpoints.getStepPrompts,
+    method: "GET",
+    params: {
+      session_id: sessionId,
+      chapter_uid: chapterUid,
+      step_uid: stepUid,
+    },
   });
   return response;
 };

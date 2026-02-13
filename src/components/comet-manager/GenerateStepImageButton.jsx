@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Loader2, Sparkles, X } from "lucide-react";
-import { generateStepImages, getImageAttributes, setImageAttributes } from "@/api/generateStepImages";
+import { generateStepImages, getImageAttributes, setImageAttributes, getStepPrompts } from "@/api/generateStepImages";
 import { Button } from "@/components/ui/Button";
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/Label";
+import { Textarea } from "@/components/ui/Textarea";
 import {
   Select,
   SelectContent,
@@ -60,6 +61,10 @@ export default function GenerateStepImageButton({
   // Attribute fields
   const [artStyle, setArtStyle] = useState("Photorealistic");
   const [imageGuidance, setImageGuidance] = useState("simple");
+
+  // Prompt fields
+  const [prompt, setPrompt] = useState("");
+  const [isSuggestingPrompt, setIsSuggestingPrompt] = useState(false);
 
   const isEnqueued = React.useMemo(() => {
     if (!sessionData || !stepUid) return false;
@@ -128,6 +133,36 @@ export default function GenerateStepImageButton({
       setAttributesError(error.message || "Failed to load image attributes");
     } finally {
       setIsLoadingAttributes(false);
+    }
+  };
+
+  const handleSuggestPrompt = async () => {
+    if (!sessionId || !chapterUid || !stepUid) return;
+
+    setIsSuggestingPrompt(true);
+    try {
+      const response = await getStepPrompts({
+        sessionId,
+        chapterUid,
+        stepUid,
+      });
+
+      if (response?.success && response?.response) {
+        // Handle response 
+        const data = response.response;
+        const suggestedPrompt =
+          typeof data === "string"
+            ? data
+            : data?.prompt || data?.suggested_prompt || data?.text || JSON.stringify(data);
+        setPrompt(suggestedPrompt);
+      } else {
+        throw new Error(response?.message || "Failed to get suggested prompt");
+      }
+    } catch (error) {
+      console.error("Error fetching suggested prompt:", error);
+      setGenerateError(error.message || "Failed to get suggested prompt");
+    } finally {
+      setIsSuggestingPrompt(false);
     }
   };
 
@@ -217,6 +252,7 @@ export default function GenerateStepImageButton({
         sessionId,
         chapterUid,
         stepUid,
+        prompt,
       });
 
       if (response?.success || response?.status === "enqueued" || response?.response?.status === "enqueued") {
@@ -230,6 +266,7 @@ export default function GenerateStepImageButton({
         // Reset fields
         setArtStyle("Photorealistic");
         setImageGuidance("simple");
+        setPrompt("");
       } else {
         throw new Error(response?.message || "Failed to generate image");
       }
@@ -284,6 +321,42 @@ export default function GenerateStepImageButton({
               </div>
             ) : (
               <>
+                {/* Prompt Field */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="step-prompt">Prompt</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSuggestPrompt}
+                      disabled={isSuggestingPrompt || !chapterUid || !stepUid}
+                      className="flex items-center gap-1.5 text-xs h-7 px-2.5 border-primary-300 text-primary-500 hover:bg-primary-50"
+                    >
+                      {isSuggestingPrompt ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Suggesting...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3 w-3" />
+                          Suggest Prompt
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <Textarea
+                    id="step-prompt"
+                    placeholder="Describe the image you want to generate for this step..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    rows={4}
+                    className="resize-none"
+                    disabled={isSuggestingPrompt}
+                  />
+                </div>
+
                 {/* Art Style Field */}
                 <div className="space-y-2">
                   <Label htmlFor="art-style">Art Style</Label>
@@ -337,6 +410,7 @@ export default function GenerateStepImageButton({
                 setGenerateError(null);
                 setArtStyle("Photorealistic");
                 setImageGuidance("simple");
+                setPrompt("");
               }}
               disabled={isGenerating || isLoadingAttributes}
             >

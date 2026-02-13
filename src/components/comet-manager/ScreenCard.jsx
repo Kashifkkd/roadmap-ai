@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, GripVertical, Expand } from "lucide-react";
+import { Plus, GripVertical, Expand, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ export default function ScreenCard({
   onDrop,
   onClick,
   onAddScreen,
+  onDeleteScreen,
 }) {
   console.log(screen, "screen >>>>>>>>>>>>");
   const [showAddButton, setShowAddButton] = useState(false);
@@ -38,7 +39,7 @@ export default function ScreenCard({
         }}
         className=" bg-primary-700 text-white rounded-full p-2 shadow-lg transition-all"
       >
-        <Plus style={{ width: '1.25em', height: '1.25em' }} />
+        <Plus style={{ width: "1.25em", height: "1.25em" }} />
       </button>
     </div>
   );
@@ -70,13 +71,29 @@ export default function ScreenCard({
           <div className="flex justify-between items-center gap-1 w-full">
             <div className="flex flex-col items-center">
               <div
-                className={`flex items-start gap-2 font-medium w-full transition-colors duration-300 ${
+                className={`flex items-center justify-between font-medium w-full transition-colors duration-300 ${
                   selectedScreen?.id === screen.id
                     ? "text-white"
                     : "text-gray-700"
                 }`}
               >
-                Screen {index + 1}
+                <span>Screen {index + 1}</span>
+                {onDeleteScreen && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteScreen(screen.id);
+                    }}
+                    className={`p-0.5 rounded transition-colors duration-200 hover:bg-red-100 hover:text-red-600 ${
+                      selectedScreen?.id === screen.id
+                        ? "text-white/70 hover:text-red-500 hover:bg-red-200/30"
+                        : "text-gray-400 hover:text-red-600"
+                    }`}
+                    title="Delete screen"
+                  >
+                    <Trash2 style={{ width: "1em", height: "1em" }} />
+                  </button>
+                )}
               </div>
               <div
                 className={`flex text-sm items-start gap-2 font-medium w-full transition-colors duration-300 text-wrap truncate ${
@@ -163,7 +180,7 @@ export default function ScreenCard({
         </div>
         <div className=" w-full flex justify-between items-center">
           <Expand
-            style={{ width: '1em', height: '1em' }}
+            style={{ width: "1em", height: "1em" }}
             onClick={(e) => {
               e.stopPropagation();
               setIsDialogOpen(true);
@@ -180,7 +197,7 @@ export default function ScreenCard({
             }`}
           >
             <GripVertical
-              style={{ width: '1em', height: '1em' }}
+              style={{ width: "1em", height: "1em" }}
               className={`cursor-grab active:cursor-grabbing transition-colors duration-300 ${
                 selectedScreen?.id === screen.id
                   ? "text-white"
