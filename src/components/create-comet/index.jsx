@@ -45,10 +45,20 @@ export default function CreateComet({
   const [personalizationEnabled, setPersonalizationEnabled] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const isAskingKyperRef = useRef(false);
+  const autoSaveTimerRef = useRef(null);
+  const isSavingRef = useRef(false);
+  const prevFormDataRef = useRef(null);
+  const currentFormDataRef = useRef(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setSessionId(localStorage.getItem("sessionId"));
+      const storedSessionId = localStorage.getItem("sessionId");
+      if (storedSessionId) {
+        setSessionId(storedSessionId);
+        console.log("Auto-save: Loaded sessionId from localStorage:", storedSessionId);
+      } else {
+        console.log("Auto-save: No sessionId in localStorage yet");
+      }
     }
   }, []);
 
@@ -384,6 +394,90 @@ export default function CreateComet({
     }
   }, [prefillData, setValue]);
 
+  // Track form changes in real-time using subscription (including toggle states)
+  useEffect(() => {
+    console.log("Auto-save: Setting up form subscription");
+    const subscription = watch((values) => {
+      // Include toggle states in the form data for tracking
+      const formDataWithToggles = {
+        ...values,
+        habitEnabled,
+        personalizationEnabled,
+      };
+      const formDataString = JSON.stringify(formDataWithToggles);
+      const prevString = currentFormDataRef.current;
+      currentFormDataRef.current = formDataString;
+      
+      // Debug: log when form values change (only for cometTitle and description to avoid spam)
+      if (values.cometTitle || values.description) {
+        const changed = prevString !== formDataString;
+        console.log("Form values updated:", { 
+          cometTitle: values.cometTitle, 
+          description: values.description,
+          habitEnabled,
+          personalizationEnabled,
+          changed: changed,
+          hasPrevData: !!prevString
+        });
+      }
+    });
+    return () => {
+      console.log("Auto-save: Cleaning up form subscription");
+      subscription.unsubscribe();
+    };
+  }, [watch, habitEnabled, personalizationEnabled]);
+
+  // Initialize prevFormDataRef after form is populated from prefillData
+  useEffect(() => {
+    if (prefillData && prevFormDataRef.current === null) {
+      // Use setTimeout to ensure form values are set before initializing
+      const timer = setTimeout(() => {
+        const currentFormValues = watch();
+        const formDataWithToggles = {
+          ...currentFormValues,
+          habitEnabled,
+          personalizationEnabled,
+        };
+        const formDataString = JSON.stringify(formDataWithToggles);
+        prevFormDataRef.current = formDataString;
+        currentFormDataRef.current = formDataString;
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [prefillData, watch, habitEnabled, personalizationEnabled]);
+
+  // Update tracked data when toggles change - this triggers auto-save detection
+  useEffect(() => {
+    // Only update if we have previous data (form is initialized)
+    if (prevFormDataRef.current === null) {
+      return;
+    }
+    
+    const currentFormValues = watch();
+    const formDataWithToggles = {
+      ...currentFormValues,
+      habitEnabled,
+      personalizationEnabled,
+    };
+    const formDataString = JSON.stringify(formDataWithToggles);
+    const prevString = currentFormDataRef.current;
+    
+    // Update current ref with new toggle states
+    currentFormDataRef.current = formDataString;
+    
+    // Check if this is a real change (not just initialization)
+    const hasChanged = prevString && prevString !== formDataString;
+    
+    console.log("Auto-save: Toggle states changed:", { 
+      habitEnabled, 
+      personalizationEnabled,
+      hasChanged,
+      willTriggerAutoSave: hasChanged
+    });
+    
+    // If this is a change (not initialization), the next interval tick will detect it
+  }, [habitEnabled, personalizationEnabled, watch]);
+
   const requiredFields = [
     "cometTitle",
     "clientOrg",
@@ -448,6 +542,320 @@ export default function CreateComet({
 
     return () => subscription.unsubscribe();
   }, [watch, onProgressChange]);
+
+  // Auto-save functionality - similar to CometManagerLayout
+  useEffect(() => {
+    if (autoSaveTimerRef.current) {
+      clearInterval(autoSaveTimerRef.current);
+    }
+    
+    // Get sessionId from props or localStorage
+    const currentSessionId = sessionId || (typeof window !== "undefined" ? localStorage.getItem("sessionId") : null);
+    
+    if (!currentSessionId) {
+      console.log("Auto-save: No sessionId available, skipping auto-save setup");
+      return;
+    }
+
+    console.log("Auto-save: Setting up auto-save with sessionId:", currentSessionId);
+
+    // Initialize on first run if not already initialized
+    if (prevFormDataRef.current === null && currentFormDataRef.current === null) {
+      const initialValues = watch();
+      const initialDataWithToggles = {
+        ...initialValues,
+        habitEnabled,
+        personalizationEnabled,
+      };
+      const initialDataString = JSON.stringify(initialDataWithToggles);
+      prevFormDataRef.current = initialDataString;
+      currentFormDataRef.current = initialDataString;
+    }
+
+    // Auto-save functionality - check every 5 seconds if data changed
+    console.log("Auto-save: Starting interval timer (5 seconds)");
+    autoSaveTimerRef.current = setInterval(async () => {
+      console.log("Auto-save: Interval tick - checking for changes...");
+      
+      if (isSavingRef.current) {
+        console.log("Auto-save: Already saving, skipping...");
+        return;
+      }
+
+      // Get current form data from ref (updated by subscription)
+      const currentFormDataString = currentFormDataRef.current;
+      const prevFormDataString = prevFormDataRef.current;
+      
+      console.log("Auto-save: Refs status:", {
+        hasCurrent: !!currentFormDataString,
+        hasPrev: !!prevFormDataString,
+        currentLength: currentFormDataString?.length,
+        prevLength: prevFormDataString?.length
+      });
+
+      // If refs are not initialized, try to get from watch
+      if (!currentFormDataString || !prevFormDataString) {
+        const currentFormValues = watch();
+        const formDataWithToggles = {
+          ...currentFormValues,
+          habitEnabled,
+          personalizationEnabled,
+        };
+        const formDataString = JSON.stringify(formDataWithToggles);
+        if (!prevFormDataRef.current) {
+          prevFormDataRef.current = formDataString;
+          console.log("Auto-save: Initialized prevFormDataRef");
+        }
+        if (!currentFormDataRef.current) {
+          currentFormDataRef.current = formDataString;
+          console.log("Auto-save: Initialized currentFormDataRef");
+        }
+        return;
+      }
+
+      const formDataChanged = currentFormDataString !== prevFormDataString;
+      
+      // Debug: log comparison with toggle states
+      if (formDataChanged) {
+        try {
+          const current = JSON.parse(currentFormDataString);
+          const prev = prevFormDataString ? JSON.parse(prevFormDataString) : null;
+          console.log("Auto-save: Form data changed detected", {
+            habitEnabled: { 
+              current: current.habitEnabled, 
+              prev: prev?.habitEnabled,
+              stateValue: habitEnabled
+            },
+            personalizationEnabled: { 
+              current: current.personalizationEnabled, 
+              prev: prev?.personalizationEnabled,
+              stateValue: personalizationEnabled
+            },
+            togglesChanged: prev ? (current.habitEnabled !== prev.habitEnabled || current.personalizationEnabled !== prev.personalizationEnabled) : false
+          });
+        } catch (e) {
+          console.log("Auto-save: Form data changed detected (parse error)");
+        }
+      }
+
+      if (formDataChanged && prevFormDataString !== null && currentFormDataString) {
+        console.log("Form data changed, triggering auto-save...");
+        let currentFormValues;
+        try {
+          currentFormValues = JSON.parse(currentFormDataString);
+        } catch (parseError) {
+          console.error("Error parsing form data for auto-save:", parseError);
+          return;
+        }
+        
+        // Use current state values for toggles (they're the source of truth)
+        // Override any values from parsed JSON with current state
+        currentFormValues.habitEnabled = habitEnabled;
+        currentFormValues.personalizationEnabled = personalizationEnabled;
+
+        try {
+          isSavingRef.current = true;
+
+          const currentSessionIdForSave =
+            sessionId ||
+            (typeof window !== "undefined" &&
+              localStorage.getItem("sessionId")) ||
+            null;
+
+          if (!currentSessionIdForSave) {
+            console.warn("Auto-save: No session ID available for auto-save");
+            return;
+          }
+          
+          console.log("Auto-save: Starting save process for sessionId:", currentSessionIdForSave);
+
+          // Format form data similar to handleFormSubmit
+          const formattedCometData = {
+            "Basic Information": {
+              "Comet Title": currentFormValues.cometTitle || "",
+              Description: currentFormValues.description || "",
+              "Client Organization": currentFormValues.clientOrg || "",
+              "Client Website": currentFormValues.clientWebsite || "",
+            },
+            "Audience & Objectives": {
+              "Target Audience": currentFormValues.targetAudience || "",
+              "Learning and Behaviour Objectives": Array.isArray(
+                currentFormValues.learningObjectives,
+              )
+                ? currentFormValues.learningObjectives
+                    .map(String)
+                    .map((obj) => obj.trim())
+                    .filter(Boolean)
+                : typeof currentFormValues.learningObjectives === "string"
+                  ? currentFormValues.learningObjectives
+                      .split(",")
+                      .map((obj) => obj.trim())
+                      .filter(Boolean)
+                  : [],
+            },
+            "Experience Design": {
+              Focus: currentFormValues.cometFocus || "",
+              "Source Alignment": currentFormValues.sourceMaterialFidelity || "",
+              "Engagement Frequency": currentFormValues.engagementFrequency || "",
+              Duration: currentFormValues.lengthFrequency || "",
+              "Special Instructions": currentFormValues.specialInstructions || "",
+            },
+          };
+
+          // Get existing session data
+          let parsedSessionData = null;
+          try {
+            const raw = localStorage.getItem("sessionData");
+            if (raw) parsedSessionData = JSON.parse(raw);
+          } catch {}
+
+          // Initialize enabled_attributes object
+          // Use current state values directly (they're the source of truth)
+          // Use current state values directly - they're always up-to-date
+          const currentHabitEnabled = habitEnabled;
+          const currentPersonalizationEnabled = personalizationEnabled;
+          
+          console.log("Auto-save: Toggle states being saved:", {
+            habitEnabled: currentHabitEnabled,
+            personalizationEnabled: currentPersonalizationEnabled,
+            stateValues: {
+              habit: habitEnabled,
+              personalization: personalizationEnabled
+            },
+            parsedValues: {
+              habit: currentFormValues.habitEnabled,
+              personalization: currentFormValues.personalizationEnabled
+            }
+          });
+          
+          const enabled_attributes = {
+            ...(parsedSessionData?.response_path?.enabled_attributes || {}),
+            path_personalization: currentPersonalizationEnabled,
+            habit_enabled: currentHabitEnabled,
+            habit_description: currentFormValues.habit || "",
+          };
+          
+          console.log("Auto-save: enabled_attributes being saved:", {
+            path_personalization: enabled_attributes.path_personalization,
+            habit_enabled: enabled_attributes.habit_enabled
+          });
+
+          // Ensure response_path exists and update with new enabled_attributes
+          if (!parsedSessionData) {
+            parsedSessionData = {};
+          }
+          if (!parsedSessionData.response_path) {
+            parsedSessionData.response_path = {};
+          }
+          // Update enabled_attributes with new toggle values
+          parsedSessionData.response_path.enabled_attributes = enabled_attributes;
+
+          // Create response_path object with updated enabled_attributes
+          const updatedResponsePath = {
+            ...(parsedSessionData?.response_path || {}),
+            enabled_attributes: enabled_attributes,
+          };
+
+          const cometJsonForSave = JSON.stringify({
+            session_id: currentSessionIdForSave,
+            input_type: "comet_data_update",
+            comet_creation_data: formattedCometData,
+            response_outline: parsedSessionData?.response_outline || {},
+            response_path: updatedResponsePath, // Use updated response_path with new enabled_attributes
+            chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
+            to_modify: parsedSessionData?.to_modify || {},
+          });
+
+          console.log("Auto-save: Calling autoSaveComet with data:", {
+            session_id: currentSessionIdForSave,
+            cometTitle: formattedCometData["Basic Information"]["Comet Title"],
+            description: formattedCometData["Basic Information"]["Description"],
+            enabled_attributes_in_payload: updatedResponsePath.enabled_attributes
+          });
+
+          const response = await graphqlClient.autoSaveComet(cometJsonForSave);
+          if (response && response.autoSaveComet) {
+            try {
+              let savedData;
+              if (typeof response.autoSaveComet === "string") {
+                const parsedResponse = JSON.parse(response.autoSaveComet);
+                savedData = {
+                  ...parsedSessionData,
+                  ...parsedResponse,
+                  comet_creation_data: formattedCometData,
+                  chatbot_conversation:
+                    parsedResponse.chatbot_conversation ||
+                    parsedSessionData?.chatbot_conversation ||
+                    [],
+                };
+                // Ensure enabled_attributes are updated in saved data
+                if (!savedData.response_path) {
+                  savedData.response_path = {};
+                }
+                savedData.response_path.enabled_attributes = {
+                  ...(savedData.response_path.enabled_attributes || {}),
+                  ...enabled_attributes,
+                };
+              } else {
+                savedData = {
+                  ...parsedSessionData,
+                  comet_creation_data: formattedCometData,
+                };
+                // Ensure enabled_attributes are updated in saved data
+                if (!savedData.response_path) {
+                  savedData.response_path = {};
+                }
+                savedData.response_path.enabled_attributes = {
+                  ...(savedData.response_path.enabled_attributes || {}),
+                  ...enabled_attributes,
+                };
+              }
+
+              localStorage.setItem("sessionData", JSON.stringify(savedData));
+              prevFormDataRef.current = currentFormDataString;
+              console.log("Auto-save successful", {
+                enabled_attributes: savedData.response_path?.enabled_attributes
+              });
+            } catch (parseError) {
+              console.error("Error parsing auto-save response:", parseError);
+              const updatedSessionData = {
+                ...parsedSessionData,
+                comet_creation_data: formattedCometData,
+                chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
+              };
+              // Ensure enabled_attributes are updated even on error
+              if (!updatedSessionData.response_path) {
+                updatedSessionData.response_path = {};
+              }
+              updatedSessionData.response_path.enabled_attributes = {
+                ...(updatedSessionData.response_path.enabled_attributes || {}),
+                ...enabled_attributes,
+              };
+              localStorage.setItem(
+                "sessionData",
+                JSON.stringify(updatedSessionData),
+              );
+              prevFormDataRef.current = currentFormDataString;
+              console.log("Auto-save: Saved to localStorage with enabled_attributes:", {
+                enabled_attributes: updatedSessionData.response_path.enabled_attributes
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Error during auto-save:", error);
+        } finally {
+          isSavingRef.current = false;
+        }
+      }
+    }, 5000);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearInterval(autoSaveTimerRef.current);
+        console.log("Auto-save: Cleaned up interval");
+      }
+    };
+  }, [sessionId, habitEnabled, personalizationEnabled, watch]);
 
   const handleAskKyper = async (query) => {
     try {
