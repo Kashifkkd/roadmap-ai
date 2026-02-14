@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ChatWindow from "@/components/chat/ChatWindow";
 import OutlineMannerCreateComet from "./OutlineMannerCreateComet.jsx";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
+import { graphqlClient } from "@/lib/graphql-client";
 
 export default function OutlineManagerLayout() {
   const [sessionData, setSessionData] = useState(null);
@@ -12,6 +13,11 @@ export default function OutlineManagerLayout() {
   const [isAskingKyper, setIsAskingKyper] = useState(false);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
   const [sessionId, setSessionId] = useState(null);
+  
+  // Auto-save refs
+  const autoSaveTimerRef = useRef(null);
+  const isSavingRef = useRef(false);
+  const prevOutlineRef = useRef(null);
 
   useEffect(() => {
     // Access localStorage only on the client
@@ -118,6 +124,162 @@ export default function OutlineManagerLayout() {
       setAllMessages(messagesToDisplay);
     }
   }, [sessionData]);
+
+  // Auto-save functionality for outline changes
+  useEffect(() => {
+    if (autoSaveTimerRef.current) {
+      clearInterval(autoSaveTimerRef.current);
+    }
+    
+    // Get sessionId from state or localStorage
+    const currentSessionId = sessionId || (typeof window !== "undefined" ? localStorage.getItem("sessionId") : null);
+    
+    if (!currentSessionId) {
+      console.log("Auto-save (outline): No sessionId available, skipping auto-save setup");
+      return;
+    }
+
+    console.log("Auto-save (outline): Setting up auto-save with sessionId:", currentSessionId);
+
+    // Initialize prevOutlineRef on first run
+    if (prevOutlineRef.current === null && sessionData?.response_outline) {
+      prevOutlineRef.current = JSON.stringify(sessionData.response_outline);
+    }
+
+    // Auto-save functionality - check every 5 seconds if outline changed
+    console.log("Auto-save (outline): Starting interval timer (5 seconds)");
+    autoSaveTimerRef.current = setInterval(async () => {
+      if (isSavingRef.current) {
+        console.log("Auto-save (outline): Already saving, skipping...");
+        return;
+      }
+
+      // Get current outline from localStorage (most up-to-date)
+      let currentOutline = null;
+      try {
+        const stored = localStorage.getItem("sessionData");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          currentOutline = parsed?.response_outline || null;
+        }
+      } catch (error) {
+        console.error("Auto-save (outline): Error reading from localStorage:", error);
+        return;
+      }
+
+      if (!currentOutline) {
+        return;
+      }
+
+      const currentOutlineString = JSON.stringify(currentOutline);
+      const prevOutlineString = prevOutlineRef.current;
+
+      const outlineChanged = currentOutlineString !== prevOutlineString;
+
+      if (outlineChanged && prevOutlineString !== null) {
+        console.log("Auto-save (outline): Outline changed detected, triggering auto-save...");
+        
+        try {
+          isSavingRef.current = true;
+
+          const currentSessionIdForSave =
+            currentSessionId ||
+            (typeof window !== "undefined" &&
+              localStorage.getItem("sessionId")) ||
+            null;
+
+          if (!currentSessionIdForSave) {
+            console.warn("Auto-save (outline): No session ID available for auto-save");
+            return;
+          }
+
+          // Get existing session data
+          let parsedSessionData = null;
+          try {
+            const raw = localStorage.getItem("sessionData");
+            if (raw) parsedSessionData = JSON.parse(raw);
+          } catch {}
+
+          const cometJsonForSave = JSON.stringify({
+            session_id: currentSessionIdForSave,
+            input_type: "outline_updation",
+            comet_creation_data: parsedSessionData?.comet_creation_data || {},
+            response_outline: currentOutline,
+            response_path: parsedSessionData?.response_path || {},
+            chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
+            to_modify: parsedSessionData?.to_modify || {},
+          });
+
+          console.log("Auto-save (outline): Calling autoSaveComet with updated outline");
+
+          const response = await graphqlClient.autoSaveComet(cometJsonForSave);
+          if (response && response.autoSaveComet) {
+            try {
+              let savedData;
+              if (typeof response.autoSaveComet === "string") {
+                const parsedResponse = JSON.parse(response.autoSaveComet);
+                savedData = {
+                  ...parsedSessionData,
+                  ...parsedResponse,
+                  response_outline: currentOutline,
+                  chatbot_conversation:
+                    parsedResponse.chatbot_conversation ||
+                    parsedSessionData?.chatbot_conversation ||
+                    [],
+                };
+              } else {
+                savedData = {
+                  ...parsedSessionData,
+                  response_outline: currentOutline,
+                };
+              }
+
+              localStorage.setItem("sessionData", JSON.stringify(savedData));
+              prevOutlineRef.current = currentOutlineString;
+              console.log("Auto-save (outline): Successful");
+            } catch (parseError) {
+              console.error("Auto-save (outline): Error parsing auto-save response:", parseError);
+              const updatedSessionData = {
+                ...parsedSessionData,
+                response_outline: currentOutline,
+                chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
+              };
+              localStorage.setItem(
+                "sessionData",
+                JSON.stringify(updatedSessionData),
+              );
+              prevOutlineRef.current = currentOutlineString;
+              console.log("Auto-save (outline): Saved to localStorage");
+            }
+          }
+        } catch (error) {
+          console.error("Auto-save (outline): Error during auto-save:", error);
+        } finally {
+          isSavingRef.current = false;
+        }
+      } else if (prevOutlineRef.current === null && currentOutline) {
+        // Initialize prevOutlineRef on first run
+        prevOutlineRef.current = currentOutlineString;
+      }
+    }, 5000);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearInterval(autoSaveTimerRef.current);
+        console.log("Auto-save (outline): Cleaned up interval");
+      }
+    };
+  }, [sessionId, sessionData]);
+
+  // Update prevOutlineRef when sessionData changes (from subscription)
+  useEffect(() => {
+    if (sessionData?.response_outline) {
+      const currentOutlineString = JSON.stringify(sessionData.response_outline);
+      if (prevOutlineRef.current !== currentOutlineString) {
+        prevOutlineRef.current = currentOutlineString;
+      }
+    }
+  }, [sessionData?.response_outline]);
 
   // const welcomeMessage = [
   //   "Review the Basic Information and Audience & Objectives sections, based on what you've shared so far.",
