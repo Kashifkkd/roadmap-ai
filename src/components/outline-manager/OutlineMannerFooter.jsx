@@ -157,6 +157,27 @@ export default function OutlineMannerFooter() {
         if (raw) parsedSessionData = JSON.parse(raw);
       } catch {}
 
+      // Clear chapters and remaining_chapters from response_path in parsedSessionData
+      if (parsedSessionData?.response_path) {
+        parsedSessionData.response_path = {
+          ...parsedSessionData.response_path,
+          chapters: [],
+          remaining_chapters: [],
+        };
+      } else if (parsedSessionData) {
+        parsedSessionData.response_path = {
+          chapters: [],
+          remaining_chapters: [],
+        };
+      }
+
+      // Update localStorage with cleared chapters and remaining_chapters
+      if (parsedSessionData) {
+        try {
+          localStorage.setItem("sessionData", JSON.stringify(parsedSessionData));
+        } catch {}
+      }
+
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: "initial_chapter_creation",
@@ -172,7 +193,10 @@ export default function OutlineMannerFooter() {
         //     parsedSessionData?.additional_data?.habit_description || "",
         // },
         response_outline: parsedSessionData?.response_outline || {},
-        response_path: parsedSessionData?.response_path || {},
+        response_path: parsedSessionData?.response_path || {
+          chapters: [],
+          remaining_chapters: [],
+        },
         chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
         to_modify: {},
         webpage_url: parsedSessionData?.webpage_url || [],

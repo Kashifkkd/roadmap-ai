@@ -9,10 +9,20 @@ export function useCometManager(sessionData = null) {
   const [outline, setOutline] = useState(null);
   const [selectedStepId, setSelectedStepId] = useState(null);
 
-  // Initialize outline from sessionData
+  // Initialize and sync outline from sessionData
   useEffect(() => {
     if (sessionData && sessionData.response_path) {
-      setOutline(sessionData.response_path);
+      // Always update outline to ensure we get the latest data (including image URLs)
+      // Create a deep copy to ensure React detects the change even if the reference is the same
+      const newOutline = JSON.parse(JSON.stringify(sessionData.response_path));
+      
+      // Only update if the content actually changed (avoid unnecessary re-renders)
+      // Compare stringified versions to detect deep changes
+      setOutline((prevOutline) => {
+        const prevStr = JSON.stringify(prevOutline);
+        const newStr = JSON.stringify(newOutline);
+        return prevStr !== newStr ? newOutline : prevOutline;
+      });
 
       // Set initial selected step
       const pathChapters = sessionData.response_path.chapters || [];
@@ -31,6 +41,9 @@ export function useCometManager(sessionData = null) {
           return firstStepId;
         });
       }
+    } else if (!sessionData?.response_path) {
+      // Clear outline if sessionData no longer has response_path
+      setOutline(null);
     }
   }, [sessionData]);
 

@@ -66,37 +66,8 @@ export default function GenerateStepImageButton({
   const [prompt, setPrompt] = useState("");
   const [isSuggestingPrompt, setIsSuggestingPrompt] = useState(false);
 
-  const isEnqueued = React.useMemo(() => {
-    if (!sessionData || !stepUid) return false;
-
-    // Search in response_path.chapters
-    const pathChapters = sessionData.response_path?.chapters || [];
-    for (const chapter of pathChapters) {
-      for (const stepItem of chapter.steps || []) {
-        if (stepItem.step?.uuid === stepUid) {
-          return stepItem.step?.image_generation_enqueued === true;
-        }
-      }
-    }
-
-    // Search in response_outline.chapters if not found in path
-    const outlineChapters = sessionData.response_outline?.chapters ||
-      (Array.isArray(sessionData.response_outline) ? sessionData.response_outline : []);
-    for (const chapter of (Array.isArray(outlineChapters) ? outlineChapters : [])) {
-      if (chapter.steps) {
-        for (const stepData of chapter.steps) {
-          const step = stepData.step;
-          if (step && step.uuid === stepUid) {
-            return step.image_generation_enqueued === true;
-          }
-        }
-      }
-    }
-
-    return false;
-  }, [sessionData, stepUid]);
-
-  if (isEnqueued) return null;
+  // Determine if button should be disabled (only check for missing required props)
+  const isDisabled = !sessionId || !chapterUid || !stepUid;
 
   const handleOpenDialog = async () => {
     if (!sessionId) {
@@ -259,11 +230,12 @@ export default function GenerateStepImageButton({
       }
 
       // Then, generate the step images
+      // Always include prompt in payload, even if empty (user may have typed without clicking Suggest Prompt)
       const response = await generateStepImages({
         sessionId,
         chapterUid,
         stepUid,
-        prompt,
+        prompt: prompt || "", // Ensure prompt is always included, default to empty string
       });
 
       if (response?.success || response?.status === "enqueued" || response?.response?.status === "enqueued") {
@@ -297,10 +269,19 @@ export default function GenerateStepImageButton({
       <Button
         type="button"
         onClick={handleOpenDialog}
-        disabled={isGenerating}
+        disabled={isDisabled}
         variant="default"
         size="sm"
-        className="bg-white hover:bg-primary-100 text-primary-400 border border-primary-400 flex items-center justify-center gap-2 px-4 py-3 w-full disabled:opacity-50 cursor-pointer sticky bottom-0 "
+        className="bg-white hover:bg-primary-100 text-primary-400 border border-primary-400 flex items-center justify-center gap-2 px-4 py-3 w-full disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer sticky bottom-0"
+        title={
+          !sessionId
+            ? "Session ID is required"
+            : !chapterUid
+            ? "Chapter information is missing"
+            : !stepUid
+            ? "Step information is missing"
+            : "Generate step images"
+        }
       >
         <Sparkles className="w-3.5 h-3.5 text-primary-400" />
         <span className="hidden sm:inline">Generate Step Images</span>

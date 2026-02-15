@@ -11,7 +11,7 @@ export const generateStepImages = async ({
     session_id: sessionId,
     chapter_uid: chapterUid,
     step_uid: stepUid,
-    prompt: prompt,
+    prompt: prompt || "", // Always include prompt, default to empty string if not provided
   };
 
   const response = await apiService({
