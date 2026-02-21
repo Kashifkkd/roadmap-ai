@@ -36,6 +36,7 @@ import { uploadAssetFile } from "@/api/uploadAssets";
 import { uploadPathImage } from "@/api/uploadPathImage";
 import UserManagement from "@/components/common/UserManagement";
 import { publishComet } from "@/api/publishComet";
+import { ART_STYLE_KEYS, normalizeArtStyleFromApi } from "@/constants/artStyles";
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
@@ -274,64 +275,17 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         }
         // Image attributes - normalize to match SelectItem values
         if (enabledAttributes.image_guidance !== undefined) {
-          const guidance = String(enabledAttributes.image_guidance)
-            .toLowerCase()
-            .trim();
-          const validGuidances = [
-            "simple",
-            "detailed",
-            "complex",
-            "very_detailed",
-          ];
-          const normalizedGuidance = validGuidances.includes(guidance)
-            ? guidance
-            : "";
-          setImageGuidance(normalizedGuidance);
+          const guidance = String(enabledAttributes.image_guidance).trim();
+          setImageGuidance(guidance);
           console.log(
             "Image Guidance loaded:",
             enabledAttributes.image_guidance,
-            "-> normalized to:",
-            normalizedGuidance,
           );
         } else {
           setImageGuidance("");
         }
         if (enabledAttributes.art_style !== undefined) {
-          const art = String(enabledAttributes.art_style).trim();
-          // Normalize art style - handle case variations
-          const artStyleMap = {
-            photorealistic: "Photorealistic",
-            "hyper-real": "Hyper-real",
-            watercolor: "Watercolor",
-            "line art": "Line art",
-            "pixel art": "Pixel art",
-            "flat illustration": "Flat illustration",
-            anime: "Anime",
-            "3d render": "3D render",
-            "oil painting": "Oil painting",
-            charcoal: "Charcoal",
-            sketch: "Sketch",
-            minimalist: "Minimalist",
-          };
-          const normalizedArt = artStyleMap[art.toLowerCase()] || art;
-          // Check if normalized value exists in valid options
-          const validArtStyles = [
-            "Photorealistic",
-            "Hyper-real",
-            "Watercolor",
-            "Line art",
-            "Pixel art",
-            "Flat illustration",
-            "Anime",
-            "3D render",
-            "Oil painting",
-            "Charcoal",
-            "Sketch",
-            "Minimalist",
-          ];
-          const finalArt = validArtStyles.includes(normalizedArt)
-            ? normalizedArt
-            : "";
+          const finalArt = normalizeArtStyleFromApi(enabledAttributes.art_style);
           setArtStyle(finalArt);
           console.log(
             "Art Style loaded:",
@@ -1152,38 +1106,11 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 <SelectValue placeholder="Select art style" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Photorealistic">
-                                  Photorealistic
-                                </SelectItem>
-                                <SelectItem value="Hyper-real">
-                                  Hyper-real
-                                </SelectItem>
-                                <SelectItem value="Watercolor">
-                                  Watercolor
-                                </SelectItem>
-                                <SelectItem value="Line art">
-                                  Line art
-                                </SelectItem>
-                                <SelectItem value="Pixel art">
-                                  Pixel art
-                                </SelectItem>
-                                <SelectItem value="Flat illustration">
-                                  Flat illustration
-                                </SelectItem>
-                                <SelectItem value="Anime">Anime</SelectItem>
-                                <SelectItem value="3D render">
-                                  3D render
-                                </SelectItem>
-                                <SelectItem value="Oil painting">
-                                  Oil painting
-                                </SelectItem>
-                                <SelectItem value="Charcoal">
-                                  Charcoal
-                                </SelectItem>
-                                <SelectItem value="Sketch">Sketch</SelectItem>
-                                <SelectItem value="Minimalist">
-                                  Minimalist
-                                </SelectItem>
+                                {ART_STYLE_KEYS.map((style) => (
+                                  <SelectItem key={style} value={style}>
+                                    {style}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -1200,24 +1127,6 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               placeholder="Enter image guidance"
                               className="w-full rounded-lg border-gray-300"
                             />
-                            {/* <Select
-                              value={imageGuidance || undefined}
-                              onValueChange={setImageGuidance}
-                            >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
-                                <SelectValue placeholder="Select image guidance" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="simple">Simple</SelectItem>
-                                <SelectItem value="detailed">
-                                  Detailed
-                                </SelectItem>
-                                <SelectItem value="complex">Complex</SelectItem>
-                                <SelectItem value="very_detailed">
-                                  Very Detailed
-                                </SelectItem>
-                              </SelectContent>
-                            </Select> */}
                           </div>
                         </div>
                       </div>

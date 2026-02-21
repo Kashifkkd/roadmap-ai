@@ -526,6 +526,11 @@ export default function CometManagerSidebar({
     ];
 
     materials.forEach((material) => {
+      if (material.type === "link") {
+        // Web links → Other
+        categories[2].materials.push(material);
+        return;
+      }
       const extension =
         material.source_name?.split(".").pop()?.toLowerCase() || "";
 
@@ -1542,6 +1547,7 @@ export default function CometManagerSidebar({
                                         .pop()
                                         ?.toLowerCase() || "";
                                     const isPdf = extension === "pdf";
+                                    const isLink = material.type === "link";
 
                                     return (
                                       <div
@@ -1572,7 +1578,10 @@ export default function CometManagerSidebar({
                                               setSelectedAssetCategory(null);
                                             }
 
-                                            if (isPdf && onMaterialSelect) {
+                                            if (
+                                              (isPdf || isLink) &&
+                                              onMaterialSelect
+                                            ) {
                                               onMaterialSelect(
                                                 newSelectedState
                                                   ? material
@@ -1604,14 +1613,35 @@ export default function CometManagerSidebar({
                                                   : "text-gray-900"
                                               }`}
                                               title={
-                                                material.source_name ||
-                                                `Document ${materialIndex + 1}`
+                                                isLink
+                                                  ? material.source_path ||
+                                                    material.output_presigned_url ||
+                                                    material.source_name
+                                                  : material.source_name ||
+                                                    `Document ${materialIndex + 1}`
                                               }
                                             >
-                                              {material.source_name ||
-                                                `Document ${materialIndex + 1}`}
+                                              {isLink
+                                                ? material.source_path ||
+                                                  material.output_presigned_url ||
+                                                  material.source_name ||
+                                                  "Web link"
+                                                : material.source_name ||
+                                                  `Document ${materialIndex + 1}`}
                                             </p>
-                                            {fileSize && (
+                                            {material.comment && (
+                                              <p
+                                                className={`text-xs mt-0.5 truncate ${
+                                                  isMaterialSelected
+                                                    ? "text-white/90"
+                                                    : "text-gray-500"
+                                                }`}
+                                                title={material.comment}
+                                              >
+                                                {material.comment}
+                                              </p>
+                                            )}
+                                            {!isLink && fileSize && (
                                               <p
                                                 className={`text-xs mt-0.5 ${
                                                   isMaterialSelected
@@ -1619,7 +1649,7 @@ export default function CometManagerSidebar({
                                                     : "text-gray-500"
                                                 }`}
                                               >
-                                                {fileSize || "123"}
+                                                {fileSize}
                                               </p>
                                             )}
                                           </div>

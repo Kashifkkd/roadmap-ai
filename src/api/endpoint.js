@@ -4,6 +4,7 @@ export const endpoints = {
   login: "api/auth/v1/token",
   refresh: "api/auth/v1/refresh",
   uploadSourceMaterial: "api/n8n/upload_source_material",
+  uploadSourceMaterialWebLink: "api/n8n/upload_source_material_web_link",
   getSourceMaterials: "api/n8n/source_materials",
   getAssets: "api/n8n/assets",
   getTools: "api/n8n/tools",

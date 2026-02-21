@@ -142,12 +142,19 @@ export function useCometManager(sessionData = null) {
             formData = screen.screenContents.content || {};
           }
 
-          // Get first image asset for thumbnail
+          // Get first image asset for thumbnail (content icon / upload / AI-generated)
           const screenAssets = screen.assets || [];
           const firstImageAsset = screenAssets.find(
-            (asset) => asset.type === "image" || asset.url,
+            (asset) =>
+              asset.type === "image" ||
+              asset.url ||
+              asset.ImageUrl,
           );
-          const thumbnail = firstImageAsset?.url || null;
+          const thumbnail =
+            formData.contentImageIcon ||
+            firstImageAsset?.url ||
+            firstImageAsset?.ImageUrl ||
+            null;
 
           // Get screen title for display
           const screenTitle =

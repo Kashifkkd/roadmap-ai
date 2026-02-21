@@ -12,6 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/Label";
+import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import {
   Select,
@@ -20,28 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ART_STYLE_PROMPTS, ART_STYLE_KEYS } from "@/constants/artStyles";
 
-const artStyles = [
-  "Photorealistic",
-  "Hyper-real",
-  "Watercolor",
-  "Line art",
-  "Pixel art",
-  "Flat illustration",
-  "Anime",
-  "3D render",
-  "Oil painting",
-  "Charcoal",
-  "Sketch",
-  "Minimalist",
-];
-
-const imageGuidanceOptions = [
-  { value: "simple", label: "Simple" },
-  { value: "detailed", label: "Detailed" },
-  { value: "complex", label: "Complex" },
-  { value: "very_detailed", label: "Very Detailed" },
-];
+// Re-export for consumers that imported from this file
+export { ART_STYLE_PROMPTS };
 
 export default function GenerateStepImageButton({
   sessionId,
@@ -59,8 +42,8 @@ export default function GenerateStepImageButton({
   const [generateError, setGenerateError] = useState(null);
 
   // Attribute fields
-  const [artStyle, setArtStyle] = useState("Photorealistic");
-  const [imageGuidance, setImageGuidance] = useState("simple");
+  const [artStyle, setArtStyle] = useState("Editorial Illustration");
+  const [imageGuidance, setImageGuidance] = useState("");
 
   // Prompt fields
   const [prompt, setPrompt] = useState("");
@@ -247,8 +230,8 @@ export default function GenerateStepImageButton({
         }
         setIsDialogOpen(false);
         // Reset fields
-        setArtStyle("Photorealistic");
-        setImageGuidance("simple");
+        setArtStyle("Editorial Illustration");
+        setImageGuidance("");
         setPrompt("");
       } else {
         throw new Error(response?.message || "Failed to generate image");
@@ -357,7 +340,7 @@ export default function GenerateStepImageButton({
                       <SelectValue placeholder="Select art style" />
                     </SelectTrigger>
                     <SelectContent>
-                      {artStyles.map((style) => (
+                      {ART_STYLE_KEYS.map((style) => (
                         <SelectItem key={style} value={style}>
                           {style}
                         </SelectItem>
@@ -369,18 +352,14 @@ export default function GenerateStepImageButton({
                 {/* Image Guidance Field */}
                 <div className="space-y-2">
                   <Label htmlFor="image-guidance">Image Guidance</Label>
-                  <Select value={imageGuidance} onValueChange={setImageGuidance}>
-                    <SelectTrigger id="image-guidance" className="w-full">
-                      <SelectValue placeholder="Select image guidance" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {imageGuidanceOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="image-guidance"
+                    type="text"
+                    value={imageGuidance}
+                    onChange={(e) => setImageGuidance(e.target.value)}
+                    placeholder="Enter image guidance"
+                    className="w-full"
+                  />
                 </div>
 
                 {/* Error Message */}
@@ -400,8 +379,8 @@ export default function GenerateStepImageButton({
                 setIsDialogOpen(false);
                 setAttributesError(null);
                 setGenerateError(null);
-                setArtStyle("Photorealistic");
-                setImageGuidance("simple");
+                setArtStyle("Editorial Illustration");
+                setImageGuidance("");
                 setPrompt("");
               }}
               disabled={isGenerating || isLoadingAttributes}

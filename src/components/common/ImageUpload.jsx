@@ -29,6 +29,7 @@ import {
   setImageAttributes,
   getSuggestPrompt,
 } from "@/api/generateStepImages";
+import { ART_STYLE_KEYS } from "@/constants/artStyles";
 
 export default function ImageUpload({
   label = "Upload Image/Icon",
@@ -50,8 +51,8 @@ export default function ImageUpload({
   // AI Generate Image Dialog State
   const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
-  const [aiArtStyle, setAiArtStyle] = useState("Photorealistic");
-  const [imageGuidance, setImageGuidance] = useState("simple");
+  const [aiArtStyle, setAiArtStyle] = useState("Editorial Illustration");
+  const [imageGuidance, setImageGuidance] = useState("");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [aiGenerateError, setAiGenerateError] = useState(null);
   const [isLoadingAttributes, setIsLoadingAttributes] = useState(false);
@@ -66,28 +67,6 @@ export default function ImageUpload({
   const [assetsError, setAssetsError] = useState(null);
   const [isCreatingAsset, setIsCreatingAsset] = useState(false);
   const [createAssetError, setCreateAssetError] = useState(null);
-
-  const artStyles = [
-    "Photorealistic",
-    "Hyper-real",
-    "Watercolor",
-    "Line art",
-    "Pixel art",
-    "Flat illustration",
-    "Anime",
-    "3D render",
-    "Oil painting",
-    "Charcoal",
-    "Sketch",
-    "Minimalist",
-  ];
-
-  const imageGuidanceOptions = [
-    { value: "simple", label: "Simple" },
-    { value: "detailed", label: "Detailed" },
-    { value: "complex", label: "Complex" },
-    { value: "very_detailed", label: "Very Detailed" },
-  ];
 
   const handleFileUpload = async (file) => {
     setIsUploadingImage(true);
@@ -461,6 +440,21 @@ export default function ImageUpload({
         onUploadSuccess(assetToSave);
       }
 
+      // Add the newly selected/created asset to the local assets array so it appears in the assets list
+      const assetForList = {
+        id: response.id,
+        asset_id: response.id,
+        asset_url: response.url || image_url,
+        asset_type: response.asset_type || assetType,
+        name: response.name || assetName,
+      };
+      setAssets((prev) => {
+        const alreadyInList = prev.some(
+          (a) => (a.id || a.asset_id) === response.id
+        );
+        return alreadyInList ? prev : [...prev, assetForList];
+      });
+
       setIsAssetDialogOpen(false);
     } catch (error) {
       console.error("Error creating asset:", error);
@@ -832,7 +826,7 @@ export default function ImageUpload({
                       <SelectValue placeholder="Select art style" />
                     </SelectTrigger>
                     <SelectContent>
-                      {artStyles.map((style) => (
+                      {ART_STYLE_KEYS.map((style) => (
                         <SelectItem key={style} value={style}>
                           {style}
                         </SelectItem>
@@ -844,21 +838,14 @@ export default function ImageUpload({
                 {/* Image Guidance Field */}
                 <div className="space-y-2">
                   <Label htmlFor="image-guidance">Image Guidance</Label>
-                  <Select
+                  <Input
+                    id="image-guidance"
+                    type="text"
                     value={imageGuidance}
-                    onValueChange={setImageGuidance}
-                  >
-                    <SelectTrigger id="image-guidance" className="w-full">
-                      <SelectValue placeholder="Select image guidance" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {imageGuidanceOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => setImageGuidance(e.target.value)}
+                    placeholder="Enter image guidance"
+                    className="w-full"
+                  />
                 </div>
 
                 {/* Error Message */}

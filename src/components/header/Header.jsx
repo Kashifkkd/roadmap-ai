@@ -234,7 +234,11 @@ export default function Header() {
   const { data: user } = useUser(isAuthenticated);
 
   // Determine which client ID to use: localStorage first, then user.client_id
-  const [clientIdToUse, setClientIdToUse] = useState(null);
+  // Initialize from localStorage so we don't overwrite with fallback before the effect runs
+  const [clientIdToUse, setClientIdToUse] = useState(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("Client id");
+  });
 
   // Fetch client details for the selected client ID
   const { data: clientDetails, isLoading: clientDetailsLoading } =
@@ -406,16 +410,16 @@ export default function Header() {
     }
   }, [clientDetails, selectedClient]);
 
-  // Fallback: if no client details but we have recent clients, use first one
+  // Fallback: only when we have no stored client ID (first visit). Don't overwrite a stored choice.
   useEffect(() => {
     if (
       !clientDetailsLoading &&
       !clientDetails &&
       !selectedClient &&
+      !clientIdToUse &&
       clients.length > 0 &&
       isAuthenticated
     ) {
-      // If we couldn't fetch client details, fallback to first recent client
       const fallbackClient = clients[0];
       setSelectedClient(fallbackClient);
       setClientIdToUse(String(fallbackClient.id));
@@ -429,6 +433,7 @@ export default function Header() {
     clientDetails,
     clientDetailsLoading,
     selectedClient,
+    clientIdToUse,
     clients,
     isAuthenticated,
   ]);
@@ -644,6 +649,17 @@ export default function Header() {
         newValue: client.name,
       })
     );
+
+    // Clear session data when switching client so we don't carry over comet/session from another client
+    try {
+      localStorage.removeItem("sessionId");
+      localStorage.removeItem("sessionData");
+      window.dispatchEvent(new Event("sessionIdChanged"));
+    } catch {
+      // Ignore storage errors
+    }
+
+    router.push("/comets");
   };
 
   const session =

@@ -937,6 +937,7 @@ export default function DynamicForm({
               stepItem.screens[screenIndex] = {
                 ...currentScreen,
                 assets: newAssets,
+                imageStatus: "ready",
               };
               return newOutline;
             }

@@ -80,12 +80,14 @@ export default function ContentForm({
           asset.audioUrl === mediaUrl
       );
     }
-    // Find any media asset
+    // When no mediaUrl is set, only look for non-image media (video/audio/pdf/etc).
+    // Never use "image" here: the content icon (Upload Image/Icon + AI-Generate) is an image
+    // and would otherwise show in both sections. Images only appear in Media when user
+    // explicitly uploads/pastes one there (which sets mediaUrl).
     return existingAssets.find(
       (asset) =>
         asset.type === "video" ||
         asset.type === "audio" ||
-        asset.type === "image" ||
         asset.type === "pdf" ||
         asset.type === "ppt" ||
         asset.type === "document" ||
@@ -113,19 +115,25 @@ export default function ContentForm({
     }
   };
 
-  // Handle removing uploaded media
+  // Handle removing uploaded media (exclude content icon so we never remove it as "media")
   const handleRemoveMedia = () => {
+    const contentIconUrl = formData.contentImageIcon;
     const mediaIndex = existingAssets.findIndex(
-      (asset) =>
-        asset.type === "video" ||
-        asset.type === "audio" ||
-        asset.type === "image" ||
-        asset.type === "pdf" ||
-        asset.type === "ppt" ||
-        asset.type === "document" ||
-        asset.type === "file" ||
-        asset.url === formData.mediaUrl ||
-        asset.ImageUrl === formData.mediaUrl
+      (asset) => {
+        const assetUrl = asset.url || asset.ImageUrl;
+        if (contentIconUrl && assetUrl === contentIconUrl) return false;
+        return (
+          asset.type === "video" ||
+          asset.type === "audio" ||
+          asset.type === "image" ||
+          asset.type === "pdf" ||
+          asset.type === "ppt" ||
+          asset.type === "document" ||
+          asset.type === "file" ||
+          asset.url === formData.mediaUrl ||
+          asset.ImageUrl === formData.mediaUrl
+        );
+      }
     );
     if (mediaIndex >= 0 && removeScreenAsset) {
       removeScreenAsset(mediaIndex);

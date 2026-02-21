@@ -243,7 +243,7 @@ export default function DashboardLayout() {
       const formattedCometData = {
         "Basic Information": {
           "Comet Title": formData.cometTitle || "",
-          Description: formData.specialInstructions || "",
+          Description: formData.description || "",
         },
         "Audience & Objectives": {
           "Target Audience": formData.targetAudience || "",

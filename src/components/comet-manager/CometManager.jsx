@@ -1644,6 +1644,78 @@ export default function CometManager({
                       )}
                     </div>
                   </div>
+                ) : selectedMaterial?.type === "link" ? (
+                  <div className="flex-1 overflow-hidden p-4">
+                    <div className="flex flex-col h-full w-full bg-white rounded-lg overflow-hidden shadow-md">
+                      <div className="shrink-0 p-4 border-b border-gray-200 bg-white flex justify-between items-start">
+                        <div className="flex-1 min-w-0">
+                          <h2 className="text-lg font-bold text-gray-900 truncate mb-1">
+                            {selectedMaterial.source_name || "Web link"}
+                          </h2>
+                          <p className="text-sm text-gray-600 break-all">
+                            {selectedMaterial.source_path ||
+                              selectedMaterial.output_presigned_url}
+                          </p>
+                          {selectedMaterial.comment && (
+                            <p className="text-sm text-gray-500 mt-2">
+                              {selectedMaterial.comment}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <a
+                            href={
+                              selectedMaterial.output_presigned_url ||
+                              selectedMaterial.source_path
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-600 text-sm font-medium"
+                          >
+                            Open link
+                          </a>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setSelectedMaterial(null)}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            <X size={18} />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-h-[200px] overflow-hidden flex flex-col bg-gray-50">
+                        <iframe
+                          src={
+                            selectedMaterial.output_presigned_url ||
+                            selectedMaterial.source_path
+                          }
+                          title={
+                            selectedMaterial.source_name || "Link preview"
+                          }
+                          className="flex-1 w-full min-h-[300px] border-0 bg-white"
+                          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="shrink-0 px-4 py-2 bg-gray-100 border-t border-gray-200 flex items-center justify-between gap-2 flex-wrap">
+                          <p className="text-xs text-gray-500">
+                            If the preview is blank, the site may block embedding.
+                          </p>
+                          <a
+                            href={
+                              selectedMaterial.output_presigned_url ||
+                              selectedMaterial.source_path
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-600 text-sm font-medium"
+                          >
+                            Open link
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ) : selectedMaterial ? (
                   <div className="flex-1 overflow-hidden p-4">
                     <PDFPreview

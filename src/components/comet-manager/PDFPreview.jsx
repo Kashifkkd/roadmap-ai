@@ -64,9 +64,9 @@ export default function PDFPreview({ material, onClose }) {
           <h2 className="text-lg font-bold text-gray-900 truncate mb-1">
             {fileName}
           </h2>
-          {/* {description && (
-            <p className="text-sm text-gray-600 mb-2">{description}</p>
-          )} */}
+          {material.comment && (
+            <p className="text-sm text-gray-600 mb-2">{material.comment}</p>
+          )}
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <CheckCircle2 size={16} className="text-green-500" />
