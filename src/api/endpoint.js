@@ -24,6 +24,7 @@ export const endpoints = {
   updateUser: "api/auth/v1/profile/upsert",
   shareComet: (sessionId) => `api/comet/share_comets/${sessionId}`,
   publishComet: (sessionId) => `api/comet/v2/publish_comet/${sessionId}`,
+  pathUsers: (sessionId) => `api/comet/v2/sessions/${sessionId}/path_users`,
 
   generateDalleImage: "api/generative-ai/v1/generate-dalle-image",
 

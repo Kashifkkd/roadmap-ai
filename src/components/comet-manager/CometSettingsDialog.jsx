@@ -149,34 +149,6 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const [users, setUsers] = useState([
-    { id: 1, name: "John Doe", email: "john.doe@example.com", kickoff: "Yes" },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane.smith@example.com",
-      kickoff: "No",
-    },
-    {
-      id: 3,
-      name: "Bob Johnson",
-      email: "bob.johnson@example.com",
-      kickoff: "Yes",
-    },
-    {
-      id: 4,
-      name: "Alice Williams",
-      email: "alice.williams@example.com",
-      kickoff: "No",
-    },
-    {
-      id: 5,
-      name: "Charlie Browns",
-      email: "charlie.brown@example.com",
-      kickoff: "Yes",
-    },
-  ]);
-
   const [brandColors, setBrandColors] = useState([]);
   const [newColorName, setNewColorName] = useState("");
   const [newColorHex, setNewColorHex] = useState("#000000");
@@ -1665,6 +1637,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                     clientId={localStorage.getItem("Client id")}
                     open={open}
                     isActive={activeTab === "users"}
+                    usePathUsers
                   />
                 </div>
               </div>

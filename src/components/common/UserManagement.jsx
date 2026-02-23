@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { X, MoreHorizontal, Trash2, Plus, ArrowLeft, AlertTriangle } from "lucide-react";
+import {
+  X,
+  MoreHorizontal,
+  Trash2,
+  Plus,
+  ArrowLeft,
+  AlertTriangle,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -19,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getUserById } from "@/api/User/getUserById";
+import { getPathUsers } from "@/api/comet/getPathUsers";
 import { registerClientUser } from "@/api/User/registerClientUser";
 import { updateClientUser } from "@/api/User/updateClientUser";
 import { deleteClientUser } from "@/api/User/deleteClientUser";
@@ -28,13 +36,19 @@ import { bulkUploadUsers } from "@/api/bulkUploadUsers";
 import { toast } from "sonner";
 import BulkUploadDialog from "./BulkUploadDialog";
 
-export default function UserManagement({ clientId, open, isActive }) {
+export default function UserManagement({
+  clientId,
+  open,
+  isActive,
+  usePathUsers = false,
+}) {
   const dropdownRef = useRef(null);
   // User list state
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState(null);
   const [userSearchTerm, setUserSearchTerm] = useState("");
+  const isPathUsersMode = !!usePathUsers;
 
   // Bulk upload state
   const bulkUploadInputRef = useRef(null);
@@ -80,34 +94,65 @@ export default function UserManagement({ clientId, open, isActive }) {
   const filteredUsers =
     normalizedUserSearch && Array.isArray(users)
       ? users.filter((user) => {
-        const firstName = user.first_name || user.firstName || "";
-        const lastName = user.last_name || user.lastName || "";
-        const email = user.email || "";
-        const activePathName = user.active_path_name || "";
+          const firstName = user.first_name || user.firstName || "";
+          const lastName = user.last_name || user.lastName || "";
+          const email = user.email || "";
+          const activePathName = user.active_path_name || "";
 
-        return (
-          textIncludesSearch(firstName, normalizedUserSearch) ||
-          textIncludesSearch(lastName, normalizedUserSearch) ||
-          textIncludesSearch(email, normalizedUserSearch) ||
-          textIncludesSearch(activePathName, normalizedUserSearch)
-        );
-      })
+          return (
+            textIncludesSearch(firstName, normalizedUserSearch) ||
+            textIncludesSearch(lastName, normalizedUserSearch) ||
+            textIncludesSearch(email, normalizedUserSearch) ||
+            textIncludesSearch(activePathName, normalizedUserSearch)
+          );
+        })
       : users;
 
   // Fetch users when component is active
   useEffect(() => {
     const fetchUsers = async () => {
-      if (!open || !isActive || !clientId) return;
+      if (!open || !isActive) return;
 
       setUsersLoading(true);
       setUsersError(null);
       try {
-        const res = await getUserById({ clientId });
-        const data = res?.response || [];
-        setUsers(Array.isArray(data) ? data : []);
+        if (isPathUsersMode) {
+          if (typeof window === "undefined") return;
+
+          const sessionDataRaw = localStorage.getItem("sessionData");
+          const sessionData = sessionDataRaw
+            ? JSON.parse(sessionDataRaw)
+            : null;
+          const sessionId =
+            sessionData?.session_id || localStorage.getItem("sessionId");
+
+          if (!sessionId) {
+            throw new Error("No session ID found for path users");
+          }
+
+          const res = await getPathUsers(sessionId);
+          const raw = res?.response;
+          const data = Array.isArray(raw?.users) ? raw.users : raw;
+          setUsers(Array.isArray(data) ? data : []);
+        } else {
+          if (!clientId) return;
+          const res = await getUserById({ clientId });
+          const data = res?.response || [];
+          setUsers(Array.isArray(data) ? data : []);
+        }
       } catch (error) {
-        console.error("Failed to fetch users for client:", error);
-        setUsersError(error?.message || "Failed to load users for this client");
+        console.error(
+          isPathUsersMode
+            ? "Failed to fetch path users:"
+            : "Failed to fetch users for client:",
+          error,
+        );
+        setUsersError(
+          error?.message ||
+            (isPathUsersMode
+              ? "Failed to load users for this path"
+              : "Failed to load users for this client"),
+        );
         setUsers([]);
       } finally {
         setUsersLoading(false);
@@ -115,7 +160,7 @@ export default function UserManagement({ clientId, open, isActive }) {
     };
 
     fetchUsers();
-  }, [open, isActive, clientId]);
+  }, [open, isActive, clientId, isPathUsersMode]);
 
   // Fetch cohorts when Add User form is shown
   useEffect(() => {
@@ -149,7 +194,7 @@ export default function UserManagement({ clientId, open, isActive }) {
       // if (!cohortId || isNaN(cohortId)) return;
 
       setCohortPathsLoading(true);
-      let payload = {}
+      let payload = {};
       if (cohort) payload.cohort_id = Number(cohort);
       try {
         const allPath = await getClientPaths(clientId);
@@ -158,23 +203,24 @@ export default function UserManagement({ clientId, open, isActive }) {
         const allPathsData = allPath?.response || [];
         const cohortData = result?.response || [];
 
-
-
         // get all ids already present in cohortData
         const cohortIds = new Set(cohortData.map((item) => item.id));
 
         // find missing paths from allPathsData that exist in editingUser.paths
         const missingPaths = allPathsData.filter(
           (item) =>
-            editingUser?.paths?.includes(item.id) && !cohortIds.has(item.id)
+            editingUser?.paths?.includes(item.id) && !cohortIds.has(item.id),
         );
 
         // final data = limited cohortData + missing ones
         const finalCohortPaths = [...cohortData, ...missingPaths];
-        setSelectedItems(missingPaths)
-        setAllPaths(allPathsData.filter(item1 => !cohortData.some(item2 => item2.id === item1.id)));
+        setSelectedItems(missingPaths);
+        setAllPaths(
+          allPathsData.filter(
+            (item1) => !cohortData.some((item2) => item2.id === item1.id),
+          ),
+        );
         setCohortPaths(finalCohortPaths);
-
       } catch (error) {
         console.error("Failed to fetch cohort paths:", error);
         toast.error("Failed to load cohort paths");
@@ -191,13 +237,12 @@ export default function UserManagement({ clientId, open, isActive }) {
   const getUserInfoDetail = async (user) => {
     setEditingUser(user);
     try {
-      const res = await getUserInfo(user.id)
-      handleEditUser(res.response)
+      const res = await getUserInfo(user.id);
+      handleEditUser(res.response);
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
-
-  }
+  };
 
   // Auto add comet assignments for each item in dropdown
   useEffect(() => {
@@ -206,19 +251,16 @@ export default function UserManagement({ clientId, open, isActive }) {
     //     // Only auto-create if no assignments have values yet
     //     const hasValues = prev?.some((a) => a.cometType);
     //     if (hasValues) return prev;
-
     //     const assignments = cohortPaths.map((path, index) => ({
     //       id: index + 1,
     //       isCurrent: index === 0,
     //       cometType: String(path.id),
     //     }));
-
     //     setCurrentCometIndex(0);
     //     return assignments;
     //   });
     // }
   }, [cohortPaths, cohortPathsLoading]);
-
 
   const handleEditUser = (user) => {
     setEditingUser(user);
@@ -239,7 +281,11 @@ export default function UserManagement({ clientId, open, isActive }) {
     }
 
     // Set accountability partner emails
-    const accountabilityEmailValue = user.accountability_partner_email || user.accountability_email || user.accountabilityPartnerEmail || "";
+    const accountabilityEmailValue =
+      user.accountability_partner_email ||
+      user.accountability_email ||
+      user.accountabilityPartnerEmail ||
+      "";
     const accountabilityEmailsList =
       user.accountability_emails ||
       user.accountability_partner_emails ||
@@ -250,7 +296,7 @@ export default function UserManagement({ clientId, open, isActive }) {
         accountabilityEmailsList.map((email, index) => ({
           id: index + 1,
           value: email,
-        }))
+        })),
       );
     } else if (accountabilityEmailValue) {
       setAccountabilityEmails([{ id: 1, value: accountabilityEmailValue }]);
@@ -295,7 +341,7 @@ export default function UserManagement({ clientId, open, isActive }) {
     setCurrentCometIndex(
       assignments.findIndex((a) => a.isCurrent) >= 0
         ? assignments.findIndex((a) => a.isCurrent)
-        : 0
+        : 0,
     );
 
     setShowAddUserForm(true);
@@ -383,7 +429,7 @@ export default function UserManagement({ clientId, open, isActive }) {
       enable_ai_notifications: false,
       timezone: "UTC",
     };
-  
+
     if (password) {
       userData.password = password;
     }
@@ -412,7 +458,7 @@ export default function UserManagement({ clientId, open, isActive }) {
 
       if (res?.response) {
         toast.success(
-          editingUser ? "User updated successfully" : "User added successfully"
+          editingUser ? "User updated successfully" : "User added successfully",
         );
 
         // Refresh user list
@@ -489,16 +535,18 @@ export default function UserManagement({ clientId, open, isActive }) {
   };
 
   const handleSetCohort = (e) => {
-    setCohort(e)
-    setCometAssignments([{ id: 1, isCurrent: false, cometType: "" },])
-  }
+    setCohort(e);
+    setCometAssignments([{ id: 1, isCurrent: false, cometType: "" }]);
+  };
 
   const handleBulkUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const validExtensions = ['.csv', '.xlsx', '.xls'];
-    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    const validExtensions = [".csv", ".xlsx", ".xls"];
+    const fileExtension = file.name
+      .substring(file.name.lastIndexOf("."))
+      .toLowerCase();
     if (!validExtensions.includes(fileExtension)) {
       toast.error("Please upload a CSV or Excel file (.csv, .xlsx, .xls)");
       return;
@@ -528,7 +576,10 @@ export default function UserManagement({ clientId, open, isActive }) {
       }
     } catch (error) {
       console.error("Bulk upload error:", error);
-      const errorMessage = error?.message || error?.response?.data?.detail || "Failed to upload users";
+      const errorMessage =
+        error?.message ||
+        error?.response?.data?.detail ||
+        "Failed to upload users";
       toast.error(errorMessage);
     } finally {
       setBulkUploading(false);
@@ -537,7 +588,6 @@ export default function UserManagement({ clientId, open, isActive }) {
       }
     }
   };
-
 
   const handleAllPathChange = (item) => {
     const exists = selectedItems.some((i) => i.id === item.id);
@@ -553,10 +603,7 @@ export default function UserManagement({ clientId, open, isActive }) {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setOpenAllPath(false);
       }
     };
@@ -573,7 +620,9 @@ export default function UserManagement({ clientId, open, isActive }) {
         {!showAddUserForm ? (
           <div className="flex-1 overflow-y-auto overflow-x-auto">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-lg font-medium text-gray-700">User List</span>
+              <span className="text-lg font-medium text-gray-700">
+                User List
+              </span>
 
               <div className="flex items-center gap-1">
                 <input
@@ -741,10 +790,13 @@ export default function UserManagement({ clientId, open, isActive }) {
             {/* Back Button */}
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
-                <ArrowLeft onClick={() => {
-                  setShowAddUserForm(false);
-                  resetUserForm();
-                }} className="w-5 h-5 cursor-pointer" />
+                <ArrowLeft
+                  onClick={() => {
+                    setShowAddUserForm(false);
+                    resetUserForm();
+                  }}
+                  className="w-5 h-5 cursor-pointer"
+                />
                 {editingUser ? "Edit User" : "Add User"}
               </h2>
               {/* <Button
@@ -839,14 +891,16 @@ export default function UserManagement({ clientId, open, isActive }) {
                 <button
                   type="button"
                   onClick={() => setEnableSSO((prev) => !prev)}
-                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${enableSSO ? "bg-primary-700" : "bg-gray-300"
-                    }`}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
+                    enableSSO ? "bg-primary-700" : "bg-gray-300"
+                  }`}
                   role="switch"
                   aria-checked={enableSSO}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${enableSSO ? "translate-x-6" : "translate-x-1"
-                      }`}
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
+                      enableSSO ? "translate-x-6" : "translate-x-1"
+                    }`}
                   />
                 </button>
               </div>
@@ -880,8 +934,8 @@ export default function UserManagement({ clientId, open, isActive }) {
                             prev.map((row) =>
                               row.id === item.id
                                 ? { ...row, value: e.target.value }
-                                : row
-                            )
+                                : row,
+                            ),
                           )
                         }
                         className="flex-1 bg-white border border-gray-300"
@@ -890,7 +944,7 @@ export default function UserManagement({ clientId, open, isActive }) {
                         type="button"
                         onClick={() =>
                           setAccountabilityEmails((prev) =>
-                            prev.filter((row) => row.id !== item.id)
+                            prev.filter((row) => row.id !== item.id),
                           )
                         }
                         className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0"
@@ -995,7 +1049,7 @@ export default function UserManagement({ clientId, open, isActive }) {
 
                     {allPaths?.map((item, index) => {
                       const checked = selectedItems.some(
-                        (i) => i.id === item.id
+                        (i) => i.id === item.id,
                       );
 
                       return (
@@ -1009,9 +1063,7 @@ export default function UserManagement({ clientId, open, isActive }) {
                             onChange={() => handleAllPathChange(item)}
                             className="accent-blue-600"
                           />
-                          <span className="text-gray-700">
-                            {item.name}
-                          </span>
+                          <span className="text-gray-700">{item.name}</span>
                         </label>
                       );
                     })}
@@ -1044,19 +1096,21 @@ export default function UserManagement({ clientId, open, isActive }) {
                           prev.map((item, idx) => ({
                             ...item,
                             isCurrent: idx === index,
-                          }))
+                          })),
                         );
                       }}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${assignment.isCurrent
-                        ? "bg-green-50 border-green-500"
-                        : "bg-gray-50 border-gray-300"
-                        }`}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${
+                        assignment.isCurrent
+                          ? "bg-green-50 border-green-500"
+                          : "bg-gray-50 border-gray-300"
+                      }`}
                     >
                       <div
-                        className={`w-4 h-4 rounded-full ${assignment.isCurrent
-                          ? "bg-green-500"
-                          : "bg-white border-2 border-gray-400"
-                          }`}
+                        className={`w-4 h-4 rounded-full ${
+                          assignment.isCurrent
+                            ? "bg-green-500"
+                            : "bg-white border-2 border-gray-400"
+                        }`}
                       />
                       <span className="text-sm font-medium text-gray-700">
                         Current Comet
@@ -1067,30 +1121,28 @@ export default function UserManagement({ clientId, open, isActive }) {
                     <Select
                       value={assignment.cometType}
                       onValueChange={(value) => {
-
-
                         setCometAssignments((prev) =>
                           prev.map((item) =>
                             item.id === assignment.id
                               ? { ...item, cometType: value }
-                              : item
-                          )
+                              : item,
+                          ),
                         );
                       }}
-                    // disabled={
-                    //   cohortPathsLoading || !cohort || cohortPaths.length === 0
-                    // }
+                      // disabled={
+                      //   cohortPathsLoading || !cohort || cohortPaths.length === 0
+                      // }
                     >
                       <SelectTrigger className="flex-1 bg-white border border-gray-300">
                         <SelectValue
                           placeholder={
-                            cohortPaths
-                              .filter(path =>
+                            cohortPaths.filter(
+                              (path) =>
                                 !cometAssignments.some(
                                   (item, i) =>
-                                    i !== index && item.cometType == path.id
-                                )
-                              ).length === 0
+                                    i !== index && item.cometType == path.id,
+                                ),
+                            ).length === 0
                               ? "No paths available"
                               : "Select"
                           }
@@ -1099,13 +1151,14 @@ export default function UserManagement({ clientId, open, isActive }) {
                       {!cohortPathsLoading && cohortPaths.length > 0 && (
                         <SelectContent side="bottom" className="max-h-[150px]">
                           {cohortPaths
-                            .filter(path =>
-                              !cometAssignments.some(
-                                (item, i) =>
-                                  i !== index && item.cometType == path.id
-                              )
+                            .filter(
+                              (path) =>
+                                !cometAssignments.some(
+                                  (item, i) =>
+                                    i !== index && item.cometType == path.id,
+                                ),
                             )
-                            .map(path => (
+                            .map((path) => (
                               <SelectItem key={path.id} value={String(path.id)}>
                                 {path.name}
                               </SelectItem>
@@ -1118,15 +1171,18 @@ export default function UserManagement({ clientId, open, isActive }) {
                     <button
                       type="button"
                       onClick={() => {
-
                         if (cometAssignments.length > 1) {
                           setCometAssignments((prev) =>
-                            prev.filter((item) => item.id !== assignment.id)
+                            prev.filter((item) => item.id !== assignment.id),
                           );
-                        } else { setCometAssignments([{ id: 1, isCurrent: false, cometType: "" },]) }
+                        } else {
+                          setCometAssignments([
+                            { id: 1, isCurrent: false, cometType: "" },
+                          ]);
+                        }
                       }}
                       className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0"
-                    // disabled={cometAssignments.length === 1}
+                      // disabled={cometAssignments.length === 1}
                     >
                       <Trash2 className="w-4 h-4 text-white" />
                     </button>
