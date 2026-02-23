@@ -25,6 +25,8 @@ export const endpoints = {
   shareComet: (sessionId) => `api/comet/share_comets/${sessionId}`,
   publishComet: (sessionId) => `api/comet/v2/publish_comet/${sessionId}`,
   pathUsers: (sessionId) => `api/comet/v2/sessions/${sessionId}/path_users`,
+  assignPathUsers: (sessionId) =>
+    `api/comet/v2/sessions/${sessionId}/assign_path_users`,
 
   generateDalleImage: "api/generative-ai/v1/generate-dalle-image",
 

@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getUserById } from "@/api/User/getUserById";
 import { getPathUsers } from "@/api/comet/getPathUsers";
+import { assignPathUsers } from "@/api/comet/assignPathUsers";
 import { registerClientUser } from "@/api/User/registerClientUser";
 import { updateClientUser } from "@/api/User/updateClientUser";
 import { deleteClientUser } from "@/api/User/deleteClientUser";
@@ -83,6 +84,11 @@ export default function UserManagement({
   const [editLoadingId, setEditLoadingId] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
   const [openAllPath, setOpenAllPath] = useState(false);
+  const [pathUserEmails, setPathUserEmails] = useState([]);
+  const [emailOptions, setEmailOptions] = useState([]);
+  const [emailOptionsLoading, setEmailOptionsLoading] = useState(false);
+  const [assigningPathUsers, setAssigningPathUsers] = useState(false);
+
   // Helper functions
   const normalizeSearchTerm = (term) => term.trim().toLowerCase();
   const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value);
@@ -91,6 +97,7 @@ export default function UserManagement({
     text && search ? text.toLowerCase().includes(search) : false;
 
   const normalizedUserSearch = normalizeSearchTerm(userSearchTerm);
+
   const filteredUsers =
     normalizedUserSearch && Array.isArray(users)
       ? users.filter((user) => {
@@ -161,6 +168,28 @@ export default function UserManagement({
 
     fetchUsers();
   }, [open, isActive, clientId, isPathUsersMode]);
+
+  // Fetch  email for dropdown 
+  useEffect(() => {
+    const fetchEmailOptions = async () => {
+      if (!open || !showAddUserForm || !isPathUsersMode || !clientId) return;
+
+      setEmailOptionsLoading(true);
+      try {
+        const res = await getUserById({ clientId });
+        const data = res?.response || [];
+        setEmailOptions(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to fetch users for email dropdown:", error);
+        toast.error("Failed to load emails");
+        setEmailOptions([]);
+      } finally {
+        setEmailOptionsLoading(false);
+      }
+    };
+
+    fetchEmailOptions();
+  }, [open, showAddUserForm, isPathUsersMode, clientId]);
 
   // Fetch cohorts when Add User form is shown
   useEffect(() => {
@@ -361,6 +390,94 @@ export default function UserManagement({
     setCometAssignments([{ id: 1, isCurrent: false, cometType: "" }]);
     setCurrentCometIndex(0);
     setCohortPaths([]);
+    setPathUserEmails([]);
+  };
+
+  const handleAddPathUserEmail = (rawEmail) => {
+    const value = (rawEmail || "").trim();
+    if (!value) return;
+    if (!isValidEmail(value)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setPathUserEmails((prev) =>
+      prev.includes(value) ? prev : [...prev, value],
+    );
+  };
+
+  const handleRemovePathUserEmail = (emailToRemove) => {
+    setPathUserEmails((prev) => prev.filter((e) => e !== emailToRemove));
+  };
+
+  const handleTogglePathUserEmail = (emailVal) => {
+    if (!emailVal) return;
+    if (pathUserEmails.includes(emailVal)) {
+      handleRemovePathUserEmail(emailVal);
+    } else {
+      handleAddPathUserEmail(emailVal);
+    }
+  };
+
+  const handleAssignPathUsers = async () => {
+    if (!pathUserEmails.length) {
+      toast.error("Please add at least one email");
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      toast.error("Session is not available");
+      return;
+    }
+
+    const sessionDataRaw = localStorage.getItem("sessionData");
+    const sessionData = sessionDataRaw ? JSON.parse(sessionDataRaw) : null;
+    const sessionId =
+      sessionData?.session_id || localStorage.getItem("sessionId");
+
+    if (!sessionId) {
+      toast.error("Session ID not found");
+      return;
+    }
+
+    setAssigningPathUsers(true);
+    try {
+      const res = await assignPathUsers(sessionId, pathUserEmails);
+
+      if (res?.success) {
+        toast.success("Users assigned to this comet");
+
+        // Refresh path users list
+        try {
+          const listRes = await getPathUsers(sessionId);
+          const raw = listRes?.response;
+          const data = Array.isArray(raw?.users) ? raw.users : raw;
+          setUsers(Array.isArray(data) ? data : []);
+        } catch (err) {
+          console.error("Failed to refresh path users after assignment:", err);
+        }
+
+        setShowAddUserForm(false);
+        resetUserForm();
+      } else {
+        const errorMessage =
+          res?.response?.detail ||
+          res?.response?.message ||
+          res?.message ||
+          "Failed to assign users";
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("Failed to assign path users:", error);
+      const errorMessage =
+        error?.message ||
+        error?.response?.data?.detail ||
+        error?.response?.detail ||
+        "Failed to assign users";
+      toast.error(errorMessage);
+    } finally {
+      setAssigningPathUsers(false);
+    }
   };
 
   const handleSaveUser = async () => {
@@ -641,23 +758,27 @@ export default function UserManagement({
                   }}
                   className="text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer"
                 >
-                  Add User
+                  {isPathUsersMode ? "Add path" : "Add User"}
                 </Button>
-                <Button
-                  size="md"
-                  variant="outline"
-                  onClick={() => setShowBulkUploadDialog(true)}
-                  className=" text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer"
-                >
-                  User Bulk Upload
-                </Button>
-                <input
-                  ref={bulkUploadInputRef}
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  onChange={handleBulkUpload}
-                  className="hidden"
-                />
+                {!isPathUsersMode && (
+                  <>
+                    <Button
+                      size="md"
+                      variant="outline"
+                      onClick={() => setShowBulkUploadDialog(true)}
+                      className=" text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer"
+                    >
+                      User Bulk Upload
+                    </Button>
+                    <input
+                      ref={bulkUploadInputRef}
+                      type="file"
+                      accept=".csv,.xlsx,.xls"
+                      onChange={handleBulkUpload}
+                      className="hidden"
+                    />
+                  </>
+                )}
               </div>
             </div>
             <table className="w-full border-collapse">
@@ -749,41 +870,159 @@ export default function UserManagement({
                         {user.active_path_name || "-"}
                       </td>
                       <td className="px-4 py-3">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="text-gray-400 hover:text-gray-600">
-                              <MoreHorizontal className="w-5 h-5" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="start"
-                            className="w-32 rounded-lg bg-white border border-gray-200 shadow-lg p-1"
-                          >
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                getUserInfoDetail(user);
-                              }}
-                              className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
+                        {!isPathUsersMode && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="text-gray-400 hover:text-gray-600">
+                                <MoreHorizontal className="w-5 h-5" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="start"
+                              className="w-32 rounded-lg bg-white border border-gray-200 shadow-lg p-1"
                             >
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteUser(user);
-                              }}
-                              className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1"
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  getUserInfoDetail(user);
+                                }}
+                                className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteUser(user);
+                                }}
+                                className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1"
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </td>
                     </tr>
                   ))}
               </tbody>
             </table>
+          </div>
+        ) : isPathUsersMode ? (
+          <div className="flex-1 overflow-y-auto space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
+                <ArrowLeft
+                  onClick={() => {
+                    setShowAddUserForm(false);
+                    resetUserForm();
+                  }}
+                  className="w-5 h-5 cursor-pointer"
+                />
+                Assign Users to Comet
+              </h2>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Select Emails
+                </Label>
+                <Select
+                  onValueChange={(value) => handleTogglePathUserEmail(value)}
+                  disabled={emailOptionsLoading || emailOptions.length === 0}
+                >
+                  <SelectTrigger className="w-full max-w-lg rounded-lg bg-gray-50 border-gray-300">
+                    <div className="flex w-full items-center justify-between">
+                      <span className="truncate text-sm text-gray-700">
+                        {emailOptionsLoading
+                          ? "Loading emails..."
+                          : pathUserEmails.length
+                            ? `${pathUserEmails.length} selected`
+                            : "Select emails"}
+                      </span>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {emailOptions.map((user) => {
+                      const labelParts = [
+                        user.first_name || user.firstName || "",
+                        user.last_name || user.lastName || "",
+                      ].filter(Boolean);
+                      const fullName = labelParts.join(" ");
+                      const emailVal = user.email || "";
+                      const checked = pathUserEmails.includes(emailVal);
+
+                      return (
+                        <SelectItem
+                          key={user.id || emailVal}
+                          value={emailVal}
+                          className="py-2"
+                        >
+                          <div className="flex items-start gap-2">
+                            <input
+                              type="checkbox"
+                              readOnly
+                              className="mt-0.5 accent-blue-600"
+                              checked={checked}
+                            />
+                            <div className="flex flex-col">
+                              {fullName && (
+                                <span className="text-xs font-medium text-gray-900">
+                                  {fullName}
+                                </span>
+                              )}
+                              <span className="text-xs text-gray-600">
+                                {emailVal}
+                              </span>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Selected Emails
+                </Label>
+                <div className="min-h-[44px] border border-gray-200 rounded-md px-2 py-1 bg-gray-50 flex flex-wrap gap-2 items-center">
+                  {pathUserEmails.length === 0 && (
+                    <span className="text-sm text-gray-400">
+                      No emails selected
+                    </span>
+                  )}
+                  {pathUserEmails.map((emailVal) => (
+                    <span
+                      key={emailVal}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-purple-100 text-xs text-purple-800"
+                    >
+                      {emailVal}
+                      <button
+                        type="button"
+                        className="ml-0.5 text-purple-700 hover:text-purple-900"
+                        onClick={() => handleRemovePathUserEmail(emailVal)}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <Button
+                  type="button"
+                  onClick={handleAssignPathUsers}
+                  disabled={assigningPathUsers || pathUserEmails.length === 0}
+                  className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {assigningPathUsers ? "Assigning..." : "Assign Users"}
+                </Button>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto space-y-6">

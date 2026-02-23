@@ -737,7 +737,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4 lg:p-6">
-      <div className="w-full max-w-[998px] lg:max-w-[1200px] xl:max-w-[1400px] max-h-[90vh] md:max-h-[75vh] lg:max-h-[80vh] p-1.5 sm:p-2 lg:p-3 border-0 bg-white rounded-[20px] sm:rounded-[28px] lg:rounded-[32px] shadow-[0_20px_70px_rgba(30,30,50,0.2)] flex flex-col overflow-hidden">
+      <div className="w-full max-w-[998px] lg:max-w-[1200px] xl:max-w-[1400px] h-[85vh] md:h-[75vh] lg:h-[80vh] max-h-[90vh] p-1.5 sm:p-2 lg:p-3 border-0 bg-white rounded-[20px] sm:rounded-[28px] lg:rounded-[32px] shadow-[0_20px_70px_rgba(30,30,50,0.2)] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 py-3 sm:py-4 md:py-5 lg:py-6 border-gray-200">
           <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-gray-900">
@@ -824,7 +824,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
           {/* Content Area - Right Side */}
           <div className="flex-1 bg-white rounded-lg flex flex-col overflow-hidden">
             {activeTab === "comet-info" && (
-              <div className="overflow-y-auto h-full flex flex-col">
+              <div className="h-full flex flex-col">
                 <div className="flex-1 overflow-y-auto p-2">
                   <div className="space-y-4 md:space-y-5">
                     {/* Comet Title */}
@@ -1631,7 +1631,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
             )}
 
             {activeTab === "users" && (
-              <div className="overflow-y-auto h-full flex flex-col">
+              <div className="h-full flex flex-col">
                 <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-3 sm:py-4 md:py-6 lg:py-8">
                   <UserManagement
                     clientId={localStorage.getItem("Client id")}
@@ -1644,8 +1644,10 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
             )}
 
             {activeTab === "analytics" && (
-              <div className="text-center text-gray-500 py-12">
-                Analytics content will be displayed here
+              <div className="h-full flex flex-col">
+                <div className="flex-1 flex items-center justify-center px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-3 sm:py-4 md:py-6 lg:py-8 text-center text-gray-500">
+                  Analytics content will be displayed here
+                </div>
               </div>
             )}
           </div>
