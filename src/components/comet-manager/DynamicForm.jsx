@@ -179,12 +179,15 @@ const getFormValuesFromScreen = (screen) => {
     values.body = content.body || "";
   }
 
-  if (contentType === "manager_email") {
+  if (contentType === "manager_email" || contentType === "managerEmail") {
     values.heading = content.heading || "";
     values.body = content.body || "";
     values.email = content.email || "";
   }
-  if (contentType === "accountability_partner_email") {
+  if (
+    contentType === "accountability_partner_email" ||
+    contentType === "accountabilityPartnerEmail"
+  ) {
     values.heading = content.heading || "";
     values.body = content.body || "";
     values.emails = Array.isArray(content.emails) ? content.emails : [""];
@@ -529,7 +532,10 @@ export default function DynamicForm({
                   currentScreen.screenContents.content.htmlContent = value; // backward compat
                 }
               }
-            } else if (contentType === "manager_email") {
+            } else if (
+              contentType === "manager_email" ||
+              contentType === "managerEmail"
+            ) {
               if (field === "heading") {
                 currentScreen.screenContents.content.heading = value;
               } else if (field === "body") {
@@ -537,7 +543,10 @@ export default function DynamicForm({
               } else if (field === "email") {
                 currentScreen.screenContents.content.email = value;
               }
-            } else if (contentType === "accountability_partner_email") {
+            } else if (
+              contentType === "accountability_partner_email" ||
+              contentType === "accountabilityPartnerEmail"
+            ) {
               if (field === "heading") {
                 currentScreen.screenContents.content.heading = value;
               } else if (field === "body") {
@@ -1185,8 +1194,13 @@ export default function DynamicForm({
       );
     }
 
-    //10-Manager Email & Accountability Partner Email
-    if (screenType === "manager_email" || contentType === "manager_email") {
+    //Manager Email & Accountability Partner Email 
+    const isManagerEmail =
+      screenType === "manager_email" ||
+      contentType === "manager_email" ||
+      screenType === "manageremail" ||
+      contentType === "manageremail";
+    if (isManagerEmail) {
       return (
         <EmailPromptForm
           formTitle="Manager Email"
@@ -1201,10 +1215,12 @@ export default function DynamicForm({
         />
       );
     }
-    if (
+    const isAccountabilityPartnerEmail =
       screenType === "accountability_partner_email" ||
-      contentType === "accountability_partner_email"
-    ) {
+      contentType === "accountability_partner_email" ||
+      screenType === "accountabilitypartneremail" ||
+      contentType === "accountabilitypartneremail";
+    if (isAccountabilityPartnerEmail) {
       return (
         <AccountabilityPartnerEmailForm
           {...formProps}

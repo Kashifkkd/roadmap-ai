@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Smartphone, Tablet, Monitor } from "lucide-react";
+import { Smartphone, Tablet, Monitor, Mail, Users } from "lucide-react";
 import Image from "next/image";
 import AssetsCarousel from "@/components/common/AssetsCarousel";
 
@@ -86,6 +86,162 @@ const PathPersonalizationPreview = ({ deviceView, content, assets = [] }) => {
                 </p>
               </div>
             )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ManagerEmailScreenPreview = ({ deviceView, content, assets = [] }) => {
+  const title =
+    content?.heading || content?.title || "Bring your manager along";
+  const description = content?.body || content?.description || "";
+  const containerWidth =
+    deviceView === DEVICE_VIEWS.mobile
+      ? "w-full max-w-[300px]"
+      : deviceView === DEVICE_VIEWS.tablet
+        ? "w-full max-w-2xl"
+        : "w-full max-w-5xl";
+
+  const paddingClass =
+    deviceView === DEVICE_VIEWS.mobile ? "px-4 py-4" : "px-6 py-8";
+
+  const titleSizeClass =
+    deviceView === DEVICE_VIEWS.mobile
+      ? "text-xl"
+      : deviceView === DEVICE_VIEWS.tablet
+        ? "text-2xl"
+        : "text-3xl";
+
+  return (
+    <div className={`w-full ${containerWidth} mx-auto min-h-[72vh]`}>
+      <div className="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-200">
+        <div className={`${paddingClass} space-y-5`}>
+          <div className="flex items-center gap-3 text-primary-600">
+            <div className="p-2 rounded-lg bg-primary-50">
+              <Mail size={deviceView === DEVICE_VIEWS.mobile ? 22 : 28} />
+            </div>
+            <h2
+              className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
+            >
+              {title || "Manager Email"}
+            </h2>
+          </div>
+
+          {assets && assets.length > 0 ? (
+            <div className="rounded-lg overflow-hidden max-w-md">
+              <AssetsCarousel assets={assets} />
+            </div>
+          ) : (
+            content?.media?.url && (
+              <div className="relative w-full max-w-md aspect-video rounded-lg overflow-hidden bg-gray-100">
+                <Image
+                  src={content.media.url}
+                  alt={title}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
+            )
+          )}
+
+          {description && (
+            <div className="text-gray-700 leading-relaxed text-base">
+              <p className="whitespace-pre-wrap">{description}</p>
+            </div>
+          )}
+
+          <div className="pt-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Manager email address
+            </label>
+            <div className="flex items-center gap-2 px-3 py-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-500 text-sm">
+              <Mail size={18} className="text-gray-400 shrink-0" />
+              <span>Enter manager's email</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AccountabilityPartnerEmailScreenPreview = ({
+  deviceView,
+  content,
+  assets = [],
+}) => {
+  const title = content?.heading || content?.title || "Accountability partners";
+  const description = content?.body || content?.description || "";
+
+  const containerWidth =
+    deviceView === DEVICE_VIEWS.mobile
+      ? "w-full max-w-[300px]"
+      : deviceView === DEVICE_VIEWS.tablet
+        ? "w-full max-w-2xl"
+        : "w-full max-w-5xl";
+
+  const paddingClass =
+    deviceView === DEVICE_VIEWS.mobile ? "px-4 py-4" : "px-6 py-8";
+
+  const titleSizeClass =
+    deviceView === DEVICE_VIEWS.mobile
+      ? "text-xl"
+      : deviceView === DEVICE_VIEWS.tablet
+        ? "text-2xl"
+        : "text-3xl";
+
+  return (
+    <div className={`w-full ${containerWidth} mx-auto min-h-[72vh]`}>
+      <div className="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-200">
+        <div className={`${paddingClass} space-y-5`}>
+          <div className="flex items-center gap-3 text-primary-600">
+            <div className="p-2 rounded-lg bg-amber-50">
+              <Users size={deviceView === DEVICE_VIEWS.mobile ? 22 : 28} />
+            </div>
+            <h2
+              className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
+            >
+              {title || "Accountability partners"}
+            </h2>
+          </div>
+
+          {assets && assets.length > 0 ? (
+            <div className="rounded-lg overflow-hidden max-w-md">
+              <AssetsCarousel assets={assets} />
+            </div>
+          ) : (
+            content?.media?.url && (
+              <div className="relative w-full max-w-md aspect-video rounded-lg overflow-hidden bg-gray-100">
+                <Image
+                  src={content.media.url}
+                  alt={title}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
+            )
+          )}
+
+          {description && (
+            <div className="text-gray-700 leading-relaxed text-base">
+              <p className="whitespace-pre-wrap">{description}</p>
+            </div>
+          )}
+
+          <div className="pt-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Accountability partner email(s)
+            </label>
+            <div className="flex flex-wrap gap-2 p-3 rounded-lg border border-gray-300 bg-gray-50 min-h-[52px]">
+              <span className="text-gray-400 text-sm flex items-center gap-1">
+                <Users size={16} />
+                Add partner emails
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -1628,6 +1784,24 @@ export default function FromDoerToEnabler({
           contentType === "pathpersonalization" ||
           selectedScreen?.screenType === "path_personalization" ? (
           <PathPersonalizationPreview
+            deviceView={deviceView}
+            content={content}
+            assets={selectedScreen?.assets || []}
+          />
+        ) : contentType === "manager_email" ||
+          contentType === "managerEmail" ||
+          selectedScreen?.screenType === "manager_email" ||
+          selectedScreen?.screenType === "managerEmail" ? (
+          <ManagerEmailScreenPreview
+            deviceView={deviceView}
+            content={content}
+            assets={selectedScreen?.assets || []}
+          />
+        ) : contentType === "accountability_partner_email" ||
+          contentType === "accountabilityPartnerEmail" ||
+          selectedScreen?.screenType === "accountability_partner_email" ||
+          selectedScreen?.screenType === "accountabilityPartnerEmail" ? (
+          <AccountabilityPartnerEmailScreenPreview
             deviceView={deviceView}
             content={content}
             assets={selectedScreen?.assets || []}
