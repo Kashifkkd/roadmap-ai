@@ -357,7 +357,6 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       setIsCohortFormOpen(false);
 
       await refreshCohortsList();
-      window.location.reload();
     } catch (error) {
       console.error("Failed to create cohort:", error);
       const errorMessage =
@@ -401,7 +400,6 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       setIsCohortFormOpen(false);
 
       await refreshCohortsList();
-      window.location.reload();
     } catch (error) {
       console.error("Failed to update cohort:", error);
       const errorMessage =
@@ -509,7 +507,6 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         setSelectedPathIds(new Set());
         setPathIdsError("");
         await refreshCohortsList();
-        window.location.reload();
       } else {
         toast.success(res.response.detail);
       }
@@ -552,7 +549,6 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       toast.success("Cohort deleted successfully");
 
       await refreshCohortsList();
-      window.location.reload();
     } catch (error) {
       console.error("Failed to delete cohort:", error);
       const errorMessage =

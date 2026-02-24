@@ -523,11 +523,6 @@ export default function ClientSettingsDialog({
         toast.success("Client details updated successfully");
         refreshClients();
         onOpenChange(false);
-
-        setTimeout(() => {
-          window.location.reload();
-      },2000)
-        
       } else {
         const errorMessage =
           response?.detail ||
