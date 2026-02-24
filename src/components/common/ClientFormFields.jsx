@@ -150,33 +150,55 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       setClientName(initialValues.name || initialValues.client_name || "");
       setWebsite(initialValues.faq_url || "");
 
-      // Initialize brand colors from initialValues - support both nested and flat structure
+      // Initialize brand colors from initialValues 
       setBrandColors({
         stat1:
-          initialValues.stat1 || initialValues.brand_colors?.stat1 || "#7367F0",
+          initialValues.colours?.stat1 ||
+          initialValues.stat1 ||
+          initialValues.brand_colors?.stat1 ||
+          "#7367F0",
         stat2:
-          initialValues.stat2 || initialValues.brand_colors?.stat2 || "#41B3A2",
+          initialValues.colours?.stat2 ||
+          initialValues.stat2 ||
+          initialValues.brand_colors?.stat2 ||
+          "#41B3A2",
         stat3:
-          initialValues.stat3 || initialValues.brand_colors?.stat3 || "#CF1662",
+          initialValues.colours?.stat3 ||
+          initialValues.stat3 ||
+          initialValues.brand_colors?.stat3 ||
+          "#CF1662",
         stat4:
-          initialValues.stat4 || initialValues.brand_colors?.stat4 || "#FFDC2F",
+          initialValues.colours?.stat4 ||
+          initialValues.stat4 ||
+          initialValues.brand_colors?.stat4 ||
+          "#FFDC2F",
         stat5:
-          initialValues.stat5 || initialValues.brand_colors?.stat5 || "#00A885",
+          initialValues.colours?.stat5 ||
+          initialValues.stat5 ||
+          initialValues.brand_colors?.stat5 ||
+          "#00A885",
         theme:
-          initialValues.theme || initialValues.brand_colors?.theme || "#006C55",
+          initialValues.colours?.theme ||
+          initialValues.theme ||
+          initialValues.brand_colors?.theme ||
+          "#006C55",
         header:
+          initialValues.colours?.header ||
           initialValues.header ||
           initialValues.brand_colors?.header ||
           "#006C57",
         highlight:
+          initialValues.colours?.highlight ||
           initialValues.highlight ||
           initialValues.brand_colors?.highlight ||
           "#006C58",
         themeheader:
+          initialValues.colours?.themeheader ||
           initialValues.themeheader ||
           initialValues.brand_colors?.themeheader ||
           "#006C59",
         highlightheader:
+          initialValues.colours?.highlightheader ||
           initialValues.highlightheader ||
           initialValues.brand_colors?.highlightheader ||
           "#006C56",
@@ -629,10 +651,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         }
       }
 
-      const payload = {
-        name: clientName.trim(),
-        enable_foozi: enableFoozi,
-        enable_cohorts: enableCohorts,
+      const colours = {
         stat1: brandColors.stat1,
         stat2: brandColors.stat2,
         stat3: brandColors.stat3,
@@ -643,6 +662,13 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         highlight: brandColors.highlight,
         themeheader: brandColors.themeheader,
         highlightheader: brandColors.highlightheader,
+      };
+
+      const payload = {
+        name: clientName.trim(),
+        enable_foozi: enableFoozi,
+        enable_cohorts: enableCohorts,
+        colours,
       };
 
       if (website.trim()) payload.faq_url = website.trim();
