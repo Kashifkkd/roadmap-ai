@@ -13,7 +13,11 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { toast } from "sonner";
 import { uploadAssetFileNoSession } from "@/api/uploadAssetFileNoSession";
-import { getCohorts, getCommit, getCohortbyPath } from "@/api/cohort/getCohorts";
+import {
+  getCohorts,
+  getCommit,
+  getCohortbyPath,
+} from "@/api/cohort/getCohorts";
 import { createCohort } from "@/api/cohort/createCohort";
 import { updateCohort } from "@/api/cohort/updateCohort";
 import { deleteCohort } from "@/api/cohort/deleteCohort";
@@ -50,15 +54,17 @@ const ToggleSwitch = ({ checked, onChange, label }) => (
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none  ${checked ? "bg-primary-700" : "bg-gray-300"
-        }`}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none  ${
+        checked ? "bg-primary-700" : "bg-gray-300"
+      }`}
       role="switch"
       value={checked}
       aria-checked={checked}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${checked ? "translate-x-6" : "translate-x-1"
-          }`}
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
+          checked ? "translate-x-6" : "translate-x-1"
+        }`}
       />
     </button>
   </div>
@@ -134,7 +140,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   const backgroundImageInputRef = useRef(null);
 
   const getClientId = () => {
-    if (!initialValues) return '';
+    if (!initialValues) return "";
     return initialValues.id || initialValues.client_id;
   };
 
@@ -253,8 +259,6 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
     };
   }, [pendingImagePreview, pendingBackgroundImagePreview]);
 
-
-
   const refreshCohortsList = async () => {
     const clientId = getClientId();
     if (!clientId) return;
@@ -277,7 +281,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
     if (!clientId) return;
 
     try {
-      setCommit([])
+      setCommit([]);
       const res = await getCommit({ clientId });
       const data = res?.response || [];
       setCommit(Array.isArray(data) ? data : []);
@@ -288,29 +292,28 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   };
 
   useEffect(() => {
-    getCommitList()
-  }, [clientId])
+    getCommitList();
+  }, [clientId]);
 
   useEffect(() => {
     if (cohorts?.length > 0) {
-      setEnableCohorts(true)
+      setEnableCohorts(true);
     } else {
-      setEnableCohorts(false)
+      setEnableCohorts(false);
     }
-  }, [cohorts])
+  }, [cohorts]);
 
-
-  const [localCohort, setCohortList] = useState([])
+  const [localCohort, setCohortList] = useState([]);
   const handleCreateCohort = async () => {
     const clientId = getClientId();
 
     if (!clientId) {
-      setCohortList([...localCohort, { name: newCohortName.trim() }])
+      setCohortList([...localCohort, { name: newCohortName.trim() }]);
       setNewCohortName("");
       setEditingCohort(null);
       setIsCohortFormOpen(false);
       toast.success("Cohort created successfully");
-      return
+      return;
     }
 
     if (!newCohortName.trim()) {
@@ -407,8 +410,8 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       const result = await getClientPaths(clientId);
       const data = result?.response || [];
       const paths = Array.isArray(data) ? data : [];
-      const secondIds = new Set(resCohort.response.map(item => item.id));
-      setSelectedPathIds(secondIds)
+      const secondIds = new Set(resCohort.response.map((item) => item.id));
+      setSelectedPathIds(secondIds);
       // const updatedArray = paths.map(item => ({
       //   ...item,
       //   isPresent: secondIds.has(item.id)
@@ -488,7 +491,6 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       } else {
         toast.success(res.response.detail);
       }
-
     } catch (error) {
       console.error("Failed to update cohort paths:", error);
       const errorMessage =
@@ -511,10 +513,10 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   const handleDeleteCohortDialog = async (cohort) => {
     if (!initialValues?.id) {
       toast.success("Cohort deleted successfully");
-      setCohortList(prevItems =>
-        prevItems.filter(item => item.name !== cohort.name)
+      setCohortList((prevItems) =>
+        prevItems.filter((item) => item.name !== cohort.name),
       );
-      return
+      return;
     }
     const cohortId = cohort.id || cohort.cohort_id;
     if (!cohortId) {
@@ -593,7 +595,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
           removeImage(
             setPendingImageFile,
             setPendingImagePreview,
-            pendingImagePreview
+            pendingImagePreview,
           );
         } catch (error) {
           console.error("Error uploading image:", error);
@@ -609,13 +611,13 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         setUploadingBackgroundImage(true);
         try {
           finalBackgroundImageUrl = await uploadImageFile(
-            pendingBackgroundImageFile
+            pendingBackgroundImageFile,
           );
           setExistingBackgroundImageUrl(finalBackgroundImageUrl);
           removeImage(
             setPendingBackgroundImageFile,
             setPendingBackgroundImagePreview,
-            pendingBackgroundImagePreview
+            pendingBackgroundImagePreview,
           );
         } catch (error) {
           console.error("Error uploading color logo:", error);
@@ -645,11 +647,15 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
 
       if (website.trim()) payload.faq_url = website.trim();
       if (localCohort) payload.cohorts = localCohort;
-      
+
       // Always send image fields - send null if empty/removed, otherwise send the URL
       // This ensures that when images are removed, we send null to clear them in the database
-      payload.image_url = finalImageUrl && finalImageUrl.trim() ? finalImageUrl : null;
-      payload.background_image_url = finalBackgroundImageUrl && finalBackgroundImageUrl.trim() ? finalBackgroundImageUrl : null;
+      payload.image_url =
+        finalImageUrl && finalImageUrl.trim() ? finalImageUrl : null;
+      payload.background_image_url =
+        finalBackgroundImageUrl && finalBackgroundImageUrl.trim()
+          ? finalBackgroundImageUrl
+          : null;
 
       return payload;
     },
@@ -683,7 +689,6 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
   const imagePreview = pendingImagePreview || existingImageUrl;
   const backgroundImagePreview =
     pendingBackgroundImagePreview || existingBackgroundImageUrl;
-
 
   return (
     <div className="space-y-6">
@@ -733,7 +738,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         {/* General Image Upload */}
         <div>
           <Label className="text-sm font-medium text-gray-700 mb-3 block">
-          White-on-transparent Logo
+            White-on-transparent Logo
           </Label>
           <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
             <input
@@ -758,7 +763,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                         removeImage(
                           setPendingBackgroundImageFile,
                           setPendingBackgroundImagePreview,
-                          pendingBackgroundImagePreview
+                          pendingBackgroundImagePreview,
                         );
                       } else {
                         setExistingBackgroundImageUrl("");
@@ -804,7 +809,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         {/* Color Logo */}
         <div>
           <Label className="text-sm font-medium text-gray-700 mb-3 block">
-          Color Logo
+            Color Logo
           </Label>
           <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
             <input
@@ -829,7 +834,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                         removeImage(
                           setPendingImageFile,
                           setPendingImagePreview,
-                          pendingImagePreview
+                          pendingImagePreview,
                         );
                       } else {
                         setExistingImageUrl("");
@@ -874,7 +879,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       </div>
 
       {/* Brand Colors */}
-      {/* <div>
+      <div>
         <Label className="text-sm font-medium text-gray-700 mb-4 block">
           Brand Colors
         </Label>
@@ -885,10 +890,11 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
             return (
               <div
                 key={color.key}
-                className={`flex items-center gap-2 border rounded-lg p-2 cursor-pointer transition-all ${selectedColorCode === color.key
-                  ? "border-primary-700 border-2 shadow-md"
-                  : "border-gray-200 hover:border-gray-300"
-                  }`}
+                className={`flex items-center gap-2 border rounded-lg p-2 cursor-pointer transition-all ${
+                  selectedColorCode === color.key
+                    ? "border-primary-700 border-2 shadow-md"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
                 onClick={() => {
                   setSelectedColorCode(color.key);
                 }}
@@ -926,7 +932,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
             );
           })}
         </div>
-      </div> */}
+      </div>
       <div className="space-y-0">
         <ToggleSwitch
           checked={enableFoozi}
@@ -950,7 +956,6 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   setNewCohortName("");
                   // setNewCohortDescription("");
                   setIsCohortFormOpen(true);
-
                 }}
               >
                 {/* <Plus className="w-4 h-4" /> */}
@@ -1051,69 +1056,74 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                       Loading cohorts...
                     </div>
                   </div>
-                ) : (cohorts.length === 0 && localCohort.length === 0) ? (
+                ) : cohorts.length === 0 && localCohort.length === 0 ? (
                   <div className="grid grid-cols-3 bg-white">
                     <div className="px-4 py-4 text-center text-gray-500 col-span-3">
                       Add your first Cohort to see details here
                     </div>
                   </div>
                 ) : (
-                  (initialValues?.id ? cohorts : localCohort).map((cohort, index) => (
-                    <div
-                      key={cohort.id || cohort.cohort_id || index}
-                      className={`grid grid-cols-3 ${index % 2 === 1 ? "bg-gray-50" : "bg-white"
+                  (initialValues?.id ? cohorts : localCohort).map(
+                    (cohort, index) => (
+                      <div
+                        key={cohort.id || cohort.cohort_id || index}
+                        className={`grid grid-cols-3 ${
+                          index % 2 === 1 ? "bg-gray-50" : "bg-white"
                         }`}
-                    >
-                      <div className="px-4 py-2 text-gray-700">
-                        {cohort.name || cohort.cohort_name || "N/A"}
-                      </div>
-                      <div className="px-4 py-2 text-gray-500">
-                        {cohort?.id || cohort.cohort_id || "N/A"}
-                      </div>
-                      <div className="px-6 py-2 text-right flex items-center justify-end">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="text-gray-400 hover:text-gray-600">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="w-32 rounded-lg bg-white border border-gray-200 shadow-lg p-1"
-                          >
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditCohortDialog(cohort);
-                              }}
-                              className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
+                      >
+                        <div className="px-4 py-2 text-gray-700">
+                          {cohort.name || cohort.cohort_name || "N/A"}
+                        </div>
+                        <div className="px-4 py-2 text-gray-500">
+                          {cohort?.id || cohort.cohort_id || "N/A"}
+                        </div>
+                        <div className="px-6 py-2 text-right flex items-center justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="text-gray-400 hover:text-gray-600">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              className="w-32 rounded-lg bg-white border border-gray-200 shadow-lg p-1"
                             >
-                              Edit
-                            </DropdownMenuItem>
-                            {initialValues?.id && <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAddPathDialog(cohort, getClientId());
-                              }}
-                              className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
-                            >
-                              Add Comet
-                            </DropdownMenuItem>}
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteCohortDialog(cohort);
-                              }}
-                              disabled={deletingCohort}
-                              className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {deletingCohort ? "Deleting..." : "Delete"}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditCohortDialog(cohort);
+                                }}
+                                className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              {initialValues?.id && (
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAddPathDialog(cohort, getClientId());
+                                  }}
+                                  className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
+                                >
+                                  Add Comet
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteCohortDialog(cohort);
+                                }}
+                                disabled={deletingCohort}
+                                className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] rounded-md focus:bg-[#574EB6] mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {deletingCohort ? "Deleting..." : "Delete"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    ),
+                  )
                 )}
               </div>
             </div>
@@ -1123,10 +1133,11 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   <span className="text-sm font-semibold text-gray-800">
                     {pathsLoading
                       ? "Loading Comet..."
-                      : `Select Comet for ${pathDialogCohort?.name ||
-                      pathDialogCohort?.cohort_name ||
-                      "Cohort"
-                      }`}
+                      : `Select Comet for ${
+                          pathDialogCohort?.name ||
+                          pathDialogCohort?.cohort_name ||
+                          "Cohort"
+                        }`}
                   </span>
                   <button
                     type="button"
@@ -1167,12 +1178,13 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                       return (
                         <label
                           key={pathId}
-                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isSelected
-                            ? "bg-primary-50 border-primary-500"
-                            : isDisabled
-                              ? "bg-gray-50 border-gray-200 cursor-not-allowed opacity-60"
-                              : "bg-white border-gray-200 hover:border-gray-300"
-                            }`}
+                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                            isSelected
+                              ? "bg-primary-50 border-primary-500"
+                              : isDisabled
+                                ? "bg-gray-50 border-gray-200 cursor-not-allowed opacity-60"
+                                : "bg-white border-gray-200 hover:border-gray-300"
+                          }`}
                         >
                           <input
                             type="checkbox"
@@ -1203,7 +1215,6 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                 {pathIdsError && (
                   <p className="text-xs text-red-500">{pathIdsError}</p>
                 )}
-
 
                 {/* <div className="flex items-center justify-between py-2 border-t border-gray-200">
               <Label className="text-sm font-medium text-gray-700">
@@ -1254,48 +1265,50 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                 </div>
               </div>
             )}
-            {initialValues?.id && <div className="border border-gray border-1 rounded p-3 mt-2">
-              <Label className="text-sm font-medium text-gray-700 block">
-                All Comets
-              </Label>
-              <div className="mt-2 rounded-md overflow-hidden text-sm text-gray-700">
-                {/* Header */}
-                <div className="grid grid-cols-3 bg-gray-100 font-medium">
-                  <div className="px-4 py-2">Comet Name</div>
-                  <div className="px-4 py-2">Comet Id</div>
-                  <div className="px-4 py-2 text-right">Comet Status</div>
-                </div>
+            {initialValues?.id && (
+              <div className="border border-gray border-1 rounded p-3 mt-2">
+                <Label className="text-sm font-medium text-gray-700 block">
+                  All Comets
+                </Label>
+                <div className="mt-2 rounded-md overflow-hidden text-sm text-gray-700">
+                  {/* Header */}
+                  <div className="grid grid-cols-3 bg-gray-100 font-medium">
+                    <div className="px-4 py-2">Comet Name</div>
+                    <div className="px-4 py-2">Comet Id</div>
+                    <div className="px-4 py-2 text-right">Comet Status</div>
+                  </div>
 
-                {/* Rows */}
-                {cohortsLoading ? (
-                  <div className="grid grid-cols-3 bg-white">
-                    <div className="px-4 py-4 text-center text-gray-500 col-span-3">
-                      Loading cohorts...
+                  {/* Rows */}
+                  {cohortsLoading ? (
+                    <div className="grid grid-cols-3 bg-white">
+                      <div className="px-4 py-4 text-center text-gray-500 col-span-3">
+                        Loading cohorts...
+                      </div>
                     </div>
-                  </div>
-                ) : (commit.length === 0) ? (
-                  <div className="grid grid-cols-3 bg-white">
-                    <div className="px-4 py-4 text-center text-gray-500 col-span-3">
-                      No comet found
+                  ) : commit.length === 0 ? (
+                    <div className="grid grid-cols-3 bg-white">
+                      <div className="px-4 py-4 text-center text-gray-500 col-span-3">
+                        No comet found
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  commit?.map((cohort, index) => (
-                    <div
-                      key={cohort.id}
-                      className={`grid grid-cols-3 ${index % 2 === 1 ? "bg-gray-50" : "bg-white"
+                  ) : (
+                    commit?.map((cohort, index) => (
+                      <div
+                        key={cohort.id}
+                        className={`grid grid-cols-3 ${
+                          index % 2 === 1 ? "bg-gray-50" : "bg-white"
                         }`}
-                    >
-                      <div className="px-4 py-2 text-gray-700">
-                        {cohort.session_name || "N/A"}
-                      </div>
-                      <div className="px-4 py-2 text-gray-500">
-                        {cohort.id || "N/A"}
-                      </div>
-                      <div className="px-4 py-2 text-gray-500 text-right">
-                        {cohort.status || "N/A"}
-                      </div>
-                      {/* <div className="px-6 py-2 text-right flex items-center justify-end">
+                      >
+                        <div className="px-4 py-2 text-gray-700">
+                          {cohort.session_name || "N/A"}
+                        </div>
+                        <div className="px-4 py-2 text-gray-500">
+                          {cohort.id || "N/A"}
+                        </div>
+                        <div className="px-4 py-2 text-gray-500 text-right">
+                          {cohort.status || "N/A"}
+                        </div>
+                        {/* <div className="px-6 py-2 text-right flex items-center justify-end">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button className="text-gray-400 hover:text-gray-600">
@@ -1337,16 +1350,16 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div> */}
-                    </div>
-                  ))
-                )}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>}
+            )}
           </div>
         )}
 
         {/* Cohort Paths Dialog */}
-
 
         {/* Secure Links toggle */}
         {/* <div className="mt-4 border-t border-gray-200 pt-3 flex  justify-between"> */}
@@ -1382,7 +1395,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
           label="Secure Links (Open links in default browser)"
         />
       </div>
-    </div >
+    </div>
     // </div>
   );
 });
