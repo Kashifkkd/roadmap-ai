@@ -23,6 +23,27 @@ export const generateStepImages = async ({
   return response;
 };
 
+export const generateStepImagesAndWait = async ({
+  sessionId,
+  chapterUid,
+  stepUid,
+  prompt,
+}) => {
+  const payload = {
+    session_id: sessionId,
+    chapter_uid: chapterUid,
+    step_uid: stepUid,
+    prompt: prompt || "",
+  };
+
+  const response = await apiService({
+    endpoint: endpoints.generateStepImagesAndWait,
+    method: "POST",
+    data: payload,
+  });
+
+  return response;
+};
 
 export const getImageAttributes = async ({
   sessionId

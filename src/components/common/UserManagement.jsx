@@ -744,7 +744,7 @@ export default function UserManagement({
               <div className="flex items-center gap-1">
                 <input
                   type="text"
-                  placeholder="Search by name or email"
+                  placeholder="Search by email"
                   className="w-1/2 border border-gray-300 rounded-lg p-1"
                   value={userSearchTerm}
                   onChange={(e) => setUserSearchTerm(e.target.value)}
@@ -758,7 +758,7 @@ export default function UserManagement({
                   }}
                   className="text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer"
                 >
-                  {isPathUsersMode ? "Add path" : "Add User"}
+                  {isPathUsersMode ? "Assign User" : "Add User"}
                 </Button>
                 {!isPathUsersMode && (
                   <>
@@ -796,9 +796,9 @@ export default function UserManagement({
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
                     Current Comet
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                  {/* <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
                     Action
-                  </th>
+                  </th> */}
                 </tr>
               </thead>
               <tbody>
@@ -867,7 +867,7 @@ export default function UserManagement({
                         {user.email || "-"}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {user.active_path_name || "-"}
+                        {user.path_id || "-"}
                       </td>
                       <td className="px-4 py-3">
                         {!isPathUsersMode && (

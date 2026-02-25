@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Loader2, Sparkles, X } from "lucide-react";
-import { generateStepImages, getImageAttributes, setImageAttributes, getStepPrompts } from "@/api/generateStepImages";
+import { generateStepImagesAndWait, getImageAttributes, setImageAttributes, getStepPrompts } from "@/api/generateStepImages";
 import { Button } from "@/components/ui/Button";
 import {
   Dialog,
@@ -79,9 +79,7 @@ export default function GenerateStepImageButton({
       if (attributes.art_style) {
         setArtStyle(attributes.art_style);
       }
-      if (attributes.image_guidance) {
-        setImageGuidance(attributes.image_guidance);
-      }
+      // Don't pre-fill Image Guidance so it starts fresh each time
     } catch (error) {
       console.error("Error fetching image attributes:", error);
       setAttributesError(error.message || "Failed to load image attributes");
@@ -214,22 +212,26 @@ export default function GenerateStepImageButton({
 
       // Then, generate the step images
       // Always include prompt in payload, even if empty (user may have typed without clicking Suggest Prompt)
-      const response = await generateStepImages({
+      const response = await generateStepImagesAndWait({
         sessionId,
         chapterUid,
         stepUid,
         prompt: prompt || "", // Ensure prompt is always included, default to empty string
       });
 
-      if (response?.success || response?.status === "enqueued" || response?.response?.status === "enqueued") {
-        // Successfully enqueued or started generating
+      // API returns { url: "..." } or wrapped as response.response / response.url
+      const imageUrl = response?.url ?? response?.response?.url;
+      const isSuccess =
+        imageUrl ||
+        response?.success ||
+        response?.status === "enqueued" ||
+        response?.response?.status === "enqueued";
+      if (isSuccess) {
         await markAsEnqueued();
-
         if (onSuccess) {
-          onSuccess(response.response || response);
+          onSuccess(imageUrl ? { url: imageUrl } : response?.response || response);
         }
         setIsDialogOpen(false);
-        // Reset fields
         setArtStyle("Editorial Illustration");
         setImageGuidance("");
         setPrompt("");
@@ -297,7 +299,7 @@ export default function GenerateStepImageButton({
             ) : (
               <>
                 {/* Prompt Field */}
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="step-prompt">Prompt</Label>
                     <Button
@@ -330,7 +332,7 @@ export default function GenerateStepImageButton({
                     className="resize-none"
                     disabled={isSuggestingPrompt}
                   />
-                </div>
+                </div> */}
 
                 {/* Art Style Field */}
                 <div className="space-y-2">

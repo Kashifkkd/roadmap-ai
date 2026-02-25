@@ -49,6 +49,7 @@ export const endpoints = {
   deleteCohort: (cohortId) => `api/clients/v1/cohorts/${cohortId}`,
   uploadTool: "api/n8n/upload_tool_file",
   generateStepImages: "api/generative-ai/v2/generate-step-images",
+  generateStepImagesAndWait: "api/generative-ai/v2/generate-step-images-and-wait",
   getImageAttributes: "api/generative-ai/v2/get-image-attributes",
   setImageAttributes: "api/generative-ai/v2/set-image-attributes",
   getSuggestPrompt: "api/generative-ai/v2/build-prompt",

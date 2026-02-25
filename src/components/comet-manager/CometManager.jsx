@@ -324,8 +324,21 @@ export default function CometManager({
   const [isAnalyzingTextCollapsed, setIsAnalyzingTextCollapsed] =
     useState(false);
   const [showNextChapter, setShowNextChapter] = useState(true);
+  const [hasClickedGenerateRemaining, setHasClickedGenerateRemaining] =
+    useState(false);
   // Bump when session updates (subscription) so DynamicForm remounts and shows fresh data
   const [sessionUpdateKey, setSessionUpdateKey] = useState(0);
+
+  // Persist: once user clicks "Generate Remaining Chapters", never show again (even after reload/close)
+  useEffect(() => {
+    if (typeof window === "undefined" || !sessionId) return;
+    try {
+      const key = `comet-generate-remaining-clicked-${sessionId}`;
+      if (localStorage.getItem(key) === "true") {
+        setHasClickedGenerateRemaining(true);
+      }
+    } catch {}
+  }, [sessionId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -427,6 +440,7 @@ export default function CometManager({
   // Handle Next Chapter click
   const handleNextChapter = async () => {
     try {
+      setHasClickedGenerateRemaining(true); // Hide button immediately
       setNextChapterError(null);
       setIsGeneratingNextChapter(true);
 
@@ -447,11 +461,37 @@ export default function CometManager({
         }
       }
 
+      // Hide button permanently - once clicked, never show again (persists across reload/close)
+      if (currentSessionId) {
+        try {
+          localStorage.setItem(
+            `comet-generate-remaining-clicked-${currentSessionId}`,
+            "true",
+          );
+          setHasClickedGenerateRemaining(true);
+        } catch {}
+      }
+
       // Get parsed session data
       let parsedSessionData = null;
       try {
         const raw = localStorage.getItem("sessionData");
         if (raw) parsedSessionData = JSON.parse(raw);
+      } catch {}
+
+      const updatedResponsePath = {
+        ...(parsedSessionData?.response_path || {}),
+        generate_remaining_chapters: true,
+      };
+
+      // Update sessionData and localStorage immediately so button disables right away
+      const updatedSessionData = {
+        ...parsedSessionData,
+        response_path: updatedResponsePath,
+      };
+      setSessionData(updatedSessionData);
+      try {
+        localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
       } catch {}
 
       const cometJsonForMessage = JSON.stringify({
@@ -471,7 +511,7 @@ export default function CometManager({
         // },
 
         response_outline: parsedSessionData?.response_outline || {},
-        response_path: parsedSessionData?.response_path || {},
+        response_path: updatedResponsePath,
         chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
         to_modify: {},
         webpage_url: parsedSessionData?.webpage_url || [],
@@ -2095,15 +2135,21 @@ export default function CometManager({
                           )}
                         </div>
 
-                        <Button
-                          variant="default"
-                          className="ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50 cursor-pointer"
-                          onClick={handleNextChapter}
-                       
-                        >
-                          <span>Generate Remaining Chapters</span>
-                          <ArrowRight size={16} />
-                        </Button>
+                        {showNextChapter && (
+                          <Button
+                            variant="default"
+                            className="ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50 cursor-pointer"
+                            onClick={handleNextChapter}
+                            disabled={
+                              sessionData?.response_path
+                                ?.generate_remaining_chapters === true ||
+                              isGeneratingNextChapter
+                            }
+                          >
+                            <span>Generate Remaining Chapters</span>
+                            <ArrowRight size={16} />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </>
@@ -2176,6 +2222,37 @@ export default function CometManager({
         onOpenChange={setIsUploadImageDialogOpen}
         sessionId={sessionId}
         stepUid={selectedScreen?.stepUid}
+        existingImageUrl={selectedScreen?.stepImageUrl}
+        chapterUid={(() => {
+          const stepUid = selectedScreen?.stepUid;
+          if (!stepUid) return null;
+          // Screens come from response_path, so find chapter from path first, then outline
+          const path = sessionData?.response_path;
+          const pathChapters = path?.chapters || [];
+          for (const chapter of pathChapters) {
+            if (chapter.steps) {
+              for (const stepItem of chapter.steps) {
+                const step = stepItem?.step;
+                if (step && (step.uuid === stepUid || step.id === stepUid))
+                  return chapter.uuid || chapter.id || null;
+              }
+            }
+          }
+          const outline = sessionData?.response_outline;
+          const outlineChapters = outline?.chapters || [];
+          for (const chapter of outlineChapters) {
+            if (chapter.steps) {
+              for (const stepItem of chapter.steps) {
+                const step = stepItem?.step;
+                if (step && (step.uuid === stepUid || step.id === stepUid))
+                  return chapter.uuid || chapter.id || null;
+              }
+            }
+          }
+          return null;
+        })()}
+        sessionData={sessionData}
+        setSessionData={setSessionData}
         onSuccess={(response) => {
           console.log("Step image uploaded:", response);
         }}

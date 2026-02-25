@@ -400,6 +400,27 @@ export const RichTextArea = ({
       const editorRoot = editor.root;
       editorRoot.addEventListener("blur", handleEditorBlur);
 
+      // Override header so only selected text becomes H1 (split into its own block then format). Default applies to whole block.
+      const toolbarModule = editor.getModule("toolbar");
+      if (toolbarModule && typeof toolbarModule.addHandler === "function") {
+        toolbarModule.addHandler("header", function (value) {
+          const range = editor.getSelection();
+          if (!range) return;
+          if (range.length === 0) {
+            editor.format("header", value, "user");
+            return;
+          }
+          const start = range.index;
+          const len = range.length;
+          const end = start + len;
+          editor.focus();
+          editor.insertText(start, "\n", "api");
+          editor.insertText(end + 1, "\n", "api");
+          editor.setSelection(start + 1, len);
+          editor.format("header", value, "api");
+        });
+      }
+
       quillEditorRef.current = editor;
     };
 
@@ -447,21 +468,22 @@ export const RichTextArea = ({
           style={{ fontFamily: "inherit" }}
         />
 
-        {/* Custom toolbar container */}
+        {/* Custom toolbar container - mousedown preventDefault keeps editor focus so format applies to selection only */}
         <div
           ref={toolbarRef}
           className="p-1 flex gap-1"
           style={{ border: "none" }}
+          onMouseDown={(e) => e.preventDefault()}
         >
-          <button className="ql-bold" title="Bold" />
-          <button className="ql-italic" title="Italic" />
-          <button className="ql-underline" title="Underline" />
-          <button className="ql-strike" title="Strikethrough" />
-          <button className="ql-header" value="1" title="Paragraph" />
-          <button className="ql-link" title="Link" />
-          <button className="ql-image" title="Image" />
-          <button className="ql-undo" title="Undo" />
-          <button className="ql-redo" title="Redo" />
+          <button type="button" className="ql-bold" title="Bold" />
+          <button type="button" className="ql-italic" title="Italic" />
+          <button type="button" className="ql-underline" title="Underline" />
+          <button type="button" className="ql-strike" title="Strikethrough" />
+          <button type="button" className="ql-header" value="1" title="Heading 1" />
+          <button type="button" className="ql-link" title="Link" />
+          <button type="button" className="ql-image" title="Image" />
+          <button type="button" className="ql-undo" title="Undo" />
+          <button type="button" className="ql-redo" title="Redo" />
         </div>
       </div>
     </div>
