@@ -122,3 +122,23 @@ export const getStepPrompts = async ({
   });
   return response;
 };
+
+/**
+ * GET combined step status (images + tools) for polling after enqueue.
+ * Returns e.g. { images: { expected, generated, in_progress }, tools: { generated, in_progress, queued, failed } }
+ */
+export const getStepStatus = async ({
+  sessionId,
+  chapterUid,
+  stepUid,
+}) => {
+  const endpoint =
+    typeof endpoints.getStepStatus === "function"
+      ? endpoints.getStepStatus(sessionId, chapterUid, stepUid)
+      : endpoints.getStepStatus;
+  const response = await apiService({
+    endpoint,
+    method: "GET",
+  });
+  return response;
+};

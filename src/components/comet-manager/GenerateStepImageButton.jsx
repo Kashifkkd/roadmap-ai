@@ -1,8 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
-import { Loader2, Sparkles, X } from "lucide-react";
-import { generateStepImagesAndWait, getImageAttributes, setImageAttributes, getStepPrompts } from "@/api/generateStepImages";
+import React, { useState, useEffect, useMemo } from "react";
+import { Loader2, Sparkles, X, ImageIcon, Wrench } from "lucide-react";
+import {
+  generateStepImages,
+  getImageAttributes,
+  setImageAttributes,
+  getStepPrompts,
+  getStepStatus,
+} from "@/api/generateStepImages";
 import { Button } from "@/components/ui/Button";
 import {
   Dialog,
@@ -51,6 +57,84 @@ export default function GenerateStepImageButton({
 
   // Determine if button should be disabled (only check for missing required props)
   const isDisabled = !sessionId || !chapterUid || !stepUid;
+
+  // Derive whether this step has been enqueued (show status instead of generate button)
+  const isEnqueued = useMemo(() => {
+    if (!sessionData || !stepUid) return false;
+    const path = sessionData.response_path;
+    const outline = sessionData.response_outline;
+    const sources = [
+      path?.chapters ? { chapters: path.chapters } : null,
+      outline?.chapters ? { chapters: outline.chapters } : null,
+      Array.isArray(outline) ? { chapters: outline } : null,
+      Array.isArray(path) ? { chapters: path } : null,
+    ].filter(Boolean);
+    for (const source of sources) {
+      const chapters = source.chapters ?? [];
+      for (const chapter of Array.isArray(chapters) ? chapters : []) {
+        for (const item of chapter.steps || []) {
+          const step = item?.step;
+          if (!step) continue;
+          const match = (step.uuid === stepUid) || (step.id === stepUid);
+          if (match && step.image_generation_enqueued) return true;
+        }
+      }
+    }
+    return false;
+  }, [sessionData, stepUid]);
+
+  // Status: only fetch when user clicks the status button (no auto-polling)
+  const [stepStatus, setStepStatus] = useState(null);
+  const [statusError, setStatusError] = useState(null);
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
+
+  const fetchStepStatus = async () => {
+    if (!sessionId || !chapterUid || !stepUid) return;
+    setIsLoadingStatus(true);
+    setStatusError(null);
+    try {
+      const res = await getStepStatus({ sessionId, chapterUid, stepUid });
+      if (res?.success) {
+        setStepStatus(res?.response ?? null);
+        setStatusError(null);
+      } else {
+        setStatusError(res?.message || "Failed to load status");
+      }
+    } catch (e) {
+      setStatusError(e?.message || "Failed to load status");
+    } finally {
+      setIsLoadingStatus(false);
+    }
+  };
+
+  /** Fetch in background without showing loading spinner (for polling). */
+  const fetchStepStatusSilent = async () => {
+    if (!sessionId || !chapterUid || !stepUid) return;
+    try {
+      const res = await getStepStatus({ sessionId, chapterUid, stepUid });
+      if (res?.success) {
+        setStepStatus(res?.response ?? null);
+        setStatusError(null);
+      } else {
+        setStatusError(res?.message || "Failed to load status");
+      }
+    } catch (e) {
+      setStatusError(e?.message || "Failed to load status");
+    }
+  };
+
+  // Poll status every 5 seconds while the status dialog is open
+  useEffect(() => {
+    if (!isStatusDialogOpen || !sessionId || !chapterUid || !stepUid) return;
+    const interval = setInterval(fetchStepStatusSilent, 10000);
+    return () => clearInterval(interval);
+  }, [isStatusDialogOpen, sessionId, chapterUid, stepUid]);
+
+  const handleOpenStatusDialog = () => {
+    setIsStatusDialogOpen(true);
+    fetchStepStatus();
+  };
 
   const handleOpenDialog = async () => {
     if (!sessionId) {
@@ -210,33 +294,29 @@ export default function GenerateStepImageButton({
         throw new Error(setAttributesResponse?.error?.message || "Failed to set image attributes");
       }
 
-      // Then, generate the step images
-      // Always include prompt in payload, even if empty (user may have typed without clicking Suggest Prompt)
-      const response = await generateStepImagesAndWait({
+      // Then, enqueue step image generation (fire-and-forget)
+      const response = await generateStepImages({
         sessionId,
         chapterUid,
         stepUid,
-        prompt: prompt || "", // Ensure prompt is always included, default to empty string
+        prompt: prompt || "",
       });
 
-      // API returns { url: "..." } or wrapped as response.response / response.url
-      const imageUrl = response?.url ?? response?.response?.url;
       const isSuccess =
-        imageUrl ||
         response?.success ||
         response?.status === "enqueued" ||
         response?.response?.status === "enqueued";
       if (isSuccess) {
         await markAsEnqueued();
         if (onSuccess) {
-          onSuccess(imageUrl ? { url: imageUrl } : response?.response || response);
+          onSuccess(response?.response || response);
         }
         setIsDialogOpen(false);
         setArtStyle("Editorial Illustration");
         setImageGuidance("");
         setPrompt("");
       } else {
-        throw new Error(response?.message || "Failed to generate image");
+        throw new Error(response?.message || "Failed to enqueue image generation");
       }
     } catch (error) {
       console.error("Error generating step image:", error);
@@ -251,7 +331,21 @@ export default function GenerateStepImageButton({
 
   return (
     <>
-      <Button
+      {isEnqueued ? (
+        <Button
+          type="button"
+          onClick={handleOpenStatusDialog}
+          disabled={isDisabled}
+          variant="default"
+          size="sm"
+          className="bg-white hover:bg-primary-100 text-primary-400 border border-primary-400 flex items-center justify-center gap-2 px-4 py-3 w-full disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer sticky bottom-0"
+          title="Check step image generation status"
+        >
+          <ImageIcon className="w-3.5 h-3.5 text-primary-400" />
+          <span className="hidden sm:inline">Step image status</span>
+        </Button>
+      ) : (
+        <Button
         type="button"
         onClick={handleOpenDialog}
         disabled={isDisabled}
@@ -271,6 +365,7 @@ export default function GenerateStepImageButton({
         <Sparkles className="w-3.5 h-3.5 text-primary-400" />
         <span className="hidden sm:inline">Generate Step Images</span>
       </Button>
+      )}
 
       {/* Generate Step Images Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -402,6 +497,103 @@ export default function GenerateStepImageButton({
                 "Generate Step Images"
               )}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Step image status dialog – shown when status button is clicked */}
+      <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Step image status</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {isLoadingStatus && !stepStatus ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-6">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-gray-600">Loading status...</p>
+              </div>
+            ) : statusError ? (
+              <div className="flex flex-col items-center gap-2 py-4 text-center">
+                <p className="text-sm text-amber-600">{statusError}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchStepStatus}
+                  disabled={isLoadingStatus}
+                >
+                  {isLoadingStatus ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Try again"
+                  )}
+                </Button>
+              </div>
+            ) : stepStatus ? (
+              <div className="space-y-4 text-sm">
+                {/* Images: expected, generated, in_progress, is_complete (from GET .../status/step) */}
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4 text-primary-400 shrink-0" />
+                  <div>
+                    <p className="font-medium text-gray-800">Images</p>
+                    <p className="text-gray-600">
+                      {(stepStatus.images?.generated ?? 0)} / {(stepStatus.images?.expected ?? 0)} generated
+                      {(stepStatus.images?.in_progress ?? 0) > 0 && (
+                        <span className="ml-1.5 inline-flex items-center gap-1 text-primary-500">
+                          · <Loader2 className="h-3 w-3 animate-spin" /> {(stepStatus.images?.in_progress ?? 0)} in progress
+                        </span>
+                      )}
+                      {stepStatus.images?.is_complete && (
+                        <span className="ml-1.5 text-green-600">· Complete</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                {/* Tools: total, generated, in_progress, queued, failed, is_complete */}
+                <div className="flex items-center gap-2">
+                  <Wrench className="h-4 w-4 text-primary-400 shrink-0" />
+                  <div>
+                    <p className="font-medium text-gray-800">Tools</p>
+                    <p className="text-gray-600">
+                      {(stepStatus.tools?.generated ?? 0)} / {(stepStatus.tools?.total ?? 0)} generated
+                      {(stepStatus.tools?.in_progress ?? 0) > 0 && (
+                        <span className="ml-1.5 text-primary-500">· {(stepStatus.tools?.in_progress ?? 0)} in progress</span>
+                      )}
+                      {(stepStatus.tools?.queued ?? 0) > 0 && (
+                        <span className="ml-1.5 text-gray-500">· {(stepStatus.tools?.queued ?? 0)} queued</span>
+                      )}
+                      {(stepStatus.tools?.failed ?? 0) > 0 && (
+                        <span className="ml-1.5 text-red-600">· {(stepStatus.tools?.failed ?? 0)} failed</span>
+                      )}
+                      {stepStatus.tools?.is_complete && (stepStatus.tools?.total ?? 0) > 0 && (
+                        <span className="ml-1.5 text-green-600">· Complete</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsStatusDialogOpen(false)}
+            >
+              Close
+            </Button>
+            {stepStatus && (
+              <Button
+                variant="default"
+                onClick={fetchStepStatus}
+                disabled={isLoadingStatus}
+              >
+                {isLoadingStatus ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                Refresh
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -187,18 +187,22 @@ export default function SourceMaterialCard({
     const selectedFiles = Array.from(event.target.files || []);
     if (selectedFiles.length === 0) return;
 
-    const allowedExtensions = ["pdf", "doc", "docx", "txt", "pptx"];
+    const allowedExtensions = [
+      "pdf", "doc", "docx", "txt", "pptx",
+      "mp3", "wav", "m4a", "flac", "mp4", "webm",
+    ];
     const invalidFiles = selectedFiles.filter((file) => {
       const ext = file.name.split(".").pop()?.toLowerCase() || "";
       return !allowedExtensions.includes(ext);
     });
 
+    const allowedLabel = "PDF, DOC, DOCX, TXT, PPTX, MP3, WAV, M4A, FLAC, MP4, WEBM";
     if (invalidFiles.length > 0) {
       const names = invalidFiles.map((f) => f.name).join(", ");
       toast.error(
         invalidFiles.length === 1
-          ? `Unsupported file type: ${names}. Allowed: PDF, DOC, DOCX, TXT.`
-          : `Some files have unsupported types and were skipped: ${names}. Allowed: PDF, DOC, DOCX, TXT.`,
+          ? `Unsupported file type: ${names}. Allowed: ${allowedLabel}.`
+          : `Some files have unsupported types and were skipped: ${names}. Allowed: ${allowedLabel}.`,
       );
     }
 
@@ -359,7 +363,7 @@ export default function SourceMaterialCard({
             <input
               type="file"
               multiple
-              accept=".pdf,.doc,.docx,.txt"
+              accept=".pdf,.doc,.docx,.txt,.pptx,.mp3,.wav,.m4a,.flac,.mp4,.webm"
               onChange={handleFileSelect}
               className="hidden"
               id="file-upload"

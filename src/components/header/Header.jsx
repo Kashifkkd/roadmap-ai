@@ -388,33 +388,24 @@ export default function Header() {
 
   // Set selected client when client details are fetched
   useEffect(() => {
-    if (!clientDetails) return;
-
-    const idChanged =
-      !selectedClient ||
-      String(selectedClient?.id) !== String(clientDetails?.id);
-    const nameChanged = selectedClient?.name !== clientDetails?.name;
-
-    if (idChanged || nameChanged) {
-      setSelectedClient(clientDetails);
-
-      // Update localStorage to keep it in sync
-      try {
-        if (clientDetails.id) {
-          localStorage.setItem("Client id", String(clientDetails.id));
-          if (clientDetails.name) {
-            localStorage.setItem("ClientName", String(clientDetails.name));
-            // Notify listeners 
-            window.dispatchEvent(
-              new StorageEvent("storage", {
-                key: "ClientName",
-                newValue: String(clientDetails.name),
-              }),
-            );
+    if (clientDetails) {
+      // Only update if we don't have a selected client or if the IDs don't match
+      if (
+        !selectedClient ||
+        String(selectedClient?.id) !== String(clientDetails?.id)
+      ) {
+        setSelectedClient(clientDetails);
+        // Update localStorage to keep it in sync
+        try {
+          if (clientDetails.id) {
+            localStorage.setItem("Client id", String(clientDetails.id));
+            if (clientDetails.name) {
+              localStorage.setItem("ClientName", String(clientDetails.name));
+            }
           }
+        } catch {
+          // Ignore storage errors
         }
-      } catch {
-        // Ignore storage errors
       }
     }
   }, [clientDetails, selectedClient]);

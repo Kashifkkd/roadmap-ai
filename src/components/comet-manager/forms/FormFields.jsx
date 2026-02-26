@@ -275,6 +275,31 @@ export const RichTextArea = ({
       const QuillModule = await import("quill");
       const Quill = QuillModule.default;
 
+      // Custom inline formats: output semantic h1/h2/h3 tags (display:inline for flow within paragraph)
+      const Inline = Quill.import("blots/inline");
+      const makeHeadingBlot = (blotName, tag) => {
+        const C = class extends Inline {
+          static create() {
+            const node = super.create();
+            node.style.display = "inline";
+            return node;
+          }
+        };
+        C.blotName = blotName;
+        C.tagName = tag;
+        return C;
+      };
+      const Heading1 = makeHeadingBlot("heading1", "h1");
+      const Heading2 = makeHeadingBlot("heading2", "h2");
+      const Heading3 = makeHeadingBlot("heading3", "h3");
+      try {
+        Quill.register(Heading1);
+        Quill.register(Heading2);
+        Quill.register(Heading3);
+      } catch {
+        /* already registered */
+      }
+
       const editorElement = editorRef.current;
       const toolbarElement = toolbarRef.current;
 
@@ -283,15 +308,51 @@ export const RichTextArea = ({
       const editor = new Quill(editorElement, {
         theme: "snow",
         modules: {
-          toolbar: toolbarElement,
+          toolbar: {
+            container: toolbarElement,
+            handlers: {
+              heading1: function () {
+                const range = editor.getSelection(true);
+                if (!range || range.length === 0) return;
+                const active = editor.getFormat(range).heading1;
+                editor.format("heading1", !active, "user");
+              },
+              heading2: function () {
+                const range = editor.getSelection(true);
+                if (!range || range.length === 0) return;
+                const active = editor.getFormat(range).heading2;
+                editor.format("heading2", !active, "user");
+              },
+              heading3: function () {
+                const range = editor.getSelection(true);
+                if (!range || range.length === 0) return;
+                const active = editor.getFormat(range).heading3;
+                editor.format("heading3", !active, "user");
+              },
+            },
+          },
         },
       });
+
+      // Normalize old span-based heading styles to h1/h2/h3 for backward compatibility
+      const normalizeHeadingHtml = (html) => {
+        if (typeof html !== "string") return html;
+        const styleMatch = (size) =>
+          new RegExp(
+            `<span style="[^"]*font-size:\\s*${size}[^"]*"[^>]*>([\\s\\S]*?)</span>`,
+            "gi"
+          );
+        return html
+          .replace(styleMatch("1\\.75em"), '<h1 style="display:inline">$1</h1>')
+          .replace(styleMatch("1\\.35em"), '<h2 style="display:inline">$1</h2>')
+          .replace(styleMatch("1\\.1em"), '<h3 style="display:inline">$1</h3>');
+      };
 
       // Set initial content — when valueFormat is "html", we only use HTML; delta is normalized to HTML
       if (value) {
         if (isHtmlFormat && isHtmlString(value)) {
           try {
-            editor.root.innerHTML = value;
+            editor.root.innerHTML = normalizeHeadingHtml(value);
           } catch (htmlError) {
             console.error("Failed to set HTML in Quill editor:", htmlError);
           }
@@ -400,27 +461,6 @@ export const RichTextArea = ({
       const editorRoot = editor.root;
       editorRoot.addEventListener("blur", handleEditorBlur);
 
-      // Override header so only selected text becomes H1 (split into its own block then format). Default applies to whole block.
-      const toolbarModule = editor.getModule("toolbar");
-      if (toolbarModule && typeof toolbarModule.addHandler === "function") {
-        toolbarModule.addHandler("header", function (value) {
-          const range = editor.getSelection();
-          if (!range) return;
-          if (range.length === 0) {
-            editor.format("header", value, "user");
-            return;
-          }
-          const start = range.index;
-          const len = range.length;
-          const end = start + len;
-          editor.focus();
-          editor.insertText(start, "\n", "api");
-          editor.insertText(end + 1, "\n", "api");
-          editor.setSelection(start + 1, len);
-          editor.format("header", value, "api");
-        });
-      }
-
       quillEditorRef.current = editor;
     };
 
@@ -449,9 +489,13 @@ export const RichTextArea = ({
   useEffect(() => {
     if (valueFormat !== "html" || !value || !quillEditorRef.current) return;
     const editor = quillEditorRef.current;
-    const html = typeof value === "string" ? value : "";
-    if (html.trim().startsWith("<") && editor.root.innerHTML !== html) {
-      editor.root.innerHTML = html;
+    let html = typeof value === "string" ? value : "";
+    if (html.trim().startsWith("<")) {
+      html = html
+        .replace(/<span style="[^"]*font-size:\s*1\.75em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h1 style="display:inline">$1</h1>')
+        .replace(/<span style="[^"]*font-size:\s*1\.35em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h2 style="display:inline">$1</h2>')
+        .replace(/<span style="[^"]*font-size:\s*1\.1em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h3 style="display:inline">$1</h3>');
+      if (editor.root.innerHTML !== html) editor.root.innerHTML = html;
     }
   }, [valueFormat, value]);
 
@@ -469,17 +513,43 @@ export const RichTextArea = ({
         />
 
         {/* Custom toolbar container - mousedown preventDefault keeps editor focus so format applies to selection only */}
+        <style>{`
+          .rich-text-toolbar .ql-heading1,
+          .rich-text-toolbar .ql-heading2,
+          .rich-text-toolbar .ql-heading3 {
+            color: #444;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 500;
+            float: none;
+            width: 28px;
+            height: 24px;
+            padding: 3px 5px;
+          }
+          .rich-text-toolbar .ql-heading1:hover,
+          .rich-text-toolbar .ql-heading2:hover,
+          .rich-text-toolbar .ql-heading3:hover,
+          .rich-text-toolbar .ql-heading1.ql-active,
+          .rich-text-toolbar .ql-heading2.ql-active,
+          .rich-text-toolbar .ql-heading3.ql-active {
+            color: #06c;
+          }
+        `}</style>
         <div
           ref={toolbarRef}
-          className="p-1 flex gap-1"
+          className="rich-text-toolbar ql-toolbar ql-snow p-1 flex gap-1 items-center flex-wrap border-0"
           style={{ border: "none" }}
           onMouseDown={(e) => e.preventDefault()}
         >
           <button type="button" className="ql-bold" title="Bold" />
           <button type="button" className="ql-italic" title="Italic" />
           <button type="button" className="ql-underline" title="Underline" />
+          <button type="button" className="ql-heading1" title="Heading 1 (selected text)">H1</button>
+          <button type="button" className="ql-heading2" title="Heading 2 (selected text)">H2</button>
+          <button type="button" className="ql-heading3" title="Heading 3 (selected text)">H3</button>
           <button type="button" className="ql-strike" title="Strikethrough" />
-          <button type="button" className="ql-header" value="1" title="Heading 1" />
           <button type="button" className="ql-link" title="Link" />
           <button type="button" className="ql-image" title="Image" />
           <button type="button" className="ql-undo" title="Undo" />

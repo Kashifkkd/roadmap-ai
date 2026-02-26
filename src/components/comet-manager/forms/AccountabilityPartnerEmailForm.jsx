@@ -89,7 +89,6 @@ export default function AccountabilityPartnerEmailForm({
                   type="button"
                   variant="default"
                   onClick={() => removeListItem("emails", index)}
-                  disabled={emails.length <= 1}
                   className="shrink-0 px-2 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 size={16} />

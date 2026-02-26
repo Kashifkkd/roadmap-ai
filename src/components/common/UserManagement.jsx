@@ -88,6 +88,7 @@ export default function UserManagement({
   const [emailOptions, setEmailOptions] = useState([]);
   const [emailOptionsLoading, setEmailOptionsLoading] = useState(false);
   const [assigningPathUsers, setAssigningPathUsers] = useState(false);
+  const [pathUserEmailSearch, setPathUserEmailSearch] = useState("");
 
   // Helper functions
   const normalizeSearchTerm = (term) => term.trim().toLowerCase();
@@ -190,6 +191,15 @@ export default function UserManagement({
 
     fetchEmailOptions();
   }, [open, showAddUserForm, isPathUsersMode, clientId]);
+
+  // Pre-select already-assigned path users in the Select emails dropdown when opening Assign form
+  useEffect(() => {
+    if (!showAddUserForm || !isPathUsersMode || !Array.isArray(users)) return;
+    const emails = users
+      .map((u) => u.email || u.Email)
+      .filter(Boolean);
+    setPathUserEmails(emails);
+  }, [showAddUserForm, isPathUsersMode, users]);
 
   // Fetch cohorts when Add User form is shown
   useEffect(() => {
@@ -930,6 +940,7 @@ export default function UserManagement({
                 </Label>
                 <Select
                   onValueChange={(value) => handleTogglePathUserEmail(value)}
+                  onOpenChange={(open) => !open && setPathUserEmailSearch("")}
                   disabled={emailOptionsLoading || emailOptions.length === 0}
                 >
                   <SelectTrigger className="w-full max-w-lg rounded-lg bg-gray-50 border-gray-300">
@@ -944,42 +955,75 @@ export default function UserManagement({
                     </div>
                   </SelectTrigger>
                   <SelectContent className="max-h-72">
-                    {emailOptions.map((user) => {
-                      const labelParts = [
-                        user.first_name || user.firstName || "",
-                        user.last_name || user.lastName || "",
-                      ].filter(Boolean);
-                      const fullName = labelParts.join(" ");
-                      const emailVal = user.email || "";
-                      const checked = pathUserEmails.includes(emailVal);
-
-                      return (
-                        <SelectItem
-                          key={user.id || emailVal}
-                          value={emailVal}
-                          className="py-2"
-                        >
-                          <div className="flex items-start gap-2">
-                            <input
-                              type="checkbox"
-                              readOnly
-                              className="mt-0.5 accent-blue-600"
-                              checked={checked}
-                            />
-                            <div className="flex flex-col">
-                              {fullName && (
-                                <span className="text-xs font-medium text-gray-900">
-                                  {fullName}
-                                </span>
-                              )}
-                              <span className="text-xs text-gray-600">
-                                {emailVal}
-                              </span>
-                            </div>
+                    <div
+                      className="sticky top-0 z-10 p-2 bg-white border-b border-gray-200"
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <Input
+                        placeholder="Search by name or email..."
+                        value={pathUserEmailSearch}
+                        onChange={(e) => setPathUserEmailSearch(e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    {(() => {
+                      const filtered = emailOptions.filter((user) => {
+                        const search = normalizeSearchTerm(pathUserEmailSearch);
+                        if (!search) return true;
+                        const fullName = [
+                          user.first_name || user.firstName || "",
+                          user.last_name || user.lastName || "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")
+                          .toLowerCase();
+                        const email = (user.email || "").toLowerCase();
+                        return fullName.includes(search) || email.includes(search);
+                      });
+                      if (filtered.length === 0) {
+                        return (
+                          <div className="py-4 px-2 text-center text-sm text-gray-500">
+                            No matching emails
                           </div>
-                        </SelectItem>
-                      );
-                    })}
+                        );
+                      }
+                      return filtered.map((user) => {
+                        const labelParts = [
+                          user.first_name || user.firstName || "",
+                          user.last_name || user.lastName || "",
+                        ].filter(Boolean);
+                        const fullName = labelParts.join(" ");
+                        const emailVal = user.email || "";
+                        const checked = pathUserEmails.includes(emailVal);
+
+                        return (
+                          <SelectItem
+                            key={user.id || emailVal}
+                            value={emailVal}
+                            className="py-2"
+                          >
+                            <div className="flex items-start gap-2">
+                              <input
+                                type="checkbox"
+                                readOnly
+                                className="mt-0.5 accent-blue-600"
+                                checked={checked}
+                              />
+                              <div className="flex flex-col">
+                                {fullName && (
+                                  <span className="text-xs font-medium text-gray-900">
+                                    {fullName}
+                                  </span>
+                                )}
+                                <span className="text-xs text-gray-600">
+                                  {emailVal}
+                                </span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        );
+                      });
+                    })()}
                   </SelectContent>
                 </Select>
               </div>
@@ -1187,7 +1231,6 @@ export default function UserManagement({
                           )
                         }
                         className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0"
-                        disabled={accountabilityEmails.length === 1}
                       >
                         <Trash2 className="w-4 h-4 text-white" />
                       </button>

@@ -6,7 +6,7 @@ import CometManager from "./CometManager";
 import { usePreviewMode } from "@/contexts/PreviewModeContext";
 import { graphqlClient } from "@/lib/graphql-client";
 // import { sampleSessionData } from "@/hooks/sampleSessionData";
-import { temp2 } from "@/hooks/temp2";
+// import { temp2 } from "@/hooks/temp2";
 
 export default function CometManagerLayout() {
   const { isPreviewMode, setIsPreviewMode } = usePreviewMode();

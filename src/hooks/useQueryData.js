@@ -26,10 +26,10 @@ export function useUpsertClient() {
     mutationKey: ["upsertClient"],
     mutationFn: async (clientData) => {
       let res;
-      if (clientData.id) {
+      if(clientData.id){
         res = await updateClientDetails(clientData);
-      } else {
-        res = await updateClientCohortDetails(clientData);
+      }else{
+        res = await updateClientCohortDetails(clientData)
       }
       if (res?.error) {
         throw new Error(errorMessage);
@@ -40,22 +40,8 @@ export function useUpsertClient() {
       }
       return res?.response || null;
     },
-    onSuccess: (_data, variables) => {
-      // Refresh client lists
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      queryClient.invalidateQueries({ queryKey: ["recentClients"] });
-      // Refresh this specific client's details 
-      if (variables?.id) {
-        queryClient.invalidateQueries({
-          queryKey: ["clientDetails", variables.id],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["clientDetails", String(variables.id)],
-        });
-      } else {
-        
-        queryClient.invalidateQueries({ queryKey: ["clientDetails"] });
-      }
     },
   });
 }
@@ -102,11 +88,8 @@ export function useRefreshData() {
   const queryClient = useQueryClient();
 
   return {
-    refreshClients: () => {
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
-      queryClient.invalidateQueries({ queryKey: ["recentClients"] });
-      queryClient.invalidateQueries({ queryKey: ["clientDetails"] });
-    },
+    refreshClients: () =>
+      queryClient.invalidateQueries({ queryKey: ["clients"] }),
     refreshUser: () => queryClient.invalidateQueries({ queryKey: ["user"] }),
   };
 }

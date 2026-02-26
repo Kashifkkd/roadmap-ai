@@ -14,7 +14,6 @@ import { replaceStepImage } from "@/api/replaceStepImage";
 import {
   getImageAttributes,
   setImageAttributes,
-  getStepPrompts,
   generateStepImagesAndWait,
 } from "@/api/generateStepImages";
 import {
@@ -27,7 +26,6 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
 import {
   Select,
   SelectContent,
@@ -63,13 +61,11 @@ export default function UploadStepImageDialog({
 
   // Generate state
   const [isLoadingAttributes, setIsLoadingAttributes] = useState(false);
-  const [isSuggestingPrompt, setIsSuggestingPrompt] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [attributesError, setAttributesError] = useState(null);
   const [generateError, setGenerateError] = useState(null);
   const [artStyle, setArtStyle] = useState("Editorial Illustration");
   const [imageGuidance, setImageGuidance] = useState("");
-  const [prompt, setPrompt] = useState("");
 
   const handleCloseDialog = () => {
     onOpenChange(false);
@@ -83,7 +79,6 @@ export default function UploadStepImageDialog({
     setGenerateError(null);
     setArtStyle("Editorial Illustration");
     setImageGuidance("");
-    setPrompt("");
   };
 
   // Load image attributes when opening dialog in generate mode or switching to generate
@@ -113,37 +108,9 @@ export default function UploadStepImageDialog({
     return () => { cancelled = true; };
   }, [open, mode, sessionId]);
 
-  const handleSuggestPrompt = async () => {
-    if (!sessionId || !chapterUid || !stepUid) return;
-    setIsSuggestingPrompt(true);
-    setGenerateError(null);
-    try {
-      const response = await getStepPrompts({
-        sessionId,
-        chapterUid,
-        stepUid,
-      });
-      const data = response?.response ?? response;
-      if (!data) throw new Error(response?.message || "Failed to get suggested prompt");
-      const suggestedPrompt =
-        typeof data === "string"
-          ? data
-          : data?.step_wallpaper_prompt ??
-            data?.prompt ??
-            data?.suggested_prompt ??
-            data?.text ??
-            (typeof data === "object" ? "" : String(data));
-      if (suggestedPrompt) setPrompt(suggestedPrompt);
-      else throw new Error("No step wallpaper prompt in response");
-    } catch (err) {
-      setGenerateError(err?.message || "Failed to get suggested prompt");
-    } finally {
-      setIsSuggestingPrompt(false);
-    }
-  };
-
-  const markAsEnqueued = async () => {
-    if (!sessionData || !setSessionData || !stepUid) return;
+  /** Update step.image in sessionData (response_path + response_outline) and persist. */
+  const updateStepImage = (imageUrl) => {
+    if (!sessionData || !setSessionData || !stepUid || !imageUrl) return;
     try {
       const updated = JSON.parse(JSON.stringify(sessionData));
       let stepFound = false;
@@ -151,7 +118,7 @@ export default function UploadStepImageDialog({
         for (const ch of updated.response_path.chapters) {
           for (const stepItem of ch.steps || []) {
             if (stepItem.step?.uuid === stepUid) {
-              stepItem.step.image_generation_enqueued = true;
+              stepItem.step.image = imageUrl;
               stepFound = true;
               break;
             }
@@ -161,12 +128,10 @@ export default function UploadStepImageDialog({
       }
       const outlineChapters = updated.response_outline?.chapters ?? (Array.isArray(updated.response_outline) ? updated.response_outline : []);
       for (const chapter of Array.isArray(outlineChapters) ? outlineChapters : []) {
-        if (chapter.steps) {
-          for (const stepData of chapter.steps) {
-            if (stepData.step?.uuid === stepUid) {
-              stepData.step.image_generation_enqueued = true;
-              break;
-            }
+        for (const stepData of chapter.steps || []) {
+          if (stepData.step?.uuid === stepUid) {
+            stepData.step.image = imageUrl;
+            break;
           }
         }
       }
@@ -183,11 +148,12 @@ export default function UploadStepImageDialog({
           to_modify: updated.to_modify || {},
           webpage_url: updated.webpage_url || [],
         });
-        const { graphqlClient } = await import("@/lib/graphql-client");
-        await graphqlClient.autoSaveComet(cometJsonForSave);
+        import("@/lib/graphql-client").then(({ graphqlClient }) =>
+          graphqlClient.autoSaveComet(cometJsonForSave),
+        );
       }
     } catch (err) {
-      console.error("Error marking step as enqueued:", err);
+      console.error("Error updating step image:", err);
     }
   };
 
@@ -211,7 +177,7 @@ export default function UploadStepImageDialog({
         sessionId,
         chapterUid,
         stepUid,
-        prompt: prompt || "",
+        prompt: "",
       });
       // API returns { url: "..." } or wrapped as response.response / response.url
       const imageUrl = response?.url ?? response?.response?.url;
@@ -221,7 +187,9 @@ export default function UploadStepImageDialog({
         response?.status === "enqueued" ||
         response?.response?.status === "enqueued";
       if (isSuccess) {
-        await markAsEnqueued();
+        if (imageUrl) {
+          updateStepImage(imageUrl);
+        }
         if (onSuccess) {
           onSuccess(imageUrl ? { url: imageUrl } : response?.response || response);
         }
@@ -461,41 +429,6 @@ export default function UploadStepImageDialog({
                       />
                     </div>
                   )}
-                  {/* Prompt + Suggest Prompt */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="step-prompt">Prompt</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleSuggestPrompt}
-                        disabled={isSuggestingPrompt || !chapterUid || !stepUid}
-                        className="flex items-center gap-1.5 text-xs h-7 px-2.5 border-primary-300 text-primary-500 hover:bg-primary-50"
-                      >
-                        {isSuggestingPrompt ? (
-                          <>
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Suggesting...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-3 w-3" />
-                            Suggest Prompt
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                    <Textarea
-                      id="step-prompt"
-                      placeholder="Describe the image you want to generate for this step..."
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      rows={4}
-                      className="resize-none"
-                      disabled={isSuggestingPrompt}
-                    />
-                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="art-style">Art Style</Label>
                     <Select value={artStyle} onValueChange={setArtStyle}>

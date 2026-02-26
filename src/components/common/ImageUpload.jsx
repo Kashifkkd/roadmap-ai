@@ -246,11 +246,6 @@ export default function ImageUpload({
   };
 
   const handleGenerateImage = async () => {
-    if (!aiPrompt.trim()) {
-      setAiGenerateError("Please enter a prompt");
-      return;
-    }
-
     setIsGeneratingImage(true);
     setAiGenerateError(null);
 
@@ -271,7 +266,7 @@ export default function ImageUpload({
 
       // Then, generate the image
       const payload = {
-        prompt: aiPrompt,
+        prompt: aiPrompt?.trim() || "",
         art_style: aiArtStyle,
         session_id: sessionId || "",
         chapter_uid: chapterUid || "",
@@ -764,7 +759,7 @@ export default function ImageUpload({
             ) : (
               <>
                 {/* Prompt Field */}
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="ai-prompt">Prompt</Label>
                     <Button
@@ -816,7 +811,7 @@ export default function ImageUpload({
                       <span>{promptError}</span>
                     </div>
                   )}
-                </div>
+                </div> */}
 
                 {/* Art Style Field */}
                 <div className="space-y-2">
@@ -877,7 +872,6 @@ export default function ImageUpload({
               disabled={
                 isGeneratingImage ||
                 isLoadingAttributes ||
-                !aiPrompt.trim() ||
                 !!attributesError
               }
             >

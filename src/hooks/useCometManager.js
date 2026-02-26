@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { temp2 } from "./temp2";
 
 export function useCometManager(sessionData = null) {
   const [isLoading, setIsLoading] = useState(false);
-  // Single state for the entire outline (response_path)
+  
   const [outline, setOutline] = useState(null);
   const [selectedStepId, setSelectedStepId] = useState(null);
 

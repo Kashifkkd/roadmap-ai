@@ -1955,7 +1955,7 @@ export default function CometManager({
                             sessionData={sessionData}
                             setSessionData={setSessionData}
                             chapterUid={(() => {
-                              // Find chapter UUID from outline using stepUid (more reliable than chapterId)
+                   
                               const stepUid = selectedScreen?.stepUid;
                               if (!stepUid || !outline?.chapters) {
                                 return null;
@@ -2226,7 +2226,7 @@ export default function CometManager({
         chapterUid={(() => {
           const stepUid = selectedScreen?.stepUid;
           if (!stepUid) return null;
-          // Screens come from response_path, so find chapter from path first, then outline
+
           const path = sessionData?.response_path;
           const pathChapters = path?.chapters || [];
           for (const chapter of pathChapters) {

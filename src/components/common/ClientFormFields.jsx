@@ -47,7 +47,7 @@ const uploadImageFile = async (file) => {
   throw new Error("Failed to upload image");
 };
 
-// Toggle Switch Component
+
 const ToggleSwitch = ({ checked, onChange, label }) => (
   <div className="flex items-center justify-between py-3 border-t border-gray-200">
     <Label className="text-sm font-medium text-gray-700">{label}</Label>
@@ -357,6 +357,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       setIsCohortFormOpen(false);
 
       await refreshCohortsList();
+      window.location.reload();
     } catch (error) {
       console.error("Failed to create cohort:", error);
       const errorMessage =
@@ -400,6 +401,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       setIsCohortFormOpen(false);
 
       await refreshCohortsList();
+      window.location.reload();
     } catch (error) {
       console.error("Failed to update cohort:", error);
       const errorMessage =
@@ -507,6 +509,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         setSelectedPathIds(new Set());
         setPathIdsError("");
         await refreshCohortsList();
+        window.location.reload();
       } else {
         toast.success(res.response.detail);
       }
@@ -549,6 +552,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       toast.success("Cohort deleted successfully");
 
       await refreshCohortsList();
+      window.location.reload();
     } catch (error) {
       console.error("Failed to delete cohort:", error);
       const errorMessage =
