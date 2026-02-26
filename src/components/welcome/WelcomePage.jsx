@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { ArrowUp, Paperclip, Search, X, FileText, Link2 } from "lucide-react";
+import { ArrowUp, Paperclip, Search, X, FileText, Link2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import Stars from "@/components/icons/Stars";
@@ -43,9 +43,11 @@ export default function WelcomePage() {
   const [sessionData, setSessionData] = useState(null);
   const [error, setError] = useState(null);
 
-  const [attachedFile, setAttachedFile] = useState(null);
+  const [attachedFiles, setAttachedFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [sourceMaterialUid, setSourceMaterialUid] = useState(null);
+  const [isAttachInputVisible, setIsAttachInputVisible] = useState(false);
+  const [attachCommentValue, setAttachCommentValue] = useState("");
+  const attachInputRef = useRef(null);
 
   // Link input state: each entry is { url, comment }
   const [webpageUrls, setWebpageUrls] = useState([]);
@@ -53,6 +55,8 @@ export default function WelcomePage() {
   const [linkInputValue, setLinkInputValue] = useState("");
   const [linkCommentValue, setLinkCommentValue] = useState("");
   const linkInputRef = useRef(null);
+  const linkCommentRef = useRef(null);
+  const lastFocusedLinkInputRef = useRef(null);
 
   const handleSuggestionSelect = (suggestion) => {
     setInputText(suggestion);
@@ -166,7 +170,7 @@ export default function WelcomePage() {
       setError(null);
       let currentSessionId = sessionId;
       let isFirstMessage = !currentSessionId;
-      let uploadedFileUid = null;
+      let uploadedFileUids = [];
 
       // Only create session if this is the first message
       if (!currentSessionId) {
@@ -175,19 +179,19 @@ export default function WelcomePage() {
         localStorage.setItem("sessionId", currentSessionId);
         console.log("✅ Session created:", currentSessionId);
 
-        // Upload the attached file only once
-        if (attachedFile && !sourceMaterialUid) {
-          uploadedFileUid = await uploadAttachedFile(currentSessionId);
-          console.log("uploadedFileUid>>>>>>>>>>", uploadedFileUid);
+        // Upload attached files
+        const uids = await uploadAttachedFiles(currentSessionId, attachedFiles);
+        uploadedFileUids = Array.isArray(uids) ? uids : [];
+        if (uploadedFileUids.length) {
+          console.log("uploadedFileUids>>>>>>>>>>", uploadedFileUids);
         }
 
         // Note: Subscription is now handled by useSessionSubscription hook below
       } else {
         console.log("Using existing session:", currentSessionId);
 
-        if (attachedFile && !sourceMaterialUid) {
-          uploadedFileUid = await uploadAttachedFile(currentSessionId);
-        }
+        const uids = await uploadAttachedFiles(currentSessionId);
+        uploadedFileUids = Array.isArray(uids) ? uids : [];
       }
 
       // Step 3: Build payload with all required fields using helper
@@ -211,8 +215,18 @@ export default function WelcomePage() {
         // },
         chatbot_conversation: chatbotConversation,
         to_modify: sessionData?.to_modify ?? {},
-        source_material_uid: uploadedFileUid || sourceMaterialUid || null,
-        webpage_url: webpageUrls.length > 0 ? webpageUrls.map((e) => ({ webpage_url: e.url, comment: e.comment || "" })) : [],
+        // source_material_uids: uploadedFileUids,
+        source_material: attachedFiles.map((entry, idx) => ({
+          [`comment_${idx + 1}`]: entry.comment ?? "",
+          [`uid_${idx + 1}`]: uploadedFileUids[idx] ?? null,
+        })),
+        webpage_url:
+          webpageUrls.length > 0
+            ? webpageUrls.map((e) => ({
+                webpage_url: e.url,
+                comment: e.comment || "",
+              }))
+            : [],
         execution_id: executionId,
         retry_count: 0,
         error_history: [],
@@ -297,8 +311,9 @@ export default function WelcomePage() {
         return null;
       } else {
         console.log("File uploaded successfully:", result.response);
-        // Return the UID from the response
-        return result.response?.uuid || null;
+        const res = result.response;
+        const uid = res?.id;
+        return uid != null ? String(uid) : null;
       }
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -307,55 +322,153 @@ export default function WelcomePage() {
     }
   }, []);
 
-  // Upload attached file and store UID
-  const uploadAttachedFile = useCallback(
-    async (currentSessionId) => {
-      if (!attachedFile) return null;
+  const UPLOADED_MARKER = "__uploaded__"; // Prevents re-upload when API returns no id
+
+  const uploadAttachedFiles = useCallback(
+    async (currentSessionId, filesFromSubmit) => {
+      const current =
+        filesFromSubmit !== undefined ? filesFromSubmit : attachedFiles;
+      if (current.length === 0) return [];
+
+      const needUpload = current.filter((e) => !e.uid);
+      if (needUpload.length === 0) {
+        return current
+          .map((e) => e.uid)
+          .filter((u) => u && u !== UPLOADED_MARKER);
+      }
 
       setIsUploading(true);
       try {
-        const uuid = await uploadFile(attachedFile, currentSessionId);
-
-        if (uuid) {
-          toast.success("File uploaded successfully");
-          setSourceMaterialUid(uuid);
-        } else {
-          setSourceMaterialUid("uploaded");
-        }
-
-        return uuid;
-      } catch (error) {
-        console.error("Error uploading file:", error);
-        return false;
+        const updated = await Promise.all(
+          current.map(async (entry) => {
+            if (entry.uid) return { ...entry };
+            const uid = await uploadFile(entry.file, currentSessionId);
+            return { ...entry, uid: uid ?? UPLOADED_MARKER };
+          }),
+        );
+        setAttachedFiles(updated);
+        const uids = updated
+          .map((e) => e.uid)
+          .filter((u) => u && u !== UPLOADED_MARKER);
+        if (uids.length)
+          toast.success(
+            uids.length === 1
+              ? "File uploaded"
+              : `${uids.length} files uploaded`,
+          );
+        return uids;
+      } catch (err) {
+        console.error("Error uploading files:", err);
+        return [];
       } finally {
         setIsUploading(false);
       }
     },
-    [attachedFile, uploadFile],
+    [attachedFiles, uploadFile],
   );
 
-  // Handle file selection (single file only)
-  const handleFileSelect = (event) => {
-    const selectedFile = event.target.files[0];
+  const handleFileSelect = async (event) => {
+    const selected = Array.from(event.target.files || []);
+    if (selected.length === 0) return;
 
-    if (selectedFile) {
-      setAttachedFile(selectedFile);
-      // New file selected
-      setSourceMaterialUid(null);
+    const allowedExtensions = ["pdf", "doc", "docx", "txt", "pptx"];
+    const invalidFiles = selected.filter((file) => {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "";
+      return !allowedExtensions.includes(ext);
+    });
+
+    if (invalidFiles.length > 0) {
+      const names = invalidFiles.map((f) => f.name).join(", ");
+      toast.error(
+        invalidFiles.length === 1
+          ? `Unsupported file type: ${names}. Allowed: PDF, DOC, DOCX, TXT.`
+          : `Some files have unsupported types and were skipped: ${names}. Allowed: PDF, DOC, DOCX, TXT.`,
+      );
     }
 
-    event.target.value = "";
+    const validFiles = selected.filter((file) => !invalidFiles.includes(file));
+    if (validFiles.length === 0) {
+      event.target.value = "";
+      return;
+    }
+
+    // Ensure we have a session before uploading
+    let currentSessionId = sessionId;
+    try {
+      if (!currentSessionId) {
+        const sessionResponse = await graphqlClient.createSession();
+        currentSessionId = sessionResponse.createSession.sessionId;
+        setSessionId(currentSessionId);
+        localStorage.setItem("sessionId", currentSessionId);
+        console.log("✅ Session created (from file upload):", currentSessionId);
+      }
+    } catch (error) {
+      console.error("Error creating session for file upload:", error);
+      toast.error("Could not start upload. Please try again.");
+      event.target.value = "";
+      return;
+    }
+
+    // Avoid uploading duplicates by filename
+    const existingNames = new Set(attachedFiles.map((e) => e.file.name));
+    const duplicateFiles = validFiles.filter((file) =>
+      existingNames.has(file.name),
+    );
+    if (duplicateFiles.length > 0) {
+      const duplicateNames = duplicateFiles.map((f) => f.name).join(", ");
+      toast.error(
+        duplicateFiles.length === 1
+          ? `"${duplicateNames}" is already attached`
+          : `These files are already attached: ${duplicateNames}`,
+      );
+    }
+    const newFiles = validFiles.filter((file) => !existingNames.has(file.name));
+    if (newFiles.length === 0) {
+      event.target.value = "";
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const comment = attachCommentValue.trim();
+
+      const uploadResults = await Promise.all(
+        newFiles.map(async (file) => {
+          const uid = await uploadFile(file, currentSessionId);
+          return { file, comment, uid: uid ?? undefined };
+        }),
+      );
+
+      setAttachedFiles((prev) => [...prev, ...uploadResults]);
+
+      const successful = uploadResults.filter((e) => e.uid);
+      if (successful.length > 0) {
+        toast.success(
+          successful.length === 1
+            ? "File uploaded"
+            : `${successful.length} files uploaded`,
+        );
+      }
+    } finally {
+      setIsUploading(false);
+      setAttachCommentValue("");
+      setIsAttachInputVisible(false);
+      event.target.value = "";
+    }
   };
 
-  // Remove attached file
-  const handleRemoveFile = () => {
-    setAttachedFile(null);
-    setSourceMaterialUid(null);
-  };
-
-  const handleAttach = () => {
-    // Trigger file input click
+  const handleAddAttachWithComment = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleRemoveFile = (indexToRemove) => {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== indexToRemove));
+  };
+
+  const handleToggleAttachInput = () => {
+    setIsAttachInputVisible((prev) => !prev);
+    setAttachCommentValue("");
+    setTimeout(() => attachInputRef.current?.focus(), 100);
   };
 
   // Link handlers
@@ -363,6 +476,7 @@ export default function WelcomePage() {
     setIsLinkInputVisible((prev) => !prev);
     setLinkInputValue("");
     setLinkCommentValue("");
+    textareaRef.current?.blur();
     setTimeout(() => linkInputRef.current?.focus(), 100);
   };
 
@@ -401,6 +515,15 @@ export default function WelcomePage() {
       setLinkInputValue("");
     }
   };
+
+  useEffect(() => {
+    if (!isLinkInputVisible) return;
+    const id = setTimeout(() => {
+      linkInputRef.current?.focus();
+      lastFocusedLinkInputRef.current = linkInputRef.current;
+    }, 50);
+    return () => clearTimeout(id);
+  }, [isLinkInputVisible]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -497,6 +620,21 @@ export default function WelcomePage() {
                       }
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
+                      onMouseDown={
+                        isLinkInputVisible
+                          ? (e) => e.preventDefault()
+                          : undefined
+                      }
+                      onFocus={() => {
+                        if (isLinkInputVisible) {
+                          textareaRef.current?.blur();
+                          const target = lastFocusedLinkInputRef.current
+                            ?.isConnected
+                            ? lastFocusedLinkInputRef.current
+                            : linkInputRef.current;
+                          setTimeout(() => target?.focus(), 0);
+                        }
+                      }}
                       onKeyPress={handleKeyPress}
                       disabled={
                         isDisabled || isLoading || isAnimating || cometCreated
@@ -519,30 +657,12 @@ export default function WelcomePage() {
                     />
                   </div>
 
-                  {/* Attached File Preview */}
-                  {attachedFile && (
-                    <div className="px-3 pt-2 flex flex-wrap gap-2">
-                      <div className="flex items-center gap-2 bg-primary-50 text-primary-700 px-2 py-1 rounded-lg text-sm">
-                        <FileText className="w-4 h-4" />
-                        <span className="max-w-[150px] truncate">
-                          {attachedFile.name}
-                        </span>
-                        <button
-                          onClick={handleRemoveFile}
-                          className="hover:text-red-500 transition-colors"
-                          disabled={isLoading || isUploading}
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Hidden File Input  */}
+                  {/* Hidden File Input (multiple) */}
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept=".pdf,.doc,.docx,.txt"
+                    multiple
                     onChange={handleFileSelect}
                     className="hidden"
                   />
@@ -551,20 +671,102 @@ export default function WelcomePage() {
                   <div className="w-full flex flex-col gap-2 px-3 py-3">
                     {/* Buttons + chips row */}
                     <div className="flex flex-row justify-between items-center gap-2">
-                      <div className="flex items-center flex-wrap">
-                        <Button
-                          variant="ghost"
-                          className={`cursor-pointer flex items-center gap-2 ${
-                            attachedFile
-                              ? "text-white bg-primary-600"
-                              : "text-gray-500 hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
-                          }`}
-                          onClick={handleAttach}
-                          disabled={isLoading || cometCreated || isUploading}
-                        >
-                          <Paperclip className="w-4 h-4" />
-                          <span>Attach</span>
-                        </Button>
+                      <div className="flex items-center flex-wrap gap-1">
+                        {/* Attach button + panel */}
+                        <div className="relative">
+                          <Button
+                            variant="ghost"
+                            className={`cursor-pointer flex items-center gap-2 ${
+                              attachedFiles.length > 0 || isAttachInputVisible
+                                ? "text-gray-500"
+                                : "text-gray-500 hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
+                            }`}
+                            onClick={handleToggleAttachInput}
+                            disabled={isLoading || cometCreated || isUploading}
+                          >
+                            <Paperclip className="w-4 h-4" />
+                            <span>Attach</span>
+                          </Button>
+
+                          {isAttachInputVisible && (
+                            <div
+                              className="absolute left-0 top-full mt-2 z-50 w-full min-w-[320px] max-w-[380px] bg-primary-50 border border-primary-400 rounded-lg p-2 shadow-lg"
+                              onMouseDown={(e) => e.stopPropagation()}
+                            >
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    ref={attachInputRef}
+                                    type="text"
+                                    placeholder="Add a comment (optional)"
+                                    value={attachCommentValue}
+                                    onChange={(e) =>
+                                      setAttachCommentValue(e.target.value)
+                                    }
+                                    className="flex-1 bg-white text-sm border border-primary-200 rounded-lg px-3 py-2 outline-none placeholder:text-gray-400 focus:border-primary-400"
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    className="px-3 text-sm bg-primary text-white hover:bg-primary/90 shrink-0"
+                                    onClick={handleAddAttachWithComment}
+                                  >
+                                    Add files
+                                  </Button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setIsAttachInputVisible(false);
+                                      setAttachCommentValue("");
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                  Select one or more files
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Attached file chips */}
+                        {attachedFiles.map((entry, index) => (
+                          <div
+                            key={`${entry.file.name}-${index}`}
+                            className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-primary-200/60"
+                            title={
+                              entry.file.name +
+                              (entry.comment ? ` — ${entry.comment}` : "")
+                            }
+                          >
+                            <FileText className="w-3 h-3 shrink-0 mt-0.5 self-start" />
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="truncate font-medium">
+                                {entry.file.name.slice(0, 20)}
+                                {entry.file.name.length > 20 ? "…" : ""}
+                              </span>
+                              {entry.comment ? (
+                                <span
+                                  className="truncate text-gray-600 mt-0.5"
+                                  title={entry.comment}
+                                >
+                                  {entry.comment.slice(0, 20)}
+                                  {entry.comment.length > 20 ? "…" : ""}
+                                </span>
+                              ) : null}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFile(index)}
+                              className="hover:text-red-500 transition-colors shrink-0 p-0.5 rounded-full hover:bg-primary-100"
+                              disabled={isLoading || isUploading}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
 
                         {/* Link button */}
                         <div className="relative">
@@ -584,7 +786,10 @@ export default function WelcomePage() {
 
                           {/* Link input dialog: URL + optional comment */}
                           {isLinkInputVisible && (
-                            <div className="absolute left-0 top-full mt-2 z-50 w-full min-w-[320px] max-w-[380px] bg-primary-50 border border-primary-400 rounded-lg p-2 shadow-lg">
+                            <div
+                              className="absolute left-0 top-full mt-2 z-50 w-full min-w-[320px] max-w-[380px] bg-primary-50 border border-primary-400 rounded-lg p-2 shadow-lg"
+                              onMouseDown={(e) => e.stopPropagation()}
+                            >
                               <div className="space-y-2">
                                 <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-primary-200">
                                   <input
@@ -595,10 +800,15 @@ export default function WelcomePage() {
                                     onChange={(e) =>
                                       setLinkInputValue(e.target.value)
                                     }
+                                    onFocus={() => {
+                                      lastFocusedLinkInputRef.current =
+                                        linkInputRef.current;
+                                    }}
                                     onKeyDown={handleLinkInputKeyDown}
                                     className="flex-1 bg-transparent text-sm border-0 outline-none placeholder:text-gray-400 min-w-0"
                                   />
                                   <button
+                                    type="button"
                                     onClick={() => {
                                       setIsLinkInputVisible(false);
                                       setLinkInputValue("");
@@ -611,12 +821,17 @@ export default function WelcomePage() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <input
+                                    ref={linkCommentRef}
                                     type="text"
                                     placeholder="Add a comment (optional)"
                                     value={linkCommentValue}
                                     onChange={(e) =>
                                       setLinkCommentValue(e.target.value)
                                     }
+                                    onFocus={() => {
+                                      lastFocusedLinkInputRef.current =
+                                        linkCommentRef.current;
+                                    }}
                                     onKeyDown={(e) => {
                                       if (e.key === "Enter") {
                                         e.preventDefault();
@@ -643,16 +858,27 @@ export default function WelcomePage() {
                           <div
                             key={index}
                             className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-primary-200/60"
-                            title={entry.url + (entry.comment ? ` — ${entry.comment}` : "")}
+                            title={
+                              entry.url +
+                              (entry.comment ? ` — ${entry.comment}` : "")
+                            }
                           >
                             <Link2 className="w-3 h-3 flex-shrink-0 mt-0.5 self-start" />
                             <div className="flex flex-col min-w-0 flex-1">
                               <span className="truncate font-medium">
-                                {entry.url.replace(/^https?:\/\//, "").slice(0, 28)}
-                                {entry.url.replace(/^https?:\/\//, "").length > 28 ? "…" : ""}
+                                {entry.url
+                                  .replace(/^https?:\/\//, "")
+                                  .slice(0, 28)}
+                                {entry.url.replace(/^https?:\/\//, "").length >
+                                28
+                                  ? "…"
+                                  : ""}
                               </span>
                               {entry.comment ? (
-                                <span className="truncate text-gray-600 mt-0.5" title={entry.comment}>
+                                <span
+                                  className="truncate text-gray-600 mt-0.5"
+                                  title={entry.comment}
+                                >
                                   {entry.comment.slice(0, 25)}
                                   {entry.comment.length > 25 ? "…" : ""}
                                 </span>
@@ -667,6 +893,14 @@ export default function WelcomePage() {
                             </button>
                           </div>
                         ))}
+
+                        {/* Minimal upload loader */}
+                        {isUploading && (
+                          <div className="ml-1 mt-1 flex items-center gap-1 text-[11px] text-gray-500">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <span>Uploading files...</span>
+                          </div>
+                        )}
                       </div>
 
                       <button

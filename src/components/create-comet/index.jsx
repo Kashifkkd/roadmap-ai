@@ -490,6 +490,8 @@ export default function CreateComet({
     "specialInstructions",
   ];
 
+  const [isUploadingSources, setIsUploadingSources] = useState(false);
+
   const handleFormSubmit = async (data) => {
     try {
       if (typeof window !== "undefined" && window.uploadAllFiles) {
@@ -1358,6 +1360,7 @@ export default function CreateComet({
                   isNewComet={isNewComet}
                   webpageUrls={webpageUrls}
                   setWebpageUrls={setWebpageUrls}
+                  onUploadingChange={setIsUploadingSources}
                 />
               </div>
             </div>
@@ -1367,10 +1370,10 @@ export default function CreateComet({
         <CreateCometFooter
           reset={reset}
           handleSubmit={handleSubmit(handleFormSubmit)}
-          isFormValid={isValid && !isSubmitting}
+          isFormValid={isValid && !isSubmitting && !isUploadingSources}
           hasChanges={false}
           dirtyCount={0}
-          isUpdating={isLoading || isSubmitting}
+          isUpdating={isLoading || isSubmitting || isUploadingSources}
           error={error}
         />
       </form>

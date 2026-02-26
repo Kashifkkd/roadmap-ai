@@ -9,6 +9,7 @@ import ChatWindow from "@/components/chat/ChatWindow";
 import { graphqlClient } from "@/lib/graphql-client";
 import Loader from "../loader3";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
+import { getSourceMaterials } from "@/api/getSourceMaterials";
 
 export default function DashboardLayout() {
   const searchParams = useSearchParams();
@@ -302,6 +303,35 @@ export default function DashboardLayout() {
       const traceId = crypto.randomUUID().replace(/-/g, "");
       const receivedAt = new Date().toISOString();
 
+      // source_material payload 
+      let sourceMaterialsPayload = [];
+      try {
+        const materials = await getSourceMaterials(currentSessionId);
+        if (Array.isArray(materials) && materials.length > 0) {
+          sourceMaterialsPayload = materials
+            .map((material, idx) => {
+              const index = idx + 1;
+              const title =
+                material.type === "link"
+                  ? material.source_path ||
+                    material.output_presigned_url ||
+                    material.source_name ||
+                    ""
+                  : material.source_name || "";
+
+              if (!title) return null;
+
+              return {
+                [`source_material_${index}`]: title,
+                [`comment_${index}`]: material.comment ?? "",
+              };
+            })
+            .filter(Boolean);
+        }
+      } catch (e) {
+        console.error("Failed to fetch source materials for payload:", e);
+      }
+
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: "outline_creation",
@@ -315,7 +345,7 @@ export default function DashboardLayout() {
         // },
         chatbot_conversation: [...chatbotConversation, { user: messageText }],
         to_modify: parsedSessionData?.to_modify ?? {},
-        source_material_uid: null,
+        source_material: sourceMaterialsPayload,
         webpage_url: formData.webpage_url || [],
         execution_id: executionId,
         retry_count: 0,

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
 
-import { Plus, CircleX, Link2, Trash2, ExternalLink } from "lucide-react";
+import { Plus, CircleX, Link2, Trash2, ExternalLink, Loader2 } from "lucide-react";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import Image from "next/image";
@@ -17,8 +17,10 @@ export default function SourceMaterialCard({
   isNewComet = false,
   webpageUrls = [],
   setWebpageUrls = () => {},
+  onUploadingChange = () => {},
 }) {
   const [sessionId, setSessionId] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -181,13 +183,37 @@ export default function SourceMaterialCard({
     [sessionId],
   );
 
-  const handleFileSelect = (event) => {
-    const selectedFiles = Array.from(event.target.files);
+  const handleFileSelect = async (event) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    if (selectedFiles.length === 0) return;
 
-    // Check for duplicate file
-    const existingFile = new Set(files.map((f) => f.name));
-    const duplicateFiles = selectedFiles.filter((file) =>
-      existingFile.has(file.name),
+    const allowedExtensions = ["pdf", "doc", "docx", "txt", "pptx"];
+    const invalidFiles = selectedFiles.filter((file) => {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "";
+      return !allowedExtensions.includes(ext);
+    });
+
+    if (invalidFiles.length > 0) {
+      const names = invalidFiles.map((f) => f.name).join(", ");
+      toast.error(
+        invalidFiles.length === 1
+          ? `Unsupported file type: ${names}. Allowed: PDF, DOC, DOCX, TXT.`
+          : `Some files have unsupported types and were skipped: ${names}. Allowed: PDF, DOC, DOCX, TXT.`,
+      );
+    }
+
+    const filteredByType = selectedFiles.filter(
+      (file) => !invalidFiles.includes(file),
+    );
+    if (filteredByType.length === 0) {
+      event.target.value = "";
+      return;
+    }
+
+    // Check for duplicate file names against already loaded materials
+    const existingFileNames = new Set(files.map((f) => f.name));
+    const duplicateFiles = filteredByType.filter((file) =>
+      existingFileNames.has(file.name),
     );
 
     if (duplicateFiles.length > 0) {
@@ -199,25 +225,46 @@ export default function SourceMaterialCard({
       );
     }
 
-    const newFiles = selectedFiles.filter(
-      (file) => !existingFile.has(file.name),
+    const newFiles = filteredByType.filter(
+      (file) => !existingFileNames.has(file.name),
     );
 
-    if (newFiles.length > 0) {
-      setFiles((prevFiles) => [
-        ...prevFiles,
-        ...newFiles.map((f) => ({
-          name: f.name,
-          size: f.size,
-          isUploaded: false,
-          comment: "",
-          file: f,
-        })),
-      ]);
+    if (newFiles.length === 0) {
+      event.target.value = "";
+      return;
     }
 
-    // Reset the input so the same file can be selected again if needed
-    event.target.value = "";
+    // Upload immediately, and update local list so UI reflects changes.
+    setIsUploading(true);
+    onUploadingChange(true);
+    try {
+      await Promise.all(
+        newFiles.map((file) =>
+          uploadFile({
+            file,
+            comment: "",
+          }),
+        ),
+      );
+
+      // Optimistically add to local files list; server state will stay in sync
+      setFiles((prev) => [
+        ...prev,
+        ...newFiles.map((file) => ({
+          name: file.name,
+          size: file.size,
+          isUploaded: true,
+          comment: "",
+          file,
+        })),
+      ]);
+    } catch (error) {
+      console.error("Error uploading selected files:", error);
+    } finally {
+      setIsUploading(false);
+      onUploadingChange(false);
+      event.target.value = "";
+    }
   };
 
   // Normalize: ensure each entry is { url, comment } (defined before useEffect that uses it)
@@ -233,23 +280,28 @@ export default function SourceMaterialCard({
     if (typeof window !== "undefined") {
       window.uploadAllFiles = async () => {
         const currentSessionId = sessionId || localStorage.getItem("sessionId");
+        setIsUploading(true);
+        onUploadingChange(true);
+        try {
+          const linksToUpload = normalizedUrls.filter(
+            (entry) => (entry?.url ?? "").trim().length > 0,
+          );
+          if (linksToUpload.length > 0 && currentSessionId) {
+            await Promise.all(linksToUpload.map((entry) => uploadWebLink(entry)));
+          }
 
-        // 1. Upload web links (entries with non-empty URL)
-        const linksToUpload = normalizedUrls.filter(
-          (entry) => (entry?.url ?? "").trim().length > 0,
-        );
-        if (linksToUpload.length > 0 && currentSessionId) {
-          await Promise.all(linksToUpload.map((entry) => uploadWebLink(entry)));
-        }
-
-        // 2. Upload files that haven't been uploaded
-        const newFiles = files.filter((file) => !file.isUploaded);
-        if (newFiles.length > 0 && currentSessionId) {
-          await Promise.all(newFiles.map((file) => uploadFile(file)));
-        } else if (newFiles.length === 0 && linksToUpload.length === 0) {
-          console.log("No new files or links to upload");
-        } else if (!currentSessionId) {
-          console.warn("Cannot upload: no session ID");
+          // 2. Upload files that haven't been uploaded
+          const newFiles = files.filter((file) => !file.isUploaded);
+          if (newFiles.length > 0 && currentSessionId) {
+            await Promise.all(newFiles.map((file) => uploadFile(file)));
+          } else if (newFiles.length === 0 && linksToUpload.length === 0) {
+            console.log("No new files or links to upload");
+          } else if (!currentSessionId) {
+            console.warn("Cannot upload: no session ID");
+          }
+        } finally {
+          setIsUploading(false);
+          onUploadingChange(false);
         }
       };
     }
@@ -334,6 +386,12 @@ export default function SourceMaterialCard({
                 <span>Upload File</span>
               </Button>
             </label>
+            {isUploading && (
+              <div className="mt-2 flex items-center justify-center gap-1 text-[11px] text-gray-500">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>Uploading files...</span>
+              </div>
+            )}
           </div>
           <div className="flex flex-col gap-3 bg-white p-2 rounded-lg">
             {normalizedUrls.map((entry, index) => (
