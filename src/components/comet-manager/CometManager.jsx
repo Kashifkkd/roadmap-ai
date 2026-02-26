@@ -498,18 +498,6 @@ export default function CometManager({
         session_id: currentSessionId,
         input_type: "continued_chapter_creation",
         comet_creation_data: parsedSessionData?.comet_creation_data || {},
-        enabled_attributes: parsedSessionData?.enabled_attributes || {},
-        // additional_data: {
-
-        //   personalization_enabled:
-        //     parsedSessionData?.additional_data?.personalization_enabled ||
-        //     false,
-        //   habit_enabled:
-        //     parsedSessionData?.additional_data?.habit_enabled || false,
-        //   habit_description:
-        //     parsedSessionData?.additional_data?.habit_description || "",
-        // },
-
         response_outline: parsedSessionData?.response_outline || {},
         response_path: updatedResponsePath,
         chatbot_conversation: parsedSessionData?.chatbot_conversation || [],

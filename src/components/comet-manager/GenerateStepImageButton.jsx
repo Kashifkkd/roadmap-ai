@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Loader2, Sparkles, X, ImageIcon, Wrench } from "lucide-react";
+import { Loader2, Sparkles, X, ImageIcon } from "lucide-react";
 import {
   generateStepImages,
   getImageAttributes,
@@ -545,28 +545,6 @@ export default function GenerateStepImageButton({
                         </span>
                       )}
                       {stepStatus.images?.is_complete && (
-                        <span className="ml-1.5 text-green-600">· Complete</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-                {/* Tools: total, generated, in_progress, queued, failed, is_complete */}
-                <div className="flex items-center gap-2">
-                  <Wrench className="h-4 w-4 text-primary-400 shrink-0" />
-                  <div>
-                    <p className="font-medium text-gray-800">Tools</p>
-                    <p className="text-gray-600">
-                      {(stepStatus.tools?.generated ?? 0)} / {(stepStatus.tools?.total ?? 0)} generated
-                      {(stepStatus.tools?.in_progress ?? 0) > 0 && (
-                        <span className="ml-1.5 text-primary-500">· {(stepStatus.tools?.in_progress ?? 0)} in progress</span>
-                      )}
-                      {(stepStatus.tools?.queued ?? 0) > 0 && (
-                        <span className="ml-1.5 text-gray-500">· {(stepStatus.tools?.queued ?? 0)} queued</span>
-                      )}
-                      {(stepStatus.tools?.failed ?? 0) > 0 && (
-                        <span className="ml-1.5 text-red-600">· {(stepStatus.tools?.failed ?? 0)} failed</span>
-                      )}
-                      {stepStatus.tools?.is_complete && (stepStatus.tools?.total ?? 0) > 0 && (
                         <span className="ml-1.5 text-green-600">· Complete</span>
                       )}
                     </p>

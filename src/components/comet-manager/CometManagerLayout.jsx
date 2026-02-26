@@ -199,6 +199,11 @@ export default function CometManagerLayout() {
                     sessionData?.chatbot_conversation ||
                     [],
                 };
+                // Preserve enabled_attributes so they persist from dashboard through comet_manager
+                savedData.response_path = {
+                  ...sessionData?.response_path,
+                  ...(parsedResponse?.response_path || savedData?.response_path || {}),
+                };
               } else {
                 savedData = {
                   ...sessionData,

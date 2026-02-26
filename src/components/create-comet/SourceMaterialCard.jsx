@@ -513,15 +513,18 @@ const FilePreview = ({ file, setFiles, files, onCommentChange }) => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="cursor-pointer hover:text-green-600 transition-colors">
+            <div
+              className="flex-shrink-0"
+              aria-hidden="true"
+              title="Upload complete"
+            >
               <Image
                 src="/Verified Check.svg"
                 alt="Verified"
                 width={24}
                 height={24}
               />
-              {/* <BadgeCheck className="w-6 h-6 font-bold text-green-600 " /> */}
-            </button>
+            </div>
 
             {!isUploaded && (
               <button

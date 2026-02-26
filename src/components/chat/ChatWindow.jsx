@@ -347,7 +347,7 @@ export default function ChatWindow({
         },
         chatbot_conversation: chatbotConversation,
         to_modify: sessionData?.to_modify ?? {},
-        source_material_uid: null,
+        // source_material_uid: null,
         webpage_url: sessionData?.webpage_url ?? [],
         execution_id: executionId,
         retry_count: 0,
@@ -379,10 +379,29 @@ export default function ChatWindow({
     (sessionData) => {
       console.log("Session update received:", sessionData);
 
-      if (onResponseReceived) {
-        onResponseReceived(sessionData);
+      // Preserve enabled_attributes from current session if server didn't return them
+      let dataToStore = sessionData;
+      if (!sessionData?.response_path?.enabled_attributes && typeof window !== "undefined") {
+        try {
+          const stored = localStorage.getItem("sessionData");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed?.response_path?.enabled_attributes) {
+              dataToStore = {
+                ...sessionData,
+                response_path: {
+                  ...sessionData?.response_path,
+                  enabled_attributes: parsed.response_path.enabled_attributes,
+                },
+              };
+            }
+          }
+        } catch (e) {}
       }
-      localStorage.setItem("sessionData", JSON.stringify(sessionData));
+      if (onResponseReceived) {
+        onResponseReceived(dataToStore);
+      }
+      localStorage.setItem("sessionData", JSON.stringify(dataToStore));
 
       if (sessionData.chatbot_conversation) {
         const conversation = sessionData.chatbot_conversation;
@@ -419,7 +438,7 @@ export default function ChatWindow({
 
       // Notify parent component if needed
       if (onResponseReceived) {
-        onResponseReceived(sessionData);
+        onResponseReceived(dataToStore);
       }
     },
     (error) => {

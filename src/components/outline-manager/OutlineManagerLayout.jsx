@@ -52,9 +52,31 @@ export default function OutlineManagerLayout() {
     sessionId,
     (updatedSessionData) => {
       try {
-        localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
+        // Preserve enabled_attributes from current session if server didn't return them
+        let dataToSave = updatedSessionData;
+        if (
+          !updatedSessionData?.response_path?.enabled_attributes &&
+          typeof window !== "undefined"
+        ) {
+          try {
+            const stored = localStorage.getItem("sessionData");
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              if (parsed?.response_path?.enabled_attributes) {
+                dataToSave = {
+                  ...updatedSessionData,
+                  response_path: {
+                    ...updatedSessionData?.response_path,
+                    enabled_attributes: parsed.response_path.enabled_attributes,
+                  },
+                };
+              }
+            }
+          } catch (e) {}
+        }
+        localStorage.setItem("sessionData", JSON.stringify(dataToSave));
         // Create a new object reference to ensure React detects the change
-        const updatedData = { ...updatedSessionData };
+        const updatedData = { ...dataToSave };
         setSessionData(updatedData);
         // Also update prefillData so child components receive the updates
         setPrefillData(updatedData);
@@ -226,6 +248,11 @@ export default function OutlineManagerLayout() {
                     parsedResponse.chatbot_conversation ||
                     parsedSessionData?.chatbot_conversation ||
                     [],
+                };
+                // Preserve enabled_attributes across outline-manager so they persist to comet_manager
+                savedData.response_path = {
+                  ...parsedSessionData?.response_path,
+                  ...(savedData.response_path || {}),
                 };
               } else {
                 savedData = {

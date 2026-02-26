@@ -175,6 +175,16 @@ export default function DashboardLayout() {
       }
 
       localStorage.setItem("sessionData", JSON.stringify(normalized));
+      // Preserve enabled_attributes from current session if server didn't return them
+      if (
+        !normalized.response_path?.enabled_attributes &&
+        sessionData?.response_path?.enabled_attributes
+      ) {
+        normalized.response_path = {
+          ...normalized.response_path,
+          enabled_attributes: sessionData.response_path.enabled_attributes,
+        };
+      }
       // Create a new object reference to ensure React detects the change
       const updatedSessionData = { ...normalized };
       setSessionData(updatedSessionData);
@@ -296,6 +306,15 @@ export default function DashboardLayout() {
         parsedSessionData.response_path = {};
       }
       parsedSessionData.response_path.enabled_attributes = enabled_attributes;
+
+      // Persist enabled_attributes to localStorage immediately so they persist
+      // across dashboard → outline_manager → comet_manager
+      try {
+        localStorage.setItem("sessionData", JSON.stringify(parsedSessionData));
+        setSessionData(parsedSessionData);
+      } catch (e) {
+        console.warn("Could not persist sessionData with enabled_attributes", e);
+      }
 
       console.log(formData);
 
