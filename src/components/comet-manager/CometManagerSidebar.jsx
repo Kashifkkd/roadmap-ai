@@ -1536,8 +1536,9 @@ export default function CometManagerSidebar({
                                 {category.materials.map(
                                   (material, materialIndex) => {
                                     const materialId =
-                                      material.uuid ||
-                                      `material-${categoryId}-${materialIndex}`;
+                                      material.uuid
+                                        ? `${material.uuid}-${categoryId}-${materialIndex}`
+                                        : `material-${categoryId}-${materialIndex}`;
                                     const isMaterialSelected =
                                       selectedMaterial === materialId;
                                     const fileSize = getMaterialSize(material);
@@ -1546,7 +1547,6 @@ export default function CometManagerSidebar({
                                         ?.split(".")
                                         .pop()
                                         ?.toLowerCase() || "";
-                                    const isPdf = extension === "pdf";
                                     const isLink = material.type === "link";
 
                                     return (
@@ -1578,10 +1578,7 @@ export default function CometManagerSidebar({
                                               setSelectedAssetCategory(null);
                                             }
 
-                                            if (
-                                              (isPdf || isLink) &&
-                                              onMaterialSelect
-                                            ) {
+                                            if (onMaterialSelect) {
                                               onMaterialSelect(
                                                 newSelectedState
                                                   ? material

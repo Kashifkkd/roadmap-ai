@@ -196,13 +196,12 @@ export default function SourceMaterialCard({
       return !allowedExtensions.includes(ext);
     });
 
-    const allowedLabel = "PDF, DOC, DOCX, TXT, PPTX, MP3, WAV, M4A, FLAC, MP4, WEBM";
     if (invalidFiles.length > 0) {
       const names = invalidFiles.map((f) => f.name).join(", ");
       toast.error(
         invalidFiles.length === 1
-          ? `Unsupported file type: ${names}. Allowed: ${allowedLabel}.`
-          : `Some files have unsupported types and were skipped: ${names}. Allowed: ${allowedLabel}.`,
+          ? `Unsupported file type: ${names}.`
+          : `Some files have unsupported types and were skipped: ${names}.`,
       );
     }
 

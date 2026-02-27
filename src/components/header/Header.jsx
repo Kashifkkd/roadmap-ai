@@ -267,6 +267,8 @@ export default function Header() {
   const loginButtonRef = useRef(null);
   const isHome = pathname === "/";
   const isCometManager = pathname?.startsWith("/comet-manager");
+  const isAllComets = pathname === "/comets";
+  const showUserProfile = isHome || isAllComets;
   const [text, setText] = useState("");
 
   const [subject, setSubject] = useState("Kyper Feedback");
@@ -1339,21 +1341,24 @@ export default function Header() {
                         )}
                       </div>
 
-                      <div
-                        className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0 cursor-pointer"
-                        onClick={handleMyAccountClick}
-                      >
-                        <UserAvatar user={user} />
-                      </div>
-
-                      <div className="hidden sm:flex flex-col justify-start">
-                        <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
-                          {getFormattedName(user)}
-                        </span>
-                        <span className="text-[8px] sm:text-xs font-medium text-gray-400 leading-tight">
-                          {user?.role || ""}
-                        </span>
-                      </div>
+                      {showUserProfile && (
+                        <>
+                          <div
+                            className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0 cursor-pointer"
+                            onClick={handleMyAccountClick}
+                          >
+                            <UserAvatar user={user} />
+                          </div>
+                          <div className="hidden sm:flex flex-col justify-start">
+                            <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
+                              {getFormattedName(user)}
+                            </span>
+                            <span className="text-[8px] sm:text-xs font-medium text-gray-400 leading-tight">
+                              {user?.role || ""}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -1395,18 +1400,21 @@ export default function Header() {
                 {isAuthenticated ? (
                   <div className="relative">
                     <div className="flex items-center gap-1.5 sm:gap-2">
-                      <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
-                        <UserAvatar user={user} />
-                      </div>
-
-                      <div className="hidden sm:flex flex-col justify-start">
-                        <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
-                          {user?.first_name || user?.last_name}
-                        </span>
-                        <span className="text-[8px] sm:text-xs font-medium text-gray-400 leading-tight">
-                           {user?.role || ""}
-                        </span>
-                      </div>
+                      {showUserProfile && (
+                        <>
+                          <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
+                            <UserAvatar user={user} />
+                          </div>
+                          <div className="hidden sm:flex flex-col justify-start">
+                            <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
+                              {user?.first_name || user?.last_name}
+                            </span>
+                            <span className="text-[8px] sm:text-xs font-medium text-gray-400 leading-tight">
+                               {user?.role || ""}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -1436,18 +1444,21 @@ export default function Header() {
                 {isAuthenticated ? (
                   <div className="relative">
                     <div className="flex items-center gap-1.5 sm:gap-2">
-                      <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
-                        <UserAvatar user={user} />
-                      </div>
-
-                      <div className="hidden sm:flex flex-col justify-start">
-                        <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
-                          {user?.first_name || user?.last_name || "User"}
-                        </span>
-                        <span className="text-[8px] sm:text-xs font-medium text-gray-400 leading-tight">
-                           {user?.role || ""}
-                        </span>
-                      </div>
+                      {showUserProfile && (
+                        <>
+                          <div className="w-7 h-7 sm:w-7 sm:h-7 md:w-7 md:h-7 rounded-full bg-primary-100 border border-gray-300 flex items-center justify-center text-md sm:text-base font-semibold text-primary-700 shrink-0">
+                            <UserAvatar user={user} />
+                          </div>
+                          <div className="hidden sm:flex flex-col justify-start">
+                            <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
+                              {user?.first_name || user?.last_name || "User"}
+                            </span>
+                            <span className="text-[8px] sm:text-xs font-medium text-gray-400 leading-tight">
+                               {user?.role || ""}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 ) : (

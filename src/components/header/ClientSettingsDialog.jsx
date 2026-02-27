@@ -291,14 +291,19 @@ export default function ClientSettingsDialog({
       return;
     }
 
+    if (!isValidEmail(creatorEmail)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
     if (!editingCreator) {
       if (!creatorPassword || !creatorConfirmPassword) {
         toast.error("Password and confirm password are required");
         return;
       }
 
-      if (creatorPassword.length <= 7) {
-        toast.error("Password must be more than 7 characters");
+      if (creatorPassword.length < 8) {
+        toast.error("Password must be at least 8 characters");
         return;
       }
 
@@ -307,8 +312,8 @@ export default function ClientSettingsDialog({
         return;
       }
     } else if (creatorPassword && creatorPassword.length > 0) {
-      if (creatorPassword.length <= 7) {
-        toast.error("Password must be more than 7 characters");
+      if (creatorPassword.length < 8) {
+        toast.error("Password must be at least 8 characters");
         return;
       }
 
@@ -401,6 +406,22 @@ export default function ClientSettingsDialog({
 
         res = await registerUser(payload, { useAuthToken: true });
       }
+
+      // Handle API/network errors (apiService returns success: false on failure)
+      if (res?.success === false || res?.error === true) {
+        const detail = res?.response?.detail;
+        const detailStr = Array.isArray(detail)
+          ? (typeof detail[0] === "string" ? detail[0] : detail[0]?.msg)
+          : detail;
+        const errorMessage =
+          detailStr ||
+          res?.response?.message ||
+          res?.message ||
+          (editingCreator ? "Failed to update creator" : "Failed to add creator");
+        toast.error(errorMessage);
+        return;
+      }
+
       const status = res?.response?.status ?? res?.status;
 
       if (status >= 200 && status < 400) {
@@ -430,6 +451,9 @@ export default function ClientSettingsDialog({
         resetCreatorForm();
       } else {
         const errorMessage =
+          res?.response?.detail ||
+          (Array.isArray(res?.response?.detail) ? res.response.detail[0] : null) ||
+          res?.response?.message ||
           res?.detail ||
           res?.message ||
           (editingCreator
@@ -439,10 +463,13 @@ export default function ClientSettingsDialog({
       }
     } catch (error) {
       console.error("Failed to save creator:", error);
+      const detail = error?.response?.data?.detail ?? error?.response?.detail;
+      const detailStr = Array.isArray(detail)
+        ? (typeof detail[0] === "string" ? detail[0] : detail[0]?.msg)
+        : detail;
       const errorMessage =
+        detailStr ||
         error?.message ||
-        error?.response?.data?.detail ||
-        error?.response?.detail ||
         (editingCreator ? "Failed to update creator" : "Failed to add creator");
       toast.error(errorMessage);
     } finally {
@@ -700,7 +727,7 @@ export default function ClientSettingsDialog({
                             <div className="flex items-center gap-1">
                               <input
                                 type="text"
-                                placeholder="Search by name, email, or role"
+                                placeholder="Search by name"
                                 className="w-full border border-gray-300 rounded-lg p-1"
                                 value={creatorSearchTerm}
                                 onChange={(e) =>
@@ -710,7 +737,12 @@ export default function ClientSettingsDialog({
                               <Button
                                 size="md"
                                 variant="default"
-                                onClick={() => setShowAddCreatorForm(true)}
+                                onClick={() => {
+                                  resetCreatorForm();
+                                  const clientId = selectedClient?.id || selectedClient?.client_id;
+                                  if (clientId) setCreatorClient(String(clientId));
+                                  setShowAddCreatorForm(true);
+                                }}
                                 className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {/* <Plus className="w-5 h-5" /> */}
@@ -914,6 +946,8 @@ export default function ClientSettingsDialog({
                                       setCreatorEmail(e.target.value)
                                     }
                                     disabled={editingCreator} // Email cannot be changed when editing
+                                    autoComplete={editingCreator ? "email" : "off"}
+                                   
                                     className="w-full bg-white border border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
                                   />
                                 </div>
@@ -947,6 +981,7 @@ export default function ClientSettingsDialog({
                                     <Label className="text-sm font-medium text-gray-700 mb-2 block">
                                       Password
                                       <span className="text-red-500">*</span>
+                                      {/* <span className="text-gray-500 font-normal ml-1">(min 8 characters)</span> */}
                                     </Label>
                                     <Input
                                       type="password"
@@ -954,6 +989,8 @@ export default function ClientSettingsDialog({
                                       onChange={(e) =>
                                         setCreatorPassword(e.target.value)
                                       }
+                                      autoComplete="new-password"
+                                      placeholder="Enter password"
                                       className="w-full bg-white border border-gray-300"
                                     />
                                   </div>
@@ -968,6 +1005,8 @@ export default function ClientSettingsDialog({
                                       onChange={(e) =>
                                         setCreatorConfirmPassword(e.target.value)
                                       }
+                                      autoComplete="new-password"
+                                      placeholder="Confirm password"
                                       className="w-full bg-white border border-gray-300"
                                     />
                                   </div>
@@ -978,6 +1017,7 @@ export default function ClientSettingsDialog({
                                   <div>
                                     <Label className="text-sm font-medium text-gray-700 mb-2 block">
                                       Password
+                                      <span className="text-gray-500 font-normal ml-1">(min 8 characters)</span>
                                     </Label>
                                     <Input
                                       type="password"
@@ -985,6 +1025,8 @@ export default function ClientSettingsDialog({
                                       onChange={(e) =>
                                         setCreatorPassword(e.target.value)
                                       }
+                                      autoComplete="new-password"
+                                      placeholder="Leave blank to keep current"
                                       className="w-full bg-white border border-gray-300"
                                     />
                                   </div>
@@ -998,6 +1040,8 @@ export default function ClientSettingsDialog({
                                       onChange={(e) =>
                                         setCreatorConfirmPassword(e.target.value)
                                       }
+                                      autoComplete="new-password"
+                                      placeholder="Confirm new password"
                                       className="w-full bg-white border border-gray-300 "
                                     />
                                   </div>

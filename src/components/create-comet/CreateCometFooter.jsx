@@ -67,7 +67,7 @@ export default function CreateCometFooter({
 
         {/* Right side container */}
         <div className="flex flex-row items-center gap-2 sm:gap-3">
-          <Button
+          {/* <Button
             variant="default"
             className={`bg-white border border-primary text-primary w-32 sm:w-auto flex items-center justify-center gap-2 ${
               isReviewingWithKyper
@@ -75,11 +75,11 @@ export default function CreateCometFooter({
                 : "hover:cursor-pointer  hover:bg-primary-100 hover:text-primary"
             }`}
             onClick={handleReviewWithKyperClick}
-            // disabled={isReviewingWithKyper}
+          
           >
-            {/* <Brain size={16} /> */}
+        
             <span>Review With Kyper</span>
-          </Button>
+          </Button> */}
           {hasChanges && (
             <div className="text-xs sm:text-sm text-muted-foreground text-right">
               {dirtyCount} unsaved changes

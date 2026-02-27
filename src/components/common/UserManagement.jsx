@@ -179,7 +179,11 @@ export default function UserManagement({
       try {
         const res = await getUserById({ clientId });
         const data = res?.response || [];
-        setEmailOptions(Array.isArray(data) ? data : []);
+        const options = Array.isArray(data) ? data : [];
+        setEmailOptions(options);
+        if (options.length === 0) {
+          toast.error("No users found for this client");
+        }
       } catch (error) {
         console.error("Failed to fetch users for email dropdown:", error);
         toast.error("Failed to load emails");

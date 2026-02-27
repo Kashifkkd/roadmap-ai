@@ -1,24 +1,46 @@
 "use client";
 
-import React from "react";
-import { X, CheckCircle2, Download, FileIcon } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, CheckCircle2, FileIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import Image from "next/image";
 
 export default function PDFPreview({ material, onClose }) {
+  const [txtContent, setTxtContent] = useState(null);
+  const [txtError, setTxtError] = useState(false);
+
   if (!material) return null;
 
-  // console.log(">>>>>", material);
-  const pdfUrl = material.output_presigned_url || null;
-  console.log(pdfUrl);
-
-  // const fallbackPdfUrl = "/Get_Started_with_Smallpdf.pdf";
-
-  // const finalPdfUrl =
-  //   pdfUrl && pdfUrl.toLowerCase().endsWith(".pdf") ? pdfUrl : fallbackPdfUrl;
-  // console.log("finapdfUrl", finalPdfUrl);
-
+  const fileUrl = material.output_presigned_url || null;
   const fileName = material.source_name || "Document";
+  const extension =
+    fileName.split(".").pop()?.toLowerCase() || "";
+
+  const isTxt = extension === "txt";
+  const isVideo = ["mp4", "webm"].includes(extension);
+  const isAudio = ["mp3", "wav", "m4a", "flac"].includes(extension);
+  const isPdf = extension === "pdf";
+  const isDoc = ["doc", "docx"].includes(extension);
+
+  const videoType = extension === "webm" ? "video/webm" : "video/mp4";
+  const audioType =
+    extension === "wav"
+      ? "audio/wav"
+      : extension === "m4a"
+        ? "audio/mp4"
+        : extension === "flac"
+          ? "audio/flac"
+          : "audio/mpeg";
+
+  // Fetch .txt content for display
+  useEffect(() => {
+    if (!isTxt || !fileUrl) return;
+    setTxtContent(null);
+    setTxtError(false);
+    fetch(fileUrl)
+      .then((res) => (res.ok ? res.text() : Promise.reject(new Error("Failed to fetch"))))
+      .then(setTxtContent)
+      .catch(() => setTxtError(true));
+  }, [isTxt, fileUrl]);
   // const fileSize = material.file_size || material.size;
   // const uploadedDate =
   //   material.uploaded_at || material.created_at || material.upload_date;
@@ -96,22 +118,16 @@ export default function PDFPreview({ material, onClose }) {
         )}
       </div>
 
-      {/* PDF Viewer */}
+      {/* File Viewer */}
       <div className="flex-1 overflow-hidden bg-gray-100">
-        {pdfUrl ? (
-          <iframe
-            src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
-            title={fileName}
-            className="w-full h-[600px] border-none bg-white"
-          />
-        ) : (
+        {!fileUrl ? (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
             <FileIcon size={64} className="text-gray-400 mb-4" />
             <p className="text-lg font-medium text-gray-700 mb-2">
-              PDF Preview Not Available
+              Preview Not Available
             </p>
             <p className="text-sm text-gray-500">
-              Unable to load PDF. The file URL may not be available.
+              Unable to load file. The file URL may not be available.
             </p>
             {material.source_name && (
               <p className="text-xs text-gray-400 mt-2">
@@ -119,6 +135,68 @@ export default function PDFPreview({ material, onClose }) {
               </p>
             )}
           </div>
+        ) : isTxt ? (
+          <div className="flex-1 overflow-auto p-4 bg-white">
+            {txtError ? (
+              <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                <FileIcon size={64} className="text-gray-400 mb-4" />
+                <p className="text-lg font-medium text-gray-700 mb-2">
+                  Unable to load text file
+                </p>
+                <p className="text-sm text-gray-500">
+                  The file could not be fetched. It may be unavailable or blocked.
+                </p>
+              </div>
+            ) : txtContent ? (
+              <pre className="text-sm font-mono text-gray-800 whitespace-pre-wrap break-words">
+                {txtContent}
+              </pre>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-sm text-gray-500">Loading...</p>
+              </div>
+            )}
+          </div>
+        ) : isVideo ? (
+          <div className="flex-1 flex items-center justify-center bg-black p-4">
+            <video
+              key={fileUrl}
+              className="w-full max-h-[600px]"
+              controls
+              playsInline
+              preload="metadata"
+            >
+              <source src={fileUrl} type={videoType} />
+            </video>
+          </div>
+        ) : isAudio ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 bg-white">
+            <audio
+              key={fileUrl}
+              className="w-full max-w-md"
+              controls
+              preload="metadata"
+            >
+              <source src={fileUrl} type={audioType} />
+            </audio>
+            <p className="text-sm text-gray-500 mt-4">{fileName}</p>
+          </div>
+        ) : isPdf || isDoc ? (
+          <iframe
+            src={
+              isPdf
+                ? `${fileUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`
+                : fileUrl
+            }
+            title={fileName}
+            className="w-full h-[600px] border-none bg-white"
+          />
+        ) : (
+          <iframe
+            src={fileUrl}
+            title={fileName}
+            className="w-full h-[600px] border-none bg-white"
+          />
         )}
       </div>
     </div>

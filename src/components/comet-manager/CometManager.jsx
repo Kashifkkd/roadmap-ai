@@ -2104,7 +2104,7 @@ export default function CometManager({
                             <span>Back</span>
                           </Button>
                         </div>
-                        <div className="flex items-center gap-3 px-1 py-1 rounded-xl bg-[#E9EAEB]">
+                        <div className="flex items-center gap-3 min-w-0 max-w-full pl-2 pr-4 sm:pr-5 py-1.5 rounded-xl bg-[#E9EAEB]">
                           <div
                             className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center shrink-0 cursor-pointer hover:bg-gray-50 transition-colors"
                             onClick={() =>
@@ -2116,28 +2116,32 @@ export default function CometManager({
                             <Zap size={14} className="text-gray-900" />
                           </div>
                           {!isAnalyzingTextCollapsed && (
-                            <span className="text-gray-700 text-sm">
+                            <span className="text-gray-700 text-sm pl-[clamp(0.5rem,1.5ch,1.25rem)] pr-[clamp(1rem,2.5ch,2rem)] min-w-0">
                               {sessionData?.meta?.state ||
                                 "Analyzing instructions and source materials"}
                             </span>
                           )}
                         </div>
 
-                        {showNextChapter && (
-                          <Button
-                            variant="default"
-                            className="ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50 cursor-pointer"
-                            onClick={handleNextChapter}
-                            disabled={
-                              sessionData?.response_path
-                                ?.generate_remaining_chapters === true ||
-                              isGeneratingNextChapter
-                            }
-                          >
-                            <span>Generate Remaining Chapters</span>
-                            <ArrowRight size={16} />
-                          </Button>
-                        )}
+                        <Button
+                          variant="default"
+                          className="ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50 cursor-pointer"
+                          onClick={handleNextChapter}
+                          disabled={
+                            !showNextChapter ||
+                            sessionData?.response_path
+                              ?.generate_remaining_chapters === true ||
+                            isGeneratingNextChapter ||
+                            (Array.isArray(sessionData?.response_path?.chapters)
+                              ? sessionData.response_path.chapters.length
+                              : Array.isArray(sessionData?.response_path)
+                                ? sessionData.response_path.length
+                                : 0) < 2
+                          }
+                        >
+                          <span>Generate Remaining Chapters</span>
+                          <ArrowRight size={16} />
+                        </Button>
                       </div>
                     </div>
                   </>
