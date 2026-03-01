@@ -36,7 +36,10 @@ import { uploadAssetFile } from "@/api/uploadAssets";
 import { uploadPathImage } from "@/api/uploadPathImage";
 import UserManagement from "@/components/common/UserManagement";
 import { publishComet } from "@/api/publishComet";
-import { ART_STYLE_KEYS, normalizeArtStyleFromApi } from "@/constants/artStyles";
+import {
+  ART_STYLE_KEYS,
+  normalizeArtStyleFromApi,
+} from "@/constants/artStyles";
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
@@ -257,7 +260,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
           setImageGuidance("");
         }
         if (enabledAttributes.art_style !== undefined) {
-          const finalArt = normalizeArtStyleFromApi(enabledAttributes.art_style);
+          const finalArt = normalizeArtStyleFromApi(
+            enabledAttributes.art_style,
+          );
           setArtStyle(finalArt);
           console.log(
             "Art Style loaded:",
@@ -829,12 +834,12 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                   <div className="space-y-4 md:space-y-5">
                     {/* Comet Title */}
                     <div className="bg-gray-100 px-2  rounded-lg ">
-                      <div className="text-md font-bold text-gray-700 py-4 px-2 ">
+                      <div className="text-md font-bold text-gray-700 py-4 px-4 ">
                         Basic Info
                       </div>
                       <div className="space-y-4 flex flex-row gap-2 w-full bg-white p-2 rounded-t-lg">
                         <div className="flex flex-col gap-2 w-1/2">
-                          <div className="space-y-2 ">
+                          <div className="flex flex-col space-y-2 ">
                             <Label
                               htmlFor="comet-title"
                               className="text-sm font-medium text-gray-700"
@@ -847,13 +852,13 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               value={cometTitle}
                               onChange={(e) => setCometTitle(e.target.value)}
                               placeholder="Enter comet title"
-                              className="w-full rounded-lg border-gray-300"
+                              className="w-full rounded-lg border-2 border-gray-300"
                             />
                           </div>
 
                           {/* Description */}
 
-                          <div className="space-y-2 py-2">
+                          <div className="flex flex-col space-y-2 py-2">
                             <Label
                               htmlFor="description"
                               className="text-sm font-medium text-gray-700"
@@ -866,13 +871,13 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               onChange={(e) => setDescription(e.target.value)}
                               placeholder="Enter description"
                               rows={4}
-                              className="w-full rounded-lg border-gray-300 resize-none overflow-y-auto create-comet-scrollbar focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
+                              className="w-full rounded-lg border-2 border-gray-300 resize-none overflow-y-auto create-comet-scrollbar focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
                             />
                           </div>
                         </div>
 
                         {/* Comet Cover Image */}
-                        <div className="space-y-2 w-1/2 h-full ">
+                        <div className="flex flex-col  space-y-2 w-1/2 h-full ">
                           <Label className="text-sm font-medium text-gray-700 ">
                             Comet Cover Image
                           </Label>
@@ -957,7 +962,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                         <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                           {/* Left Column */}
                           {/* <div className="space-y-4"> */}
-                          <div className="space-y-2">
+                          <div className="flex flex-col space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Learning Frequency
                             </Label>
@@ -965,7 +970,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               value={learningFrequency || undefined}
                               onValueChange={setLearningFrequency}
                             >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                              <SelectTrigger className="w-full border-2 rounded-lg bg-gray-50 border-gray-300">
                                 <SelectValue placeholder="Select frequency" />
                               </SelectTrigger>
                               <SelectContent>
@@ -979,7 +984,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
                           {/* Right Column */}
                           {/* <div className="space-y-4"> */}
-                          <div className="space-y-2">
+                          <div className="flex flex-col  space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Language
                             </Label>
@@ -987,7 +992,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               value={language || undefined}
                               onValueChange={setLanguage}
                             >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                              <SelectTrigger className="w-full border-2 rounded-lg bg-gray-50 border-gray-300">
                                 <SelectValue placeholder="Select language" />
                               </SelectTrigger>
                               <SelectContent>
@@ -998,7 +1003,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                             </Select>
                           </div>
 
-                          <div className="space-y-2">
+                          <div className="flex flex-col space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Reminder Type
                             </Label>
@@ -1006,7 +1011,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               value={reminderType || undefined}
                               onValueChange={setReminderType}
                             >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                              <SelectTrigger className="w-full border-2 rounded-lg bg-gray-50 border-gray-300">
                                 <SelectValue placeholder="Select reminder type" />
                               </SelectTrigger>
                               <SelectContent>
@@ -1017,7 +1022,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                             </Select>
                           </div>
 
-                          <div className="space-y-2">
+                          <div className="flex flex-col space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Source Alignment
                             </Label>
@@ -1025,7 +1030,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               value={sourceAlignment || undefined}
                               onValueChange={setSourceAlignment}
                             >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                              <SelectTrigger className="w-full border-2 rounded-lg bg-gray-50 border-gray-300">
                                 <SelectValue placeholder="Select source alignment" />
                               </SelectTrigger>
                               <SelectContent>
@@ -1042,7 +1047,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                             </Select>
                           </div>
 
-                          <div className="space-y-2">
+                          <div className="flex flex-col space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Duration
                             </Label>
@@ -1051,7 +1056,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               value={duration}
                               onChange={(e) => setDuration(e.target.value)}
                               placeholder="e.g. 4 weeks, 10-15 min/day"
-                              className="w-full rounded-lg border-gray-300"
+                              className="w-full border-2 rounded-lg border-gray-300"
                             />
                           </div>
                           {/* </div> */}
@@ -1066,7 +1071,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       <div className="space-y-4 bg-white p-2 rounded-lg">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {/* Left Column */}
-                          <div className="space-y-2">
+                          <div className="flex flex-col space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Art Style
                             </Label>
@@ -1088,7 +1093,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           </div>
 
                           {/* Right Column */}
-                          <div className="space-y-2">
+                          <div className="flex flex-col space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Image Guidance
                             </Label>
@@ -1097,7 +1102,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               value={imageGuidance}
                               onChange={(e) => setImageGuidance(e.target.value)}
                               placeholder="Enter image guidance"
-                              className="w-full rounded-lg border-gray-300"
+                              className="w-full border-2 rounded-lg border-gray-300"
                             />
                           </div>
                         </div>
@@ -1260,19 +1265,20 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                         </h3>
                         <Info size={16} className="text-gray-500 cursor-help" />
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="border-2 border-gray-200 rounded-lg p-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Existing Kick-off Dates */}
-                        <div className="border border-gray-200 rounded-lg p-4">
+                        <div className="border-2 border-gray-200 rounded-lg p-4">
                           <div className="space-y-2">
-                            <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium text-gray-700 pb-2 border-b">
+                            <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium text-gray-700 bg-gray-100 p-2">
                               <div>Kick off Date</div>
                               <div>Kick off Time</div>
-                              <div></div>
                             </div>
+                            <div className="border-t border-gray-200"></div>
+
                             {kickOffDates.map((item, index) => (
                               <div
                                 key={index}
-                                className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm text-gray-600 items-center"
+                                className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm text-gray-600 items-center border-b border-gray-200 py-2"
                               >
                                 <div>{formatDateForDisplay(item.date)}</div>
                                 <div>{formatTimeForDisplay(item.time)}</div>
@@ -1288,7 +1294,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                         </div>
 
                         {/* Add New Kick-off */}
-                        <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+                        <div className="border-2 border-gray-200 rounded-lg p-4 space-y-4">
                           <div className="space-y-2">
                             <Label className="text-sm font-medium text-gray-700">
                               Kick off Date
