@@ -2,7 +2,15 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { ArrowUp, Paperclip, Search, X, FileText, Link2, Loader2 } from "lucide-react";
+import {
+  ArrowUp,
+  Paperclip,
+  Search,
+  X,
+  FileText,
+  Link2,
+  Loader2,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import Stars from "@/components/icons/Stars";
@@ -49,7 +57,6 @@ export default function WelcomePage() {
   const [attachCommentValue, setAttachCommentValue] = useState("");
   const attachInputRef = useRef(null);
 
- 
   const [webpageUrls, setWebpageUrls] = useState([]);
   const [isLinkInputVisible, setIsLinkInputVisible] = useState(false);
   const [linkInputValue, setLinkInputValue] = useState("");
@@ -372,15 +379,25 @@ export default function WelcomePage() {
     if (selected.length === 0) return;
 
     const allowedExtensions = [
-      "pdf", "doc", "docx", "txt", "pptx",
-      "mp3", "wav", "m4a", "flac", "mp4", "webm",
+      "pdf",
+      "doc",
+      "docx",
+      "txt",
+      "pptx",
+      "mp3",
+      "wav",
+      "m4a",
+      "flac",
+      "mp4",
+      "webm",
     ];
     const invalidFiles = selected.filter((file) => {
       const ext = file.name.split(".").pop()?.toLowerCase() || "";
       return !allowedExtensions.includes(ext);
     });
 
-    const allowedLabel = "PDF, DOC, DOCX, TXT, PPTX, MP3, WAV, M4A, FLAC, MP4, WEBM";
+    const allowedLabel =
+      "PDF, DOC, DOCX, TXT, PPTX, MP3, WAV, M4A, FLAC, MP4, WEBM";
     if (invalidFiles.length > 0) {
       const names = invalidFiles.map((f) => f.name).join(", ");
       toast.error(
@@ -702,83 +719,54 @@ export default function WelcomePage() {
 
                           {isAttachInputVisible && (
                             <div
-                              className="absolute left-0 top-full mt-2 z-50 w-full min-w-[320px] max-w-[380px] bg-primary-50 border border-primary-400 rounded-lg p-2 shadow-lg"
+                              className="absolute left-0 top-full mt-2 z-50 min-w-[340px] max-w-[400px] bg-white border border-primary-200 rounded-xl p-4 shadow-xl"
                               onMouseDown={(e) => e.stopPropagation()}
                             >
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    ref={attachInputRef}
-                                    type="text"
-                                    placeholder="Add a comment (optional)"
-                                    value={attachCommentValue}
-                                    onChange={(e) =>
-                                      setAttachCommentValue(e.target.value)
-                                    }
-                                    className="flex-1 bg-white text-sm border border-primary-200 rounded-lg px-3 py-2 outline-none placeholder:text-gray-400 focus:border-primary-400"
-                                  />
-                                  <Button
-                                    variant="outline"
-                                    className="px-3 text-sm bg-primary text-white hover:bg-primary/90 shrink-0"
-                                    onClick={handleAddAttachWithComment}
-                                  >
-                                    Add files
-                                  </Button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setIsAttachInputVisible(false);
-                                      setAttachCommentValue("");
-                                    }}
-                                    className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                </div>
-                                <p className="text-xs text-gray-500">
-                                  Select one or more files
+                              {/* Header */}
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-sm font-semibold text-gray-800">
+                                  Attach Files
+                                </h4>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsAttachInputVisible(false);
+                                    setAttachCommentValue("");
+                                  }}
+                                  className="text-gray-400 hover:text-gray-600 transition-colors p-0.5 rounded-full hover:bg-gray-100"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+
+                              {/* Drop zone / Browse area */}
+                              <div
+                                className="border-2 border-dashed border-primary-300 rounded-lg p-4 text-center cursor-pointer hover:border-primary-400 hover:bg-primary-50/50 transition-colors mb-3"
+                                onClick={handleAddAttachWithComment}
+                              >
+                                <Paperclip className="w-5 h-5 text-primary-400 mx-auto mb-1.5" />
+                                <p className="text-sm font-medium text-gray-700">
+                                  Browse files
+                                </p>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                  PDF, DOC, DOCX, TXT, PPTX, MP3, MP4
                                 </p>
                               </div>
+
+                              {/* Comment input */}
+                              <input
+                                ref={attachInputRef}
+                                type="text"
+                                placeholder="Add a comment (optional)"
+                                value={attachCommentValue}
+                                onChange={(e) =>
+                                  setAttachCommentValue(e.target.value)
+                                }
+                                className="w-full bg-gray-50 text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none placeholder:text-gray-400 focus:border-primary-400 focus:bg-white transition-colors"
+                              />
                             </div>
                           )}
                         </div>
-
-                        {/* Attached file chips */}
-                        {attachedFiles.map((entry, index) => (
-                          <div
-                            key={`${entry.file.name}-${index}`}
-                            className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-primary-200/60"
-                            title={
-                              entry.file.name +
-                              (entry.comment ? ` — ${entry.comment}` : "")
-                            }
-                          >
-                            <FileText className="w-3 h-3 shrink-0 mt-0.5 self-start" />
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <span className="truncate font-medium">
-                                {entry.file.name.slice(0, 20)}
-                                {entry.file.name.length > 20 ? "…" : ""}
-                              </span>
-                              {entry.comment ? (
-                                <span
-                                  className="truncate text-gray-600 mt-0.5"
-                                  title={entry.comment}
-                                >
-                                  {entry.comment.slice(0, 20)}
-                                  {entry.comment.length > 20 ? "…" : ""}
-                                </span>
-                              ) : null}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveFile(index)}
-                              className="hover:text-red-500 transition-colors shrink-0 p-0.5 rounded-full hover:bg-primary-100"
-                              disabled={isLoading || isUploading}
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
 
                         {/* Link button */}
                         <div className="relative">
@@ -871,33 +859,24 @@ export default function WelcomePage() {
                         {webpageUrls.map((entry, index) => (
                           <div
                             key={index}
-                            className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-primary-200/60"
+                            className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-primary-200/60 shrink-0 no-scrollbar"
                             title={
                               entry.url +
                               (entry.comment ? ` — ${entry.comment}` : "")
                             }
                           >
-                            <Link2 className="w-3 h-3 flex-shrink-0 mt-0.5 self-start" />
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <span className="truncate font-medium">
-                                {entry.url
-                                  .replace(/^https?:\/\//, "")
-                                  .slice(0, 28)}
-                                {entry.url.replace(/^https?:\/\//, "").length >
-                                28
-                                  ? "…"
-                                  : ""}
-                              </span>
-                              {entry.comment ? (
-                                <span
-                                  className="truncate text-gray-600 mt-0.5"
-                                  title={entry.comment}
-                                >
-                                  {entry.comment.slice(0, 25)}
-                                  {entry.comment.length > 25 ? "…" : ""}
-                                </span>
-                              ) : null}
-                            </div>
+                            <Link2 className="w-3 h-3 flex-shrink-0 self-center" />
+                            <span className="truncate font-medium whitespace-nowrap">
+                              {entry.url
+                                .replace(/^https?:\/\//, "")
+                                .slice(0, 28)}
+                              {entry.url.replace(/^https?:\/\//, "").length > 28
+                                ? "…"
+                                : ""}
+                              {entry.comment
+                                ? ` — ${entry.comment.slice(0, 15)}${entry.comment.length > 15 ? "…" : ""}`
+                                : ""}
+                            </span>
                             <button
                               onClick={() => handleRemoveLink(index)}
                               className="hover:text-red-500 transition-colors flex-shrink-0 p-0.5 rounded-full hover:bg-primary-100"
@@ -932,6 +911,50 @@ export default function WelcomePage() {
                         <ArrowUp className="w-4 h-4" />
                       </button>
                     </div>
+
+                    {/* Attached file chips - horizontal scrollable row */}
+                    {attachedFiles.length > 0 && (
+                      <div
+                        className="flex items-center gap-1 overflow-x-auto flex-nowrap"
+                        style={{ scrollbarWidth: "none" }}
+                      >
+                        {attachedFiles.map((entry, index) => (
+                          <div
+                            key={`${entry.file.name}-${index}`}
+                            className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-primary-200/60 shrink-0"
+                            title={
+                              entry.file.name +
+                              (entry.comment ? ` — ${entry.comment}` : "")
+                            }
+                          >
+                            <FileText className="w-3 h-3 shrink-0 mt-0.5 self-start" />
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="truncate font-medium">
+                                {entry.file.name.slice(0, 20)}
+                                {entry.file.name.length > 20 ? "…" : ""}
+                              </span>
+                              {entry.comment ? (
+                                <span
+                                  className="truncate text-gray-600 mt-0.5"
+                                  title={entry.comment}
+                                >
+                                  {entry.comment.slice(0, 20)}
+                                  {entry.comment.length > 20 ? "…" : ""}
+                                </span>
+                              ) : null}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFile(index)}
+                              className="hover:text-red-500 transition-colors shrink-0 p-0.5 rounded-full hover:bg-primary-100"
+                              disabled={isLoading || isUploading}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

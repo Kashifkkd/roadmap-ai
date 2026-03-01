@@ -970,7 +970,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               value={learningFrequency || undefined}
                               onValueChange={setLearningFrequency}
                             >
-                              <SelectTrigger className="w-full border-2 rounded-lg bg-gray-50 border-gray-300">
+                              <SelectTrigger className="w-full border-2 rounded-lg  border-gray-300">
                                 <SelectValue placeholder="Select frequency" />
                               </SelectTrigger>
                               <SelectContent>
@@ -992,7 +992,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               value={language || undefined}
                               onValueChange={setLanguage}
                             >
-                              <SelectTrigger className="w-full border-2 rounded-lg bg-gray-50 border-gray-300">
+                              <SelectTrigger className="w-full border-2 rounded-lg  border-gray-300">
                                 <SelectValue placeholder="Select language" />
                               </SelectTrigger>
                               <SelectContent>
@@ -1011,7 +1011,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               value={reminderType || undefined}
                               onValueChange={setReminderType}
                             >
-                              <SelectTrigger className="w-full border-2 rounded-lg bg-gray-50 border-gray-300">
+                              <SelectTrigger className="w-full border-2 rounded-lg  border-gray-300">
                                 <SelectValue placeholder="Select reminder type" />
                               </SelectTrigger>
                               <SelectContent>
@@ -1030,7 +1030,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               value={sourceAlignment || undefined}
                               onValueChange={setSourceAlignment}
                             >
-                              <SelectTrigger className="w-full border-2 rounded-lg bg-gray-50 border-gray-300">
+                              <SelectTrigger className="w-full border-2 rounded-lg  border-gray-300">
                                 <SelectValue placeholder="Select source alignment" />
                               </SelectTrigger>
                               <SelectContent>
@@ -1079,7 +1079,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               value={artStyle || undefined}
                               onValueChange={setArtStyle}
                             >
-                              <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                              <SelectTrigger className="w-full border-2 rounded-lg  border-gray-300">
                                 <SelectValue placeholder="Select art style" />
                               </SelectTrigger>
                               <SelectContent>
