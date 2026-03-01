@@ -769,7 +769,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                 className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
                   activeTab === "comet-info"
                     ? "bg-primary text-white shadow-md"
-                    : "text-gray-700 hover:bg-white/60"
+                    : "text-gray-800 hover:bg-white/60"
                 }`}
               >
                 <FileText
@@ -791,7 +791,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                 className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
                   activeTab === "users"
                     ? "bg-primary text-white shadow-md"
-                    : "text-gray-700 hover:bg-white/60"
+                    : "text-gray-800 hover:bg-white/60"
                 }`}
               >
                 <Users
@@ -812,7 +812,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                 className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
                   activeTab === "analytics"
                     ? "bg-primary text-white shadow-md"
-                    : "text-gray-700 hover:bg-white/60"
+                    : "text-gray-800 hover:bg-white/60"
                 }`}
               >
                 <BarChart3
@@ -834,7 +834,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                   <div className="space-y-4 md:space-y-5">
                     {/* Comet Title */}
                     <div className="bg-gray-100 px-2  rounded-lg ">
-                      <div className="text-md font-bold text-gray-700 py-4 px-4 ">
+                      <div className="text-md font-bold text-gray-800 py-4 px-4 ">
                         Basic Info
                       </div>
                       <div className="space-y-4 flex flex-row gap-2 w-full bg-white p-2 rounded-t-lg">
@@ -842,7 +842,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           <div className="flex flex-col space-y-2 ">
                             <Label
                               htmlFor="comet-title"
-                              className="text-sm font-medium text-gray-700"
+                              className="text-sm font-medium text-gray-800"
                             >
                               Comet Title
                               <span className="text-red-500 ml-1">*</span>
@@ -861,7 +861,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           <div className="flex flex-col space-y-2 py-2">
                             <Label
                               htmlFor="description"
-                              className="text-sm font-medium text-gray-700"
+                              className="text-sm font-medium text-gray-800"
                             >
                               Description
                             </Label>
@@ -878,7 +878,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
                         {/* Comet Cover Image */}
                         <div className="flex flex-col  space-y-2 w-1/2 h-full ">
-                          <Label className="text-sm font-medium text-gray-700 ">
+                          <Label className="text-sm font-medium text-gray-800 ">
                             Comet Cover Image
                           </Label>
                           <div className="w-full max-h-[1600px] p-2 bg-gray-100 rounded-lg">
@@ -963,7 +963,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           {/* Left Column */}
                           {/* <div className="space-y-4"> */}
                           <div className="flex flex-col space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
+                            <Label className="text-sm font-medium text-gray-800">
                               Learning Frequency
                             </Label>
                             <Select
@@ -985,7 +985,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           {/* Right Column */}
                           {/* <div className="space-y-4"> */}
                           <div className="flex flex-col  space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
+                            <Label className="text-sm font-medium text-gray-800">
                               Language
                             </Label>
                             <Select
@@ -1004,7 +1004,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           </div>
 
                           <div className="flex flex-col space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
+                            <Label className="text-sm font-medium text-gray-800">
                               Reminder Type
                             </Label>
                             <Select
@@ -1023,7 +1023,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           </div>
 
                           <div className="flex flex-col space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
+                            <Label className="text-sm font-medium text-gray-800">
                               Source Alignment
                             </Label>
                             <Select
@@ -1048,7 +1048,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           </div>
 
                           <div className="flex flex-col space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
+                            <Label className="text-sm font-medium text-gray-800">
                               Duration
                             </Label>
                             <Input
@@ -1065,14 +1065,14 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                     </div>
                     {/* Generative AI Settings Section */}
                     <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-4 px-4  text-gray-700">
+                      <p className=" font-bold mb-4 px-4  text-gray-800">
                         Generative AI Settings
                       </p>
                       <div className="space-y-4 bg-white p-2 rounded-lg">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {/* Left Column */}
                           <div className="flex flex-col space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
+                            <Label className="text-sm font-medium text-gray-800">
                               Art Style
                             </Label>
                             <Select
@@ -1094,7 +1094,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
                           {/* Right Column */}
                           <div className="flex flex-col space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
+                            <Label className="text-sm font-medium text-gray-800">
                               Image Guidance
                             </Label>
                             <Input
@@ -1110,7 +1110,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                     </div>
                     {/* Toggles Section */}
                     <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-4 px-4  text-gray-700">
+                      <p className=" font-bold mb-4 px-4  text-gray-800">
                         Experience Design
                       </p>
                       <div className="space-y-4 bg-white p-2 rounded-lg">
@@ -1130,7 +1130,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       </div>
                     </div>
                     <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-4 px-4  text-gray-700">
+                      <p className=" font-bold mb-4 px-4  text-gray-800">
                         Stakeholder Engagement
                       </p>
                       <div className="space-y-4 bg-white p-2 rounded-lg">
@@ -1150,7 +1150,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       </div>
                     </div>
                     <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-4 px-4  text-gray-700">
+                      <p className=" font-bold mb-4 px-4  text-gray-800">
                         Community Settings
                       </p>
                       <div className="space-y-4 bg-white p-2 rounded-lg">
@@ -1170,7 +1170,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       </div>
                     </div>
                     <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-4 px-4  text-gray-700">
+                      <p className=" font-bold mb-4 px-4  text-gray-800">
                         Leaderboard Settings
                       </p>
                       <div className="space-y-4 bg-white p-2 rounded-lg">
@@ -1185,7 +1185,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
                     {/* Feature Toggles Section */}
                     <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-4 px-4  text-gray-700">
+                      <p className=" font-bold mb-4 px-4  text-gray-800">
                         Feature Settings
                       </p>
                       <div className="space-y-4 bg-white p-2 rounded-lg">
@@ -1268,8 +1268,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       <div className="border-2 border-gray-200 rounded-lg p-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Existing Kick-off Dates */}
                         <div className="border-2 border-gray-200 rounded-lg p-4">
-                          <div className="space-y-2">
-                            <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium text-gray-700 bg-gray-100 p-2">
+                          <div className=" space-y-2">
+                            <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium text-gray-800 bg-gray-100 p-2">
                               <div>Kick off Date</div>
                               <div>Kick off Time</div>
                             </div>
@@ -1295,8 +1295,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
                         {/* Add New Kick-off */}
                         <div className="border-2 border-gray-200 rounded-lg p-4 space-y-4">
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
+                          <div className="flex flex-col space-y-2">
+                            <Label className="text-sm font-medium text-gray-800">
                               Kick off Date
                             </Label>
                             <div className="relative">
@@ -1306,7 +1306,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 onChange={(e) =>
                                   setNewKickOffDate(e.target.value)
                                 }
-                                className="w-full rounded-lg pr-10"
+                                className="w-full border-2 border-gray-200 rounded-lg pr-10"
                               />
                               <Calendar
                                 size={18}
@@ -1314,8 +1314,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               />
                             </div>
                           </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
+                          <div className="flex flex-col space-y-2">
+                            <Label className="text-sm font-medium text-gray-800">
                               Kick off Time
                             </Label>
                             <div className="relative">
@@ -1325,7 +1325,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 onChange={(e) =>
                                   setNewKickOffTime(e.target.value)
                                 }
-                                className="w-full rounded-lg pr-10"
+                                className="w-full border-2 border-gray-200 rounded-lg pr-10"
                               />
                               <Clock
                                 size={18}
@@ -1363,10 +1363,10 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                         </Button>
                       </div>
 
-                      <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+                      <div className="border-2 border-gray-200 rounded-lg p-4 space-y-4">
                         {/* Select Channel */}
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">
+                          <Label className="text-sm font-medium text-gray-800">
                             Select Channel
                           </Label>
                           <div className="flex items-center gap-2">
@@ -1380,7 +1380,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                   }))
                                 }
                               >
-                                <SelectTrigger className="w-full rounded-lg bg-gray-50 border-gray-300">
+                                <SelectTrigger className="w-full border-2 rounded-lg bg-gray-50 border-gray-300">
                                   <SelectValue placeholder="Select" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1444,8 +1444,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
                         {/* Send Date/Time + Save */}
                         <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
+                          <div className=" flex flex-col space-y-2">
+                            <Label className="text-sm font-medium text-gray-800">
                               Notification Send Date
                             </Label>
                             <div className="relative">
@@ -1458,7 +1458,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                     sendDate: e.target.value,
                                   }))
                                 }
-                                className="w-full rounded-lg pr-10"
+                                className="w-full rounded-lg pr-10 border-2 border-gray-200"
                               />
                               <Calendar
                                 size={18}
@@ -1466,8 +1466,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               />
                             </div>
                           </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">
+                          <div className=" flex flex-col space-y-2">
+                            <Label className="text-sm font-medium text-gray-800">
                               Notification Send Time (UTC)
                             </Label>
                             <div className="relative">
@@ -1480,7 +1480,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                     sendTime: e.target.value,
                                   }))
                                 }
-                                className="w-full rounded-lg pr-10"
+                                className="w-full border-2 border-gray-200 rounded-lg pr-10"
                               />
                               <Clock
                                 size={18}
@@ -1503,7 +1503,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       {/* Channel Names */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium text-gray-700">
+                          <Label className="text-sm font-medium text-gray-800">
                             Channel Name
                           </Label>
                           <button
@@ -1513,7 +1513,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                             title="Add channel"
                             aria-label="Add channel"
                           >
-                            <Plus size={18} className="text-gray-700" />
+                            <Plus size={18} className="text-gray-800" />
                           </button>
                         </div>
 
@@ -1521,7 +1521,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           {adHocChannelRows.map((row) => (
                             <div
                               key={row.id}
-                              className="flex items-center gap-2 bg-purple-50/40 border border-purple-100 rounded-lg p-2"
+                              className="flex items-center gap-2 bg-purple-50/40 border-2 border-purple-100 rounded-lg p-2"
                             >
                               <Input
                                 value={row.name}
@@ -1532,7 +1532,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                   )
                                 }
                                 placeholder="Channel Name"
-                                className="w-full rounded-lg border-gray-300"
+                                className="w-full border-2 border-gray-200 rounded-lg"
                               />
                               <button
                                 type="button"
@@ -1573,7 +1573,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           return (
                             <div
                               key={`${color?.name || "color"}-${index}`}
-                              className="flex items-center gap-2 border border-gray-200 hover:border-gray-300 rounded-lg p-2 cursor-pointer transition-all"
+                              className="flex items-center gap-2 border-2 border-gray-200 hover:border-gray-300 rounded-lg p-2 cursor-pointer transition-all"
                             >
                               {/* Swatch (click opens palette) */}
                               <div className="relative w-12 h-8 sm:w-16 sm:h-10 shrink-0 overflow-hidden">
@@ -1608,10 +1608,10 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
                               {/* Name + Hex */}
                               <div className="flex flex-col min-w-0">
-                                <span className="text-sm font-medium text-gray-700 truncate">
+                                <span className="text-sm font-medium text-gray-800 truncate">
                                   {color?.name || `Color ${index + 1}`}
                                 </span>
-                                <span className="text-sm font-medium text-gray-700 truncate">
+                                <span className="text-sm font-medium text-gray-800 truncate">
                                   {displayColor}
                                 </span>
                               </div>
