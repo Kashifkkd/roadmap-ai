@@ -399,7 +399,7 @@ export default function ContentForm({
               )}
               <div className="mb-2 flex items-center justify-center gap-2">
                 <p className="text-sm text-gray-900 font-medium">
-                  Or paste your link here
+                  OR
                 </p>
               </div>
              <div className="relative">
@@ -439,7 +439,7 @@ export default function ContentForm({
                       updateField("mediaType", "");
                     }
                   }}
-                  placeholder="Or paste your link here"
+                  placeholder="Paste your link here"
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>

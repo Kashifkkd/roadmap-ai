@@ -470,14 +470,22 @@ export default function WelcomePage() {
   };
 
   const handleToggleAttachInput = () => {
-    setIsAttachInputVisible((prev) => !prev);
+    setIsAttachInputVisible((prev) => {
+      const next = !prev;
+      if (next) setIsLinkInputVisible(false);
+      return next;
+    });
     setAttachCommentValue("");
     setTimeout(() => attachInputRef.current?.focus(), 100);
   };
 
   // Link handlers
   const handleToggleLinkInput = () => {
-    setIsLinkInputVisible((prev) => !prev);
+    setIsLinkInputVisible((prev) => {
+      const next = !prev;
+      if (next) setIsAttachInputVisible(false);
+      return next;
+    });
     setLinkInputValue("");
     setLinkCommentValue("");
     textareaRef.current?.blur();
@@ -788,14 +796,15 @@ export default function WelcomePage() {
                             <span>Link</span>
                           </Button>
 
-                          {/* Link input dialog: URL + optional comment */}
+                          {/* Link input dialog: URL + comment (Figma design) */}
                           {isLinkInputVisible && (
                             <div
                               className="absolute left-0 top-full mt-2 z-50 w-full min-w-[320px] max-w-[380px] bg-primary-50 border border-primary-400 rounded-lg p-2 shadow-lg"
                               onMouseDown={(e) => e.stopPropagation()}
                             >
                               <div className="space-y-2">
-                                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-primary-200">
+                                {/* Top: Paste link - same field as Add Comment */}
+                                <div className="relative">
                                   <input
                                     ref={linkInputRef}
                                     type="url"
@@ -809,49 +818,50 @@ export default function WelcomePage() {
                                         linkInputRef.current;
                                     }}
                                     onKeyDown={handleLinkInputKeyDown}
-                                    className="flex-1 bg-transparent text-sm border-0 outline-none placeholder:text-gray-400 min-w-0"
+                                    className="w-full min-h-[40px] bg-white text-sm border border-primary-200 rounded-lg pl-3 pr-24 py-2 outline-none placeholder:text-gray-400 focus:border-primary-400"
                                   />
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setIsLinkInputVisible(false);
-                                      setLinkInputValue("");
-                                      setLinkCommentValue("");
-                                    }}
-                                    className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
+                                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                                    <Button
+                                      variant="outline"
+                                      className="px-4 py-2 text-sm bg-primary text-white hover:bg-primary/90 h-8"
+                                      onClick={handleAddLink}
+                                    >
+                                      Add
+                                    </Button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setIsLinkInputVisible(false);
+                                        setLinkInputValue("");
+                                        setLinkCommentValue("");
+                                      }}
+                                      className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    ref={linkCommentRef}
-                                    type="text"
-                                    placeholder="Add a comment (optional)"
-                                    value={linkCommentValue}
-                                    onChange={(e) =>
-                                      setLinkCommentValue(e.target.value)
+                                {/* Bottom: Add Comment - same field styling */}
+                                <input
+                                  ref={linkCommentRef}
+                                  type="text"
+                                  placeholder="Add Comment"
+                                  value={linkCommentValue}
+                                  onChange={(e) =>
+                                    setLinkCommentValue(e.target.value)
+                                  }
+                                  onFocus={() => {
+                                    lastFocusedLinkInputRef.current =
+                                      linkCommentRef.current;
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      handleAddLink();
                                     }
-                                    onFocus={() => {
-                                      lastFocusedLinkInputRef.current =
-                                        linkCommentRef.current;
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        handleAddLink();
-                                      }
-                                    }}
-                                    className="flex-1 bg-white text-sm border border-primary-200 rounded-lg px-3 py-2 outline-none placeholder:text-gray-400 focus:border-primary-400"
-                                  />
-                                  <Button
-                                    variant="outline"
-                                    className="px-3 text-sm bg-primary text-white hover:bg-primary/90 flex-shrink-0"
-                                    onClick={handleAddLink}
-                                  >
-                                    Add
-                                  </Button>
-                                </div>
+                                  }}
+                                  className="w-full min-h-[40px] bg-white text-sm border border-primary-200 rounded-lg px-3 py-2 outline-none placeholder:text-gray-400 focus:border-primary-400"
+                                />
                               </div>
                             </div>
                           )}

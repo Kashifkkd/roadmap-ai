@@ -72,6 +72,9 @@ import { toast } from "sonner";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
 
+// Prevent duplicate "Session expired" toasts when multiple API calls return 401 at once
+let sessionExpiredToastShown = false;
+
 export const apiService = async ({
   endpoint,
   method = "GET",
@@ -104,6 +107,7 @@ export const apiService = async ({
 
   if (!removeToken && token) {
     requestHeaders.Authorization = `Bearer ${token}`;
+    sessionExpiredToastShown = false; // Reset so toast can show again after re-login
   }
 
   try {
@@ -128,7 +132,10 @@ export const apiService = async ({
         try {
           localStorage.removeItem("access_token");
           window.dispatchEvent(new Event("auth-changed"));
-          toast.error("Session expired. Please login again.");
+          if (!sessionExpiredToastShown) {
+            sessionExpiredToastShown = true;
+            toast.error("Session expired. Please login again.", { duration: 1000 });
+          }
         } catch {
           // ignore storage/event issues
         }
