@@ -202,7 +202,9 @@ export default function CometManagerLayout() {
                 // Preserve enabled_attributes so they persist from dashboard through comet_manager
                 savedData.response_path = {
                   ...sessionData?.response_path,
-                  ...(parsedResponse?.response_path || savedData?.response_path || {}),
+                  ...(parsedResponse?.response_path ||
+                    savedData?.response_path ||
+                    {}),
                 };
               } else {
                 savedData = {
@@ -260,9 +262,9 @@ export default function CometManagerLayout() {
   // }, [sessionData?.flag?.path_created]);
 
   return (
-    <div className="flex h-full w-full bg-primary-50 overflow-y-auto">
-      <div className="flex flex-1 lg:flex-row flex-col gap-2 p-2 overflow-y-auto">
-        <div className="lg:block w-full lg:w-[22.5em] xl:w-[25.5em] h-full">
+    <div className="flex h-full w-full bg-primary-50 overflow-hidden">
+      <div className="flex flex-1 flex-col lg:flex-row gap-2 p-1 sm:p-2 overflow-hidden">
+        <div className="hidden lg:block w-full lg:w-[18em] xl:w-[20em] h-full shrink-0 overflow-hidden">
           <ChatWindow
             inputType="path_updation"
             pageIdentifier={3}
@@ -281,7 +283,7 @@ export default function CometManagerLayout() {
           />
         </div>
 
-        <div className="w-full lg:w-[72.5em] xl:w-[74.5em] h-full">
+        <div className="flex-1 min-w-0 h-full overflow-hidden">
           <CometManager
             sessionData={sessionData}
             setSessionData={setSessionData}

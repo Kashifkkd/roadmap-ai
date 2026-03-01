@@ -229,7 +229,7 @@ export default function CometManager({
     }
   }, [outline, onOutlineChange]);
 
-  // Edit a step's description 
+  // Edit a step's description
   const handleEditStep = (chapterId, stepId, _name, newDescription) => {
     setOutline((prevOutline) => {
       if (!prevOutline || !prevOutline.chapters) return prevOutline;
@@ -254,7 +254,7 @@ export default function CometManager({
     });
   };
 
-  // Delete a step 
+  // Delete a step
   const handleDeleteStep = (chapterId, stepId) => {
     setOutline((prevOutline) => {
       if (!prevOutline || !prevOutline.chapters) return prevOutline;
@@ -1219,8 +1219,8 @@ export default function CometManager({
         </div>
       ) : (
         <>
-          <div className="flex flex-col lg:flex-row overflow-hidden rounded-xl h-full gap-2 p-2 lg:p-2">
-            <div className="bg-background rounded-xl w-full lg:w-1/3 xl:w-1/4 h-auto lg:h-full overflow-hidden shrink-0">
+          <div className="flex flex-col md:flex-row overflow-hidden rounded-xl h-full gap-1 sm:gap-2 p-1 sm:p-2">
+            <div className="bg-background rounded-xl w-full md:w-[280px] lg:w-1/3 xl:w-1/4 h-[280px] md:h-full overflow-hidden shrink-0">
               <CometManagerSidebar
                 selectedScreen={selectedScreen}
                 onAddScreen={handleAddScreen}
@@ -1347,7 +1347,7 @@ export default function CometManager({
             </div>
 
             {/* Right section - main content */}
-            <div className="flex flex-col w-full lg:w-2/3 xl:w-3/4 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl ">
+            <div className="flex flex-col w-full md:flex-1 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl">
               <div className="flex flex-col  flex-1 overflow-hidden">
                 {/* Show Image Preview if image is selected*/}
                 {selectedImageAsset ? (
@@ -1912,9 +1912,9 @@ export default function CometManager({
                 ) : activeTab === 0 ? (
                   <>
                     {selectedScreen && chapters && (
-                      <div className="shrink-0 p-3 ml-4 sm:p-4 flex justify-between items-center rounded-t-2xl">
+                      <div className="shrink-0 p-2 sm:p-3 md:p-4 ml-0 sm:ml-2 md:ml-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 rounded-t-2xl">
                         <div className="flex flex-col gap-1">
-                          <h2 className="text-sm sm:text-md font-bold text-gray-900 truncate">
+                          <h2 className="text-xs sm:text-sm md:text-md font-bold text-gray-900 truncate max-w-full">
                             {currentChapter?.steps?.find(
                               (step) =>
                                 String(step.id) ===
@@ -1943,7 +1943,6 @@ export default function CometManager({
                             sessionData={sessionData}
                             setSessionData={setSessionData}
                             chapterUid={(() => {
-                   
                               const stepUid = selectedScreen?.stepUid;
                               if (!stepUid || !outline?.chapters) {
                                 return null;
@@ -1973,10 +1972,10 @@ export default function CometManager({
                             }}
                           />
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                           <div
                             onClick={() => setIsUploadImageDialogOpen(true)}
-                            className="w-20 h-10 rounded-md bg-primary-50 border border-primary-200 flex items-center justify-center overflow-hidden shrink-0 relative cursor-pointer hover:opacity-80 transition-opacity"
+                            className="w-14 sm:w-16 md:w-20 h-8 sm:h-10 rounded-md bg-primary-50 border border-primary-200 flex items-center justify-center overflow-hidden shrink-0 relative cursor-pointer hover:opacity-80 transition-opacity"
                           >
                             {selectedScreen?.stepImageUrl && (
                               <img
@@ -2093,8 +2092,8 @@ export default function CometManager({
                       )} */}
                     </div>
 
-                    <div className="border-t p-3 bg-primary-50 w-full rounded-b-xl shrink-0">
-                      <div className="flex items-center justify-between gap-4">
+                    <div className="border-t p-2 sm:p-3 bg-primary-50 w-full rounded-b-xl shrink-0">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
                         <div>
                           <Button
                             className="bg-muted text-primary flex items-center justify-center gap-2"
@@ -2104,7 +2103,7 @@ export default function CometManager({
                             <span>Back</span>
                           </Button>
                         </div>
-                        <div className="flex items-center gap-3 min-w-0 max-w-full pl-2 pr-4 sm:pr-5 py-1.5 rounded-xl bg-[#E9EAEB]">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 max-w-full pl-1 sm:pl-2 pr-2 sm:pr-4 md:pr-5 py-1 sm:py-1.5 rounded-xl bg-[#E9EAEB] overflow-hidden">
                           <div
                             className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center shrink-0 cursor-pointer hover:bg-gray-50 transition-colors"
                             onClick={() =>
@@ -2116,7 +2115,7 @@ export default function CometManager({
                             <Zap size={14} className="text-gray-900" />
                           </div>
                           {!isAnalyzingTextCollapsed && (
-                            <span className="text-gray-700 text-sm pl-[clamp(0.5rem,1.5ch,1.25rem)] pr-[clamp(1rem,2.5ch,2rem)] min-w-0">
+                            <span className="text-gray-700 text-xs sm:text-sm pl-[clamp(0.25rem,1ch,1rem)] pr-[clamp(0.5rem,1.5ch,1.5rem)] min-w-0 truncate">
                               {sessionData?.meta?.state ||
                                 "Analyzing instructions and source materials"}
                             </span>
@@ -2125,7 +2124,7 @@ export default function CometManager({
 
                         <Button
                           variant="default"
-                          className="ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50 cursor-pointer"
+                          className="ml-0 sm:ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50 cursor-pointer w-full sm:w-auto"
                           onClick={handleNextChapter}
                           disabled={
                             !showNextChapter ||
@@ -2264,8 +2263,8 @@ export default function CometManager({
         <DrawerContent
           className={`${
             isMaximized
-              ? "w-screen! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
-              : "w-screen! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
+              ? "w-[95vw]! sm:w-[90vw]! md:w-[75vw]! lg:w-[55vw]! xl:max-w-4xl!"
+              : "w-[95vw]! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
           } max-w-none! h-screen! bg-primary-50 p-0`}
         >
           {/* Preview Header */}
