@@ -93,7 +93,7 @@ export default function WelcomePage() {
   const [cometCreated, setCometCreated] = useState(false);
 
   useEffect(() => {
-    if (sessionData?.flag?.comet_created && !cometCreated) {
+    if (sessionData?.comet_created && !cometCreated) {
       setCometCreated(true);
     }
   }, [sessionData, cometCreated]);
@@ -109,7 +109,6 @@ export default function WelcomePage() {
       if (receivedSessionData.chatbot_conversation) {
         const conversation = receivedSessionData.chatbot_conversation;
         const allMessages = [];
-        let shouldNavigate = false;
 
         // Only show messages without identifier
         conversation.forEach((entry) => {
@@ -127,11 +126,6 @@ export default function WelcomePage() {
               from: "bot",
               content: entry.agent,
             });
-
-            // Check if this is the "Comet data created" message
-            if (entry.agent.includes("Comet data created successfully")) {
-              shouldNavigate = true;
-            }
           }
         });
 
@@ -141,14 +135,14 @@ export default function WelcomePage() {
           setIsAnimating(true);
         }
         setIsLoading(false);
+      }
 
-        // Navigate to dashboard after showing "Comet data created" message
-        if (shouldNavigate) {
-          setCometCreated(true);
-          setTimeout(() => {
-            router.push("/dashboard");
-          }, 2000);
-        }
+      // Navigate to dashboard when comet_created is true from session
+      if (receivedSessionData?.comet_created === true) {
+        setCometCreated(true);
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 2000);
       }
     },
     (error) => {
