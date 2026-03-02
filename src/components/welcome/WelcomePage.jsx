@@ -716,54 +716,63 @@ export default function WelcomePage() {
                             <Paperclip className="w-4 h-4" />
                             <span>Attach</span>
                           </Button>
-
+                          {/* // attach dialog   */}
                           {isAttachInputVisible && (
                             <div
-                              className="absolute left-0 top-full mt-2 z-50 min-w-[340px] max-w-[400px] bg-white border border-primary-200 rounded-xl p-4 shadow-xl"
+                              className="absolute left-0 top-full mt-2 z-50 w-[300px] bg-primary-50 border border-primary-400 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] overflow-hidden"
                               onMouseDown={(e) => e.stopPropagation()}
                             >
-                              {/* Header */}
-                              <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-sm font-semibold text-gray-800">
-                                  Attach Files
-                                </h4>
+                              {/* Drop zone area */}
+                              <div
+                                className="m-1 border-2 border-dashed border-gray-200 bg-white rounded-xl py-5 px-2 text-center cursor-pointer hover:border-primary-400 transition-all"
+                                onClick={handleAddAttachWithComment}
+                              >
+                                {/* Folder icon with + badge */}
+                                <div className="flex items-center justify-center mb-3">
+                                  <img
+                                    src="/upload2.png"
+                                    alt="Upload"
+                                    className="w-10 h-10"
+                                  />
+                                </div>
+                                <p className="text-[13px] font-semibold text-gray-700">
+                                  Drag files here or click to upload
+                                </p>
+                                <p className="text-[11px] text-gray-400 mt-1">
+                                  Supported formats: PDFs, Videos, Audio, Images
+                                </p>
+                              </div>
+
+                              {/* Bottom bar: Comment + Add + Close */}
+                              <div className="m-1 rounded-lg flex items-center gap-2 bg-white px-2 py-1">
+                                <input
+                                  ref={attachInputRef}
+                                  type="text"
+                                  placeholder="Add Comment"
+                                  value={attachCommentValue}
+                                  onChange={(e) =>
+                                    setAttachCommentValue(e.target.value)
+                                  }
+                                  className="flex-1 bg-white text-sm outline-none placeholder:text-gray-400 text-gray-700 min-w-0"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleAddAttachWithComment}
+                                  className="px-4 py-2 bg-primary text-white text-xs font-semibold rounded-md hover:bg-primary-600 transition-colors shrink-0"
+                                >
+                                  Add
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => {
                                     setIsAttachInputVisible(false);
                                     setAttachCommentValue("");
                                   }}
-                                  className="text-gray-400 hover:text-gray-600 transition-colors p-0.5 rounded-full hover:bg-gray-100"
+                                  className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
                               </div>
-
-                              {/* Drop zone / Browse area */}
-                              <div
-                                className="border-2 border-dashed border-primary-300 rounded-lg p-4 text-center cursor-pointer hover:border-primary-400 hover:bg-primary-50/50 transition-colors mb-3"
-                                onClick={handleAddAttachWithComment}
-                              >
-                                <Paperclip className="w-5 h-5 text-primary-400 mx-auto mb-1.5" />
-                                <p className="text-sm font-medium text-gray-700">
-                                  Browse files
-                                </p>
-                                <p className="text-xs text-gray-400 mt-0.5">
-                                  PDF, DOC, DOCX, TXT, PPTX, MP3, MP4
-                                </p>
-                              </div>
-
-                              {/* Comment input */}
-                              <input
-                                ref={attachInputRef}
-                                type="text"
-                                placeholder="Add a comment (optional)"
-                                value={attachCommentValue}
-                                onChange={(e) =>
-                                  setAttachCommentValue(e.target.value)
-                                }
-                                className="w-full bg-gray-50 text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none placeholder:text-gray-400 focus:border-primary-400 focus:bg-white transition-colors"
-                              />
                             </div>
                           )}
                         </div>

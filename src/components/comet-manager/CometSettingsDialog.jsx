@@ -446,7 +446,14 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         reminder_type: reminderType || "",
         source_alignment: sourceAlignment || "",
         duration: duration || "",
-        language: (language === "en" ? "english" : language === "es" ? "spanish" : language === "fr" ? "french" : language) || "english",
+        language:
+          (language === "en"
+            ? "english"
+            : language === "es"
+              ? "spanish"
+              : language === "fr"
+                ? "french"
+                : language) || "english",
         chapters: chapters,
         action_hub: actionHub,
         checklists: checklists,
@@ -1632,7 +1639,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
             {activeTab === "users" && (
               <div className="h-full flex flex-col">
-                <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-3 sm:py-4 md:py-6 lg:py-8">
+                <div className="flex-1 overflow-y-auto px-1 sm:px-2 md:px-3 lg:px-4 xl:px-6 py-1 sm:py-1 md:py-1 lg:py-1 xl:py-1">
                   <UserManagement
                     clientId={localStorage.getItem("Client id")}
                     open={open}

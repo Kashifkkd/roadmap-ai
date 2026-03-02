@@ -170,7 +170,7 @@ export default function UserManagement({
     fetchUsers();
   }, [open, isActive, clientId, isPathUsersMode]);
 
-  // Fetch  email for dropdown 
+  // Fetch  email for dropdown
   useEffect(() => {
     const fetchEmailOptions = async () => {
       if (!open || !showAddUserForm || !isPathUsersMode || !clientId) return;
@@ -199,9 +199,7 @@ export default function UserManagement({
   // Pre-select already-assigned path users in the Select emails dropdown when opening Assign form
   useEffect(() => {
     if (!showAddUserForm || !isPathUsersMode || !Array.isArray(users)) return;
-    const emails = users
-      .map((u) => u.email || u.Email)
-      .filter(Boolean);
+    const emails = users.map((u) => u.email || u.Email).filter(Boolean);
     setPathUserEmails(emails);
   }, [showAddUserForm, isPathUsersMode, users]);
 
@@ -923,153 +921,161 @@ export default function UserManagement({
             </table>
           </div>
         ) : isPathUsersMode ? (
-          <div className="flex-1 overflow-y-auto space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
-                <ArrowLeft
-                  onClick={() => {
-                    setShowAddUserForm(false);
-                    resetUserForm();
-                  }}
-                  className="w-5 h-5 cursor-pointer"
-                />
-                Assign Users to Comet
+          <div className="flex-1 overflow-hidden flex flex-col">
+            {/* Header: Back arrow + Title */}
+            <div className="flex items-center gap-3 pb-1 border-b-2 border-gray-200">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddUserForm(false);
+                  resetUserForm();
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-700" />
+              </button>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Assign User
               </h2>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Select Emails
-                </Label>
-                <Select
-                  onValueChange={(value) => handleTogglePathUserEmail(value)}
-                  onOpenChange={(open) => !open && setPathUserEmailSearch("")}
-                  disabled={emailOptionsLoading || emailOptions.length === 0}
-                >
-                  <SelectTrigger className="w-full max-w-lg rounded-lg bg-gray-50 border-gray-300">
-                    <div className="flex w-full items-center justify-between">
-                      <span className="truncate text-sm text-gray-700">
-                        {emailOptionsLoading
-                          ? "Loading emails..."
-                          : pathUserEmails.length
-                            ? `${pathUserEmails.length} selected`
-                            : "Select emails"}
-                      </span>
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    <div
-                      className="sticky top-0 z-10 p-2 bg-white border-b border-gray-200"
-                      onPointerDown={(e) => e.stopPropagation()}
-                    >
-                      <Input
-                        placeholder="Search by name or email..."
-                        value={pathUserEmailSearch}
-                        onChange={(e) => setPathUserEmailSearch(e.target.value)}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    {(() => {
-                      const filtered = emailOptions.filter((user) => {
-                        const search = normalizeSearchTerm(pathUserEmailSearch);
-                        if (!search) return true;
-                        const fullName = [
-                          user.first_name || user.firstName || "",
-                          user.last_name || user.lastName || "",
+            {/* Select Users label + chips */}
+            <div className="pt-2 pb-2">
+              <p className="text-sm font-medium text-gray-800 mb-2">
+                Select Users ({pathUserEmails.length})
+              </p>
+              {pathUserEmails.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {pathUserEmails.map((emailVal) => {
+                    const matchedUser = emailOptions.find(
+                      (u) => u.email === emailVal,
+                    );
+                    const displayName = matchedUser
+                      ? [
+                          matchedUser.first_name || matchedUser.firstName || "",
+                          matchedUser.last_name || matchedUser.lastName || "",
                         ]
                           .filter(Boolean)
-                          .join(" ")
-                          .toLowerCase();
-                        const email = (user.email || "").toLowerCase();
-                        return fullName.includes(search) || email.includes(search);
-                      });
-                      if (filtered.length === 0) {
-                        return (
-                          <div className="py-4 px-2 text-center text-sm text-gray-500">
-                            No matching emails
-                          </div>
-                        );
-                      }
-                      return filtered.map((user) => {
-                        const labelParts = [
-                          user.first_name || user.firstName || "",
-                          user.last_name || user.lastName || "",
-                        ].filter(Boolean);
-                        const fullName = labelParts.join(" ");
-                        const emailVal = user.email || "";
-                        const checked = pathUserEmails.includes(emailVal);
-
-                        return (
-                          <SelectItem
-                            key={user.id || emailVal}
-                            value={emailVal}
-                            className="py-2"
-                          >
-                            <div className="flex items-start gap-2">
-                              <input
-                                type="checkbox"
-                                readOnly
-                                className="mt-0.5 accent-blue-600"
-                                checked={checked}
-                              />
-                              <div className="flex flex-col">
-                                {fullName && (
-                                  <span className="text-xs font-medium text-gray-900">
-                                    {fullName}
-                                  </span>
-                                )}
-                                <span className="text-xs text-gray-600">
-                                  {emailVal}
-                                </span>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        );
-                      });
-                    })()}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Selected Emails
-                </Label>
-                <div className="min-h-[44px] border border-gray-200 rounded-md px-2 py-1 bg-gray-50 flex flex-wrap gap-2 items-center">
-                  {pathUserEmails.length === 0 && (
-                    <span className="text-sm text-gray-400">
-                      No emails selected
-                    </span>
-                  )}
-                  {pathUserEmails.map((emailVal) => (
-                    <span
-                      key={emailVal}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-purple-100 text-xs text-purple-800"
-                    >
-                      {emailVal}
-                      <button
-                        type="button"
-                        className="ml-0.5 text-purple-700 hover:text-purple-900"
-                        onClick={() => handleRemovePathUserEmail(emailVal)}
+                          .join(" ") || emailVal
+                      : emailVal;
+                    return (
+                      <span
+                        key={emailVal}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-100 text-xs font-medium text-primary-700 border border-primary-200"
                       >
-                        ×
-                      </button>
-                    </span>
-                  ))}
+                        {displayName}
+                        <button
+                          type="button"
+                          className="text-primary-500 hover:text-primary-800 transition-colors"
+                          onClick={() => handleRemovePathUserEmail(emailVal)}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
+                    );
+                  })}
                 </div>
-              </div>
+              )}
+            </div>
 
-              <div className="flex justify-end pt-4">
-                <Button
-                  type="button"
-                  onClick={handleAssignPathUsers}
-                  disabled={assigningPathUsers || pathUserEmails.length === 0}
-                  className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {assigningPathUsers ? "Assigning..." : "Assign Users"}
-                </Button>
-              </div>
+            {/* Search input */}
+            <div className="relative mb-3">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search"
+                value={pathUserEmailSearch}
+                onChange={(e) => setPathUserEmailSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary-400 transition-colors placeholder:text-gray-400"
+              />
+            </div>
+
+            {/* User list */}
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              {emailOptionsLoading ? (
+                <div className="py-8 text-center text-sm text-gray-400">
+                  Loading users...
+                </div>
+              ) : (
+                (() => {
+                  const search = normalizeSearchTerm(pathUserEmailSearch);
+                  const filtered = emailOptions.filter((user) => {
+                    if (!search) return true;
+                    const fullName = [
+                      user.first_name || user.firstName || "",
+                      user.last_name || user.lastName || "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")
+                      .toLowerCase();
+                    const email = (user.email || "").toLowerCase();
+                    return fullName.includes(search) || email.includes(search);
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="py-8 text-center text-sm text-gray-400">
+                        No users found
+                      </div>
+                    );
+                  }
+
+                  return filtered.map((user) => {
+                    const fullName =
+                      [
+                        user.first_name || user.firstName || "",
+                        user.last_name || user.lastName || "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ") || "User";
+                    const emailVal = user.email || "";
+                    const isSelected = pathUserEmails.includes(emailVal);
+
+                    return (
+                      <div
+                        key={user.id || emailVal}
+                        onClick={() => handleTogglePathUserEmail(emailVal)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-all ${
+                          isSelected ? "bg-primary-50/50" : "bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">
+                            {fullName}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {emailVal}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()
+              )}
+            </div>
+
+            {/* Save button */}
+            <div className="flex justify-end pt-4 border-t border-gray-200 mt-2">
+              <Button
+                type="button"
+                onClick={handleAssignPathUsers}
+                disabled={assigningPathUsers || pathUserEmails.length === 0}
+                className="bg-primary hover:bg-primary-600 text-white px-8 py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {assigningPathUsers ? "Saving..." : "Save"}
+              </Button>
             </div>
           </div>
         ) : (

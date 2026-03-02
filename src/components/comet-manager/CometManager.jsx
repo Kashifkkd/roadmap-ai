@@ -1718,16 +1718,15 @@ export default function CometManager({
                             selectedMaterial.output_presigned_url ||
                             selectedMaterial.source_path
                           }
-                          title={
-                            selectedMaterial.source_name || "Link preview"
-                          }
+                          title={selectedMaterial.source_name || "Link preview"}
                           className="flex-1 w-full min-h-[300px] border-0 bg-white"
                           sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                           referrerPolicy="no-referrer"
                         />
                         <div className="shrink-0 px-4 py-2 bg-gray-100 border-t border-gray-200 flex items-center justify-between gap-2 flex-wrap">
                           <p className="text-xs text-gray-500">
-                            If the preview is blank, the site may block embedding.
+                            If the preview is blank, the site may block
+                            embedding.
                           </p>
                           <a
                             href={
@@ -2103,7 +2102,7 @@ export default function CometManager({
                             <span>Back</span>
                           </Button>
                         </div>
-                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 max-w-full pl-1 sm:pl-2 pr-2 sm:pr-4 md:pr-5 py-1 sm:py-1.5 rounded-xl bg-[#E9EAEB] overflow-hidden">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 max-w-full pl-1 sm:pl-2 pr-2 sm:pr-4 md:pr-5 py-1 sm:py-1.5 rounded-2xl bg-[#D9F0EC] overflow-hidden">
                           <div
                             className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center shrink-0 cursor-pointer hover:bg-gray-50 transition-colors"
                             onClick={() =>
@@ -2115,7 +2114,7 @@ export default function CometManager({
                             <Zap size={14} className="text-gray-900" />
                           </div>
                           {!isAnalyzingTextCollapsed && (
-                            <span className="text-gray-700 text-xs sm:text-sm pl-[clamp(0.25rem,1ch,1rem)] pr-[clamp(0.5rem,1.5ch,1.5rem)] min-w-0 truncate">
+                            <span className="text-[#31887B] text-xs sm:text-sm pl-[clamp(0.25rem,1ch,1rem)] pr-[clamp(0.5rem,1.5ch,1.5rem)] min-w-0 truncate">
                               {sessionData?.meta?.state ||
                                 "Analyzing instructions and source materials"}
                             </span>
@@ -2138,7 +2137,7 @@ export default function CometManager({
                                 : 0) < 2
                           }
                         >
-                          <span>Generate Remaining Chapters</span>
+                          <span>Create Remaining Chapters</span>
                           <ArrowRight size={16} />
                         </Button>
                       </div>

@@ -127,10 +127,10 @@ export default function ScreenCard({
                 })(screen.screenContents?.contentType || "Content")}{" "}
               </div>
               <div
-                className={`flex flex-col items-start bg-white p-1.5 sm:p-2 mt-0.5 shrink-0 transition-all duration-300 shadow-sm overflow-hidden${
+                className={`flex flex-col items-start bg-white p-2 mt-0.5 shrink-0 transition-all duration-300  shadow-sm overflow-hidden${
                   selectedScreen?.id === screen.id
-                    ? " h-40 w-28 sm:h-52.5 sm:w-36.25"
-                    : " h-32 w-26 sm:h-42.5 sm:w-33.75" // normal screen size
+                    ? " h-52.5 w-36.25"
+                    : " h-42.5 w-33.75" // normal screen size
                 }`}
               >
                 {/* Title */}
@@ -226,7 +226,7 @@ export default function ScreenCard({
 
       {/* Full Screen Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="w-[95vw] sm:w-auto max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">
               Screen {index + 1}
