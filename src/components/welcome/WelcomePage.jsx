@@ -714,7 +714,10 @@ export default function WelcomePage() {
                     <div className="border-t-2 border-gray-200"></div>
                     {/* Link preview  */}
                     {(webpageUrls.length > 0 || isUploading) && (
-                      <div className="flex items-center flex-wrap gap-2">
+                      <div
+                        className="flex items-center gap-2 overflow-x-auto flex-nowrap"
+                        style={{ scrollbarWidth: "none" }}
+                      >
                         {webpageUrls.map((entry, index) => (
                           <div
                             key={index}
@@ -756,6 +759,50 @@ export default function WelcomePage() {
                             <span>Uploading files...</span>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* Attached file chips*/}
+                    {attachedFiles.length > 0 && (
+                      <div
+                        className="flex items-center gap-1 overflow-x-auto flex-nowrap"
+                        style={{ scrollbarWidth: "none" }}
+                      >
+                        {attachedFiles.map((entry, index) => (
+                          <div
+                            key={`${entry.file.name}-${index}`}
+                            className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-primary-200/60 shrink-0"
+                            title={
+                              entry.file.name +
+                              (entry.comment ? ` — ${entry.comment}` : "")
+                            }
+                          >
+                            <FileText className="w-3 h-3 shrink-0 mt-0.5 self-start" />
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="truncate font-medium">
+                                {entry.file.name.slice(0, 20)}
+                                {entry.file.name.length > 20 ? "…" : ""}
+                              </span>
+                              {entry.comment ? (
+                                <span
+                                  className="truncate text-gray-600 mt-0.5"
+                                  title={entry.comment}
+                                >
+                                  {entry.comment.slice(0, 20)}
+                                  {entry.comment.length > 20 ? "…" : ""}
+                                </span>
+                              ) : null}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFile(index)}
+                              className="hover:text-red-500 transition-colors shrink-0 p-0.5 rounded-full hover:bg-primary-100"
+                              disabled={isLoading || isUploading}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
 
@@ -960,50 +1007,6 @@ export default function WelcomePage() {
                         <ArrowUp className="w-4 h-4" />
                       </button>
                     </div>
-
-                    {/* Attached file chips - horizontal scrollable row */}
-                    {attachedFiles.length > 0 && (
-                      <div
-                        className="flex items-center gap-1 overflow-x-auto flex-nowrap"
-                        style={{ scrollbarWidth: "none" }}
-                      >
-                        {attachedFiles.map((entry, index) => (
-                          <div
-                            key={`${entry.file.name}-${index}`}
-                            className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-primary-200/60 shrink-0"
-                            title={
-                              entry.file.name +
-                              (entry.comment ? ` — ${entry.comment}` : "")
-                            }
-                          >
-                            <FileText className="w-3 h-3 shrink-0 mt-0.5 self-start" />
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <span className="truncate font-medium">
-                                {entry.file.name.slice(0, 20)}
-                                {entry.file.name.length > 20 ? "…" : ""}
-                              </span>
-                              {entry.comment ? (
-                                <span
-                                  className="truncate text-gray-600 mt-0.5"
-                                  title={entry.comment}
-                                >
-                                  {entry.comment.slice(0, 20)}
-                                  {entry.comment.length > 20 ? "…" : ""}
-                                </span>
-                              ) : null}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveFile(index)}
-                              className="hover:text-red-500 transition-colors shrink-0 p-0.5 rounded-full hover:bg-primary-100"
-                              disabled={isLoading || isUploading}
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
