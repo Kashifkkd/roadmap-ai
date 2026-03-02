@@ -698,7 +698,7 @@ export default function WelcomePage() {
 
                   {/* Action Bar */}
                   <div className="w-full flex flex-col gap-2 px-3 py-3 ">
-                    <div className="border-t-2 border-gray-200">abcd</div>
+                    <div className="border-t-2 border-gray-200"></div>
                     {/* Link preview  */}
                     {(webpageUrls.length > 0 || isUploading) && (
                       <div className="flex items-center flex-wrap gap-2">
