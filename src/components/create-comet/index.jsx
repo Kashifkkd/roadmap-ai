@@ -245,6 +245,20 @@ export default function CreateComet({
     if (prefillData) {
       // console.log("CreateComet: Prefilling form with data:", prefillData);
 
+      // Restore Habit/Path personalization toggles from enabled_attributes (persists when returning from comet-manager/outline)
+      const enabledAttrs = prefillData.response_path?.enabled_attributes;
+      if (enabledAttrs) {
+        if (enabledAttrs.habit_enabled !== undefined) {
+          setHabitEnabled(!!enabledAttrs.habit_enabled);
+        }
+        if (enabledAttrs.path_personalization !== undefined) {
+          setPersonalizationEnabled(!!enabledAttrs.path_personalization);
+        }
+        if (enabledAttrs.habit_description) {
+          setValue("habit", enabledAttrs.habit_description);
+        }
+      }
+
       // Restore webpage URLs (with comments) from local/session so they show in the UI
       if (
         prefillData.webpage_url &&

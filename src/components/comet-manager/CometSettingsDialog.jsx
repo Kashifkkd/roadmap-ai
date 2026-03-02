@@ -81,7 +81,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
   // Configuration Settings
   const [learningFrequency, setLearningFrequency] = useState("");
-  const [language, setLanguage] = useState("English");
+  const [language, setLanguage] = useState("en");
   const [leaderboardEntryAmount, setLeaderboardEntryAmount] = useState("25");
   const [imageGuidance, setImageGuidance] = useState("");
   const [artStyle, setArtStyle] = useState("");
@@ -201,14 +201,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
       const enabledAttributes =
         sessionData?.response_path?.enabled_attributes || {};
 
-      const additionalData = sessionData?.additional_data || {};
-      if (additionalData.personalization_enabled !== undefined) {
-        setPersonalizationEnabled(additionalData.personalization_enabled);
-      }
-      if (additionalData.habit_enabled !== undefined) {
-        setHabitEnabled(additionalData.habit_enabled);
-      }
-      if (enabledAttributes) {
+      // Use enabled_attributes as the single source of truth for Comet Settings
+      if (enabledAttributes && Object.keys(enabledAttributes).length > 0) {
         // Only update toggles that are present in UI
         if (enabledAttributes.engagement_frequency !== undefined) {
           // Normalize learning frequency to match SelectItem values
@@ -346,13 +340,19 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         setArtStyle("");
       }
 
-      // Also check comet_creation_data for duration
+      // Fallback to comet_creation_data only when enabled_attributes doesn't have the value
       const experienceDesign =
         sessionData?.comet_creation_data?.["Experience Design"];
-      if (experienceDesign?.Duration && !duration) {
+      if (
+        experienceDesign?.Duration &&
+        enabledAttributes.duration === undefined
+      ) {
         setDuration(experienceDesign.Duration);
       }
-      if (experienceDesign?.["Source Alignment"] && !sourceAlignment) {
+      if (
+        experienceDesign?.["Source Alignment"] &&
+        enabledAttributes.source_alignment === undefined
+      ) {
         const source = String(experienceDesign["Source Alignment"])
           .toLowerCase()
           .trim();
@@ -363,13 +363,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
       }
     }
 
-    // Load saved comet settings
-    const savedSettings = localStorage.getItem("cometSettings");
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      setHabitEnabled(settings.habit_enabled ?? true);
-      setPersonalizationEnabled(settings.personalization_enabled ?? true);
-    }
+    // Do NOT override with cometSettings localStorage - enabled_attributes is the source of truth
   }, [open]); // Reload data when dialog open
 
   useEffect(() => {
@@ -452,7 +446,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         reminder_type: reminderType || "",
         source_alignment: sourceAlignment || "",
         duration: duration || "",
-        language: language || "English",
+        language: (language === "en" ? "english" : language === "es" ? "spanish" : language === "fr" ? "french" : language) || "english",
         chapters: chapters,
         action_hub: actionHub,
         checklists: checklists,

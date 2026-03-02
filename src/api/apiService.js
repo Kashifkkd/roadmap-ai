@@ -149,9 +149,10 @@ export const apiService = async ({
       };
     }
 
-    // ✅ Success response
+    // ✅ 2xx = success; 4xx (404, etc.) and 5xx = failure
+    const isSuccess = response.status >= 200 && response.status < 300;
     return {
-      success: true,
+      success: isSuccess,
       response: response.data,
       status: response.status,
     };

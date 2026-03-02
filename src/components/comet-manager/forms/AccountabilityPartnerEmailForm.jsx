@@ -82,7 +82,7 @@ export default function AccountabilityPartnerEmailForm({
                   onChange={(e) =>
                     updateListItem("emails", index, e.target.value)
                   }
-                  placeholder="partner@example.com"
+                  // placeholder="partner@example.com"
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <Button
