@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 
 export function useCometManager(sessionData = null) {
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const [outline, setOutline] = useState(null);
   const [selectedStepId, setSelectedStepId] = useState(null);
 
@@ -14,7 +14,7 @@ export function useCometManager(sessionData = null) {
       // Always update outline to ensure we get the latest data (including image URLs)
       // Create a deep copy to ensure React detects the change even if the reference is the same
       const newOutline = JSON.parse(JSON.stringify(sessionData.response_path));
-      
+
       // Only update if the content actually changed (avoid unnecessary re-renders)
       // Compare stringified versions to detect deep changes
       setOutline((prevOutline) => {
@@ -347,7 +347,7 @@ export function useCometManager(sessionData = null) {
       // Update outline with reordered screens
       for (const chapter of pathChapters) {
         for (const stepItem of chapter.steps || []) {
-          const stepId = stepItem.step?.id;
+          const stepId = stepItem.step?.uuid || stepItem.step?.id;
           if (stepId && screensByStep[stepId]) {
             stepItem.screens = screensByStep[stepId];
             // Normalize positions to match array order (1-based)
@@ -437,9 +437,11 @@ export function useCometManager(sessionData = null) {
       const newOutline = JSON.parse(JSON.stringify(prevOutline));
       const oldChapters = newOutline.chapters;
 
-      const reordered = newChapterOrder.map((oldIndex) => oldChapters[oldIndex]);
+      const reordered = newChapterOrder.map(
+        (oldIndex) => oldChapters[oldIndex],
+      );
 
-      // Update positions to match new array order 
+      // Update positions to match new array order
       for (let i = 0; i < reordered.length; i++) {
         reordered[i].position = i + 1;
       }
