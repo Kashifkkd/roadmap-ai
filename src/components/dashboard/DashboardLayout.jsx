@@ -322,11 +322,18 @@ export default function DashboardLayout() {
       const traceId = crypto.randomUUID().replace(/-/g, "");
       const receivedAt = new Date().toISOString();
 
-      // source_material payload 
+      // source_material payload
       let sourceMaterialsPayload = [];
       try {
         const materials = await getSourceMaterials(currentSessionId);
         if (Array.isArray(materials) && materials.length > 0) {
+          const localFileComments = {};
+          if (Array.isArray(formData.sourceFiles)) {
+            formData.sourceFiles.forEach((f) => {
+              if (f.name) localFileComments[f.name] = f.comment ?? "";
+            });
+          }
+
           sourceMaterialsPayload = materials
             .map((material, idx) => {
               const index = idx + 1;
@@ -340,9 +347,18 @@ export default function DashboardLayout() {
 
               if (!title) return null;
 
+              let comment = material.comment ?? "";
+              if (
+                material.type !== "link" &&
+                material.source_name &&
+                localFileComments[material.source_name] !== undefined
+              ) {
+                comment = localFileComments[material.source_name];
+              }
+
               return {
                 [`source_material_${index}`]: title,
-                [`comment_${index}`]: material.comment ?? "",
+                comment,
               };
             })
             .filter(Boolean);

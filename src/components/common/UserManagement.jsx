@@ -945,7 +945,7 @@ export default function UserManagement({
                 Select Users ({pathUserEmails.length})
               </p>
               {pathUserEmails.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto user-list-scrollbar">
                   {pathUserEmails.map((emailVal) => {
                     const matchedUser = emailOptions.find(
                       (u) => u.email === emailVal,
@@ -1003,7 +1003,7 @@ export default function UserManagement({
             </div>
 
             {/* User list */}
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1 user-list-scrollbar">
               {emailOptionsLoading ? (
                 <div className="py-8 text-center text-sm text-gray-400">
                   Loading users...

@@ -55,6 +55,7 @@ export default function WelcomePage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isAttachInputVisible, setIsAttachInputVisible] = useState(false);
   const [attachCommentValue, setAttachCommentValue] = useState("");
+  const [pendingFile, setPendingFile] = useState(null);
   const attachInputRef = useRef(null);
 
   const [webpageUrls, setWebpageUrls] = useState([]);
@@ -297,37 +298,41 @@ export default function WelcomePage() {
       }
     }
   };
-  const uploadFile = useCallback(async (file, currentSessionId) => {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("session_id", currentSessionId);
+  const uploadFile = useCallback(
+    async (file, currentSessionId, comment = "") => {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("session_id", currentSessionId);
+        if (comment) formData.append("comment", comment);
 
-      const result = await apiService({
-        endpoint: endpoints.uploadSourceMaterial,
-        method: "POST",
-        data: formData,
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+        const result = await apiService({
+          endpoint: endpoints.uploadSourceMaterial,
+          method: "POST",
+          data: formData,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
 
-      if (result.error) {
-        console.error("Error uploading file:", result.error);
+        if (result.error) {
+          console.error("Error uploading file:", result.error);
+          toast.error(`Failed to upload ${file.name}`);
+          return null;
+        } else {
+          console.log("File uploaded successfully:", result.response);
+          const res = result.response;
+          const uid = res?.id;
+          return uid != null ? String(uid) : null;
+        }
+      } catch (error) {
+        console.error("Error uploading file:", error);
         toast.error(`Failed to upload ${file.name}`);
         return null;
-      } else {
-        console.log("File uploaded successfully:", result.response);
-        const res = result.response;
-        const uid = res?.id;
-        return uid != null ? String(uid) : null;
       }
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      toast.error(`Failed to upload ${file.name}`);
-      return null;
-    }
-  }, []);
+    },
+    [],
+  );
 
   const UPLOADED_MARKER = "__uploaded__"; // Prevents re-upload when API returns no id
 
@@ -349,7 +354,11 @@ export default function WelcomePage() {
         const updated = await Promise.all(
           current.map(async (entry) => {
             if (entry.uid) return { ...entry };
-            const uid = await uploadFile(entry.file, currentSessionId);
+            const uid = await uploadFile(
+              entry.file,
+              currentSessionId,
+              entry.comment || "",
+            );
             return { ...entry, uid: uid ?? UPLOADED_MARKER };
           }),
         );
@@ -374,7 +383,7 @@ export default function WelcomePage() {
     [attachedFiles, uploadFile],
   );
 
-  const handleFileSelect = async (event) => {
+  const handleFileSelect = (event) => {
     const selected = Array.from(event.target.files || []);
     if (selected.length === 0) return;
 
@@ -413,24 +422,7 @@ export default function WelcomePage() {
       return;
     }
 
-    // Ensure we have a session before uploading
-    let currentSessionId = sessionId;
-    try {
-      if (!currentSessionId) {
-        const sessionResponse = await graphqlClient.createSession();
-        currentSessionId = sessionResponse.createSession.sessionId;
-        setSessionId(currentSessionId);
-        localStorage.setItem("sessionId", currentSessionId);
-        console.log("✅ Session created (from file upload):", currentSessionId);
-      }
-    } catch (error) {
-      console.error("Error creating session for file upload:", error);
-      toast.error("Could not start upload. Please try again.");
-      event.target.value = "";
-      return;
-    }
-
-    // Avoid uploading duplicates by filename
+    // Check duplicates against already attached files
     const existingNames = new Set(attachedFiles.map((e) => e.file.name));
     const duplicateFiles = validFiles.filter((file) =>
       existingNames.has(file.name),
@@ -449,36 +441,56 @@ export default function WelcomePage() {
       return;
     }
 
+    // Stage the file locally — don't upload yet, wait for user to click "Add"
+    setPendingFile(newFiles[0]);
+    event.target.value = "";
+  };
+
+  // Upload the pending file with comment when user clicks "Add"
+  const handleConfirmAttach = async () => {
+    if (!pendingFile) {
+      // No file staged — just open file picker
+      fileInputRef.current?.click();
+      return;
+    }
+
+    let currentSessionId = sessionId;
+    try {
+      if (!currentSessionId) {
+        const sessionResponse = await graphqlClient.createSession();
+        currentSessionId = sessionResponse.createSession.sessionId;
+        setSessionId(currentSessionId);
+        localStorage.setItem("sessionId", currentSessionId);
+        console.log("✅ Session created (from file upload):", currentSessionId);
+      }
+    } catch (error) {
+      console.error("Error creating session for file upload:", error);
+      toast.error("Could not start upload. Please try again.");
+      return;
+    }
+
     setIsUploading(true);
     try {
       const comment = attachCommentValue.trim();
-
-      const uploadResults = await Promise.all(
-        newFiles.map(async (file) => {
-          const uid = await uploadFile(file, currentSessionId);
-          return { file, comment, uid: uid ?? undefined };
-        }),
-      );
-
-      setAttachedFiles((prev) => [...prev, ...uploadResults]);
-
-      const successful = uploadResults.filter((e) => e.uid);
-      if (successful.length > 0) {
-        toast.success(
-          successful.length === 1
-            ? "File uploaded"
-            : `${successful.length} files uploaded`,
-        );
-      }
+      const uid = await uploadFile(pendingFile, currentSessionId, comment);
+      setAttachedFiles((prev) => [
+        ...prev,
+        { file: pendingFile, comment, uid: uid ?? undefined },
+      ]);
+      if (uid) toast.success("File uploaded");
     } finally {
       setIsUploading(false);
+      setPendingFile(null);
       setAttachCommentValue("");
       setIsAttachInputVisible(false);
-      event.target.value = "";
     }
   };
 
   const handleAddAttachWithComment = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleOpenFilePicker = () => {
     fileInputRef.current?.click();
   };
 
@@ -490,6 +502,7 @@ export default function WelcomePage() {
     setIsAttachInputVisible((prev) => {
       const next = !prev;
       if (next) setIsLinkInputVisible(false);
+      if (!next) setPendingFile(null);
       return next;
     });
     setAttachCommentValue("");
@@ -773,22 +786,38 @@ export default function WelcomePage() {
                               {/* Drop zone area */}
                               <div
                                 className="m-1 border-2 border-dashed border-gray-200 bg-white rounded-xl py-5 px-2 text-center cursor-pointer hover:border-primary-400 transition-all"
-                                onClick={handleAddAttachWithComment}
+                                onClick={handleOpenFilePicker}
                               >
-                                {/* Folder icon with + badge */}
-                                <div className="flex items-center justify-center mb-3">
-                                  <img
-                                    src="/upload2.png"
-                                    alt="Upload"
-                                    className="w-10 h-10"
-                                  />
-                                </div>
-                                <p className="text-[13px] font-semibold text-gray-700">
-                                  Drag files here or click to upload
-                                </p>
-                                <p className="text-[11px] text-gray-400 mt-1">
-                                  Supported formats: PDFs, Videos, Audio, Images
-                                </p>
+                                {pendingFile ? (
+                                  <>
+                                    <div className="flex items-center justify-center mb-2">
+                                      <FileText className="w-8 h-8 text-primary" />
+                                    </div>
+                                    <p className="text-[13px] font-semibold text-gray-700 truncate px-2">
+                                      {pendingFile.name}
+                                    </p>
+                                    <p className="text-[11px] text-gray-400 mt-1">
+                                      Click to change file
+                                    </p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="flex items-center justify-center mb-3">
+                                      <img
+                                        src="/upload2.png"
+                                        alt="Upload"
+                                        className="w-10 h-10"
+                                      />
+                                    </div>
+                                    <p className="text-[13px] font-semibold text-gray-700">
+                                      Drag files here or click to upload
+                                    </p>
+                                    <p className="text-[11px] text-gray-400 mt-1">
+                                      Supported formats: PDFs, Videos, Audio,
+                                      Images
+                                    </p>
+                                  </>
+                                )}
                               </div>
 
                               {/* Bottom bar: Comment + Add + Close */}
@@ -805,16 +834,18 @@ export default function WelcomePage() {
                                 />
                                 <button
                                   type="button"
-                                  onClick={handleAddAttachWithComment}
-                                  className="px-4 py-2 bg-primary text-white text-xs font-semibold rounded-md hover:bg-primary-600 transition-colors shrink-0"
+                                  onClick={handleConfirmAttach}
+                                  disabled={isUploading}
+                                  className="px-4 py-2 bg-primary text-white text-xs font-semibold rounded-md hover:bg-primary-600 transition-colors shrink-0 disabled:opacity-50"
                                 >
-                                  Add
+                                  {isUploading ? "Uploading..." : "Add"}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => {
                                     setIsAttachInputVisible(false);
                                     setAttachCommentValue("");
+                                    setPendingFile(null);
                                   }}
                                   className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
                                 >
@@ -841,52 +872,35 @@ export default function WelcomePage() {
                             <span>Link</span>
                           </Button>
 
-                          {/* Link input dialog: URL + comment (Figma design) */}
+                          {/* Link input dialog (Figma design) */}
                           {isLinkInputVisible && (
                             <div
-                              className="absolute left-0 top-full mt-2 z-50 w-full min-w-[320px] max-w-[380px] bg-primary-50 border border-primary-400 rounded-lg p-2 shadow-lg"
+                              className="absolute left-0 top-full mt-2 z-50 w-full min-w-[320px] max-w-[380px] bg-primary-50 border border-primary-400 rounded-2xl p-1 shadow-lg"
                               onMouseDown={(e) => e.stopPropagation()}
                             >
-                              <div className="space-y-2">
-                                {/* Top: Paste link - same field as Add Comment */}
-                                <div className="relative">
-                                  <input
-                                    ref={linkInputRef}
-                                    type="url"
-                                    placeholder="Paste link here"
-                                    value={linkInputValue}
-                                    onChange={(e) =>
-                                      setLinkInputValue(e.target.value)
-                                    }
-                                    onFocus={() => {
-                                      lastFocusedLinkInputRef.current =
-                                        linkInputRef.current;
-                                    }}
-                                    onKeyDown={handleLinkInputKeyDown}
-                                    className="w-full min-h-[40px] bg-white text-sm border border-primary-200 rounded-lg pl-3 pr-24 py-2 outline-none placeholder:text-gray-400 focus:border-primary-400"
-                                  />
-                                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                                    <Button
-                                      variant="outline"
-                                      className="px-4 py-2 text-sm bg-primary text-white hover:bg-primary/90 h-8"
-                                      onClick={handleAddLink}
-                                    >
-                                      Add
-                                    </Button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setIsLinkInputVisible(false);
-                                        setLinkInputValue("");
-                                        setLinkCommentValue("");
-                                      }}
-                                      className="text-gray-400 hover:text-gray-600 transition-colors p-1"
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </button>
-                                  </div>
+                              {/* Link icon  URL input */}
+                              <div className="flex items-center gap-1 bg-primary-50 rounded-xl py-1 mb-0.5">
+                                <div className="flex items-center gap-1 bg-gray-200 p-2 rounded-lg">
+                                  <Link2 className="w-5 h-5 text-gray-500 flex-shrink-0" />
                                 </div>
-                                {/* Bottom: Add Comment - same field styling */}
+                                <input
+                                  ref={linkInputRef}
+                                  type="url"
+                                  placeholder="Paste link here"
+                                  value={linkInputValue}
+                                  onChange={(e) =>
+                                    setLinkInputValue(e.target.value)
+                                  }
+                                  onFocus={() => {
+                                    lastFocusedLinkInputRef.current =
+                                      linkInputRef.current;
+                                  }}
+                                  onKeyDown={handleLinkInputKeyDown}
+                                  className="flex-1 bg-white rounded-lg p-2 text-sm outline-none placeholder:text-gray-400 min-w-0"
+                                />
+                              </div>
+                              {/* Row 2: Comment input + Add + Close */}
+                              <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-1">
                                 <input
                                   ref={linkCommentRef}
                                   type="text"
@@ -905,8 +919,26 @@ export default function WelcomePage() {
                                       handleAddLink();
                                     }
                                   }}
-                                  className="w-full min-h-[40px] bg-white text-sm border border-primary-200 rounded-lg px-3 py-2 outline-none placeholder:text-gray-400 focus:border-primary-400"
+                                  className="flex-1 bg-transparent text-sm py-1.5 outline-none placeholder:text-gray-400 min-w-0"
                                 />
+                                <Button
+                                  variant="outline"
+                                  className="px-4 py-1.5 text-sm bg-primary text-white hover:bg-primary/90 h-8 rounded-lg flex-shrink-0"
+                                  onClick={handleAddLink}
+                                >
+                                  Add
+                                </Button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsLinkInputVisible(false);
+                                    setLinkInputValue("");
+                                    setLinkCommentValue("");
+                                  }}
+                                  className="text-gray-400 hover:text-gray-600 transition-colors p-0.5 flex-shrink-0"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
                               </div>
                             </div>
                           )}

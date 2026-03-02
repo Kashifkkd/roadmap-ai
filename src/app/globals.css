@@ -297,6 +297,30 @@
   scrollbar-color: #c1c1c1 #f1f1f1;
 }
 
+/* Custom scrollbar styles for user management list */
+.user-list-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.user-list-scrollbar::-webkit-scrollbar-track {
+  background: #f5f5f5;
+  border-radius: 3px;
+}
+
+.user-list-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.user-list-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.user-list-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f5f5f5;
+}
+
 /* applying font size to 1 vw only in case of 2k or 4k screen sizes */
 @media (min-width: 1920px) {
   html {

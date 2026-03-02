@@ -96,7 +96,7 @@ export default function SourceMaterialCard({
 
   const uploadFile = useCallback(
     async (fileOrItem) => {
-      try {                                                                
+      try {
         const currentSessionId =
           sessionId ||
           (typeof window !== "undefined"
@@ -237,37 +237,19 @@ export default function SourceMaterialCard({
       return;
     }
 
-    // Upload immediately, and update local list so UI reflects changes.
-    setIsUploading(true);
-    onUploadingChange(true);
-    try {
-      await Promise.all(
-        newFiles.map((file) =>
-          uploadFile({
-            file,
-            comment: "",
-          }),
-        ),
-      );
-
-      // Optimistically add to local files list; server state will stay in sync
-      setFiles((prev) => [
-        ...prev,
-        ...newFiles.map((file) => ({
-          name: file.name,
-          size: file.size,
-          isUploaded: true,
-          comment: "",
-          file,
-        })),
-      ]);
-    } catch (error) {
-      console.error("Error uploading selected files:", error);
-    } finally {
-      setIsUploading(false);
-      onUploadingChange(false);
-      event.target.value = "";
-    }
+    // Don't upload immediately — let the user add comments first.
+    // Files will be uploaded when "Create Outline" is clicked (via uploadAllFiles).
+    setFiles((prev) => [
+      ...prev,
+      ...newFiles.map((file) => ({
+        name: file.name,
+        size: file.size,
+        isUploaded: false,
+        comment: "",
+        file,
+      })),
+    ]);
+    event.target.value = "";
   };
 
   // Normalize: ensure each entry is { url, comment } (defined before useEffect that uses it)
@@ -275,7 +257,7 @@ export default function SourceMaterialCard({
     ? webpageUrls.map((item) =>
         typeof item === "string"
           ? { url: item, comment: "" }
-          : { url: item?.url ?? "", comment: item?.comment ?? "" }
+          : { url: item?.url ?? "", comment: item?.comment ?? "" },
       )
     : [];
 
@@ -297,6 +279,10 @@ export default function SourceMaterialCard({
           const newFiles = files.filter((file) => !file.isUploaded);
           if (newFiles.length > 0 && currentSessionId) {
             await Promise.all(newFiles.map((file) => uploadFile(file)));
+            // Mark files as uploaded so they aren't re-uploaded on next call
+            setFiles((prev) =>
+              prev.map((f) => (!f.isUploaded ? { ...f, isUploaded: true } : f)),
+            );
           } else if (newFiles.length === 0 && linksToUpload.length === 0) {
             console.log("No new files or links to upload");
           } else if (!currentSessionId) {
@@ -331,22 +317,24 @@ export default function SourceMaterialCard({
   };
 
   const handleFileCommentChange = useCallback((fileItem, value) => {
-    setFiles((prev) =>
-      prev.map((item) => {
-        if (item === fileItem) {
-          if (item.file !== undefined) return { ...item, comment: value };
-          return {
-            name: item.name,
-            size: item.size,
-            isUploaded: false,
-            comment: value,
-            file: item,
-          };
-        }
-        return item;
-      })
-    );
-  }, [setFiles]);
+      setFiles((prev) =>
+        prev.map((item) => {
+          if (item === fileItem) {
+            if (item.file !== undefined) return { ...item, comment: value };
+            return {
+              name: item.name,
+              size: item.size,
+              isUploaded: false,
+              comment: value,
+              file: item,
+            };
+          }
+          return item;
+        }),
+      );
+    },
+    [setFiles],
+  );
 
   return (
     <Card className="border-none shadow-none p-0">
@@ -540,9 +528,7 @@ const FilePreview = ({ file, setFiles, files, onCommentChange }) => {
             placeholder="Add comment..."
             className="w-full bg-background rounded-lg"
             value={file.comment ?? ""}
-            onChange={(e) =>
-              onCommentChange?.(file, e.target.value)
-            }
+            onChange={(e) => onCommentChange?.(file, e.target.value)}
           />
         </div>
       </div>

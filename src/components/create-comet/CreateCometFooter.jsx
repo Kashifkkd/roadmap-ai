@@ -24,7 +24,7 @@ export default function CreateCometFooter({
       reset();
     }
 
-    // Navigate back in history after a short delay to show loader  
+    // Navigate back in history after a short delay to show loader
     setTimeout(() => {
       window.history.back();
     }, 100);
@@ -92,8 +92,7 @@ export default function CreateCometFooter({
             disabled={!canSubmit}
           >
             <Stars size={16} />
-            {/* <span>{isLoading ? "Saving..." : "Create Outline"}</span> */}
-            <span>Create Outline</span>
+            <span>{isLoading ? "Saving..." : "Create Outline"}</span>
           </Button>
         </div>
       </div>

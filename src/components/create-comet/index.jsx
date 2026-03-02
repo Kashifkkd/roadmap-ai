@@ -421,12 +421,12 @@ export default function CreateComet({
       const formDataString = JSON.stringify(formDataWithToggles);
       const prevString = currentFormDataRef.current;
       currentFormDataRef.current = formDataString;
-      
+
       // Debug: log when form values change (only for cometTitle and description to avoid spam)
       if (values.cometTitle || values.description) {
         const changed = prevString !== formDataString;
-        console.log("Form values updated:", { 
-          cometTitle: values.cometTitle, 
+        console.log("Form values updated:", {
+          cometTitle: values.cometTitle,
           description: values.description,
           habitEnabled,
           personalizationEnabled,
@@ -466,7 +466,7 @@ export default function CreateComet({
     if (prevFormDataRef.current === null) {
       return;
     }
-    
+
     const currentFormValues = watch();
     const formDataWithToggles = {
       ...currentFormValues,
@@ -475,20 +475,20 @@ export default function CreateComet({
     };
     const formDataString = JSON.stringify(formDataWithToggles);
     const prevString = currentFormDataRef.current;
-    
+
     // Update current ref with new toggle states
     currentFormDataRef.current = formDataString;
-    
+
     // Check if this is a real change (not just initialization)
     const hasChanged = prevString && prevString !== formDataString;
-    
-    console.log("Auto-save: Toggle states changed:", { 
-      habitEnabled, 
+
+    console.log("Auto-save: Toggle states changed:", {
+      habitEnabled,
       personalizationEnabled,
       hasChanged,
       willTriggerAutoSave: hasChanged
     });
-    
+
     // If this is a change (not initialization), the next interval tick will detect it
   }, [habitEnabled, personalizationEnabled, watch]);
 
@@ -521,6 +521,7 @@ export default function CreateComet({
           habitEnabled,
           habitText: data.habit || "",
           personalizationEnabled,
+          sourceFiles: files,
           webpage_url: (webpageUrls || [])
             .map((e) => (typeof e === "string" ? { url: e, comment: "" } : e))
             .filter((e) => e?.url?.trim())
@@ -564,10 +565,10 @@ export default function CreateComet({
     if (autoSaveTimerRef.current) {
       clearInterval(autoSaveTimerRef.current);
     }
-    
+
     // Get sessionId from props or localStorage
     const currentSessionId = sessionId || (typeof window !== "undefined" ? localStorage.getItem("sessionId") : null);
-    
+
     if (!currentSessionId) {
       console.log("Auto-save: No sessionId available, skipping auto-save setup");
       return;
@@ -592,7 +593,7 @@ export default function CreateComet({
     console.log("Auto-save: Starting interval timer (5 seconds)");
     autoSaveTimerRef.current = setInterval(async () => {
       console.log("Auto-save: Interval tick - checking for changes...");
-      
+
       if (isSavingRef.current) {
         console.log("Auto-save: Already saving, skipping...");
         return;
@@ -601,7 +602,7 @@ export default function CreateComet({
       // Get current form data from ref (updated by subscription)
       const currentFormDataString = currentFormDataRef.current;
       const prevFormDataString = prevFormDataRef.current;
-      
+
       console.log("Auto-save: Refs status:", {
         hasCurrent: !!currentFormDataString,
         hasPrev: !!prevFormDataString,
@@ -630,20 +631,20 @@ export default function CreateComet({
       }
 
       const formDataChanged = currentFormDataString !== prevFormDataString;
-      
+
       // Debug: log comparison with toggle states
       if (formDataChanged) {
         try {
           const current = JSON.parse(currentFormDataString);
           const prev = prevFormDataString ? JSON.parse(prevFormDataString) : null;
           console.log("Auto-save: Form data changed detected", {
-            habitEnabled: { 
-              current: current.habitEnabled, 
+            habitEnabled: {
+              current: current.habitEnabled,
               prev: prev?.habitEnabled,
               stateValue: habitEnabled
             },
-            personalizationEnabled: { 
-              current: current.personalizationEnabled, 
+            personalizationEnabled: {
+              current: current.personalizationEnabled,
               prev: prev?.personalizationEnabled,
               stateValue: personalizationEnabled
             },
@@ -663,7 +664,7 @@ export default function CreateComet({
           console.error("Error parsing form data for auto-save:", parseError);
           return;
         }
-        
+
         // Use current state values for toggles (they're the source of truth)
         // Override any values from parsed JSON with current state
         currentFormValues.habitEnabled = habitEnabled;
@@ -682,7 +683,7 @@ export default function CreateComet({
             console.warn("Auto-save: No session ID available for auto-save");
             return;
           }
-          
+
           console.log("Auto-save: Starting save process for sessionId:", currentSessionIdForSave);
 
           // Format form data similar to handleFormSubmit
@@ -730,7 +731,7 @@ export default function CreateComet({
           // Use current state values directly - they're always up-to-date
           const currentHabitEnabled = habitEnabled;
           const currentPersonalizationEnabled = personalizationEnabled;
-          
+
           console.log("Auto-save: Toggle states being saved:", {
             habitEnabled: currentHabitEnabled,
             personalizationEnabled: currentPersonalizationEnabled,
@@ -743,14 +744,14 @@ export default function CreateComet({
               personalization: currentFormValues.personalizationEnabled
             }
           });
-          
+
           const enabled_attributes = {
             ...(parsedSessionData?.response_path?.enabled_attributes || {}),
             path_personalization: currentPersonalizationEnabled,
             habit_enabled: currentHabitEnabled,
             habit_description: currentFormValues.habit || "",
           };
-          
+
           console.log("Auto-save: enabled_attributes being saved:", {
             path_personalization: enabled_attributes.path_personalization,
             habit_enabled: enabled_attributes.habit_enabled
