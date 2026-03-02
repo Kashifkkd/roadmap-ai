@@ -697,8 +697,56 @@ export default function WelcomePage() {
                   />
 
                   {/* Action Bar */}
-                  <div className="w-full flex flex-col gap-2 px-3 py-3">
-                    {/* Buttons + chips row */}
+                  <div className="w-full flex flex-col gap-2 px-3 py-3 ">
+                    <div className="border-t-2 border-gray-200"></div>
+                    {/* Link preview  */}
+                    {(webpageUrls.length > 0 || isUploading) && (
+                      <div className="flex items-center flex-wrap gap-2">
+                        {webpageUrls.map((entry, index) => (
+                          <div
+                            key={index}
+                            className="flex flex-col bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-2 text-xs max-w-[200px] shrink-0"
+                            title={
+                              entry.url +
+                              (entry.comment ? ` — ${entry.comment}` : "")
+                            }
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <Link2 className="w-3 h-3 flex-shrink-0 text-gray-500" />
+                              <span className="truncate font-medium text-gray-700 flex-1 min-w-0">
+                                {entry.url
+                                  .replace(/^https?:\/\//, "")
+                                  .slice(0, 22)}
+                                {entry.url.replace(/^https?:\/\//, "").length >
+                                22
+                                  ? "…"
+                                  : ""}
+                              </span>
+                              <button
+                                onClick={() => handleRemoveLink(index)}
+                                className="hover:text-red-500 transition-colors flex-shrink-0 p-0.5 rounded-full hover:bg-gray-200 text-gray-400"
+                                disabled={isLoading}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                            <p className="flex item-start text-[10px] text-gray-400 mt-0.5 truncate pl-[18px]">
+                              {entry.comment || "Comment will go here"}
+                            </p>
+                          </div>
+                        ))}
+
+                        {/* Minimal upload loader */}
+                        {isUploading && (
+                          <div className="flex items-center gap-1 text-[11px] text-gray-500">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <span>Uploading files...</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Buttons row */}
                     <div className="flex flex-row justify-between items-center gap-2">
                       <div className="flex items-center flex-wrap gap-1">
                         {/* Attach button + panel */}
@@ -863,46 +911,6 @@ export default function WelcomePage() {
                             </div>
                           )}
                         </div>
-
-                        {/* Link chips: url + comment */}
-                        {webpageUrls.map((entry, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-primary-200/60 shrink-0 no-scrollbar"
-                            title={
-                              entry.url +
-                              (entry.comment ? ` — ${entry.comment}` : "")
-                            }
-                          >
-                            <Link2 className="w-3 h-3 flex-shrink-0 self-center" />
-                            <span className="truncate font-medium whitespace-nowrap">
-                              {entry.url
-                                .replace(/^https?:\/\//, "")
-                                .slice(0, 28)}
-                              {entry.url.replace(/^https?:\/\//, "").length > 28
-                                ? "…"
-                                : ""}
-                              {entry.comment
-                                ? ` — ${entry.comment.slice(0, 15)}${entry.comment.length > 15 ? "…" : ""}`
-                                : ""}
-                            </span>
-                            <button
-                              onClick={() => handleRemoveLink(index)}
-                              className="hover:text-red-500 transition-colors flex-shrink-0 p-0.5 rounded-full hover:bg-primary-100"
-                              disabled={isLoading}
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
-
-                        {/* Minimal upload loader */}
-                        {isUploading && (
-                          <div className="ml-1 mt-1 flex items-center gap-1 text-[11px] text-gray-500">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            <span>Uploading files...</span>
-                          </div>
-                        )}
                       </div>
 
                       <button
