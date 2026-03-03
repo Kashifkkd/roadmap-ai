@@ -433,7 +433,7 @@ export function useCometManager(sessionData = null) {
   const reorderChapters = (newChapterOrder) => {
     setOutline((prevOutline) => {
       if (!prevOutline || !prevOutline.chapters) return prevOutline;
-
+      //outline chapters
       const newOutline = JSON.parse(JSON.stringify(prevOutline));
       const oldChapters = newOutline.chapters;
 
