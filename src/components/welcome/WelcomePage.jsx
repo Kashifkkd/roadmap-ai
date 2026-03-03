@@ -706,18 +706,15 @@ export default function WelcomePage() {
                   {/* Action Bar */}
                   <div className="w-full flex flex-col gap-2 px-3 py-3 ">
                     <div className="border-t-2 border-gray-200"></div>
-                    {/* Link + File previews */}
-                    {(webpageUrls.length > 0 ||
-                      attachedFiles.length > 0 ||
-                      isUploading) && (
+                    {/* Link preview */}
+                    {(webpageUrls.length > 0 || isUploading) && (
                       <div
                         className="flex items-center gap-2 overflow-x-auto flex-nowrap"
                         style={{ scrollbarWidth: "none" }}
                       >
-                        {/* Link chips */}
                         {webpageUrls.map((entry, index) => (
                           <div
-                            key={`link-${index}`}
+                            key={index}
                             className="flex flex-col bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-2 text-xs max-w-[200px] shrink-0"
                             title={
                               entry.url +
@@ -749,10 +746,25 @@ export default function WelcomePage() {
                           </div>
                         ))}
 
-                        {/* File chips */}
+                        {/* Minimal upload loader */}
+                        {isUploading && (
+                          <div className="flex items-center gap-1 text-[11px] text-gray-500">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <span>Uploading files...</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Attached file chips */}
+                    {attachedFiles.length > 0 && (
+                      <div
+                        className="flex items-center gap-1 overflow-x-auto flex-nowrap"
+                        style={{ scrollbarWidth: "none" }}
+                      >
                         {attachedFiles.map((entry, index) => (
                           <div
-                            key={`file-${entry.file.name}-${index}`}
+                            key={`${entry.file.name}-${index}`}
                             className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-primary-200/60 shrink-0"
                             title={
                               entry.file.name +
@@ -767,7 +779,7 @@ export default function WelcomePage() {
                               </span>
                               {entry.comment ? (
                                 <span
-                                  className="flex items-start truncate text-gray-600 mt-0.5"
+                                  className="truncate text-gray-600 mt-0.5"
                                   title={entry.comment}
                                 >
                                   {entry.comment.slice(0, 20)}
@@ -785,14 +797,6 @@ export default function WelcomePage() {
                             </button>
                           </div>
                         ))}
-
-                        {/* Upload loader */}
-                        {isUploading && (
-                          <div className="flex items-center gap-1 text-[11px] text-gray-500 shrink-0">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            <span>Uploading...</span>
-                          </div>
-                        )}
                       </div>
                     )}
 
