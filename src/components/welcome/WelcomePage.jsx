@@ -779,7 +779,7 @@ export default function WelcomePage() {
                               </span>
                               {entry.comment ? (
                                 <span
-                                  className="truncate text-gray-600 mt-0.5"
+                                  className=" flex items-start truncate text-gray-600 mt-0.5"
                                   title={entry.comment}
                                 >
                                   {entry.comment.slice(0, 20)}
