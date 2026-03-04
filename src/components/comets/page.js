@@ -4,11 +4,10 @@ import React, { useEffect, useState, useMemo } from "react";
 import CometFilter from "./CometFilter";
 import AllCometsContainer from "./AllCometsContainer";
 // import SequentialLoader from "../chat/SequentialLoader";
-import Loader from "../loader2/index";
+import { Loader2 } from "lucide-react";
 import CometSettingsDialog from "../comet-manager/CometSettingsDialog";
 import { useCometSettings } from "@/contexts/CometSettingsContext";
 import debounce from "lodash.debounce";
-import { comitFetchList } from "@/api/comit";
 import axios from "axios";
 
 export default function AllComet() {
@@ -32,24 +31,39 @@ export default function AllComet() {
   );
 
   useEffect(() => {
-    getCometData()
-    window.addEventListener("storage", getCometData);
-  }, [debouncedSearch, selected, sortBy, sortOrder])
+    if (typeof window === "undefined") return;
+    getCometData();
+    const handleStorageChange = (e) => {
+      if (e.key === "Client id") {
+        setLoading(true);
+        getCometData();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [debouncedSearch, selected, sortBy, sortOrder]);
 
 
   const getCometData = async () => {
     const token = localStorage.getItem("access_token");
-    let clientId = localStorage.getItem("Client id");
+    const clientId = localStorage.getItem("Client id");
+    if (!token || !clientId) {
+      setError("Please login / create a session (chat) to access this page");
+      setLoading(false);
+      return;
+    }
     try {
       const sessions = await fetchCometSessions({ clientId, token });
-      setCometSessions(sessions);
-      setNoComet(sessions.length === 0);
+      const list = Array.isArray(sessions) ? sessions : [];
+      setCometSessions(list);
+      setNoComet(list.length === 0);
     } catch (err) {
       setError(err.message);
+      setCometSessions([]);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const handleStatus = (val) => {
     setSelected(val)
@@ -83,12 +97,11 @@ export default function AllComet() {
   // }
 
   const fetchCometSessions = async ({ clientId, token }) => {
-    console.log('checkkkkkkkkk', clientId)
     let data = {
       client_id: clientId,
     }
     if (selected && selected != 'select') data.status = selected
-    if (sessionName) data.session_name = sessionName
+    if (debouncedSearch) data.session_name = debouncedSearch
     if (sortBy) data.sort_order = sortBy
     if (sortOrder) data.sort_by = sortOrder
 
@@ -102,54 +115,19 @@ export default function AllComet() {
         },
       }
     );
-    // if (!res.ok) throw new Error(`Failed: ${res.status}`);
-    return res.data;
+    const raw = res.data;
+    return Array.isArray(raw) ? raw : (raw?.data && Array.isArray(raw.data) ? raw.data : []);
   };
 
-  const fetchData = async () => {
-    const sessionId = localStorage.getItem("sessionId");
-    const token = localStorage.getItem("access_token");
-    let clientId = localStorage.getItem("Client id");
-
-    if (!token || !clientId) {
-      setError(
-        "Please login / create a session (chat) to access this page as this page has dependecies on session"
-      );
-      setLoading(false);
-      return;
-    }
-    try {
-      const sessions = await comitFetchList({ clientId, token });
-      setCometSessions(sessions);
-      setNoComet(sessions.length === 0);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    fetchData();
-
-    const handleStorageChange = (e) => {
-      if (e.key === "Client id") {
-        console.log("Client id changed , refetching ....");
-        fetchData();
-      }
-    };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
-
-  // Added the loading state
+  // Loading state - show loader until data is ready
   if (loading) {
     return (
-      <div className="w-screen h-screen flex justify-center items-center">
-        {/* Loading comet sessions... */}
-        <Loader />
+      <div className="min-h-full w-full flex flex-col items-center justify-center bg-[#F1F0FE] flex-1">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          <p className="text-base font-medium text-gray-700">Loading comets...</p>
+          <p className="text-sm text-gray-500">Fetching your comet sessions</p>
+        </div>
       </div>
     );
   }
@@ -172,9 +150,13 @@ export default function AllComet() {
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto pb-8">
           <div className="w-[98%] mx-auto">
-            {noComet ? <div className="w-full h-64 flex justify-center items-center">
-              No comet sessions found.
-            </div> : <AllCometsContainer cometSessions={cometSessions} />}
+            {noComet ? (
+              <div className="w-full h-64 flex justify-center items-center">
+                No comet sessions found.
+              </div>
+            ) : (
+              <AllCometsContainer cometSessions={Array.isArray(cometSessions) ? cometSessions : []} />
+            )}
           </div>
         </div>
       </div>

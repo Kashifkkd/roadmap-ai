@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Plus, Trash2, GripVertical, CircleCheck, CircleX } from "lucide-react";
 import "quill/dist/quill.snow.css";
 
+
+
 export const SectionHeader = ({ title }) => (
   <div className="w-full mb-4">
     <h3 className="text-md font-semibold text-primary">{title}</h3>
@@ -154,14 +156,12 @@ export const ListField = ({
               onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
-              className={`flex gap-2 ${
-                draggedIndex === index ? "opacity-50" : ""
-              }`}
+              className={`flex gap-2 ${draggedIndex === index ? "opacity-50" : ""
+                }`}
             >
               <div
-                className={`${
-                  onReorder ? "cursor-move" : "cursor-default"
-                } text-gray-400 h-10 w-10 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center`}
+                className={`${onReorder ? "cursor-move" : "cursor-default"
+                  } text-gray-400 h-10 w-10 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center`}
               >
                 <GripVertical size={18} />
               </div>
@@ -172,11 +172,10 @@ export const ListField = ({
                 <div className="flex items-center justify-center gap-x-1">
                   <div
                     onClick={() => handleToggleCorrect(index, true)}
-                    className={`cursor-pointer h-10 w-10 flex items-center justify-center rounded-lg transition-all ${
-                      isCorrect
-                        ? "bg-green-500"
-                        : "bg-green-100 hover:bg-green-200"
-                    }`}
+                    className={`cursor-pointer h-10 w-10 flex items-center justify-center rounded-lg transition-all ${isCorrect
+                      ? "bg-green-500"
+                      : "bg-green-100 hover:bg-green-200"
+                      }`}
                   >
                     <CircleCheck
                       size={18}
@@ -185,11 +184,10 @@ export const ListField = ({
                   </div>
                   <div
                     onClick={() => handleToggleCorrect(index, false)}
-                    className={`cursor-pointer h-10 w-10 rounded-lg flex items-center justify-center transition-all ${
-                      !isCorrect && isCorrect !== undefined
-                        ? "bg-red-500"
-                        : "bg-red-100 hover:bg-red-200"
-                    }`}
+                    className={`cursor-pointer h-10 w-10 rounded-lg flex items-center justify-center transition-all ${!isCorrect && isCorrect !== undefined
+                      ? "bg-red-500"
+                      : "bg-red-100 hover:bg-red-200"
+                      }`}
                   >
                     <CircleX
                       size={18}
@@ -261,7 +259,8 @@ export const RichTextArea = ({
   }, [onBlur]);
 
   useEffect(() => {
-    if (quillEditorRef.current || !editorRef.current) return;
+    if (quillEditorRef.current || !editorRef.current)
+      return;
 
     const isHtmlFormat = valueFormat === "html";
     const isHtmlString = (v) =>
@@ -341,7 +340,7 @@ export const RichTextArea = ({
         const styleMatch = (size) =>
           new RegExp(
             `<span style="[^"]*font-size:\\s*${size}[^"]*"[^>]*>([\\s\\S]*?)</span>`,
-            "gi",
+            "gi"
           );
         return html
           .replace(styleMatch("1\\.75em"), '<h1 style="display:inline">$1</h1>')
@@ -389,10 +388,7 @@ export const RichTextArea = ({
                 try {
                   editor.root.innerHTML = textValue;
                 } catch (htmlError) {
-                  console.error(
-                    "Failed to set HTML in Quill editor:",
-                    htmlError,
-                  );
+                  console.error("Failed to set HTML in Quill editor:", htmlError);
                 }
               }
             }
@@ -436,9 +432,9 @@ export const RichTextArea = ({
           const absolutePosition =
             editorRect && typeof window !== "undefined"
               ? {
-                  top: editorRect.top + bounds.bottom + window.scrollY,
-                  left: editorRect.left + bounds.left + window.scrollX,
-                }
+                top: editorRect.top + bounds.bottom + window.scrollY,
+                left: editorRect.left + bounds.left + window.scrollX,
+              }
               : null;
 
           callback({
@@ -496,18 +492,9 @@ export const RichTextArea = ({
     let html = typeof value === "string" ? value : "";
     if (html.trim().startsWith("<")) {
       html = html
-        .replace(
-          /<span style="[^"]*font-size:\s*1\.75em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi,
-          '<h1 style="display:inline">$1</h1>',
-        )
-        .replace(
-          /<span style="[^"]*font-size:\s*1\.35em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi,
-          '<h2 style="display:inline">$1</h2>',
-        )
-        .replace(
-          /<span style="[^"]*font-size:\s*1\.1em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi,
-          '<h3 style="display:inline">$1</h3>',
-        );
+        .replace(/<span style="[^"]*font-size:\s*1\.75em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h1 style="display:inline">$1</h1>')
+        .replace(/<span style="[^"]*font-size:\s*1\.35em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h2 style="display:inline">$1</h2>')
+        .replace(/<span style="[^"]*font-size:\s*1\.1em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h3 style="display:inline">$1</h3>');
       if (editor.root.innerHTML !== html) editor.root.innerHTML = html;
     }
   }, [valueFormat, value]);
@@ -534,9 +521,8 @@ export const RichTextArea = ({
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: lowercase;
+            font-size: 12px;
+            font-weight: 500;
             float: none;
             width: 28px;
             height: 24px;
@@ -560,27 +546,9 @@ export const RichTextArea = ({
           <button type="button" className="ql-bold" title="Bold" />
           <button type="button" className="ql-italic" title="Italic" />
           <button type="button" className="ql-underline" title="Underline" />
-          <button
-            type="button"
-            className="ql-heading1"
-            title="Heading 1 (selected text)"
-          >
-            H1
-          </button>
-          <button
-            type="button"
-            className="ql-heading2"
-            title="Heading 2 (selected text)"
-          >
-            H2
-          </button>
-          <button
-            type="button"
-            className="ql-heading3"
-            title="Heading 3 (selected text)"
-          >
-            H3
-          </button>
+          <button type="button" className="ql-heading1" title="Heading 1 (selected text)">H1</button>
+          <button type="button" className="ql-heading2" title="Heading 2 (selected text)">H2</button>
+          <button type="button" className="ql-heading3" title="Heading 3 (selected text)">H3</button>
           <button type="button" className="ql-strike" title="Strikethrough" />
           <button type="button" className="ql-link" title="Link" />
           <button type="button" className="ql-image" title="Image" />
