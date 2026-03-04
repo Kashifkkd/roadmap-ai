@@ -808,9 +808,9 @@ export default function UserManagement({
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
                     Current Comet
                   </th>
-                  {/* <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
                     Action
-                  </th> */}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -878,8 +878,11 @@ export default function UserManagement({
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {user.email || "-"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {user.path_id || "-"}
+                      <td
+                        className="px-4 py-3 text-sm text-gray-600 max-w-[200px] truncate"
+                        title={user.active_path_name || ""}
+                      >
+                        {user.active_path_name || "-"}
                       </td>
                       <td className="px-4 py-3">
                         {!isPathUsersMode && (

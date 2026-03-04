@@ -1114,7 +1114,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       <p className=" font-bold mb-4 px-4  text-gray-800">
                         Experience Design
                       </p>
-                      <div className="space-y-4 bg-white p-2 rounded-lg">
+                      <div className="space-y-2 bg-white p-2 rounded-lg">
                         <div className="border-b-2 border-gray-200 pb-2">
                           <ToggleSwitch
                             checked={habitEnabled}
@@ -1134,7 +1134,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       <p className=" font-bold mb-4 px-4  text-gray-800">
                         Stakeholder Engagement
                       </p>
-                      <div className="space-y-4 bg-white p-2 rounded-lg">
+                      <div className="space-y-2 bg-white p-2 rounded-lg">
                         <div className="border-b-2 border-gray-200 pb-2">
                           <ToggleSwitch
                             checked={managerEmailEnabled}
@@ -1154,7 +1154,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       <p className=" font-bold mb-4 px-4  text-gray-800">
                         Community Settings
                       </p>
-                      <div className="space-y-4 bg-white p-2 rounded-lg">
+                      <div className="space-y-2 bg-white p-2 rounded-lg">
                         <div className="border-b-2 border-gray-200 pb-2">
                           <ToggleSwitch
                             checked={enableCommunity}
@@ -1259,9 +1259,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                     </div>
 
                     {/* Kick Off Section */}
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-sm text-gray-900 font-medium">
                           Kick Off
                         </h3>
                         <Info size={16} className="text-gray-500 cursor-help" />
@@ -1348,9 +1348,10 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                     </div>
 
                     {/* Ad Hoc Notifications Section */}
-                    <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="border-t-2 border-gray-200"> </div>
                       <div className="flex items-center justify-between gap-3">
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-sm font-medium text-gray-900">
                           Ad Hoc Notifications
                         </h3>
                         <Button
@@ -1364,7 +1365,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                         </Button>
                       </div>
 
-                      <div className="border-2 border-gray-200 rounded-lg p-4 space-y-4">
+                      <div className="border-2 border-gray-200 rounded-lg p-2 space-y-2">
                         {/* Select Channel */}
                         <div className="space-y-2">
                           <Label className="text-sm font-medium text-gray-800">
@@ -1502,28 +1503,29 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       </div>
 
                       {/* Channel Names */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium text-gray-800">
-                            Channel Name
-                          </Label>
-                          <button
-                            type="button"
-                            onClick={addAdHocChannelRow}
-                            className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-                            title="Add channel"
-                            aria-label="Add channel"
+                      <div className="space-y-3">
+                        {adHocChannelRows.map((row) => (
+                          <div
+                            key={row.id}
+                            className="border-2 border-purple-100 rounded-lg bg-[#F1F0FE] p-3"
                           >
-                            <Plus size={18} className="text-gray-800" />
-                          </button>
-                        </div>
-
-                        <div className="space-y-3">
-                          {adHocChannelRows.map((row) => (
-                            <div
-                              key={row.id}
-                              className="flex items-center gap-2 bg-purple-50/40 border-2 border-purple-100 rounded-lg p-2"
-                            >
+                            <div className="flex items-center justify-between mb-2 ">
+                              <Label className="text-sm font-medium text-gray-800">
+                                Channel Name
+                              </Label>
+                              <button
+                                type="button"
+                                onClick={addAdHocChannelRow}
+                                className="w-6 h-6 rounded flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors"
+                                title="Add channel"
+                                aria-label="Add channel"
+                              >
+                                <div className="flex items-center justify-center bg-white rounded-lg">
+                                  <Plus size={18} className="text-gray-800" />
+                                </div>
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-2">
                               <Input
                                 value={row.name}
                                 onChange={(e) =>
@@ -1533,7 +1535,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                   )
                                 }
                                 placeholder="Channel Name"
-                                className="w-full border-2 border-gray-200 rounded-lg"
+                                className="w-full border-2 border-gray-200 rounded-lg bg-white"
                               />
                               <button
                                 type="button"
@@ -1545,8 +1547,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 <Trash2 size={16} />
                               </button>
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        ))}
                       </div>
 
                       <input
@@ -1557,13 +1559,12 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                     </div>
 
                     {/* Path Colors Section */}
-                    {/* Path Colors Section */}
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-900">
+                      <h3 className="text-sm font-medium text-gray-900">
                         Path Colors
                       </h3>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-3 sm:gap-4">
                         {brandColors.map((color, index) => {
                           const displayColor = (
                             color?.hex ||
@@ -1616,6 +1617,10 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                   {displayColor}
                                 </span>
                               </div>
+                              <Info
+                                size={16}
+                                className="text-gray-500 cursor-help ml-auto mb-4"
+                              />
                             </div>
                           );
                         })}
