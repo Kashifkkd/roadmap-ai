@@ -73,7 +73,7 @@ const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
 );
 
 export default function CometSettingsDialog({ open, onOpenChange }) {
-  const [activeTab, setActiveTab] = useState("comet-info");
+  const [activeTab, setActiveTab] = useState("users");
   const [cometTitle, setCometTitle] = useState("");
   const [description, setDescription] = useState("");
   const [coverImage, setCoverImage] = useState(null);

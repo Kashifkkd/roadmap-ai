@@ -54,9 +54,7 @@ export default function WelcomePage() {
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isAttachInputVisible, setIsAttachInputVisible] = useState(false);
-  const [attachCommentValue, setAttachCommentValue] = useState("");
-  const [pendingFile, setPendingFile] = useState(null);
-  const attachInputRef = useRef(null);
+  const [pendingFiles, setPendingFiles] = useState([]);
 
   const [webpageUrls, setWebpageUrls] = useState([]);
   const [isLinkInputVisible, setIsLinkInputVisible] = useState(false);
@@ -377,30 +375,17 @@ export default function WelcomePage() {
     [attachedFiles, uploadFile],
   );
 
-  const handleFileSelect = (event) => {
-    const selected = Array.from(event.target.files || []);
+  const processFiles = (files) => {
+    const selected = Array.from(files || []);
     if (selected.length === 0) return;
-
     const allowedExtensions = [
-      "pdf",
-      "doc",
-      "docx",
-      "txt",
-      "pptx",
-      "mp3",
-      "wav",
-      "m4a",
-      "flac",
-      "mp4",
-      "webm",
+      "pdf", "doc", "docx", "txt", "pptx", "mp3", "wav", "m4a", "flac", "mp4", "webm",
     ];
     const invalidFiles = selected.filter((file) => {
       const ext = file.name.split(".").pop()?.toLowerCase() || "";
       return !allowedExtensions.includes(ext);
     });
-
-    const allowedLabel =
-      "PDF, DOC, DOCX, TXT, PPTX, MP3, WAV, M4A, FLAC, MP4, WEBM";
+    const allowedLabel = "PDF, DOC, DOCX, TXT, PPTX, MP3, WAV, M4A, FLAC, MP4, WEBM";
     if (invalidFiles.length > 0) {
       const names = invalidFiles.map((f) => f.name).join(", ");
       toast.error(
@@ -409,18 +394,13 @@ export default function WelcomePage() {
           : `Some files have unsupported types and were skipped: ${names}. Allowed: ${allowedLabel}.`,
       );
     }
-
     const validFiles = selected.filter((file) => !invalidFiles.includes(file));
-    if (validFiles.length === 0) {
-      event.target.value = "";
-      return;
-    }
-
-    // Check duplicates against already attached files
-    const existingNames = new Set(attachedFiles.map((e) => e.file.name));
-    const duplicateFiles = validFiles.filter((file) =>
-      existingNames.has(file.name),
-    );
+    if (validFiles.length === 0) return;
+    const existingNames = new Set([
+      ...attachedFiles.map((e) => e.file.name),
+      ...pendingFiles.map((p) => ((p.file ?? p)?.name ?? "")),
+    ]);
+    const duplicateFiles = validFiles.filter((file) => existingNames.has(file.name));
     if (duplicateFiles.length > 0) {
       const duplicateNames = duplicateFiles.map((f) => f.name).join(", ");
       toast.error(
@@ -430,20 +410,23 @@ export default function WelcomePage() {
       );
     }
     const newFiles = validFiles.filter((file) => !existingNames.has(file.name));
-    if (newFiles.length === 0) {
-      event.target.value = "";
-      return;
+    if (newFiles.length > 0) {
+      setPendingFiles((prev) => [
+        ...prev,
+        ...newFiles.map((file) => ({ file, comment: "" })),
+      ]);
     }
+  };
 
-    // Stage the file locally — don't upload yet, wait for user to click "Add"
-    setPendingFile(newFiles[0]);
+  const handleFileSelect = (event) => {
+    processFiles(event.target.files);
     event.target.value = "";
   };
 
-  // Upload the pending file with comment when user clicks "Add"
+  // Upload the pending files with comment when user clicks "Add"
   const handleConfirmAttach = async () => {
-    if (!pendingFile) {
-      // No file staged — just open file picker
+    if (pendingFiles.length === 0) {
+      // No files staged — just open file picker
       fileInputRef.current?.click();
       return;
     }
@@ -465,17 +448,24 @@ export default function WelcomePage() {
 
     setIsUploading(true);
     try {
-      const comment = attachCommentValue.trim();
-      const uid = await uploadFile(pendingFile, currentSessionId, comment);
-      setAttachedFiles((prev) => [
-        ...prev,
-        { file: pendingFile, comment, uid: uid ?? undefined },
-      ]);
-      if (uid) toast.success("File uploaded");
+      const newEntries = [];
+      for (const entry of pendingFiles) {
+        const file = entry.file ?? entry;
+        const comment = (entry.comment ?? "").trim();
+        const uid = await uploadFile(file, currentSessionId, comment);
+        newEntries.push({ file, comment, uid: uid ?? undefined });
+      }
+      setAttachedFiles((prev) => [...prev, ...newEntries]);
+      if (newEntries.length > 0) {
+        toast.success(
+          newEntries.length === 1
+            ? "File uploaded"
+            : `${newEntries.length} files uploaded`,
+        );
+      }
     } finally {
       setIsUploading(false);
-      setPendingFile(null);
-      setAttachCommentValue("");
+      setPendingFiles([]);
       setIsAttachInputVisible(false);
     }
   };
@@ -488,6 +478,17 @@ export default function WelcomePage() {
     fileInputRef.current?.click();
   };
 
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    processFiles(e.dataTransfer?.files);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   const handleRemoveFile = (indexToRemove) => {
     setAttachedFiles((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
@@ -496,11 +497,9 @@ export default function WelcomePage() {
     setIsAttachInputVisible((prev) => {
       const next = !prev;
       if (next) setIsLinkInputVisible(false);
-      if (!next) setPendingFile(null);
+      if (!next) setPendingFiles([]);
       return next;
     });
-    setAttachCommentValue("");
-    setTimeout(() => attachInputRef.current?.focus(), 100);
   };
 
   // Link handlers
@@ -586,12 +585,12 @@ export default function WelcomePage() {
                     className="absolute left-0 -bottom-2 w-full"
                   />
                 </span>{" "}
-                together....
+                together...
               </h2>
 
               <p className="text-md max-w-2xl mx-auto text-primary-900">
                 You can type your idea below, or pick one of the suggestions to
-                get started....
+                get started...
               </p>
             </div>
           </div>
@@ -646,9 +645,7 @@ export default function WelcomePage() {
                     <textarea
                       ref={textareaRef}
                       placeholder={
-                        cometCreated
-                          ? "Comet created! Click 'Continue to Dashboard' below."
-                          : isLoading
+                        isLoading
                             ? "Waiting for response..."
                             : messages.length > 0
                               ? "Type your answer here..."
@@ -706,7 +703,7 @@ export default function WelcomePage() {
                   {/* Action Bar */}
                   <div className="w-full flex flex-col gap-2 px-3 py-3 ">
                     <div className="border-t-2 border-gray-200"></div>
-                    {/* Link preview */}
+                    {/* Link preview  */}
                     {(webpageUrls.length > 0 || isUploading) && (
                       <div
                         className="flex items-center gap-2 overflow-x-auto flex-nowrap"
@@ -756,7 +753,7 @@ export default function WelcomePage() {
                       </div>
                     )}
 
-                    {/* Attached file chips */}
+                    {/* Attached file chips*/}
                     {attachedFiles.length > 0 && (
                       <div
                         className="flex items-center gap-1 overflow-x-auto flex-nowrap"
@@ -828,17 +825,61 @@ export default function WelcomePage() {
                               <div
                                 className="m-1 border-2 border-dashed border-gray-200 bg-white rounded-xl py-5 px-2 text-center cursor-pointer hover:border-primary-400 transition-all"
                                 onClick={handleOpenFilePicker}
+                                onDrop={handleDrop}
+                                onDragOver={handleDragOver}
                               >
-                                {pendingFile ? (
+                                {pendingFiles.length > 0 ? (
                                   <>
                                     <div className="flex items-center justify-center mb-2">
                                       <FileText className="w-8 h-8 text-primary" />
                                     </div>
-                                    <p className="text-[13px] font-semibold text-gray-700 truncate px-2">
-                                      {pendingFile.name}
-                                    </p>
-                                    <p className="text-[11px] text-gray-400 mt-1">
-                                      Click to change file
+                                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                                      {pendingFiles.map((entry, idx) => {
+                                        const file = entry.file ?? entry;
+                                        return (
+                                          <div
+                                            key={`${file.name}-${idx}`}
+                                            className="flex flex-col gap-1 bg-gray-50 rounded-lg px-2 py-1.5 text-left"
+                                          >
+                                            <div className="flex items-center justify-between gap-2">
+                                              <span className="text-[12px] font-medium text-gray-700 truncate flex-1 min-w-0">
+                                                {file.name}
+                                              </span>
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setPendingFiles((prev) =>
+                                                    prev.filter((_, i) => i !== idx),
+                                                  );
+                                                }}
+                                                className="shrink-0 text-gray-400 hover:text-red-500 p-0.5 rounded"
+                                              >
+                                                <X className="w-3.5 h-3.5" />
+                                              </button>
+                                            </div>
+                                            <input
+                                              type="text"
+                                              placeholder="Add comment for this file"
+                                              value={entry.comment ?? ""}
+                                              onChange={(e) => {
+                                                e.stopPropagation();
+                                                const val = e.target.value;
+                                                setPendingFiles((prev) =>
+                                                  prev.map((p, i) =>
+                                                    i === idx ? { ...p, comment: val } : p,
+                                                  ),
+                                                );
+                                              }}
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="text-[11px] bg-white border border-gray-200 rounded px-2 py-1 outline-none placeholder:text-gray-400 text-gray-700 w-full"
+                                            />
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                    <p className="text-[11px] text-gray-400 mt-2">
+                                      Click to add more files
                                     </p>
                                   </>
                                 ) : (
@@ -861,18 +902,8 @@ export default function WelcomePage() {
                                 )}
                               </div>
 
-                              {/* Bottom bar: Comment + Add + Close */}
+                              {/* Bottom bar: Add + Close */}
                               <div className="m-1 rounded-lg flex items-center gap-2 bg-white px-2 py-1">
-                                <input
-                                  ref={attachInputRef}
-                                  type="text"
-                                  placeholder="Add Comment"
-                                  value={attachCommentValue}
-                                  onChange={(e) =>
-                                    setAttachCommentValue(e.target.value)
-                                  }
-                                  className="flex-1 bg-white text-sm outline-none placeholder:text-gray-400 text-gray-700 min-w-0"
-                                />
                                 <button
                                   type="button"
                                   onClick={handleConfirmAttach}
@@ -885,8 +916,7 @@ export default function WelcomePage() {
                                   type="button"
                                   onClick={() => {
                                     setIsAttachInputVisible(false);
-                                    setAttachCommentValue("");
-                                    setPendingFile(null);
+                                    setPendingFiles([]);
                                   }}
                                   className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
                                 >
