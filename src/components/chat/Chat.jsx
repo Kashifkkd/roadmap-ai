@@ -163,6 +163,15 @@ const Chat = ({
     const segments = [];
 
     messages.forEach((msg, idx) => {
+      // Hide Generating Comet data messages 
+      if (
+        msg.from !== "user" &&
+        typeof msg.content === "string" &&
+        msg.content.includes("Generating Comet data")
+      ) {
+        return;
+      }
+
       const isGreen = msg.status === "green";
       const matchesPage =
         typeof msg.identifier !== "undefined"
