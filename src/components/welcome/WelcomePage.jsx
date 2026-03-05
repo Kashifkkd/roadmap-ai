@@ -920,7 +920,7 @@ export default function WelcomePage() {
                               </div>
 
                               {/* Bottom bar: Add + Close */}
-                              <div className="m-1 rounded-lg flex items-center gap-2 bg-white px-2 py-1">
+                              <div className="m-1 rounded-lg flex justify-end gap-2 bg-white px-2 py-1">
                                 <button
                                   type="button"
                                   onClick={handleConfirmAttach}
