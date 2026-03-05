@@ -138,9 +138,7 @@ export default function WelcomePage() {
       // Navigate to dashboard when comet_created is true from session
       if (receivedSessionData?.comet_created === true) {
         setCometCreated(true);
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 2000);
+        router.push("/dashboard");
       }
     },
     (error) => {
@@ -379,13 +377,24 @@ export default function WelcomePage() {
     const selected = Array.from(files || []);
     if (selected.length === 0) return;
     const allowedExtensions = [
-      "pdf", "doc", "docx", "txt", "pptx", "mp3", "wav", "m4a", "flac", "mp4", "webm",
+      "pdf",
+      "doc",
+      "docx",
+      "txt",
+      "pptx",
+      "mp3",
+      "wav",
+      "m4a",
+      "flac",
+      "mp4",
+      "webm",
     ];
     const invalidFiles = selected.filter((file) => {
       const ext = file.name.split(".").pop()?.toLowerCase() || "";
       return !allowedExtensions.includes(ext);
     });
-    const allowedLabel = "PDF, DOC, DOCX, TXT, PPTX, MP3, WAV, M4A, FLAC, MP4, WEBM";
+    const allowedLabel =
+      "PDF, DOC, DOCX, TXT, PPTX, MP3, WAV, M4A, FLAC, MP4, WEBM";
     if (invalidFiles.length > 0) {
       const names = invalidFiles.map((f) => f.name).join(", ");
       toast.error(
@@ -398,9 +407,11 @@ export default function WelcomePage() {
     if (validFiles.length === 0) return;
     const existingNames = new Set([
       ...attachedFiles.map((e) => e.file.name),
-      ...pendingFiles.map((p) => ((p.file ?? p)?.name ?? "")),
+      ...pendingFiles.map((p) => (p.file ?? p)?.name ?? ""),
     ]);
-    const duplicateFiles = validFiles.filter((file) => existingNames.has(file.name));
+    const duplicateFiles = validFiles.filter((file) =>
+      existingNames.has(file.name),
+    );
     if (duplicateFiles.length > 0) {
       const duplicateNames = duplicateFiles.map((f) => f.name).join(", ");
       toast.error(
@@ -646,10 +657,10 @@ export default function WelcomePage() {
                       ref={textareaRef}
                       placeholder={
                         isLoading
-                            ? "Waiting for response..."
-                            : messages.length > 0
-                              ? "Type your answer here..."
-                              : "I'll guide you step by step - just tell me what you want to create."
+                          ? "Waiting for response..."
+                          : messages.length > 0
+                            ? "Type your answer here..."
+                            : "I'll guide you step by step - just tell me what you want to create."
                       }
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
@@ -850,7 +861,9 @@ export default function WelcomePage() {
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   setPendingFiles((prev) =>
-                                                    prev.filter((_, i) => i !== idx),
+                                                    prev.filter(
+                                                      (_, i) => i !== idx,
+                                                    ),
                                                   );
                                                 }}
                                                 className="shrink-0 text-gray-400 hover:text-red-500 p-0.5 rounded"
@@ -867,11 +880,15 @@ export default function WelcomePage() {
                                                 const val = e.target.value;
                                                 setPendingFiles((prev) =>
                                                   prev.map((p, i) =>
-                                                    i === idx ? { ...p, comment: val } : p,
+                                                    i === idx
+                                                      ? { ...p, comment: val }
+                                                      : p,
                                                   ),
                                                 );
                                               }}
-                                              onClick={(e) => e.stopPropagation()}
+                                              onClick={(e) =>
+                                                e.stopPropagation()
+                                              }
                                               className="text-[11px] bg-white border border-gray-200 rounded px-2 py-1 outline-none placeholder:text-gray-400 text-gray-700 w-full"
                                             />
                                           </div>
