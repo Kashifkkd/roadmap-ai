@@ -396,7 +396,9 @@ export default function WelcomePage() {
     const allowedLabel =
       "PDF, DOC, DOCX, TXT, PPTX, MP3, WAV, M4A, FLAC, MP4, WEBM";
     if (invalidFiles.length > 0) {
-      const names = invalidFiles.map((f) => f.name).join(", ");
+      const names = invalidFiles
+        .map((f) => (f.name.length > 20 ? f.name.slice(0, 17) + "…" : f.name))
+        .join(", ");
       toast.error(
         invalidFiles.length === 1
           ? `Unsupported file type: ${names}. Allowed: ${allowedLabel}.`

@@ -26,7 +26,7 @@ export default function AskKyperPopup({
   const [query, setQuery] = useState("");
   const popupRef = useRef(null);
 
-  // Reset the state whenever the popup reopens 
+  // Reset the state whenever the popup reopens
   useEffect(() => {
     setIsExpanded(false);
     setQuery("");

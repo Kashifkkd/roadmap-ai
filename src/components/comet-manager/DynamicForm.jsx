@@ -170,7 +170,8 @@ const getFormValuesFromScreen = (screen) => {
     if (typeof content === "string") {
       values.htmlContent = content;
     } else {
-      values.htmlContent = content?.html || content?.htmlContent || content?.content || "";
+      values.htmlContent =
+        content?.html || content?.htmlContent || content?.content || "";
     }
   }
 
@@ -232,7 +233,10 @@ export default function DynamicForm({
   const [focusedField, setFocusedField] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
   const [askContext, setAskContext] = useState(null);
+  const selectionKeyRef = useRef(0);
   const blurTimeoutRef = useRef(null);
+  const popupInteractingRef = useRef(false);
+  const interactResetRef = useRef(null);
 
   // Update field directly in outline - use setOutline(prev => ...) to always work with latest state
   const updateField = (field, value) => {
@@ -670,14 +674,22 @@ export default function DynamicForm({
   };
 
   const handleFieldBlur = () => {
+    // Skip if user is interacting with the popup (mousedown on popup fires before blur)
+    if (popupInteractingRef.current) return;
     clearBlurTimeout();
     blurTimeoutRef.current = setTimeout(() => {
       clearAskContext();
-    }, 1500);
+    }, 200);
   };
 
   const handlePopupInteract = () => {
     clearBlurTimeout();
+    // Set flag to prevent upcoming blur from dismissing the popup
+    popupInteractingRef.current = true;
+    clearTimeout(interactResetRef.current);
+    interactResetRef.current = setTimeout(() => {
+      popupInteractingRef.current = false;
+    }, 500);
   };
 
   const handleTextFieldSelect = (fieldName, event, fieldValue) => {
@@ -703,7 +715,8 @@ export default function DynamicForm({
     }
 
     const rect = input.getBoundingClientRect();
-    setFocusedField(fieldName);
+    selectionKeyRef.current += 1;
+    setFocusedField(fieldName + "::" + selectionKeyRef.current);
     setFieldPosition({
       top: rect.bottom + window.scrollY + 8,
       left: rect.left + window.scrollX,
@@ -741,7 +754,8 @@ export default function DynamicForm({
       left: (selectionInfo.editorRect?.left || 0) + window.scrollX,
     };
 
-    setFocusedField(fieldName);
+    selectionKeyRef.current += 1;
+    setFocusedField(fieldName + "::" + selectionKeyRef.current);
     setFieldPosition({
       top: position.top + 8,
       left: position.left,
@@ -1194,7 +1208,7 @@ export default function DynamicForm({
       );
     }
 
-    //Manager Email & Accountability Partner Email 
+    //Manager Email & Accountability Partner Email
     const isManagerEmail =
       screenType === "manager_email" ||
       contentType === "manager_email" ||
