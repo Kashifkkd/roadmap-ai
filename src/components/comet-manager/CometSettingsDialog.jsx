@@ -1115,14 +1115,13 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                         Experience Design
                       </p>
                       <div className="space-y-2 bg-white p-2 rounded-lg">
-                        <div className="border-b-2 border-gray-200 pb-2">
-                          <ToggleSwitch
-                            checked={habitEnabled}
-                            onChange={setHabitEnabled}
-                            label="Enable Habits"
-                            showInfo={true}
-                          />
-                        </div>
+                        <ToggleSwitch
+                          checked={habitEnabled}
+                          onChange={setHabitEnabled}
+                          label="Enable Habits"
+                          showInfo={true}
+                        />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={personalizationEnabled}
                           onChange={setPersonalizationEnabled}
@@ -1135,14 +1134,13 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                         Stakeholder Engagement
                       </p>
                       <div className="space-y-2 bg-white p-2 rounded-lg">
-                        <div className="border-b-2 border-gray-200 pb-2">
-                          <ToggleSwitch
-                            checked={managerEmailEnabled}
-                            onChange={setManagerEmailEnabled}
-                            label="Manager Email Enabled?"
-                            showInfo={true}
-                          />
-                        </div>
+                        <ToggleSwitch
+                          checked={managerEmailEnabled}
+                          onChange={setManagerEmailEnabled}
+                          label="Manager Email Enabled?"
+                          showInfo={true}
+                        />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={accountabilityPartnersEmailEnabled}
                           onChange={setAccountabilityPartnersEmailEnabled}
@@ -1155,14 +1153,13 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                         Community Settings
                       </p>
                       <div className="space-y-2 bg-white p-2 rounded-lg">
-                        <div className="border-b-2 border-gray-200 pb-2">
-                          <ToggleSwitch
-                            checked={enableCommunity}
-                            onChange={setEnableCommunity}
-                            label="Enable Community?"
-                            showInfo={true}
-                          />
-                        </div>
+                        <ToggleSwitch
+                          checked={enableCommunity}
+                          onChange={setEnableCommunity}
+                          label="Enable Community?"
+                          showInfo={true}
+                        />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={showUserEmail}
                           onChange={setShowUserEmail}
