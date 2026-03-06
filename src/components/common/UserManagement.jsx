@@ -33,6 +33,7 @@ import { updateClientUser } from "@/api/User/updateClientUser";
 import { deleteClientUser } from "@/api/User/deleteClientUser";
 import { getCohorts, getUserInfo } from "@/api/cohort/getCohorts";
 import { getCohortPaths, getClientPaths } from "@/api/cohort/getCohortPaths";
+import { updateCohortPaths } from "@/api/cohort/updateCohortPaths";
 import { bulkUploadUsers } from "@/api/bulkUploadUsers";
 import { toast } from "sonner";
 import BulkUploadDialog from "./BulkUploadDialog";
@@ -83,6 +84,8 @@ export default function UserManagement({
   const [cohortPathsLoading, setCohortPathsLoading] = useState(false);
   const [editLoadingId, setEditLoadingId] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
+  const [cometsAvailableTickedIds, setCometsAvailableTickedIds] = useState(new Set());
+  const [updatingCohortPaths, setUpdatingCohortPaths] = useState(false);
   const [openAllPath, setOpenAllPath] = useState(false);
   const [pathUserEmails, setPathUserEmails] = useState([]);
   const [emailOptions, setEmailOptions] = useState([]);
@@ -102,18 +105,18 @@ export default function UserManagement({
   const filteredUsers =
     normalizedUserSearch && Array.isArray(users)
       ? users.filter((user) => {
-          const firstName = user.first_name || user.firstName || "";
-          const lastName = user.last_name || user.lastName || "";
-          const email = user.email || "";
-          const activePathName = user.active_path_name || "";
+        const firstName = user.first_name || user.firstName || "";
+        const lastName = user.last_name || user.lastName || "";
+        const email = user.email || "";
+        const activePathName = user.active_path_name || "";
 
-          return (
-            textIncludesSearch(firstName, normalizedUserSearch) ||
-            textIncludesSearch(lastName, normalizedUserSearch) ||
-            textIncludesSearch(email, normalizedUserSearch) ||
-            textIncludesSearch(activePathName, normalizedUserSearch)
-          );
-        })
+        return (
+          textIncludesSearch(firstName, normalizedUserSearch) ||
+          textIncludesSearch(lastName, normalizedUserSearch) ||
+          textIncludesSearch(email, normalizedUserSearch) ||
+          textIncludesSearch(activePathName, normalizedUserSearch)
+        );
+      })
       : users;
 
   // Fetch users when component is active
@@ -157,9 +160,9 @@ export default function UserManagement({
         );
         setUsersError(
           error?.message ||
-            (isPathUsersMode
-              ? "Failed to load users for this path"
-              : "Failed to load users for this client"),
+          (isPathUsersMode
+            ? "Failed to load users for this path"
+            : "Failed to load users for this client"),
         );
         setUsers([]);
       } finally {
@@ -227,53 +230,62 @@ export default function UserManagement({
     fetchCohorts();
   }, [open, showAddUserForm, clientId]);
 
-  // Fetch cohort paths when cohort is selected
+  // Fetch paths: all client paths for Comets Available; cohort paths when cohort selected for dropdown pool
   useEffect(() => {
-    const fetchCohortPaths = async () => {
-      // if (!open || !showAddUserForm || !cohort) return;
-
-      // if (!cohortId || isNaN(cohortId)) return;
-
+    const fetchPaths = async () => {
       setCohortPathsLoading(true);
-      let payload = {};
-      if (cohort) payload.cohort_id = Number(cohort);
       try {
-        const allPath = await getClientPaths(clientId);
-        const result = await getClientPaths(clientId, payload);
+        const toPaths = (raw) => {
+          const r = raw?.response ?? raw;
+          return Array.isArray(r) ? r : Array.isArray(r?.results) ? r.results : Array.isArray(r?.data) ? r.data : [];
+        };
 
-        const allPathsData = allPath?.response || [];
-        const cohortData = result?.response || [];
+        const allRes = await getClientPaths(clientId);
+        const allPathsArray = toPaths(allRes);
+        setAllPaths(allPathsArray);
+        const pathById = new Map(allPathsArray.map((p) => [Number(p.id), p]));
 
-        // get all ids already present in cohortData
-        const cohortIds = new Set(cohortData.map((item) => item.id));
+        let baseOptionsForDropdown;
+        if (cohort) {
+          const cohortRes = await getCohortPaths({ cohortId: Number(cohort) });
+          const cohortPathObjects = toPaths(cohortRes);
+          setCometsAvailableTickedIds(new Set(cohortPathObjects.map((p) => Number(p.id))));
+          // Resolve names from allPaths (client paths) for cohort comets
+          baseOptionsForDropdown = cohortPathObjects.map((p) => {
+            const id = Number(p.id);
+            return { id, name: pathById.get(id)?.name ?? p.name ?? `Path ${id}` };
+          });
+        } else {
+          // When editing a user with no cohort, auto-tick their existing paths into the pool
+          const autoTickedIds = new Set(cometsAvailableTickedIds);
+          if (editingUser?.paths) {
+            editingUser.paths.forEach((pid) => {
+              const id = Number(pid);
+              if (!Number.isNaN(id)) autoTickedIds.add(id);
+            });
+            setCometsAvailableTickedIds(autoTickedIds);
+          }
+          baseOptionsForDropdown =
+            allPathsArray.filter((p) => autoTickedIds.has(Number(p.id)));
+        }
 
-        // find missing paths from allPathsData that exist in editingUser.paths
-        const missingPaths = allPathsData.filter(
-          (item) =>
-            editingUser?.paths?.includes(item.id) && !cohortIds.has(item.id),
-        );
-
-        // final data = limited cohortData + missing ones
-        const finalCohortPaths = [...cohortData, ...missingPaths];
-        setSelectedItems(missingPaths);
-        setAllPaths(
-          allPathsData.filter(
-            (item1) => !cohortData.some((item2) => item2.id === item1.id),
-          ),
-        );
+        const existingIds = new Set(baseOptionsForDropdown.map((p) => Number(p.id)));
+        let finalCohortPaths = baseOptionsForDropdown.map((p) => ({
+          id: Number(p.id),
+          name: pathById.get(Number(p.id))?.name ?? p.name ?? `Path ${p.id}`,
+        }));
         setCohortPaths(finalCohortPaths);
       } catch (error) {
-        console.error("Failed to fetch cohort paths:", error);
-        toast.error("Failed to load cohort paths");
+        console.error("Failed to fetch paths:", error);
+        toast.error("Failed to load paths");
+        setAllPaths([]);
         setCohortPaths([]);
       } finally {
         setCohortPathsLoading(false);
       }
     };
-    if (showAddUserForm) {
-      fetchCohortPaths();
-    }
-  }, [open, showAddUserForm, cohort]);
+    if (showAddUserForm) fetchPaths();
+  }, [open, showAddUserForm, cohort, editingUser?.paths]);
 
   const getUserInfoDetail = async (user) => {
     setEditingUser(user);
@@ -403,6 +415,7 @@ export default function UserManagement({
     setCurrentCometIndex(0);
     setCohortPaths([]);
     setPathUserEmails([]);
+    setCometsAvailableTickedIds(new Set());
   };
 
   const handleAddPathUserEmail = (rawEmail) => {
@@ -666,6 +679,7 @@ export default function UserManagement({
   const handleSetCohort = (e) => {
     setCohort(e);
     setCometAssignments([{ id: 1, isCurrent: false, cometType: "" }]);
+    if (!e) setCometsAvailableTickedIds(new Set());
   };
 
   const handleBulkUpload = async (e) => {
@@ -718,15 +732,56 @@ export default function UserManagement({
     }
   };
 
-  const handleAllPathChange = (item) => {
-    const exists = selectedItems.some((i) => i.id === item.id);
+  const handleAllPathChange = async (item) => {
+    const pathId = Number(item?.id);
+    if (Number.isNaN(pathId)) return;
 
-    if (exists) {
-      setSelectedItems(selectedItems.filter((i) => i.id !== item.id));
-      setCohortPaths(cohortPaths.filter((i) => i.id !== item.id));
+    if (cohort) {
+      const nextSet = new Set(cometsAvailableTickedIds);
+      if (nextSet.has(pathId)) nextSet.delete(pathId);
+      else nextSet.add(pathId);
+      const pathIds = Array.from(nextSet);
+      setUpdatingCohortPaths(true);
+      try {
+        const res = await updateCohortPaths({
+          cohortId: Number(cohort),
+          pathIds,
+          enabled: true,
+        });
+        if (res?.status === 200 || res?.success) {
+          toast.success("Cohort comets updated");
+          const cohortRes = await getCohortPaths({ cohortId: Number(cohort) });
+          const r = cohortRes?.response ?? cohortRes;
+          const arr = Array.isArray(r) ? r : Array.isArray(r?.results) ? r.results : Array.isArray(r?.data) ? r.data : [];
+          setCometsAvailableTickedIds(new Set(arr.map((p) => Number(p.id))));
+          const pathById = new Map(allPaths.map((p) => [Number(p.id), p]));
+          let finalCohortPaths = arr.map((p) => {
+            const id = Number(p.id);
+            return { id, name: pathById.get(id)?.name ?? p.name ?? `Path ${id}` };
+          });
+          setCohortPaths(finalCohortPaths);
+        } else {
+          const errorMessage =
+            res?.response?.detail || res?.response?.message || res?.detail || res?.message || "Failed to update cohort comets";
+          toast.error(errorMessage);
+        }
+      } catch (error) {
+        console.error("Failed to update cohort paths:", error);
+        const errorMessage =
+          error?.message || error?.response?.data?.detail || error?.response?.detail || "Failed to update cohort comets";
+        toast.error(errorMessage);
+      } finally {
+        setUpdatingCohortPaths(false);
+      }
     } else {
-      setCohortPaths([...cohortPaths, item]);
-      setSelectedItems([...selectedItems, item]);
+      const nextSet = new Set(cometsAvailableTickedIds);
+      if (nextSet.has(pathId)) nextSet.delete(pathId);
+      else nextSet.add(pathId);
+      setCometsAvailableTickedIds(nextSet);
+      const pathById = new Map(allPaths.map((p) => [Number(p.id), p]));
+      const newList = allPaths.filter((p) => nextSet.has(Number(p.id)));
+      const base = newList.map((p) => ({ id: Number(p.id), name: p.name ?? `Path ${p.id}` }));
+      setCohortPaths(base);
     }
   };
 
@@ -955,11 +1010,11 @@ export default function UserManagement({
                     );
                     const displayName = matchedUser
                       ? [
-                          matchedUser.first_name || matchedUser.firstName || "",
-                          matchedUser.last_name || matchedUser.lastName || "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ") || emailVal
+                        matchedUser.first_name || matchedUser.firstName || "",
+                        matchedUser.last_name || matchedUser.lastName || "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ") || emailVal
                       : emailVal;
                     return (
                       <span
@@ -1050,9 +1105,8 @@ export default function UserManagement({
                       <div
                         key={user.id || emailVal}
                         onClick={() => handleTogglePathUserEmail(emailVal)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-all ${
-                          isSelected ? "bg-primary-50/50" : "bg-gray-50"
-                        }`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-all ${isSelected ? "bg-primary-50/50" : "bg-gray-50"
+                          }`}
                       >
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 truncate">
@@ -1187,16 +1241,14 @@ export default function UserManagement({
                 <button
                   type="button"
                   onClick={() => setEnableSSO((prev) => !prev)}
-                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
-                    enableSSO ? "bg-primary-700" : "bg-gray-300"
-                  }`}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${enableSSO ? "bg-primary-700" : "bg-gray-300"
+                    }`}
                   role="switch"
                   aria-checked={enableSSO}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
-                      enableSSO ? "translate-x-6" : "translate-x-1"
-                    }`}
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${enableSSO ? "translate-x-6" : "translate-x-1"
+                      }`}
                   />
                 </button>
               </div>
@@ -1326,8 +1378,8 @@ export default function UserManagement({
                         focus-visible:ring-0"
                 >
                   <span className="truncate">
-                    {selectedItems.length
-                      ? `${selectedItems.length} selected`
+                    {cometsAvailableTickedIds.size > 0
+                      ? `${cometsAvailableTickedIds.size} selected`
                       : "All Available Comets"}
                   </span>
                   <span className="text-gray-400">⌄</span>
@@ -1343,22 +1395,21 @@ export default function UserManagement({
                     )}
 
                     {allPaths?.map((item, index) => {
-                      const checked = selectedItems.some(
-                        (i) => i.id === item.id,
-                      );
+                      const checked = cometsAvailableTickedIds.has(Number(item.id));
 
                       return (
                         <label
-                          key={index}
+                          key={item.id ?? index}
                           className="flex items-center gap-2 px-4 py-2 text-sm cursor-pointer hover:bg-gray-100"
                         >
                           <input
                             type="checkbox"
                             checked={checked}
                             onChange={() => handleAllPathChange(item)}
+                            disabled={updatingCohortPaths}
                             className="accent-blue-600"
                           />
-                          <span className="text-gray-700">{item.name}</span>
+                          <span className="text-gray-700">{item.name ?? `Path ${item.id}`}</span>
                         </label>
                       );
                     })}
@@ -1394,18 +1445,16 @@ export default function UserManagement({
                           })),
                         );
                       }}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${
-                        assignment.isCurrent
-                          ? "bg-green-50 border-green-500"
-                          : "bg-gray-50 border-gray-300"
-                      }`}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${assignment.isCurrent
+                        ? "bg-green-50 border-green-500"
+                        : "bg-gray-50 border-gray-300"
+                        }`}
                     >
                       <div
-                        className={`w-4 h-4 rounded-full ${
-                          assignment.isCurrent
-                            ? "bg-green-500"
-                            : "bg-white border-2 border-gray-400"
-                        }`}
+                        className={`w-4 h-4 rounded-full ${assignment.isCurrent
+                          ? "bg-green-500"
+                          : "bg-white border-2 border-gray-400"
+                          }`}
                       />
                       <span className="text-sm font-medium text-gray-700">
                         Current Comet
@@ -1424,9 +1473,9 @@ export default function UserManagement({
                           ),
                         );
                       }}
-                      // disabled={
-                      //   cohortPathsLoading || !cohort || cohortPaths.length === 0
-                      // }
+                    // disabled={
+                    //   cohortPathsLoading || !cohort || cohortPaths.length === 0
+                    // }
                     >
                       <SelectTrigger className="flex-1 bg-white border border-gray-300">
                         <SelectValue
@@ -1435,7 +1484,7 @@ export default function UserManagement({
                               (path) =>
                                 !cometAssignments.some(
                                   (item, i) =>
-                                    i !== index && item.cometType == path.id,
+                                    i !== index && String(item.cometType) === String(path.id),
                                 ),
                             ).length === 0
                               ? "No paths available"
@@ -1450,7 +1499,7 @@ export default function UserManagement({
                               (path) =>
                                 !cometAssignments.some(
                                   (item, i) =>
-                                    i !== index && item.cometType == path.id,
+                                    i !== index && String(item.cometType) === String(path.id),
                                 ),
                             )
                             .map((path) => (
@@ -1477,7 +1526,7 @@ export default function UserManagement({
                         }
                       }}
                       className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0"
-                      // disabled={cometAssignments.length === 1}
+                    // disabled={cometAssignments.length === 1}
                     >
                       <Trash2 className="w-4 h-4 text-white" />
                     </button>
