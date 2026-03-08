@@ -2,15 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
-import {
-  ArrowUp,
-  Paperclip,
-  Search,
-  X,
-  FileText,
-  Link2,
-  Loader2,
-} from "lucide-react";
+import { ArrowUp, Paperclip, Search, X, FileText, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import Stars from "@/components/icons/Stars";
@@ -359,12 +351,13 @@ export default function WelcomePage() {
         if (uids.length)
           toast.success(
             uids.length === 1
-              ? "File uploaded"
-              : `${uids.length} files uploaded`,
+              ? "File uploaded successfully"
+              : `${uids.length} files uploaded successfully`,
           );
         return uids;
       } catch (err) {
         console.error("Error uploading files:", err);
+        toast.error("Failed to upload files");
         return [];
       } finally {
         setIsUploading(false);
@@ -472,8 +465,8 @@ export default function WelcomePage() {
       if (newEntries.length > 0) {
         toast.success(
           newEntries.length === 1
-            ? "File uploaded"
-            : `${newEntries.length} files uploaded`,
+            ? "File Uploaded Successfully"
+            : `${newEntries.length} Files Uploaded Successfully`,
         );
       }
     } finally {
@@ -755,14 +748,6 @@ export default function WelcomePage() {
                             </p>
                           </div>
                         ))}
-
-                        {/* Minimal upload loader */}
-                        {isUploading && (
-                          <div className="flex items-center gap-1 text-[11px] text-gray-500">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            <span>Uploading files...</span>
-                          </div>
-                        )}
                       </div>
                     )}
 
@@ -810,6 +795,16 @@ export default function WelcomePage() {
                       </div>
                     )}
 
+                    {/* Uploading Files loader */}
+                    {isUploading && (
+                      <div className="flex items-center gap-2.5 py-1">
+                        <div className="gradient-loader" />
+                        <span className="text-[15px] font-medium text-gray-600">
+                          Uploading Files...
+                        </span>
+                      </div>
+                    )}
+
                     {/* Buttons row */}
                     <div className="flex flex-row justify-between items-center gap-2">
                       <div className="flex items-center flex-wrap gap-1">
@@ -836,26 +831,35 @@ export default function WelcomePage() {
                             >
                               {/* Drop zone area */}
                               <div
-                                className="m-1 border-2 border-dashed border-gray-200 bg-white rounded-xl py-5 px-2 text-center cursor-pointer hover:border-primary-400 transition-all"
+                                className="m-1 border-2 border-dashed border-gray-300 bg-white rounded-xl py-5 px-3 text-center cursor-pointer hover:border-primary-400 transition-all"
                                 onClick={handleOpenFilePicker}
                                 onDrop={handleDrop}
                                 onDragOver={handleDragOver}
                               >
                                 {pendingFiles.length > 0 ? (
                                   <>
-                                    <div className="flex items-center justify-center mb-2">
-                                      <FileText className="w-8 h-8 text-primary" />
+                                    {/* icon */}
+                                    <div className="flex items-center justify-center mb-4">
+                                      <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+                                        <FileText className="w-6 h-6 text-primary" />
+                                      </div>
                                     </div>
-                                    <div className="space-y-2 max-h-48 overflow-y-auto">
+
+                                    {/* File list */}
+                                    <div
+                                      className="space-y-3 max-h-48 overflow-y-auto text-left"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
                                       {pendingFiles.map((entry, idx) => {
                                         const file = entry.file ?? entry;
                                         return (
                                           <div
                                             key={`${file.name}-${idx}`}
-                                            className="flex flex-col gap-1 bg-gray-50 rounded-lg px-2 py-1.5 text-left"
+                                            className="flex flex-col gap-1.5"
                                           >
+                                            {/* File name + remove */}
                                             <div className="flex items-center justify-between gap-2">
-                                              <span className="text-[12px] font-medium text-gray-700 truncate flex-1 min-w-0">
+                                              <span className="text-[13px] font-medium text-gray-800 truncate flex-1 min-w-0">
                                                 {file.name}
                                               </span>
                                               <button
@@ -868,14 +872,16 @@ export default function WelcomePage() {
                                                     ),
                                                   );
                                                 }}
-                                                className="shrink-0 text-gray-400 hover:text-red-500 p-0.5 rounded"
+                                                className="shrink-0 text-gray-400 hover:text-red-500 p-0.5 rounded-full hover:bg-gray-100 transition-colors"
                                               >
-                                                <X className="w-3.5 h-3.5" />
+                                                <X className="w-4 h-4" />
                                               </button>
                                             </div>
+
+                                            {/* Comment input */}
                                             <input
                                               type="text"
-                                              placeholder="Add comment for this file"
+                                              placeholder="Add Comment"
                                               value={entry.comment ?? ""}
                                               onChange={(e) => {
                                                 e.stopPropagation();
@@ -891,29 +897,33 @@ export default function WelcomePage() {
                                               onClick={(e) =>
                                                 e.stopPropagation()
                                               }
-                                              className="text-[11px] bg-white border border-gray-200 rounded px-2 py-1 outline-none placeholder:text-gray-400 text-gray-700 w-full"
+                                              className="text-[12px] bg-white border border-gray-300 rounded-lg px-3 py-2 outline-none placeholder:text-gray-400 text-gray-700 w-full
+                                              hover:border-primary-400 
+                                              focus:border-primary-400 transition-all"
                                             />
                                           </div>
                                         );
                                       })}
                                     </div>
-                                    <p className="text-[11px] text-gray-400 mt-2">
+
+                                    <p className="text-[12px] text-gray-400 mt-3 font-medium">
                                       Click to add more files
                                     </p>
                                   </>
                                 ) : (
                                   <>
+                                    {/* Upload icon */}
                                     <div className="flex items-center justify-center mb-3">
                                       <img
                                         src="/upload2.png"
                                         alt="Upload"
-                                        className="w-10 h-10"
+                                        className="w-12 h-12"
                                       />
                                     </div>
-                                    <p className="text-[13px] font-semibold text-gray-700">
+                                    <p className="text-[14px] font-semibold text-gray-700">
                                       Drag files here or click to upload
                                     </p>
-                                    <p className="text-[11px] text-gray-400 mt-1">
+                                    <p className="text-[12px] text-gray-400 mt-1.5">
                                       Supported formats: PDFs, Videos, Audio,
                                       Images
                                     </p>
@@ -922,12 +932,12 @@ export default function WelcomePage() {
                               </div>
 
                               {/* Bottom bar: Add + Close */}
-                              <div className="m-1 rounded-lg flex justify-end gap-2 bg-white px-2 py-1">
+                              <div className="mx-2 mb-2 rounded-xl flex justify-end items-center gap-2 bg-white px-3 py-2">
                                 <button
                                   type="button"
                                   onClick={handleConfirmAttach}
                                   disabled={isUploading}
-                                  className="px-4 py-2 bg-primary text-white text-xs font-semibold rounded-md hover:bg-primary-600 transition-colors shrink-0 disabled:opacity-50"
+                                  className="px-5 py-2 bg-primary text-white text-xs font-semibold rounded-lg hover:bg-primary-600 transition-colors shrink-0 disabled:opacity-50"
                                 >
                                   {isUploading ? "Uploading..." : "Add"}
                                 </button>
@@ -937,7 +947,7 @@ export default function WelcomePage() {
                                     setIsAttachInputVisible(false);
                                     setPendingFiles([]);
                                   }}
-                                  className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+                                  className="text-gray-400 hover:text-gray-600 transition-colors shrink-0 p-1 rounded-full hover:bg-gray-100"
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
