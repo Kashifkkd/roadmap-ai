@@ -68,6 +68,33 @@ export default function ImageUpload({
   const [isCreatingAsset, setIsCreatingAsset] = useState(false);
   const [createAssetError, setCreateAssetError] = useState(null);
 
+  const getUploadErrorMessage = (uploadResponse, error) => {
+    if (uploadResponse?.response) {
+      const msg = uploadResponse.response?.message ?? uploadResponse.response?.detail ?? uploadResponse.response?.error;
+      if (msg && typeof msg === "string") return msg;
+      if (Array.isArray(msg)) return msg.join(". ");
+    }
+    if (uploadResponse?.message) return uploadResponse.message;
+    if (error?.response?.data) {
+      const d = error.response.data;
+      const msg = d?.message ?? d?.detail ?? d?.error;
+      if (msg && typeof msg === "string") return msg;
+      if (Array.isArray(msg)) return msg.join(". ");
+    }
+    const status = uploadResponse?.status ?? error?.response?.status;
+    const statusMessages = {
+      400: "Bad request. Please check the file format and try again.",
+      404: "Upload endpoint not found. Please try again later.",
+      413: "File too large. Please choose a smaller file.",
+      500: "Server error. Please try again later.",
+      502: "Server temporarily unavailable. Please try again.",
+      503: "Service unavailable. Please try again later.",
+    };
+    if (status && statusMessages[status]) return statusMessages[status];
+    if (status && status >= 400) return `Upload failed (${status}). Please try again.`;
+    return "Upload failed. Please try again.";
+  };
+
   const handleFileUpload = async (file) => {
     setIsUploadingImage(true);
     setUploadErrorImage(null);
@@ -83,9 +110,7 @@ export default function ImageUpload({
         "", // link parameter (optional, not used for file uploads)
       );
 
-      // console.log(uploadResponse, "uploadResponse")
-      if (uploadResponse?.response) {
-        // Normalize asset data to always have ImageUrl
+      if (uploadResponse?.success && uploadResponse?.response) {
         const assetData = {
           status: "success",
           ImageUrl:
@@ -102,9 +127,11 @@ export default function ImageUpload({
           onUploadSuccess(assetData);
         }
         setUploadedImage(file.name);
+      } else {
+        setUploadErrorImage(getUploadErrorMessage(uploadResponse, null));
       }
     } catch (error) {
-      setUploadErrorImage("Upload failed. Please try again.");
+      setUploadErrorImage(getUploadErrorMessage(null, error));
       console.error("Error uploading image:", error);
     } finally {
       setIsUploadingImage(false);

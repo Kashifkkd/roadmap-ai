@@ -134,7 +134,7 @@ export const apiService = async ({
           window.dispatchEvent(new Event("auth-changed"));
           if (!sessionExpiredToastShown) {
             sessionExpiredToastShown = true;
-            toast.error("Session expired. Please login again.", { duration: 1000 });
+            toast.error("Session expired. Please login again.", { duration: 3000 });
           }
         } catch {
           // ignore storage/event issues

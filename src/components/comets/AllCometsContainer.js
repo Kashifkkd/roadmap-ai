@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import Comet from "./Comet";
 import { useRouter } from "next/navigation";
-import { set } from "react-hook-form";
+import { toast } from "sonner";
 
 export default function AllCometsContainer({ cometSessions }) {
 
@@ -33,7 +33,15 @@ export default function AllCometsContainer({ cometSessions }) {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch session details");
+        const status = response.status;
+        let message = "Failed to fetch session details";
+        if (status >= 500) message = "Server error. Please try again later.";
+        else if (status === 404) message = "Session not found.";
+        else if (status === 403) message = "Access denied.";
+        else if (status === 401) message = "Session expired. Please login again.";
+        else if (status === 400) message = "Invalid request.";
+        toast.error(message);
+        return;
       }
 
       const result = await response.json();
@@ -60,6 +68,10 @@ export default function AllCometsContainer({ cometSessions }) {
       console.log("Session details:", result);
     } catch (err) {
       console.error("Error fetching comet session:", err.message);
+      const msg = err.message?.includes("fetch") || err.message?.includes("network")
+        ? "Network error. Please check your connection."
+        : err.message || "Something went wrong. Please try again.";
+      toast.error(msg);
     }
   };
   // setBgImageUrl(sess)

@@ -32,8 +32,10 @@ export function Toaster() {
   return (
     <Sonner
       position="top-right"
+      offset={{ top: 80 }}
       gap={8}
       toastOptions={{
+        duration: 3000,
         unstyled: true,
         classNames: {
           toast:

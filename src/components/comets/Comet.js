@@ -3,6 +3,7 @@ import Image from "next/image";
 import React, { useState, useEffect } from "react";
 import StatusButton from "./StatusButton";
 import { useCometSettings } from "@/contexts/CometSettingsContext";
+import { toast } from "sonner";
 
 const Comet = ({
   title,
@@ -34,7 +35,7 @@ const Comet = ({
 
       await onCometClick(session_id, status);
     } catch (error) {
-      console.error("Comet click error", err.message);
+      console.error("Comet click error", error?.message);
     } finally {
       setDisabled(false);
     }
@@ -81,6 +82,10 @@ const Comet = ({
       setIsCometSettingsOpen(true);
     } catch (error) {
       console.error("Error fetching comet session details:", error.message);
+      const msg = error.message?.includes("fetch") || error.message?.includes("network")
+        ? "Network error. Please check your connection."
+        : error.message || "Something went wrong. Please try again.";
+      toast.error(msg);
     }
   };
 

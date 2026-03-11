@@ -256,6 +256,34 @@ export default function CometManager({
 
   // Delete a step
   const handleDeleteStep = (chapterId, stepId) => {
+    // Pre-compute which step to select after deletion (before state update)
+    let nextStepId = null;
+    if (outline?.chapters && selectedStepId === stepId) {
+      for (const chapter of outline.chapters) {
+        const cId = chapter.uuid || chapter.id;
+        if (cId !== chapterId) continue;
+        const steps = chapter.steps || [];
+        const stepIndex = steps.findIndex((stepItem) => {
+          const s = stepItem.step || {};
+          return (s.uuid || s.id) === stepId;
+        });
+        if (stepIndex !== -1) {
+          if (stepIndex + 1 < steps.length) {
+            nextStepId = steps[stepIndex + 1].step?.uuid || steps[stepIndex + 1].step?.id;
+          } else if (stepIndex - 1 >= 0) {
+            nextStepId = steps[stepIndex - 1].step?.uuid || steps[stepIndex - 1].step?.id;
+          } else {
+            const chIndex = outline.chapters.findIndex((ch) => (ch.uuid || ch.id) === chapterId);
+            if (chIndex >= 0 && chIndex + 1 < outline.chapters.length) {
+              const firstStep = outline.chapters[chIndex + 1].steps?.[0];
+              nextStepId = firstStep?.step?.uuid || firstStep?.step?.id || null;
+            }
+          }
+        }
+        break;
+      }
+    }
+
     setOutline((prevOutline) => {
       if (!prevOutline || !prevOutline.chapters) return prevOutline;
       const newOutline = JSON.parse(JSON.stringify(prevOutline));
@@ -276,13 +304,12 @@ export default function CometManager({
         break;
       }
 
-      // Clear selected step if it was the deleted one
-      if (selectedStepId === stepId) {
-        setSelectedStep(null);
-      }
-
       return newOutline;
     });
+
+    if (selectedStepId === stepId) {
+      setSelectedStep(nextStepId);
+    }
   };
 
   // Extract session_id from sessionData or temp
@@ -311,6 +338,7 @@ export default function CometManager({
   const selectedScreenRef = useRef(null);
   const remainingChapterStepsRef = useRef(null);
   const isAskingKyperRef = useRef(false);
+  const isGeneratingNextChapterRef = useRef(false);
   const [isUploadImageDialogOpen, setIsUploadImageDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -374,7 +402,7 @@ export default function CometManager({
       pathCount = path.length;
     }
 
-    // hide button if path >= outline
+    // disable button if path >= outline (never hide, only disable)
     if (outlineCount > 0 && pathCount >= outlineCount) {
       setShowNextChapter(false);
     } else {
@@ -439,6 +467,8 @@ export default function CometManager({
 
   // Handle Next Chapter click
   const handleNextChapter = async () => {
+    if (isGeneratingNextChapterRef.current) return;
+    isGeneratingNextChapterRef.current = true;
     try {
       setHasClickedGenerateRemaining(true); // Hide button immediately
       setNextChapterError(null);
@@ -511,6 +541,7 @@ export default function CometManager({
       console.error("Error in handleNextChapter:", error);
       setNextChapterError(error?.message || "Unexpected error");
       setIsGeneratingNextChapter(false);
+      isGeneratingNextChapterRef.current = false;
     }
   };
 
@@ -2126,15 +2157,8 @@ export default function CometManager({
                           className="ml-0 sm:ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50 cursor-pointer w-full sm:w-auto"
                           onClick={handleNextChapter}
                           disabled={
-                            !showNextChapter ||
-                            sessionData?.response_path
-                              ?.generate_remaining_chapters === true ||
-                            isGeneratingNextChapter ||
-                            (Array.isArray(sessionData?.response_path?.chapters)
-                              ? sessionData.response_path.chapters.length
-                              : Array.isArray(sessionData?.response_path)
-                                ? sessionData.response_path.length
-                                : 0) < 2
+                            sessionData?.is_initial_chapter_created !== true ||
+                            isGeneratingNextChapter
                           }
                         >
                           <span>Create Remaining Chapters</span>

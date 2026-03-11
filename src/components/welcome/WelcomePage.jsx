@@ -81,12 +81,26 @@ export default function WelcomePage() {
   // Note: WebSocket cleanup is now handled by SubscriptionManager
 
   const [cometCreated, setCometCreated] = useState(false);
+  const [isGeneratingCometData, setIsGeneratingCometData] = useState(false);
 
   useEffect(() => {
     if (sessionData?.comet_created && !cometCreated) {
       setCometCreated(true);
     }
   }, [sessionData, cometCreated]);
+
+
+  useEffect(() => {
+    const hasGeneratingMessage = messages.some(
+      (msg) =>
+        msg.from === "bot" &&
+        typeof msg.content === "string" &&
+        msg.content.includes("Generating Comet data")
+    );
+    if (hasGeneratingMessage) {
+      setIsGeneratingCometData(true);
+    }
+  }, [messages]);
 
   // Subscribe to session updates - temporary subscription for welcome page
   useSessionSubscription(
@@ -248,7 +262,13 @@ export default function WelcomePage() {
 
   const handleSubmitWrapper = async (e) => {
     e.preventDefault();
-    if (!inputText.trim() || isDisabled || isAnimating) return;
+    if (
+      !inputText.trim() ||
+      isDisabled ||
+      isAnimating ||
+      isGeneratingCometData
+    )
+      return;
 
     setIsDisabled(true);
     await handleSubmit(inputText.trim());
@@ -676,7 +696,11 @@ export default function WelcomePage() {
                       }}
                       onKeyPress={handleKeyPress}
                       disabled={
-                        isDisabled || isLoading || isAnimating || cometCreated
+                        isDisabled ||
+                        isLoading ||
+                        isAnimating ||
+                        cometCreated ||
+                        isGeneratingCometData
                       }
                       className={`w-full ${
                         messages.length === 0 ? "pl-10" : "pl-3"
@@ -744,7 +768,7 @@ export default function WelcomePage() {
                               </button>
                             </div>
                             <p className="flex item-start text-[10px] text-gray-400 mt-0.5 truncate pl-[18px]">
-                              {entry.comment || "Comment will go here"}
+                              {entry.comment || ""}
                             </p>
                           </div>
                         ))}
@@ -818,7 +842,12 @@ export default function WelcomePage() {
                                 : "text-gray-500 hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
                             }`}
                             onClick={handleToggleAttachInput}
-                            disabled={isLoading || cometCreated || isUploading}
+                            disabled={
+                              isLoading ||
+                              cometCreated ||
+                              isUploading ||
+                              isGeneratingCometData
+                            }
                           >
                             <Paperclip className="w-4 h-4" />
                             <span>Attach</span>
@@ -966,7 +995,9 @@ export default function WelcomePage() {
                                 : "text-gray-500 hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
                             }`}
                             onClick={handleToggleLinkInput}
-                            disabled={isLoading || cometCreated}
+                            disabled={
+                              isLoading || cometCreated || isGeneratingCometData
+                            }
                           >
                             <Link2 className="w-4 h-4" />
                             <span>Link</span>
@@ -1053,7 +1084,8 @@ export default function WelcomePage() {
                           isLoading ||
                           isAnimating ||
                           cometCreated ||
-                          isUploading
+                          isUploading ||
+                          isGeneratingCometData
                         }
                         className="p-2 bg-primary text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors flex items-center justify-center w-8 h-8 flex-shrink-0"
                       >
@@ -1076,7 +1108,7 @@ export default function WelcomePage() {
                     <button
                       key={index}
                       onClick={() => handleSuggestionSelect(suggestion)}
-                      disabled={isDisabled}
+                      disabled={isDisabled || isGeneratingCometData}
                       className="px-2 py-2 text-sm rounded-md bg-white text-primary-600 font-medium hover:bg-primary-600 hover:text-white cursor-pointer"
                     >
                       {suggestion}
@@ -1097,7 +1129,7 @@ export default function WelcomePage() {
                 variant="default"
                 className="flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50"
                 onClick={handleCreateNewCometFromDashboard}
-                disabled={isDisabled}
+                disabled={isDisabled || isGeneratingCometData}
               >
                 <Stars />
                 <span>Create New Comet</span>

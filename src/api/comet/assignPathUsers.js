@@ -10,10 +10,6 @@ export const assignPathUsers = async (sessionId, userEmails) => {
     ? userEmails.filter(Boolean)
     : [];
 
-  if (!emails.length) {
-    throw new Error("At least one email is required");
-  }
-
   return await apiService({
     endpoint: endpoints.assignPathUsers(sessionId),
     method: "POST",

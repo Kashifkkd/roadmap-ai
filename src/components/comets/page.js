@@ -9,6 +9,7 @@ import CometSettingsDialog from "../comet-manager/CometSettingsDialog";
 import { useCometSettings } from "@/contexts/CometSettingsContext";
 import debounce from "lodash.debounce";
 import axios from "axios";
+import { toast } from "sonner";
 
 export default function AllComet() {
   const [cometSessions, setCometSessions] = useState([]);
@@ -58,8 +59,10 @@ export default function AllComet() {
       setCometSessions(list);
       setNoComet(list.length === 0);
     } catch (err) {
-      setError(err.message);
+      const msg = getErrorMessage(err);
+      setError(msg);
       setCometSessions([]);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -117,6 +120,17 @@ export default function AllComet() {
     );
     const raw = res.data;
     return Array.isArray(raw) ? raw : (raw?.data && Array.isArray(raw.data) ? raw.data : []);
+  };
+
+  const getErrorMessage = (err) => {
+    const status = err?.response?.status;
+    if (status >= 500) return "Server error. Please try again later.";
+    if (status === 404) return "Sessions not found.";
+    if (status === 403) return "Access denied.";
+    if (status === 401) return "Session expired. Please login again.";
+    if (status === 400) return "Invalid request.";
+    if (err?.message?.includes("Network") || err?.code === "ERR_NETWORK") return "Network error. Please check your connection.";
+    return err?.response?.data?.detail || err?.message || "Failed to load comets. Please try again.";
   };
 
   // Loading state - show loader until data is ready

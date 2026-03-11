@@ -445,10 +445,6 @@ export default function UserManagement({
   };
 
   const handleAssignPathUsers = async () => {
-    if (!pathUserEmails.length) {
-      toast.error("Please add at least one email");
-      return;
-    }
 
     if (typeof window === "undefined") {
       toast.error("Session is not available");

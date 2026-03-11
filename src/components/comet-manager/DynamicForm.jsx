@@ -157,6 +157,7 @@ const getFormValuesFromScreen = (screen) => {
   if (contentType === "notifications") {
     values.title = content.heading || "";
     values.message = content.body || "";
+    values.mediaType = content.media?.type || "";
     values.icon =
       typeof content.icon === "string"
         ? content.icon

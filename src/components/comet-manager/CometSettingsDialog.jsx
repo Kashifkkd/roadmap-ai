@@ -43,7 +43,7 @@ import {
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
-  <div className="flex items-center justify-between py-2">
+  <div className="flex items-center justify-between py-1">
     <div className="flex items-center gap-2">
       <Label className="text-sm font-medium text-gray-800">{label}</Label>
       {showInfo && (
@@ -743,15 +743,15 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4 lg:p-6">
-      <div className="w-full max-w-[998px] lg:max-w-[1200px] xl:max-w-[1400px] h-[85vh] md:h-[75vh] lg:h-[80vh] max-h-[90vh] p-1.5 sm:p-2 lg:p-3 border-0 bg-white rounded-[20px] sm:rounded-[28px] lg:rounded-[32px] shadow-[0_20px_70px_rgba(30,30,50,0.2)] flex flex-col overflow-hidden">
+      <div className="w-full max-w-[998px] lg:max-w-[1200px] xl:max-w-[1400px] h-[85vh] md:h-[75vh] lg:h-[80vh] max-h-[90vh] p-2 border-0 bg-white rounded-[20px] sm:rounded-[28px] lg:rounded-[32px] shadow-[0_20px_70px_rgba(30,30,50,0.2)] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 py-3 sm:py-4 md:py-5 lg:py-6 border-gray-200">
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-gray-900">
+        <div className="flex items-center justify-between px-2 pt-4 pb-5 border-gray-200">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">
             Comet Settings
           </h2>
           <button
             onClick={() => onOpenChange(false)}
-            className="rounded-full p-1.5 hover:bg-gray-100 transition-colors"
+            className="rounded-full p-1.5 pr-[2px] hover:bg-gray-100 transition-colors"
           >
             <CircleX className="h-5 w-5 text-gray-500" />
           </button>
@@ -759,7 +759,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
         <div className="flex flex-col md:flex-row flex-1 overflow-hidden p-1.5 sm:p-2 lg:p-3 bg-gray-100 rounded-lg gap-1.5 sm:gap-2 lg:gap-3">
           {/* Navigation Panel - Left Side */}
-          <div className="md:w-60 lg:w-64 xl:w-72 bg-white rounded-lg border-gray-200 px-2 sm:px-3 md:px-5 lg:px-6 py-3 sm:py-4 md:py-6 lg:py-6 space-y-2 overflow-x-auto md:overflow-x-visible">
+          <div className="md:w-60 lg:w-64 xl:w-72 bg-white rounded-lg border-gray-200 p-2 space-y-2 overflow-x-auto md:overflow-x-visible">
             <div className="flex md:flex-col gap-2 min-w-max md:min-w-0">
               <button
                 onClick={() => {
@@ -835,7 +835,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                   <div className="space-y-4 md:space-y-5">
                     {/* Comet Title */}
                     <div className="bg-gray-100 px-2  rounded-lg ">
-                      <div className="text-md font-bold text-gray-800 py-4 px-4 ">
+                      <div className="text-md font-bold text-gray-800 py-4 px-2">
                         Basic Info
                       </div>
                       <div className="space-y-4 flex flex-row gap-2 w-full bg-white p-2 rounded-t-lg">
@@ -1066,7 +1066,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                     </div>
                     {/* Generative AI Settings Section */}
                     <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-4 px-4  text-gray-800">
+                      <p className=" font-bold mb-4 px-2 text-gray-800">
                         Generative AI Settings
                       </p>
                       <div className="space-y-4 bg-white p-2 rounded-lg">
@@ -1111,7 +1111,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                     </div>
                     {/* Toggles Section */}
                     <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-4 px-4  text-gray-800">
+                      <p className=" font-bold mb-4 px-2  text-gray-800">
                         Experience Design
                       </p>
                       <div className="space-y-2 bg-white p-2 rounded-lg">
@@ -1130,7 +1130,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       </div>
                     </div>
                     <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-4 px-4  text-gray-800">
+                      <p className=" font-bold mb-4 px-2 text-gray-800">
                         Stakeholder Engagement
                       </p>
                       <div className="space-y-2 bg-white p-2 rounded-lg">
@@ -1138,7 +1138,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           checked={managerEmailEnabled}
                           onChange={setManagerEmailEnabled}
                           label="Manager Email Enabled?"
-                          showInfo={true}
+                          showInfo={false}
                         />
                         <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
@@ -1149,7 +1149,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       </div>
                     </div>
                     <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-4 px-4  text-gray-800">
+                      <p className=" font-bold mb-4 px-2 text-gray-800">
                         Community Settings
                       </p>
                       <div className="space-y-2 bg-white p-2 rounded-lg">
@@ -1157,7 +1157,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           checked={enableCommunity}
                           onChange={setEnableCommunity}
                           label="Enable Community?"
-                          showInfo={true}
+                          showInfo={false}
                         />
                         <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
@@ -1168,7 +1168,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       </div>
                     </div>
                     <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-4 px-4  text-gray-800">
+                      <p className=" font-bold mb-4 px-2 text-gray-800">
                         Leaderboard Settings
                       </p>
                       <div className="space-y-4 bg-white p-2 rounded-lg">
@@ -1176,77 +1176,89 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                           checked={leaderboardEnabled}
                           onChange={setLeaderboardEnabled}
                           label="Enabled Leaderboard"
-                          showInfo={true}
+                          showInfo={false}
                         />
                       </div>
                     </div>
 
                     {/* Feature Toggles Section */}
                     <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
-                      <p className=" font-bold mb-4 px-4  text-gray-800">
+                      <p className=" font-bold mb-4 px-2 text-gray-800">
                         Feature Settings
                       </p>
-                      <div className="space-y-4 bg-white p-2 rounded-lg">
+                      <div className="space-y-2 bg-white p-2 rounded-lg">
                         <ToggleSwitch
                           checked={chapters}
                           onChange={setChapters}
                           label="Chapters"
                         />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={actionHub}
                           onChange={setActionHub}
                           label="Action Hub"
                         />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={checklists}
                           onChange={setChecklists}
                           label="Checklists"
                         />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={actionPoints}
                           onChange={setActionPoints}
                           label="Action Points"
                         />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={chartTargets}
                           onChange={setChartTargets}
                           label="Chart Targets"
                         />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={calendarInvites}
                           onChange={setCalendarInvites}
                           label="Calendar Invites"
                         />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={onboardingSteps}
                           onChange={setOnboardingSteps}
                           label="Onboarding Steps"
                         />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={dailyHighlighter}
                           onChange={setDailyHighlighter}
                           label="Daily Highlighter"
                         />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={pushNotifications}
                           onChange={setPushNotifications}
                           label="Enable Push Notifications"
                         />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={emailNotifications}
                           onChange={setEmailNotifications}
                           label="Enable Email Notifications"
                         />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={feedback}
                           onChange={setFeedback}
                           label="Feedback"
                         />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={habits}
                           onChange={setHabits}
                           label="Habits"
                         />
+                        <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
                           checked={pathVersion}
                           onChange={setPathVersion}
@@ -1616,7 +1628,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               </div>
                               <Info
                                 size={16}
-                                className="text-gray-500 cursor-help ml-auto mb-4"
+                                className="text-gray-500 cursor-help ml-auto self-baseline"
                               />
                             </div>
                           );

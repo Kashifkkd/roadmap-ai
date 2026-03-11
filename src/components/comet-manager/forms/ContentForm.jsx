@@ -109,6 +109,37 @@ export default function ContentForm({
     }
   }, [formData.mediaUrl, formData.mediaType, formData.contentMediaFile]);
 
+  // Get user-friendly error message from API response or error object
+  const getUploadErrorMessage = (uploadResponse, error) => {
+    // From apiService return (4xx): uploadResponse.response may have message/detail
+    if (uploadResponse?.response) {
+      const msg = uploadResponse.response?.message ?? uploadResponse.response?.detail ?? uploadResponse.response?.error;
+      if (msg && typeof msg === "string") return msg;
+      if (Array.isArray(msg)) return msg.join(". ");
+    }
+    // From apiService catch (5xx/network): uploadResponse.message
+    if (uploadResponse?.message) return uploadResponse.message;
+    // From catch block: error.response (axios) or error.message
+    if (error?.response?.data) {
+      const d = error.response.data;
+      const msg = d?.message ?? d?.detail ?? d?.error;
+      if (msg && typeof msg === "string") return msg;
+      if (Array.isArray(msg)) return msg.join(". ");
+    }
+    const status = uploadResponse?.status ?? error?.response?.status;
+    const statusMessages = {
+      400: "Bad request. Please check the file format and try again.",
+      404: "Upload endpoint not found. Please try again later.",
+      413: "File too large. Please choose a smaller file.",
+      500: "Server error. Please try again later.",
+      502: "Server temporarily unavailable. Please try again.",
+      503: "Service unavailable. Please try again later.",
+    };
+    if (status && statusMessages[status]) return statusMessages[status];
+    if (status && status >= 400) return `Upload failed (${status}). Please try again.`;
+    return "Upload failed. Please try again.";
+  };
+
   const handleRemoveAsset = (index) => {
     if (removeScreenAsset) {
       removeScreenAsset(index);
@@ -294,7 +325,7 @@ export default function ContentForm({
                                 const uploadResponse = await uploadAssetFile(
                                   file, assetType, sessionId || "", chapterUuid || chapterId || "", stepUuid || stepId || "", screenUuid || screenId || ""
                                 );
-                                if (uploadResponse?.response) {
+                                if (uploadResponse?.success && uploadResponse?.response) {
                                   const mediaUrl = uploadResponse.response.url;
                                   const mediaName = uploadResponse.response.name || file.name;
                                   if (mediaUrl) {
@@ -302,10 +333,14 @@ export default function ContentForm({
                                     updateField("mediaType", assetType);
                                     updateField("mediaName", mediaName);
                                     setUploadedMedia(mediaName);
-                                  } else { throw new Error("No media URL in response"); }
-                                } else { throw new Error("Invalid upload response"); }
+                                  } else {
+                                    setUploadErrorMedia(getUploadErrorMessage(uploadResponse, null));
+                                  }
+                                } else {
+                                  setUploadErrorMedia(getUploadErrorMessage(uploadResponse, null));
+                                }
                               } catch (error) {
-                                setUploadErrorMedia("Upload failed. Please try again.");
+                                setUploadErrorMedia(getUploadErrorMessage(null, error));
                                 console.error("Error uploading media:", error);
                               } finally { setIsUploadingMedia(false); }
                             }
@@ -348,7 +383,7 @@ export default function ContentForm({
                             screenUuid || screenId || ""
                           );
 
-                          if (uploadResponse?.response) {
+                          if (uploadResponse?.success && uploadResponse?.response) {
                             const mediaUrl = uploadResponse.response.url;
                             const mediaName = uploadResponse.response.name || file.name;
 
@@ -358,13 +393,13 @@ export default function ContentForm({
                               updateField("mediaName", mediaName);
                               setUploadedMedia(mediaName);
                             } else {
-                              throw new Error("No media URL in response");
+                              setUploadErrorMedia(getUploadErrorMessage(uploadResponse, null));
                             }
                           } else {
-                            throw new Error("Invalid upload response");
+                            setUploadErrorMedia(getUploadErrorMessage(uploadResponse, null));
                           }
                         } catch (error) {
-                          setUploadErrorMedia("Upload failed. Please try again.");
+                          setUploadErrorMedia(getUploadErrorMessage(null, error));
                           console.error("Error uploading media:", error);
                         } finally {
                           setIsUploadingMedia(false);

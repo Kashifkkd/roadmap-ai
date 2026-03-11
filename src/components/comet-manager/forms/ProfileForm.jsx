@@ -1,21 +1,10 @@
 import React from "react";
 import { SectionHeader, TextField, RichTextArea } from "./FormFields";
-import ImageUpload from "@/components/common/ImageUpload";
 
 export default function ProfileForm({
   formData,
   updateField,
-  updateScreenAssets,
-  removeScreenAsset,
-  screen,
   askKyperHandlers = {},
-  sessionId = "",
-  chapterId = "",
-  stepId = "",
-  screenId = "",
-  chapterUuid = "",
-  stepUuid = "",
-  screenUuid = "",
 }) {
   const {
     onTextFieldSelect,
@@ -24,15 +13,8 @@ export default function ProfileForm({
     onRichTextBlur,
   } = askKyperHandlers;
 
-  const existingAssets = screen?.assets || [];
-
-  const handleRemoveAsset = (index) => {
-    if (removeScreenAsset) removeScreenAsset(index);
-  };
-
   return (
-    <>
-      <div className="bg-gray-100 rounded-lg p-2">
+    <div className="bg-gray-100 rounded-lg p-2">
         <div className="p-2">
           <SectionHeader title="Profile" />
         </div>
@@ -58,27 +40,7 @@ export default function ProfileForm({
             onBlur={onRichTextBlur}
             valueFormat="html"
           />
-
-          <div className="mb-6">
-            <ImageUpload
-              label="Profile Photo"
-              sessionId={sessionId}
-              chapterUid={chapterUuid}
-              stepUid={stepUuid}
-              screenUid={screenUuid}
-              onUploadSuccess={(assetData) => {
-                if (updateScreenAssets) updateScreenAssets([assetData]);
-              }}
-              onAIGenerateSuccess={(assetData) => {
-                if (updateScreenAssets) updateScreenAssets([assetData]);
-              }}
-              existingAssets={existingAssets}
-              onRemoveAsset={handleRemoveAsset}
-              showSavedImages={true}
-            />
-          </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 }

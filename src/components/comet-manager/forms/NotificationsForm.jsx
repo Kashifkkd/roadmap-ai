@@ -28,14 +28,13 @@ export default function NotificationsForm({
 
   // Get existing assets from screen
   const existingAssets = screen?.assets || [];
+  const shouldShowImageUpload = formData.mediaType !== "none";
 
   const handleRemoveAsset = (index) => {
     if (removeScreenAsset) {
       removeScreenAsset(index);
     }
   };
-  console.log("formData of NotificationsForm>>>>>>>>>>", formData);
-
   return (
     <div className="bg-gray-100 rounded-lg p-2">
       <div className="p-2">
@@ -74,32 +73,34 @@ export default function NotificationsForm({
           valueFormat="html"
         />
 
-        <ImageUpload
-          label="Notification Icon/Image"
-          sessionId={sessionId}
-          chapterUid={chapterUuid}
-          stepUid={stepUuid}
-          screenUid={screenUuid}
-          onUploadSuccess={(assetData) => {
-            if (updateScreenAssets) {
-              updateScreenAssets([assetData]);
-            }
-            if (assetData.ImageUrl) {
-              updateField("icon", assetData.ImageUrl);
-            }
-          }}
-          onAIGenerateSuccess={(assetData) => {
-            if (updateScreenAssets) {
-              updateScreenAssets([assetData]);
-            }
-            if (assetData.ImageUrl) {
-              updateField("icon", assetData.ImageUrl);
-            }
-          }}
-          existingAssets={existingAssets}
-          onRemoveAsset={handleRemoveAsset}
-          showSavedImages={true}
-        />
+        {shouldShowImageUpload && (
+          <ImageUpload
+            label="Notification Icon/Image"
+            sessionId={sessionId}
+            chapterUid={chapterUuid}
+            stepUid={stepUuid}
+            screenUid={screenUuid}
+            onUploadSuccess={(assetData) => {
+              if (updateScreenAssets) {
+                updateScreenAssets([assetData]);
+              }
+              if (assetData.ImageUrl) {
+                updateField("icon", assetData.ImageUrl);
+              }
+            }}
+            onAIGenerateSuccess={(assetData) => {
+              if (updateScreenAssets) {
+                updateScreenAssets([assetData]);
+              }
+              if (assetData.ImageUrl) {
+                updateField("icon", assetData.ImageUrl);
+              }
+            }}
+            existingAssets={existingAssets}
+            onRemoveAsset={handleRemoveAsset}
+            showSavedImages={true}
+          />
+        )}
       </div>
     </div>
   );

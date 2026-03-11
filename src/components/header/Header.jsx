@@ -625,6 +625,7 @@ export default function Header() {
       } catch { }
       window.dispatchEvent(new Event("auth-changed"));
     }
+    toast.success("Logged out successfully");
     router.push("/");
   };
 

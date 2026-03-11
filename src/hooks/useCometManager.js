@@ -302,7 +302,7 @@ export function useCometManager(sessionData = null) {
         for (const stepItem of chapter.steps || []) {
           if (stepItem.screens) {
             stepItem.screens = stepItem.screens.filter(
-              (s) => s.id !== screenId,
+              (s) => String(s.id) !== String(screenId),
             );
             // Normalize positions to match array order
             for (let i = 0; i < stepItem.screens.length; i++) {

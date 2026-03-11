@@ -229,6 +229,20 @@ export const ListField = ({
   );
 };
 
+/**
+ * Normalize Quill HTML output so H1/H2/H3 stay inline with no extra spacing.
+ * - Remove empty paragraphs (<p><br></p> or <p></p>) that add line breaks around headings
+ * - Merge paragraph boundaries (</p><p>) into spaces so content flows in one block
+ */
+const normalizeQuillHtmlOutput = (html) => {
+  if (typeof html !== "string") return html;
+  // 1. Remove empty paragraphs
+  let result = html.replace(/<p>(?:<br\s*\/?>)?<\/p>/gi, "");
+  // 2. Merge paragraphs: replace </p><p> with space so headings flow inline
+  result = result.replace(/<\/p>\s*<p>/gi, " ");
+  return result;
+};
+
 /** When "html", value is always simple HTML for backend; delta is normalized to HTML on load. */
 export const RichTextArea = ({
   label,
@@ -348,14 +362,29 @@ export const RichTextArea = ({
           .replace(styleMatch("1\\.1em"), '<h3 style="display:inline">$1</h3>');
       };
 
+      // Helper: load HTML via clipboard.convert to avoid innerHTML proliferation of br tags
+      const setHtmlContent = (html) => {
+        const normalized = normalizeHeadingHtml(normalizeQuillHtmlOutput(html));
+        try {
+          const delta = editor.clipboard?.convert?.({ html: normalized });
+          if (delta && editor.setContents) {
+            editor.setContents(delta);
+            return;
+          }
+        } catch {
+          /* fallback to innerHTML */
+        }
+        try {
+          editor.root.innerHTML = normalized;
+        } catch (htmlError) {
+          console.error("Failed to set HTML in Quill editor:", htmlError);
+        }
+      };
+
       // Set initial content — when valueFormat is "html", we only use HTML; delta is normalized to HTML
       if (value) {
         if (isHtmlFormat && isHtmlString(value)) {
-          try {
-            editor.root.innerHTML = normalizeHeadingHtml(value);
-          } catch (htmlError) {
-            console.error("Failed to set HTML in Quill editor:", htmlError);
-          }
+          setHtmlContent(value);
         } else if (isHtmlFormat && isDeltaString(value)) {
           // Backend sent delta; load it — text-change will fire and we'll emit HTML (normalize to simple HTML)
           try {
@@ -411,9 +440,10 @@ export const RichTextArea = ({
       }
 
       // Emit simple HTML when valueFormat is "html", else delta
+      // Normalize output to prevent <p><br></p> proliferation on auto-save cycles
       editor.on("text-change", () => {
         if (valueFormatRef.current === "html") {
-          onChange(editor.root.innerHTML);
+          onChange(normalizeQuillHtmlOutput(editor.root.innerHTML));
         } else {
           onChange(JSON.stringify(editor.getContents()));
         }
@@ -485,7 +515,8 @@ export const RichTextArea = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When valueFormat is "html", sync editor when value prop changes (e.g. after delta→HTML normalization)
+  // When valueFormat is "html", sync editor when value prop changes (e.g. after auto-save)
+  // Use normalized HTML and avoid direct innerHTML to prevent br tag proliferation
   useEffect(() => {
     if (valueFormat !== "html" || !value || !quillEditorRef.current) return;
     const editor = quillEditorRef.current;
@@ -495,7 +526,20 @@ export const RichTextArea = ({
         .replace(/<span style="[^"]*font-size:\s*1\.75em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h1 style="display:inline">$1</h1>')
         .replace(/<span style="[^"]*font-size:\s*1\.35em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h2 style="display:inline">$1</h2>')
         .replace(/<span style="[^"]*font-size:\s*1\.1em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h3 style="display:inline">$1</h3>');
-      if (editor.root.innerHTML !== html) editor.root.innerHTML = html;
+      const normalized = normalizeQuillHtmlOutput(html);
+      const currentHtml = editor.root.innerHTML;
+      if (currentHtml !== normalized) {
+        try {
+          const delta = editor.clipboard?.convert?.({ html: normalized });
+          if (delta && editor.setContents) {
+            editor.setContents(delta);
+          } else {
+            editor.root.innerHTML = normalized;
+          }
+        } catch {
+          editor.root.innerHTML = normalized;
+        }
+      }
     }
   }, [valueFormat, value]);
 
@@ -514,6 +558,12 @@ export const RichTextArea = ({
 
         {/* Custom toolbar container - mousedown preventDefault keeps editor focus so format applies to selection only */}
         <style>{`
+          /* Reset h1/h2/h3 spacing in editor so inline headings don't add extra space */
+          .ql-editor h1, .ql-editor h2, .ql-editor h3 {
+            margin: 0;
+            padding: 0;
+            display: inline;
+          }
           .rich-text-toolbar .ql-heading1,
           .rich-text-toolbar .ql-heading2,
           .rich-text-toolbar .ql-heading3 {
