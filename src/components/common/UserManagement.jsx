@@ -860,7 +860,7 @@ export default function UserManagement({
                     Current Comet
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                    Action
+               
                   </th>
                 </tr>
               </thead>
@@ -931,9 +931,9 @@ export default function UserManagement({
                       </td>
                       <td
                         className="px-4 py-3 text-sm text-gray-600 max-w-[200px] truncate"
-                        title={user.active_path_name || ""}
+                        title={user.path_id || ""}
                       >
-                        {user.active_path_name || "-"}
+                        {user.path_id || "-"}
                       </td>
                       <td className="px-4 py-3">
                         {!isPathUsersMode && (

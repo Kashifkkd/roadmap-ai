@@ -570,3 +570,34 @@
   animation: gradientSpin 1s linear infinite;
   flex-shrink: 0;
 }
+
+/* shimmer animation */
+@keyframes shimmer-animation {
+  0%{ background-position: 120% 0; }
+  100%{ background-position: -120% 0; }
+}
+
+.shimmer-animation{
+  animation: 1.3s ease-in-out infinite shimmer-animation;
+  background: linear-gradient(
+  90deg,
+  rgba(255, 255, 255, 0.06) 0%,
+  rgba(255, 255, 255, 0.10) 35%,
+  rgb(255, 255, 254) 50%,
+  rgba(255, 255, 255, 0.10) 65%,
+  rgba(255, 255, 255, 0.06) 100%
+);
+  background-size: 220% 100%;
+}
+.shimmer-animation-large{
+  animation: 1.3s ease-in-out infinite shimmer-animation;
+  background: linear-gradient(
+  90deg,
+  rgba(241, 240, 254, 0.06) 0%,
+  rgba(241, 240, 254, 0.10) 35%,
+  rgb(241, 240, 254) 50%,
+  rgba(241, 240, 254, 0.10) 65%,
+  rgba(241, 240, 254, 0.06) 100%
+);
+  background-size: 220% 100%;
+}

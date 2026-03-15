@@ -490,6 +490,25 @@ export default function OutlineMannerCreateComet({
 
   const handleDeleteChapter = (e, chapterIndex) => {
     e.stopPropagation();
+    const deletedChapter = chapters[chapterIndex];
+
+    setOpenMenuIndex(null);
+    setEditingChapterIndex((currentIndex) => {
+      if (currentIndex === null) return null;
+      if (currentIndex === chapterIndex) {
+        setChapterEditValue("");
+        return null;
+      }
+      return currentIndex > chapterIndex ? currentIndex - 1 : currentIndex;
+    });
+    setExpandedChapters((prev) =>
+      Object.entries(prev).reduce((acc, [key, value]) => {
+        const currentIndex = Number(key);
+        if (currentIndex === chapterIndex) return acc;
+        acc[currentIndex > chapterIndex ? currentIndex - 1 : currentIndex] = value;
+        return acc;
+      }, {}),
+    );
 
     // Remove chapter from local state
     const newChapters = [...chapters];
@@ -499,7 +518,10 @@ export default function OutlineMannerCreateComet({
     setChapters(newChapters);
 
     // Clear selected chapter if it was the deleted one
-    if (selectedChapterNumber === chapterIndex + 1) {
+    if (
+      selectedChapterNumber === chapterIndex + 1 ||
+      selectedChapterNameRef.current === deletedChapter?.chapter
+    ) {
       setSelectedChapter(null);
       setSelectedChapterNumber(null);
       setSelectedStep(null);
@@ -599,7 +621,7 @@ export default function OutlineMannerCreateComet({
                           expandedChapters[index]
                             ? "border-gray-300 bg-primary-100 shadow-sm"
                             : "border-gray-300 bg-white shadow-sm "
-                        } ${draggedChapterIndex === index ? "opacity-50" : ""}`}
+                        } ${draggedChapterIndex === index ? "opacity-50" : ""} group`}
                       >
                         <div
                           onClick={() => handleChapterClick(index, chapter)}
@@ -617,13 +639,18 @@ export default function OutlineMannerCreateComet({
                               </p>
                             </div>
                             <div className="flex justify-end items-start gap-2 h-full shrink-0">
-                              {/* <button
+                              <button
                                 onClick={(e) => handleDeleteChapter(e, index)}
-                                className="p-1 rounded-md hover:bg-red-100 transition-colors"
+                                className={`p-1 rounded-md hover:bg-red-100 transition-colors ${
+                                  selectedChapter?.chapter === chapter?.chapter
+                                    ? "opacity-100"
+                                    : "opacity-0 group-hover:opacity-100"
+                                }`}
                                 title="Delete Chapter"
+                                aria-label={`Delete ${chapter?.chapter || `Chapter ${index + 1}`}`}
                               >
                                 <Trash2 className="w-4 h-4 text-red-500" />
-                              </button> */}
+                              </button>
                               <div
                                 className={`p-1 flex gap-2 rounded-full text-nowrap ${
                                   selectedChapter?.chapter === chapter?.chapter
@@ -644,7 +671,10 @@ export default function OutlineMannerCreateComet({
                                 <span
                                   className={`text-xs text-gray-800 font-medium px-1`}
                                 >
-                                  {chapter?.steps?.length || 0} Steps
+                                  {chapter?.steps?.length || 0}{" "}
+                                  {(chapter?.steps?.length || 0) === 1
+                                    ? "Step"
+                                    : "Steps"}
                                 </span>
                               </div>
                             </div>
@@ -820,7 +850,10 @@ export default function OutlineMannerCreateComet({
                                     : "text-gray-800"
                                 }`}
                               >
-                                {chapter?.steps?.length || 0} Steps
+                                {chapter?.steps?.length || 0}{" "}
+                                {(chapter?.steps?.length || 0) === 1
+                                  ? "Step"
+                                  : "Steps"}
                               </span>
                             </div>
                           </div> */}

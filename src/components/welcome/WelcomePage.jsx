@@ -23,7 +23,7 @@ const SUGGESTIONS = [
   "Onboard new employees with essential training",
   "Add reinforcement & application to a training",
 ];
-
+// a hot fix change 
 export default function WelcomePage() {
   const [inputText, setInputText] = useState("");
   const [isDisabled, setIsDisabled] = useState(false);

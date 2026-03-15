@@ -312,6 +312,61 @@ export default function CometManager({
     }
   };
 
+  const handleDeleteChapter = (chapterId) => {
+    const outlineChapters = outline?.chapters || [];
+    const chapterIndex = outlineChapters.findIndex(
+      (chapter) => (chapter.uuid || chapter.id) === chapterId,
+    );
+
+    if (chapterIndex === -1) {
+      return;
+    }
+
+    const deletedChapter = outlineChapters[chapterIndex];
+    const deletedChapterHasSelectedStep = (deletedChapter?.steps || []).some(
+      (stepItem) => {
+        const step = stepItem.step || {};
+        return (step.uuid || step.id) === selectedStepId;
+      },
+    );
+
+    let nextSelectedStepId = selectedStepId;
+    if (deletedChapterHasSelectedStep) {
+      const fallbackChapter =
+        outlineChapters.slice(chapterIndex + 1).find((chapter) => {
+          return Array.isArray(chapter.steps) && chapter.steps.length > 0;
+        }) ||
+        [...outlineChapters.slice(0, chapterIndex)]
+          .reverse()
+          .find((chapter) => {
+            return Array.isArray(chapter.steps) && chapter.steps.length > 0;
+          });
+
+      const fallbackStep = fallbackChapter?.steps?.[0]?.step || null;
+      nextSelectedStepId = fallbackStep?.uuid || fallbackStep?.id || null;
+    }
+
+    setOutline((prevOutline) => {
+      if (!prevOutline || !prevOutline.chapters) return prevOutline;
+
+      const newOutline = JSON.parse(JSON.stringify(prevOutline));
+      const newChapterIndex = newOutline.chapters.findIndex(
+        (chapter) => (chapter.uuid || chapter.id) === chapterId,
+      );
+
+      if (newChapterIndex === -1) {
+        return prevOutline;
+      }
+
+      newOutline.chapters.splice(newChapterIndex, 1);
+      return newOutline;
+    });
+
+    if (deletedChapterHasSelectedStep) {
+      setSelectedStep(nextSelectedStepId);
+    }
+  };
+
   // Extract session_id from sessionData or temp
   const sessionId =
     sessionData?.session_id ||
@@ -1258,6 +1313,7 @@ export default function CometManager({
                 chapters={chapters}
                 onReorderChapters={reorderChapters}
                 onReorderSteps={reorderSteps}
+                onDeleteChapter={handleDeleteChapter}
                 onEditStep={handleEditStep}
                 onDeleteStep={handleDeleteStep}
                 remainingChapters={

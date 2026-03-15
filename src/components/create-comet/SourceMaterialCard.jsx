@@ -513,14 +513,14 @@ const FilePreview = ({ file, setFiles, files, onCommentChange }) => {
               />
             </div>
 
-            {!isUploaded && (
+            {/* {!isUploaded && (
               <button
                 onClick={() => setFiles(files.filter((f) => f !== file))}
                 className="cursor-pointer hover:text-red-600 transition-colors"
               >
                 <CircleX className="w-4 h-4 font-bold" />
               </button>
-            )}
+            )} */}
           </div>
         </CardContent>
         <div className="m-2">

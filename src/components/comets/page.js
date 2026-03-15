@@ -3,6 +3,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import CometFilter from "./CometFilter";
 import AllCometsContainer from "./AllCometsContainer";
+import CometSkeleton from "./CometSkeleton";
+import CometFilterSkeleton from "./CometFilterSkeleton";
 // import SequentialLoader from "../chat/SequentialLoader";
 import { Loader2 } from "lucide-react";
 import CometSettingsDialog from "../comet-manager/CometSettingsDialog";
@@ -10,6 +12,7 @@ import { useCometSettings } from "@/contexts/CometSettingsContext";
 import debounce from "lodash.debounce";
 import axios from "axios";
 import { toast } from "sonner";
+// import Comet from "./Comet";
 
 export default function AllComet() {
   const [cometSessions, setCometSessions] = useState([]);
@@ -134,15 +137,37 @@ export default function AllComet() {
   };
 
   // Loading state - show loader until data is ready
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-full w-full flex flex-col items-center justify-center bg-[#F1F0FE] flex-1">
+  //       <div className="flex flex-col items-center gap-4">
+  //         <Loader2 className="w-12 h-12 animate-spin text-primary" />
+  //         <p className="text-base font-medium text-gray-700">Loading comets...</p>
+  //         <p className="text-sm text-gray-500">Fetching your comet sessions</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
   if (loading) {
     return (
-      <div className="min-h-full w-full flex flex-col items-center justify-center bg-[#F1F0FE] flex-1">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          <p className="text-base font-medium text-gray-700">Loading comets...</p>
-          <p className="text-sm text-gray-500">Fetching your comet sessions</p>
+      <>
+        <div className="flex-1 flex flex-col min-h-0 pt-2 pr-2 pl-2 bg-[#F1F0FE] h-full">
+          <div className="shrink-0 w-[98%] mx-auto pt-6 pb-2.5"> 
+            <CometFilterSkeleton />
+          </div>
+
+          {/* {noComet ? (
+              <div className="h-64 flex justify-center items-center overflow-hidden relative bg-white w-[96%] sm:w-[93%] md:w-[88%] mx-auto rounded-2xl">
+                 <div className="bg-[#F1F0FE] w-1 h-full absolute top-0 shimmer-animation"></div>
+              </div>
+            ) : ( */}
+                <div className="w-[98%] mx-auto">
+                  <CometSkeleton cometSessions={Array.isArray(cometSessions) ? cometSessions : []} />
+                </div>
+            {/* )} */}
+          
         </div>
-      </div>
+      </>
     );
   }
 
@@ -169,7 +194,7 @@ export default function AllComet() {
                 No comet sessions found.
               </div>
             ) : (
-              <AllCometsContainer cometSessions={Array.isArray(cometSessions) ? cometSessions : []} />
+                <AllCometsContainer cometSessions={Array.isArray(cometSessions) ? cometSessions : []} />
             )}
           </div>
         </div>

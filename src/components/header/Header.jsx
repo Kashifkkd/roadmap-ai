@@ -270,6 +270,14 @@ export default function Header() {
   const isAllComets = pathname === "/comets";
   const showUserProfile = isHome || isAllComets;
   const [text, setText] = useState("");
+  const [session, setSession] = useState(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return localStorage.getItem("sessionData");
+    } catch {
+      return null;
+    }
+  });
 
   const [subject, setSubject] = useState("Kyper Feedback");
   const to = "hello@1st90.com";
@@ -361,6 +369,37 @@ export default function Header() {
       setIsAuthenticated(isAuth);
     }
   }, [isLoginDialogOpen]);
+
+  // Keep header state synced with sessionData updates written elsewhere in the app.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const syncSessionData = () => {
+      try {
+        const nextSession = localStorage.getItem("sessionData");
+        setSession((prevSession) =>
+          prevSession === nextSession ? prevSession : nextSession
+        );
+      } catch {
+        setSession(null);
+      }
+    };
+
+    syncSessionData();
+
+    window.addEventListener("storage", syncSessionData);
+    window.addEventListener("sessionDataChanged", syncSessionData);
+    window.addEventListener("sessionIdChanged", syncSessionData);
+
+    const sessionSyncInterval = window.setInterval(syncSessionData, 300);
+
+    return () => {
+      window.removeEventListener("storage", syncSessionData);
+      window.removeEventListener("sessionDataChanged", syncSessionData);
+      window.removeEventListener("sessionIdChanged", syncSessionData);
+      window.clearInterval(sessionSyncInterval);
+    };
+  }, []);
 
   // Determine client ID to use: localStorage first, then user.client_id
   useEffect(() => {
@@ -665,8 +704,14 @@ export default function Header() {
     router.push("/comets");
   };
 
-  const session =
-    typeof window !== "undefined" ? localStorage.getItem("sessionData") : null;
+  const isPublishDisabledForInitialChapter = (() => {
+    try {
+      const publishSessionData = session ? JSON.parse(session) : {};
+      return publishSessionData?.is_initial_chapter_created !== true;
+    } catch {
+      return true;
+    }
+  })();
   useEffect(() => {
     const sessionData = JSON.parse(session || "{}");
     try {
@@ -1047,7 +1092,7 @@ export default function Header() {
       </div>
       <button
         onClick={handlePublish}
-        disabled={isPublishing}
+        disabled={isPublishing || isPublishDisabledForInitialChapter}
         className="px-4 py-2 rounded-md bg-primary hover:bg-primary-dark text-white text-sm font-medium hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isPublishing ? "Publishing..." : "Publish"}

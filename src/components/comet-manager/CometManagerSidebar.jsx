@@ -75,6 +75,7 @@ export default function CometManagerSidebar({
   chapters = [],
   onReorderChapters,
   onReorderSteps,
+  onDeleteChapter,
   remainingChapters = [],
   onChapterClick,
   onRemainingChapterClick,
@@ -184,6 +185,28 @@ export default function CometManagerSidebar({
     setOpenStepMenuId(null);
     if (onDeleteStep) {
       onDeleteStep(chapterId, stepId);
+    }
+  };
+
+  const handleDeleteChapterClick = (e, chapterId) => {
+    e.stopPropagation();
+
+    setExpandedChapters((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(chapterId);
+      return newSet;
+    });
+
+    if (selectedChapter === chapterId) {
+      setSelectedChapter(null);
+      setExpandedSteps(new Set());
+      if (setSelectedStepFromHook) {
+        setSelectedStepFromHook(null);
+      }
+    }
+
+    if (onDeleteChapter) {
+      onDeleteChapter(chapterId);
     }
   };
 
@@ -800,7 +823,7 @@ export default function CometManagerSidebar({
                   return (
                     <div
                       key={chapterKey}
-                      className="flex flex-col transition-all"
+                      className="group flex flex-col transition-all"
                       onDragOver={(e) => handleChapterDragOver(e, index)}
                       onDragLeave={(e) => handleChapterDragLeave(e)}
                       onDrop={(e) => handleChapterDrop(e, index)}
@@ -858,13 +881,30 @@ export default function CometManagerSidebar({
                           <div className="flex flex-col flex-1 min-w-0">
                             <div className="flex items-center gap-2 justify-between">
                               <p className="text-[10px] font-medium text-gray-900">
-                                Chapter {index}
+                                Chapter {index + 1}
                               </p>
-                              <p
-                                className={`rounded-lg px-2 bg-primary-100 text-[8px] text-primary-600 ${isExpanded ? "bg-primary-700 text-white" : "bg-primary-100 text-primary-600"}`}
-                              >
-                                Ready for Review
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p
+                                  className={`rounded-lg px-2 bg-primary-100 text-[8px] text-primary-600 ${isExpanded ? "bg-primary-700 text-white" : "bg-primary-100 text-primary-600"}`}
+                                >
+                                  Ready for Review
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={(e) =>
+                                    handleDeleteChapterClick(e, chapterId)
+                                  }
+                                  className={`rounded-md p-1 transition-colors hover:bg-red-100 ${
+                                    isSelected
+                                      ? "opacity-100"
+                                      : "opacity-0 group-hover:opacity-100"
+                                  }`}
+                                  title="Delete Chapter"
+                                  aria-label={`Delete ${chapter.chapter || chapter.name || `Chapter ${index + 1}`}`}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </button>
+                              </div>
                             </div>
                             <p
                               className={`text-sm sm:text-sm font-medium ${
