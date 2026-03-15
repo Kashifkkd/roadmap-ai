@@ -269,11 +269,15 @@ export default function CometManager({
         });
         if (stepIndex !== -1) {
           if (stepIndex + 1 < steps.length) {
-            nextStepId = steps[stepIndex + 1].step?.uuid || steps[stepIndex + 1].step?.id;
+            nextStepId =
+              steps[stepIndex + 1].step?.uuid || steps[stepIndex + 1].step?.id;
           } else if (stepIndex - 1 >= 0) {
-            nextStepId = steps[stepIndex - 1].step?.uuid || steps[stepIndex - 1].step?.id;
+            nextStepId =
+              steps[stepIndex - 1].step?.uuid || steps[stepIndex - 1].step?.id;
           } else {
-            const chIndex = outline.chapters.findIndex((ch) => (ch.uuid || ch.id) === chapterId);
+            const chIndex = outline.chapters.findIndex(
+              (ch) => (ch.uuid || ch.id) === chapterId,
+            );
             if (chIndex >= 0 && chIndex + 1 < outline.chapters.length) {
               const firstStep = outline.chapters[chIndex + 1].steps?.[0];
               nextStepId = firstStep?.step?.uuid || firstStep?.step?.id || null;
@@ -395,6 +399,7 @@ export default function CometManager({
   const isAskingKyperRef = useRef(false);
   const isGeneratingNextChapterRef = useRef(false);
   const [isUploadImageDialogOpen, setIsUploadImageDialogOpen] = useState(false);
+  const [generatingStepUids, setGeneratingStepUids] = useState(new Set());
 
   useEffect(() => {
     isAskingKyperRef.current = isAskingKyper;
@@ -2047,6 +2052,16 @@ export default function CometManager({
                               return null;
                             })()}
                             stepUid={selectedScreen?.stepUid}
+                            onGeneratingStart={(uid) =>
+                              setGeneratingStepUids((prev) => new Set(prev).add(uid))
+                            }
+                            onGeneratingComplete={(uid) =>
+                              setGeneratingStepUids((prev) => {
+                                const next = new Set(prev);
+                                next.delete(uid);
+                                return next;
+                              })
+                            }
                             onSuccess={(response) => {
                               console.log("Step image generated:", response);
                             }}
@@ -2099,6 +2114,7 @@ export default function CometManager({
                                     chapter={currentChapter}
                                     selectedScreen={selectedScreen}
                                     index={index}
+                                    isGeneratingImages={generatingStepUids.has(screen.stepUid)}
                                     onDragStart={handleDragStart}
                                     onDragEnd={handleDragEnd}
                                     onDragOver={handleDragOver}

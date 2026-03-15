@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Plus, GripVertical, Expand, Trash2 } from "lucide-react";
+import GradientLoader from "@/components/ui/GradientLoader";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ export default function ScreenCard({
   chapter,
   selectedScreen,
   index,
+  isGeneratingImages,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -147,19 +149,21 @@ export default function ScreenCard({
 
                 {/* Thumbnail */}
                 <div
-                  className={`w-full mb-2 ${
+                  className={`relative w-full mb-2 ${
                     selectedScreen?.id === screen.id ? "h-25" : "h-22.5"
                   }`}
                 >
                   <img
-                    src={
-                      screen.thumbnail ||
-                      "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg"
-                    }
+                    src={screen.thumbnail || "/noImage.png"}
                     alt={screen.title || "Screen preview"}
-                    className=" w-full h-full object-cover transition-all duration-300"
+                    className="w-full h-full object-cover transition-all duration-300"
                     onError={(e) => (e.target.src = "/error-img.png")}
                   />
+                  {isGeneratingImages && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/60 rounded">
+                      <GradientLoader size={32} />
+                    </div>
+                  )}
                 </div>
 
                 {/* Key Learning Heading */}

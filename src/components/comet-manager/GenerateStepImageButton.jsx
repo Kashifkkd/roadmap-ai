@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Loader2, Sparkles, X, ImageIcon } from "lucide-react";
+import { Loader2, Sparkles, X, CircleCheck, ImageIcon } from "lucide-react";
+import GradientLoader from "@/components/ui/GradientLoader";
 import {
   generateStepImages,
   getImageAttributes,
@@ -38,6 +39,8 @@ export default function GenerateStepImageButton({
   setSessionData,
   chapterUid,
   stepUid,
+  onGeneratingStart,
+  onGeneratingComplete,
   onSuccess,
   onError,
 }) {
@@ -75,7 +78,7 @@ export default function GenerateStepImageButton({
         for (const item of chapter.steps || []) {
           const step = item?.step;
           if (!step) continue;
-          const match = (step.uuid === stepUid) || (step.id === stepUid);
+          const match = step.uuid === stepUid || step.id === stepUid;
           if (match && step.image_generation_enqueued) return true;
         }
       }
@@ -114,8 +117,12 @@ export default function GenerateStepImageButton({
     try {
       const res = await getStepStatus({ sessionId, chapterUid, stepUid });
       if (res?.success) {
-        setStepStatus(res?.response ?? null);
+        const status = res?.response ?? null;
+        setStepStatus(status);
         setStatusError(null);
+        if (status?.images?.is_complete) {
+          onGeneratingComplete?.(stepUid);
+        }
       } else {
         setStatusError(res?.message || "Failed to load status");
       }
@@ -124,12 +131,21 @@ export default function GenerateStepImageButton({
     }
   };
 
-  // Poll status every 5 seconds while the status dialog is open
+  // Poll status while enqueued and not yet complete
   useEffect(() => {
-    if (!isStatusDialogOpen || !sessionId || !chapterUid || !stepUid) return;
+    if (!isEnqueued || !sessionId || !chapterUid || !stepUid) return;
+    if (stepStatus?.images?.is_complete) return;
+    fetchStepStatusSilent();
     const interval = setInterval(fetchStepStatusSilent, 10000);
     return () => clearInterval(interval);
-  }, [isStatusDialogOpen, sessionId, chapterUid, stepUid]);
+  }, [
+    isEnqueued,
+    sessionId,
+    chapterUid,
+    stepUid,
+    stepStatus?.images?.is_complete,
+    isStatusDialogOpen,
+  ]);
 
   const handleOpenStatusDialog = () => {
     setIsStatusDialogOpen(true);
@@ -153,7 +169,9 @@ export default function GenerateStepImageButton({
       const response = await getImageAttributes({ sessionId });
 
       if (response?.error) {
-        throw new Error(response?.error?.message || "Failed to fetch image attributes");
+        throw new Error(
+          response?.error?.message || "Failed to fetch image attributes",
+        );
       }
 
       // Handle different response structures
@@ -194,11 +212,11 @@ export default function GenerateStepImageButton({
       const suggestedPrompt =
         typeof data === "string"
           ? data
-          : data?.step_wallpaper_prompt ??
+          : (data?.step_wallpaper_prompt ??
             data?.prompt ??
             data?.suggested_prompt ??
             data?.text ??
-            (typeof data === "object" ? "" : String(data));
+            (typeof data === "object" ? "" : String(data)));
 
       if (suggestedPrompt) {
         setPrompt(suggestedPrompt);
@@ -235,10 +253,15 @@ export default function GenerateStepImageButton({
       }
 
       // Also update in response_outline to be consistent
-      const outlineChapters = updatedSessionData.response_outline?.chapters ||
-        (Array.isArray(updatedSessionData.response_outline) ? updatedSessionData.response_outline : []);
+      const outlineChapters =
+        updatedSessionData.response_outline?.chapters ||
+        (Array.isArray(updatedSessionData.response_outline)
+          ? updatedSessionData.response_outline
+          : []);
 
-      for (const chapter of (Array.isArray(outlineChapters) ? outlineChapters : [])) {
+      for (const chapter of Array.isArray(outlineChapters)
+        ? outlineChapters
+        : []) {
         if (chapter.steps) {
           for (const stepData of chapter.steps) {
             if (stepData.step?.uuid === stepUid) {
@@ -291,7 +314,10 @@ export default function GenerateStepImageButton({
       });
 
       if (setAttributesResponse?.error) {
-        throw new Error(setAttributesResponse?.error?.message || "Failed to set image attributes");
+        throw new Error(
+          setAttributesResponse?.error?.message ||
+            "Failed to set image attributes",
+        );
       }
 
       // Then, enqueue step image generation (fire-and-forget)
@@ -308,6 +334,7 @@ export default function GenerateStepImageButton({
         response?.response?.status === "enqueued";
       if (isSuccess) {
         await markAsEnqueued();
+        onGeneratingStart?.(stepUid);
         if (onSuccess) {
           onSuccess(response?.response || response);
         }
@@ -316,7 +343,9 @@ export default function GenerateStepImageButton({
         setImageGuidance("");
         setPrompt("");
       } else {
-        throw new Error(response?.message || "Failed to enqueue image generation");
+        throw new Error(
+          response?.message || "Failed to enqueue image generation",
+        );
       }
     } catch (error) {
       console.error("Error generating step image:", error);
@@ -329,42 +358,62 @@ export default function GenerateStepImageButton({
     }
   };
 
+  const imagesComplete = isEnqueued && stepStatus?.images?.is_complete;
+
   return (
     <>
-      {isEnqueued ? (
-        <Button
+      {imagesComplete ? (
+        /* Images Generated state button */
+        <button
           type="button"
           onClick={handleOpenStatusDialog}
+          className="w-full flex items-center gap-2.5 rounded-full px-4 py-2.5 bg-[#12B76A] hover:bg-[#10a34a] transition-colors sticky bottom-0 cursor-pointer"
+        >
+          <CircleCheck className="w-5 h-5 text-white shrink-0" />
+          <span className="text-sm font-semibold text-white">
+            Images Generated
+          </span>
+        </button>
+      ) : isEnqueued ? (
+        /* Generating Images state button */
+        <button
+          type="button"
+          onClick={handleOpenStatusDialog}
+          className="w-full flex items-center gap-3 rounded-full px-3 py-2 bg-[#C7C2F9] hover:bg-[#cfc7f5] transition-colors sticky bottom-0 cursor-pointer"
+        >
+          <span className="shrink-0 w-8 h-8 rounded-full bg-white flex items-center justify-center">
+            <GradientLoader size={18} />
+          </span>
+          <span className="flex-1 text-sm font-semibold text-[#352F6E]">
+            Generating Images
+          </span>
+          <span className="shrink-0 px-2.5 py-0.5 rounded-full bg-white text-sm font-semibold text-[#574EB6]">
+            {stepStatus?.images?.generated ?? 0}/
+            {stepStatus?.images?.expected ?? 0}
+          </span>
+        </button>
+      ) : (
+        /* Generate Step Images state button */
+        <Button
+          type="button"
+          onClick={handleOpenDialog}
           disabled={isDisabled}
           variant="default"
           size="sm"
           className="bg-white hover:bg-primary-100 text-primary-400 border border-primary-400 flex items-center justify-center gap-2 px-4 py-3 w-full disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer sticky bottom-0"
-          title="Check step image generation status"
+          title={
+            !sessionId
+              ? "Session ID is required"
+              : !chapterUid
+                ? "Chapter information is missing"
+                : !stepUid
+                  ? "Step information is missing"
+                  : "Generate step images"
+          }
         >
-          <ImageIcon className="w-3.5 h-3.5 text-primary-400" />
-          <span className="hidden sm:inline">Step image status</span>
+          <Sparkles className="w-3.5 h-3.5 text-primary-400" />
+          <span className="hidden sm:inline">Generate Step Images</span>
         </Button>
-      ) : (
-        <Button
-        type="button"
-        onClick={handleOpenDialog}
-        disabled={isDisabled}
-        variant="default"
-        size="sm"
-        className="bg-white hover:bg-primary-100 text-primary-400 border border-primary-400 flex items-center justify-center gap-2 px-4 py-3 w-full disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer sticky bottom-0"
-        title={
-          !sessionId
-            ? "Session ID is required"
-            : !chapterUid
-            ? "Chapter information is missing"
-            : !stepUid
-            ? "Step information is missing"
-            : "Generate step images"
-        }
-      >
-        <Sparkles className="w-3.5 h-3.5 text-primary-400" />
-        <span className="hidden sm:inline">Generate Step Images</span>
-      </Button>
       )}
 
       {/* Generate Step Images Dialog */}
@@ -377,7 +426,9 @@ export default function GenerateStepImageButton({
             {isLoadingAttributes ? (
               <div className="flex flex-col items-center justify-center gap-2 py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-gray-600">Loading image attributes...</p>
+                <p className="text-sm text-gray-600">
+                  Loading image attributes...
+                </p>
               </div>
             ) : attributesError ? (
               <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
@@ -388,7 +439,9 @@ export default function GenerateStepImageButton({
                   <p className="text-sm font-medium text-gray-700">
                     Unable to load image attributes
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">{attributesError}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {attributesError}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -486,7 +539,9 @@ export default function GenerateStepImageButton({
             </Button>
             <Button
               onClick={handleGenerateImage}
-              disabled={isGenerating || isLoadingAttributes || !!attributesError}
+              disabled={
+                isGenerating || isLoadingAttributes || !!attributesError
+              }
             >
               {isGenerating ? (
                 <>
@@ -538,14 +593,18 @@ export default function GenerateStepImageButton({
                   <div>
                     <p className="font-medium text-gray-800">Images</p>
                     <p className="text-gray-600">
-                      {(stepStatus.images?.generated ?? 0)} / {(stepStatus.images?.expected ?? 0)} generated
+                      {stepStatus.images?.generated ?? 0} /{" "}
+                      {stepStatus.images?.expected ?? 0} generated
                       {(stepStatus.images?.in_progress ?? 0) > 0 && (
                         <span className="ml-1.5 inline-flex items-center gap-1 text-primary-500">
-                          · <Loader2 className="h-3 w-3 animate-spin" /> {(stepStatus.images?.in_progress ?? 0)} in progress
+                          · <Loader2 className="h-3 w-3 animate-spin" />{" "}
+                          {stepStatus.images?.in_progress ?? 0} in progress
                         </span>
                       )}
                       {stepStatus.images?.is_complete && (
-                        <span className="ml-1.5 text-green-600">· Complete</span>
+                        <span className="ml-1.5 text-green-600">
+                          · Complete
+                        </span>
                       )}
                     </p>
                   </div>

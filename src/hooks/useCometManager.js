@@ -132,6 +132,7 @@ export function useCometManager(sessionData = null) {
         //  step uuid
         const stepUid = step.uuid || null;
         const stepImageUrl = step.image || null;
+        const isGeneratingImages = !!step.image_generation_enqueued;
         stepScreens.forEach((screen, screenIndex) => {
           const screenId = screen.id || `screen-${screenCounter}`;
 
@@ -144,10 +145,7 @@ export function useCometManager(sessionData = null) {
           // Get first image asset for thumbnail (content icon / upload / AI-generated)
           const screenAssets = screen.assets || [];
           const firstImageAsset = screenAssets.find(
-            (asset) =>
-              asset.type === "image" ||
-              asset.url ||
-              asset.ImageUrl,
+            (asset) => asset.type === "image" || asset.url || asset.ImageUrl,
           );
           const thumbnail =
             formData.contentImageIcon ||
@@ -173,6 +171,7 @@ export function useCometManager(sessionData = null) {
             stepId: stepId,
             stepUid: stepUid, // Step uuid
             stepImageUrl: stepImageUrl,
+            isGeneratingImages: isGeneratingImages,
             thumbnail: thumbnail,
             title: screenTitle,
             formData: formData,
