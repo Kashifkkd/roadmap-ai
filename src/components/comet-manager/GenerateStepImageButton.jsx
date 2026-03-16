@@ -358,7 +358,23 @@ export default function GenerateStepImageButton({
     }
   };
 
-  const imagesComplete = isEnqueued && stepStatus?.images?.is_complete;
+  // Check completion
+  const imagesComplete = useMemo(() => {
+    if (!isEnqueued) return false;
+    if (stepStatus?.images?.is_complete) return true;
+    
+    // Check if step has image in sessionData 
+    const allChapters = [
+      ...(sessionData?.response_path?.chapters || []),
+      ...(sessionData?.response_outline?.chapters || []),
+    ];
+    
+    return allChapters.some(ch => 
+      ch.steps?.some(item => 
+        (item?.step?.uuid === stepUid || item?.step?.id === stepUid) && item?.step?.image
+      )
+    );
+  }, [isEnqueued, stepStatus?.images?.is_complete, sessionData, stepUid]);
 
   return (
     <>
