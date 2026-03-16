@@ -399,7 +399,27 @@ export default function CometManager({
   const isAskingKyperRef = useRef(false);
   const isGeneratingNextChapterRef = useRef(false);
   const [isUploadImageDialogOpen, setIsUploadImageDialogOpen] = useState(false);
-  const [generatingStepUids, setGeneratingStepUids] = useState(new Set());
+
+  const GENERATING_UIDS_KEY = "generating-step-uids";
+  const [generatingStepUids, setGeneratingStepUids] = useState(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const stored = localStorage.getItem(GENERATING_UIDS_KEY);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+  const generatingStepUidsRef = useRef(generatingStepUids);
+  useEffect(() => {
+    generatingStepUidsRef.current = generatingStepUids;
+    try {
+      localStorage.setItem(
+        GENERATING_UIDS_KEY,
+        JSON.stringify([...generatingStepUids]),
+      );
+    } catch {}
+  }, [generatingStepUids]);
 
   useEffect(() => {
     isAskingKyperRef.current = isAskingKyper;
