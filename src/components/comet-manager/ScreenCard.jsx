@@ -1,7 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
-import { Plus, GripVertical, Expand, Trash2 } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Plus,
+  GripVertical,
+  Expand,
+  Trash2,
+  MoreVertical,
+  Pencil,
+} from "lucide-react";
 import GradientLoader from "@/components/ui/GradientLoader";
 import {
   Dialog,
@@ -37,6 +44,42 @@ export default function ScreenCard({
   console.log(screen, "screen >>>>>>>>>>>>");
   const [showAddButton, setShowAddButton] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
+  const handleToggleMenu = (e) => {
+    e.stopPropagation();
+    setIsMenuOpen((prev) => !prev);
+  };
+
+  const handleEditScreen = (e) => {
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    onClick(screen);
+  };
+
+  const handleDeleteScreen = (e) => {
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    onDeleteScreen(screen.id);
+  };
+
   const AddButton = ({ position, insertIndex }) => (
     <div
       className={`absolute ${
@@ -90,20 +133,37 @@ export default function ScreenCard({
               >
                 <span>Screen {index + 1}</span>
                 {onDeleteScreen && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteScreen(screen.id);
-                    }}
-                    className={`p-0.5 rounded transition-colors duration-200 hover:bg-red-100 hover:text-red-600 ${
-                      selectedScreen?.id === screen.id
-                        ? "text-white/70 hover:text-red-500 hover:bg-red-200/30"
-                        : "text-gray-400 hover:text-red-600"
-                    }`}
-                    title="Delete screen"
-                  >
-                    <Trash2 style={{ width: "1em", height: "1em" }} />
-                  </button>
+                  <div className="relative" ref={menuRef}>
+                    <button
+                      onClick={handleToggleMenu}
+                      className={`p-0.5 rounded-md transition-colors duration-200 ${
+                        selectedScreen?.id === screen.id
+                          ? "text-white/70 hover:text-white hover:bg-white/10"
+                          : "text-gray-400 hover:text-gray-600 hover:bg-gray-200"
+                      }`}
+                      title="More options"
+                    >
+                      <MoreVertical style={{ width: "1em", height: "1em" }} />
+                    </button>
+                    {isMenuOpen && (
+                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                        <button
+                          onClick={handleEditScreen}
+                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={handleDeleteScreen}
+                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
               <div

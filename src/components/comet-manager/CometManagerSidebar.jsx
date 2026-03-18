@@ -87,6 +87,7 @@ export default function CometManagerSidebar({
   onAssetCategorySelect,
   onTabChange,
   externalTab,
+  onEditChapter,
   onEditStep,
   onDeleteStep,
 }) {
@@ -121,8 +122,12 @@ export default function CometManagerSidebar({
 
   // Step description editing state
   const [openStepMenuId, setOpenStepMenuId] = useState(null);
+  const [openChapterMenuId, setOpenChapterMenuId] = useState(null);
+  const [editingChapterId, setEditingChapterId] = useState(null);
   const [editingStepId, setEditingStepId] = useState(null);
+  const [editChapterName, setEditChapterName] = useState("");
   const [editStepDescription, setEditStepDescription] = useState("");
+  const chapterEditInputRef = useRef(null);
   const editInputRef = useRef(null);
   const menuRef = useRef(null);
 
@@ -131,13 +136,21 @@ export default function CometManagerSidebar({
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setOpenStepMenuId(null);
+        setOpenChapterMenuId(null);
       }
     };
-    if (openStepMenuId) {
+    if (openStepMenuId || openChapterMenuId) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [openStepMenuId]);
+  }, [openStepMenuId, openChapterMenuId]);
+
+  useEffect(() => {
+    if (editingChapterId && chapterEditInputRef.current) {
+      chapterEditInputRef.current.focus();
+      chapterEditInputRef.current.select();
+    }
+  }, [editingChapterId]);
 
   useEffect(() => {
     if (editingStepId && editInputRef.current) {
@@ -147,7 +160,14 @@ export default function CometManagerSidebar({
 
   const toggleStepMenu = (e, stepId) => {
     e.stopPropagation();
+    setOpenChapterMenuId(null);
     setOpenStepMenuId((prev) => (prev === stepId ? null : stepId));
+  };
+
+  const toggleChapterMenu = (e, chapterId) => {
+    e.stopPropagation();
+    setOpenStepMenuId(null);
+    setOpenChapterMenuId((prev) => (prev === chapterId ? null : chapterId));
   };
 
   const handleEditStepClick = (e, step, stepId) => {
@@ -188,8 +208,39 @@ export default function CometManagerSidebar({
     }
   };
 
+  const handleEditChapterClick = (e, chapterId, chapter) => {
+    e.stopPropagation();
+    setOpenChapterMenuId(null);
+    setEditingChapterId(chapterId);
+    setEditChapterName(chapter.chapter || chapter.name || "");
+  };
+
+  const handleSaveChapterEdit = (e, chapterId) => {
+    e.stopPropagation();
+    if (onEditChapter) {
+      onEditChapter(chapterId, editChapterName.trim());
+    }
+    setEditingChapterId(null);
+    setEditChapterName("");
+  };
+
+  const handleCancelChapterEdit = (e) => {
+    e.stopPropagation();
+    setEditingChapterId(null);
+    setEditChapterName("");
+  };
+
+  const handleChapterEditKeyDown = (e, chapterId) => {
+    if (e.key === "Enter") {
+      handleSaveChapterEdit(e, chapterId);
+    } else if (e.key === "Escape") {
+      handleCancelChapterEdit(e);
+    }
+  };
+
   const handleDeleteChapterClick = (e, chapterId) => {
     e.stopPropagation();
+    setOpenChapterMenuId(null);
 
     setExpandedChapters((prev) => {
       const newSet = new Set(prev);
@@ -842,6 +893,7 @@ export default function CometManagerSidebar({
                         {/* Chapter Header */}
                         <div
                           onClick={() => {
+                            if (editingChapterId === chapterId) return;
                             setSelectedChapter(chapterId);
                             toggleChapter(chapterId);
                             // Clear step selection when clicking chapter
@@ -854,7 +906,11 @@ export default function CometManagerSidebar({
                               onChapterClick(chapterId, chapter);
                             }
                           }}
-                          className="flex items-center gap-2 p-3 sm:p-4 cursor-pointer transition-all"
+                          className={`flex items-center gap-2 p-3 sm:p-4 transition-all ${
+                            editingChapterId === chapterId
+                              ? "cursor-default"
+                              : "cursor-pointer"
+                          }`}
                         >
                           {isDraggable ? (
                             <GripVertical
@@ -879,42 +935,135 @@ export default function CometManagerSidebar({
                             />
                           </div>
                           <div className="flex flex-col flex-1 min-w-0">
-                            <div className="flex items-center gap-2 justify-between">
-                              <p className="text-[10px] font-medium text-gray-900">
-                                Chapter {index + 1}
-                              </p>
-                              <div className="flex items-center gap-2">
-                                <p
-                                  className={`rounded-lg px-2 bg-primary-100 text-[8px] text-primary-600 ${isExpanded ? "bg-primary-700 text-white" : "bg-primary-100 text-primary-600"}`}
-                                >
-                                  Ready for Review
-                                </p>
-                                <button
-                                  type="button"
-                                  onClick={(e) =>
-                                    handleDeleteChapterClick(e, chapterId)
-                                  }
-                                  className={`rounded-md p-1 transition-colors hover:bg-red-100 ${
-                                    isSelected
-                                      ? "opacity-100"
-                                      : "opacity-0 group-hover:opacity-100"
-                                  }`}
-                                  title="Delete Chapter"
-                                  aria-label={`Delete ${chapter.chapter || chapter.name || `Chapter ${index + 1}`}`}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </button>
+                            {editingChapterId === chapterId ? (
+                              <div
+                                className="flex flex-col gap-3"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="flex items-center gap-2 justify-between">
+                                  <p className="text-[10px] font-medium text-gray-900">
+                                    Chapter {index + 1}
+                                  </p>
+                                  <p
+                                    className={`rounded-lg px-2 bg-primary-100 text-[8px] text-primary-600 ${isExpanded ? "bg-primary-700 text-white" : "bg-primary-100 text-primary-600"}`}
+                                  >
+                                    Ready for Review
+                                  </p>
+                                </div>
+                                <div>
+                                  <label className="text-xs font-medium text-gray-600 mb-1 block">
+                                    Chapter name
+                                  </label>
+                                  <input
+                                    ref={chapterEditInputRef}
+                                    value={editChapterName}
+                                    onChange={(e) =>
+                                      setEditChapterName(e.target.value)
+                                    }
+                                    onKeyDown={(e) =>
+                                      handleChapterEditKeyDown(e, chapterId)
+                                    }
+                                    className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                                    placeholder="Chapter name"
+                                  />
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={(e) =>
+                                      handleSaveChapterEdit(e, chapterId)
+                                    }
+                                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-md hover:bg-primary-700 transition-colors"
+                                  >
+                                    <Check className="w-3 h-3" />
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={handleCancelChapterEdit}
+                                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                                  >
+                                    <X className="w-3 h-3" />
+                                    Cancel
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                            <p
-                              className={`text-sm sm:text-sm font-medium ${
-                                isSelected ? "text-gray-900 " : "text-primary"
-                              }`}
-                            >
-                              {chapter.chapter ||
-                                chapter.name ||
-                                "Untitled Chapter"}
-                            </p>
+                            ) : (
+                              <>
+                                <div className="flex items-center gap-2 justify-between">
+                                  <p className="text-[10px] font-medium text-gray-900">
+                                    Chapter {index + 1}
+                                  </p>
+                                  <div className="flex items-center gap-2">
+                                    <p
+                                      className={`rounded-lg px-2 bg-primary-100 text-[8px] text-primary-600 ${isExpanded ? "bg-primary-700 text-white" : "bg-primary-100 text-primary-600"}`}
+                                    >
+                                      Ready for Review
+                                    </p>
+                                    <div
+                                      className={`relative ${
+                                        isSelected
+                                          ? "opacity-100"
+                                          : "opacity-0 group-hover:opacity-100"
+                                      }`}
+                                      ref={
+                                        openChapterMenuId === chapterId
+                                          ? menuRef
+                                          : null
+                                      }
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={(e) =>
+                                          toggleChapterMenu(e, chapterId)
+                                        }
+                                        className="rounded-md p-1 transition-colors hover:bg-gray-100"
+                                        title="More options"
+                                        aria-label={`More options for ${chapter.chapter || chapter.name || `Chapter ${index + 1}`}`}
+                                      >
+                                        <MoreVertical className="h-4 w-4 text-gray-500" />
+                                      </button>
+                                      {openChapterMenuId === chapterId && (
+                                        <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                                          <button
+                                            onClick={(e) =>
+                                              handleEditChapterClick(
+                                                e,
+                                                chapterId,
+                                                chapter,
+                                              )
+                                            }
+                                            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                          >
+                                            <Pencil className="w-3.5 h-3.5" />
+                                            Edit
+                                          </button>
+                                          <button
+                                            onClick={(e) =>
+                                              handleDeleteChapterClick(
+                                                e,
+                                                chapterId,
+                                              )
+                                            }
+                                            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            Delete
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                <p
+                                  className={`text-sm sm:text-sm font-medium ${
+                                    isSelected ? "text-gray-900 " : "text-primary"
+                                  }`}
+                                >
+                                  {chapter.chapter ||
+                                    chapter.name ||
+                                    "Untitled Chapter"}
+                                </p>
+                              </>
+                            )}
                           </div>
                         </div>
 

@@ -19,6 +19,51 @@ import { Info, Trash2, Link2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
+function normalizeWebpageUrlEntry(item, defaultUploaded = false) {
+  if (typeof item === "string") {
+    return { url: item, comment: "", isUploaded: defaultUploaded };
+  }
+
+  return {
+    url: item?.webpage_url ?? item?.url ?? "",
+    comment: item?.comment ?? "",
+    isUploaded:
+      typeof item?.isUploaded === "boolean" ? item.isUploaded : defaultUploaded,
+  };
+}
+
+function getUniqueWebpageUrlEntries(items = [], defaultUploaded = false) {
+  const uniqueEntries = [];
+  const seenUrls = new Map();
+
+  items.forEach((item) => {
+    const normalized = normalizeWebpageUrlEntry(item, defaultUploaded);
+    const trimmedUrl = normalized.url.trim();
+
+    if (!trimmedUrl) {
+      return;
+    }
+
+    const key = trimmedUrl.toLowerCase();
+    const existingIndex = seenUrls.get(key);
+
+    if (existingIndex === undefined) {
+      seenUrls.set(key, uniqueEntries.length);
+      uniqueEntries.push({ ...normalized, url: trimmedUrl });
+      return;
+    }
+
+    const existing = uniqueEntries[existingIndex];
+    uniqueEntries[existingIndex] = {
+      ...existing,
+      comment: existing.comment || normalized.comment,
+      isUploaded: existing.isUploaded || normalized.isUploaded,
+    };
+  });
+
+  return uniqueEntries;
+}
+
 export default function CreateComet({
   initialData = null,
   suggestion,
@@ -265,13 +310,9 @@ export default function CreateComet({
         Array.isArray(prefillData.webpage_url) &&
         prefillData.webpage_url.length > 0
       ) {
-        const normalized = prefillData.webpage_url.map((item) =>
-          typeof item === "string"
-            ? { url: item, comment: "" }
-            : {
-                url: item.webpage_url ?? item.url ?? "",
-                comment: item.comment ?? "",
-              }
+        const normalized = getUniqueWebpageUrlEntries(
+          prefillData.webpage_url,
+          true,
         );
         setWebpageUrls(normalized);
       }
@@ -515,6 +556,7 @@ export default function CreateComet({
       }
 
       if (onSubmit) {
+        const uniqueWebpageUrls = getUniqueWebpageUrlEntries(webpageUrls);
         // Include toggle states and their associated data
         const formData = {
           ...data,
@@ -522,9 +564,7 @@ export default function CreateComet({
           habitText: data.habit || "",
           personalizationEnabled,
           sourceFiles: files,
-          webpage_url: (webpageUrls || [])
-            .map((e) => (typeof e === "string" ? { url: e, comment: "" } : e))
-            .filter((e) => e?.url?.trim())
+          webpage_url: uniqueWebpageUrls
             .map((e) => ({ webpage_url: e.url.trim(), comment: e.comment ?? "" })),
         };
         await onSubmit(formData);
@@ -940,6 +980,7 @@ export default function CreateComet({
         habit_enabled: habitEnabled || false,
         habit_description: formValues.habit || "",
       };
+      const uniqueWebpageUrls = getUniqueWebpageUrlEntries(webpageUrls);
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
@@ -953,9 +994,7 @@ export default function CreateComet({
           { user: conversationMessage },
         ],
         to_modify: {},
-        webpage_url: (webpageUrls || [])
-          .map((e) => (typeof e === "string" ? { url: e, comment: "" } : e))
-          .filter((e) => e?.url?.trim())
+        webpage_url: uniqueWebpageUrls
           .map((e) => ({ webpage_url: e.url.trim(), comment: e.comment ?? "" })),
       });
 

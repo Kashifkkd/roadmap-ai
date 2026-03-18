@@ -12,12 +12,18 @@ export default function OutlineManagerLayout() {
   const [prefillData, setPrefillData] = useState(null);
   const [isAskingKyper, setIsAskingKyper] = useState(false);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
+  const [isSubmittingChapter, setIsSubmittingChapter] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   
   // Auto-save refs
   const autoSaveTimerRef = useRef(null);
   const isSavingRef = useRef(false);
   const prevOutlineRef = useRef(null);
+  const isSubmittingChapterRef = useRef(false);
+
+  useEffect(() => {
+    isSubmittingChapterRef.current = isSubmittingChapter;
+  }, [isSubmittingChapter]);
 
   useEffect(() => {
     // Access localStorage only on the client
@@ -80,12 +86,18 @@ export default function OutlineManagerLayout() {
         setSessionData(updatedData);
         // Also update prefillData so child components receive the updates
         setPrefillData(updatedData);
+        if (isSubmittingChapterRef.current) {
+          setIsSubmittingChapter(false);
+        }
       } catch (error) {
         console.error("Error updating session data:", error);
       }
     },
     (error) => {
       console.error("Subscription error in OutlineManagerLayout:", error);
+      if (isSubmittingChapterRef.current) {
+        setIsSubmittingChapter(false);
+      }
     }
   );
 
@@ -326,7 +338,9 @@ export default function OutlineManagerLayout() {
             // welcomeMessage={welcomeMessage}
             onResponseReceived={setPrefillData}
             sessionData={prefillData || sessionData}
-            externalLoading={isAskingKyper || isSubmittingStep}
+            externalLoading={
+              isAskingKyper || isSubmittingStep || isSubmittingChapter
+            }
           />
         </div>
         <div className="w-full lg:flex-1 h-full">
@@ -338,6 +352,8 @@ export default function OutlineManagerLayout() {
             setIsAskingKyper={setIsAskingKyper}
             isSubmittingStep={isSubmittingStep}
             setIsSubmittingStep={setIsSubmittingStep}
+            isSubmittingChapter={isSubmittingChapter}
+            setIsSubmittingChapter={setIsSubmittingChapter}
           />
         </div>
       </div>

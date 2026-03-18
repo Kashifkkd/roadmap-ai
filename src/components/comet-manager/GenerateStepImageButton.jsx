@@ -382,8 +382,8 @@ export default function GenerateStepImageButton({
         /* Images Generated state button */
         <button
           type="button"
-          onClick={handleOpenStatusDialog}
-          className="w-full flex items-center gap-2.5 rounded-full px-4 py-2.5 bg-[#12B76A] hover:bg-[#10a34a] transition-colors sticky bottom-0 cursor-pointer"
+          disabled
+          className="w-full flex items-center gap-2.5 rounded-full px-4 py-2.5 bg-[#12B76A] sticky bottom-0 cursor-not-allowed disabled:opacity-100"
         >
           <CircleCheck className="w-5 h-5 text-white shrink-0" />
           <span className="text-sm font-semibold text-white">

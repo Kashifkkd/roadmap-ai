@@ -156,12 +156,13 @@ const getFormValuesFromScreen = (screen) => {
 
   if (contentType === "notifications") {
     values.title = content.heading || "";
-    values.message = content.body || "";
-    values.mediaType = content.media?.type || "";
-    values.icon =
-      typeof content.icon === "string"
+    values.message = content.body || content.message || "";
+    values.mediaType = content.media?.type || "none";
+    values.mediaUrl =
+      content.media?.url ||
+      (typeof content.icon === "string"
         ? content.icon
-        : content.icon?.url || content.icon?.ImageUrl || "";
+        : content.icon?.url || content.icon?.ImageUrl || "");
   }
 
   if (contentType === "miniapp" || contentType === "miniApp") {
@@ -493,21 +494,29 @@ export default function DynamicForm({
               if (field === "title") {
                 currentScreen.screenContents.content.heading = value;
               } else if (field === "message") {
+                currentScreen.screenContents.content.body = value;
                 currentScreen.screenContents.content.message = value;
-                // Also update body for backward compatibility
-                if (!currentScreen.screenContents.content.body) {
-                  currentScreen.screenContents.content.body = value;
-                }
-              } else if (field === "icon") {
-                if (
-                  !currentScreen.screenContents.content.icon ||
-                  typeof currentScreen.screenContents.content.icon === "string"
-                ) {
-                  currentScreen.screenContents.content.icon = {
-                    url: value,
+              } else if (field === "mediaType") {
+                if (!currentScreen.screenContents.content.media) {
+                  currentScreen.screenContents.content.media = {
+                    type: "none",
+                    url: "",
                   };
-                } else {
-                  currentScreen.screenContents.content.icon.url = value;
+                }
+                currentScreen.screenContents.content.media.type = value;
+              } else if (field === "mediaUrl" || field === "icon") {
+                if (!currentScreen.screenContents.content.media) {
+                  currentScreen.screenContents.content.media = {
+                    type: "image",
+                    url: "",
+                  };
+                }
+                currentScreen.screenContents.content.media.url = value;
+                if (
+                  currentScreen.screenContents.content.media.type === "none" &&
+                  value
+                ) {
+                  currentScreen.screenContents.content.media.type = "image";
                 }
               }
             } else if (contentType === "profile") {

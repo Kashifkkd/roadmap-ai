@@ -1611,8 +1611,13 @@ export default function FromDoerToEnabler({
       case "notifications":
         addSection({
           id: "notifications",
-          sectionTitle: content.title || content.notificationsTitle || title,
-          description: content.message || content.notificationsMessage || "",
+          sectionTitle:
+            content.heading ||
+            content.title ||
+            content.notificationsTitle ||
+            title,
+          description:
+            content.body || content.message || content.notificationsMessage || "",
           secondaryText: Array.isArray(content.channels)
             ? content.channels.join(", ")
             : null,

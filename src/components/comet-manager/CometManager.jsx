@@ -18,6 +18,7 @@ import {
   Users,
   User,
   Mail,
+  Bell,
   Target,
   Menu,
   Expand,
@@ -101,6 +102,13 @@ const SCREEN_TYPE_GROUPS = [
         icon: <Sparkles size={20} />,
         color: "bg-pink-100 border-pink-300",
         description: "Personalize path with heading, body, and media.",
+      },
+      {
+        id: "notifications",
+        name: "Notifications",
+        icon: <Bell size={20} />,
+        color: "bg-cyan-100 border-cyan-300",
+        description: "Let learners choose helpful reminder notifications.",
       },
     ],
   },
@@ -250,6 +258,29 @@ export default function CometManager({
         }
         break;
       }
+      return newOutline;
+    });
+  };
+
+  const handleEditChapter = (chapterId, newName) => {
+    setOutline((prevOutline) => {
+      if (!prevOutline || !prevOutline.chapters) return prevOutline;
+      const newOutline = JSON.parse(JSON.stringify(prevOutline));
+      const pathChapters = newOutline.chapters || [];
+
+      for (const chapter of pathChapters) {
+        const cId = chapter.uuid || chapter.id;
+        if (cId !== chapterId) continue;
+
+        if (chapter.chapter !== undefined || chapter.name === undefined) {
+          chapter.chapter = newName;
+        }
+        if (chapter.name !== undefined) {
+          chapter.name = newName;
+        }
+        break;
+      }
+
       return newOutline;
     });
   };
@@ -814,6 +845,7 @@ export default function CometManager({
       manager_email: "manager_email",
       accountability_partner_email: "accountability_partner_email",
       path_personalization: "pathPersonalization",
+      notifications: "notifications",
     };
 
     const contentType = contentTypeMap[screenType.id] || screenType.id;
@@ -1223,6 +1255,40 @@ export default function CometManager({
         assessment: null,
         order: allScreens.length,
       };
+    } else if (screenType.id === "notifications") {
+      newScreen = {
+        id: screenId,
+        uuid: screenUuid,
+        screenType: "notifications",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "notifications",
+          content: {
+            heading: "",
+            body: "",
+            media: {
+              type: "none",
+              url: "",
+            },
+          },
+          uuid: crypto.randomUUID(),
+        },
+        assets: [],
+        imageStatus: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: "",
+        formData: {
+          title: "",
+          message: "",
+          mediaType: "none",
+          mediaUrl: "",
+        },
+        assessment: null,
+        order: allScreens.length,
+      };
     } else if (screenType.id === "accountability_partner_email") {
       newScreen = {
         id: screenId,
@@ -1339,6 +1405,7 @@ export default function CometManager({
                 onReorderChapters={reorderChapters}
                 onReorderSteps={reorderSteps}
                 onDeleteChapter={handleDeleteChapter}
+                onEditChapter={handleEditChapter}
                 onEditStep={handleEditStep}
                 onDeleteStep={handleDeleteStep}
                 remainingChapters={

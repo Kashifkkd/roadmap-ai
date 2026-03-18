@@ -85,7 +85,7 @@ export default function NotificationsForm({
                 updateScreenAssets([assetData]);
               }
               if (assetData.ImageUrl) {
-                updateField("icon", assetData.ImageUrl);
+                updateField("mediaUrl", assetData.ImageUrl);
               }
             }}
             onAIGenerateSuccess={(assetData) => {
@@ -93,7 +93,7 @@ export default function NotificationsForm({
                 updateScreenAssets([assetData]);
               }
               if (assetData.ImageUrl) {
-                updateField("icon", assetData.ImageUrl);
+                updateField("mediaUrl", assetData.ImageUrl);
               }
             }}
             existingAssets={existingAssets}

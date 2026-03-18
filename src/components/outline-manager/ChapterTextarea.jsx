@@ -9,6 +9,8 @@ export default function ChapterTextarea({
   sessionData,
   setAllMessages,
   onClose,
+  isSubmittingChapter = false,
+  setIsSubmittingChapter = () => {},
 }) {
   const [text, setText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,6 +46,7 @@ export default function ChapterTextarea({
   const handleSubmit = async () => {
     if (!text.trim()) return;
     setIsSubmitting(true);
+    setIsSubmittingChapter(true);
     setError(null);
     try {
       const sessionId = await ensureSessionId();
@@ -107,6 +110,7 @@ export default function ChapterTextarea({
       if (onClose) onClose();
     } catch (e) {
       setError(e?.message || "Unexpected error");
+      setIsSubmittingChapter(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -123,10 +127,17 @@ export default function ChapterTextarea({
       />
       {error ? <p className="text-red-500 text-xs">{error}</p> : null}
       <div className="flex gap-2 justify-end">
-        <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+        <Button
+          variant="outline"
+          onClick={onClose}
+          disabled={isSubmitting || isSubmittingChapter}
+        >
           Cancel
         </Button>
-        <Button onClick={handleSubmit} disabled={isSubmitting}>
+        <Button
+          onClick={handleSubmit}
+          disabled={isSubmitting || isSubmittingChapter}
+        >
           {isSubmitting ? "Submitting..." : "Submit"}
         </Button>
       </div>

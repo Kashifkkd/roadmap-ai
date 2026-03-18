@@ -11,6 +11,107 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+function normalizeWebLink(item, defaultUploaded = false) {
+  if (typeof item === "string") {
+    return { url: item, comment: "", isUploaded: defaultUploaded };
+  }
+
+  return {
+    url: item?.url ?? item?.webpage_url ?? "",
+    comment: item?.comment ?? "",
+    isUploaded:
+      typeof item?.isUploaded === "boolean" ? item.isUploaded : defaultUploaded,
+  };
+}
+
+function getWebLinkKey(url = "") {
+  return url.trim().toLowerCase().replace(/\/+$/, "");
+}
+
+function getFileKey(name = "") {
+  return name.trim().toLowerCase();
+}
+
+function normalizeFileItem(item, defaultUploaded = false) {
+  return {
+    ...item,
+    name: item?.name ?? item?.source_name ?? "Unknown File",
+    isUploaded:
+      typeof item?.isUploaded === "boolean" ? item.isUploaded : defaultUploaded,
+    comment: item?.comment ?? "",
+  };
+}
+
+function dedupeFiles(items = [], defaultUploaded = false) {
+  const uniqueFiles = [];
+  const seenFiles = new Map();
+
+  items.forEach((item) => {
+    const normalized = normalizeFileItem(item, defaultUploaded);
+    const key = getFileKey(normalized.name);
+
+    if (!key) {
+      uniqueFiles.push(normalized);
+      return;
+    }
+
+    const existingIndex = seenFiles.get(key);
+
+    if (existingIndex === undefined) {
+      seenFiles.set(key, uniqueFiles.length);
+      uniqueFiles.push(normalized);
+      return;
+    }
+
+    const existing = uniqueFiles[existingIndex];
+    uniqueFiles[existingIndex] = {
+      ...existing,
+      comment: existing.comment || normalized.comment,
+      isUploaded: existing.isUploaded || normalized.isUploaded,
+      id: existing.id ?? normalized.id,
+      output_presigned_url:
+        existing.output_presigned_url ?? normalized.output_presigned_url,
+      file: existing.file ?? normalized.file,
+    };
+  });
+
+  return uniqueFiles;
+}
+
+function dedupeWebLinks(items = [], defaultUploaded = false) {
+  const uniqueLinks = [];
+  const seenUrls = new Map();
+
+  items.forEach((item) => {
+    const normalized = normalizeWebLink(item, defaultUploaded);
+    const trimmedUrl = normalized.url.trim();
+
+    if (!trimmedUrl) {
+      uniqueLinks.push({ ...normalized, url: trimmedUrl });
+      return;
+    }
+
+    const key = getWebLinkKey(trimmedUrl);
+    const existingIndex = seenUrls.get(key);
+
+    if (existingIndex === undefined) {
+      seenUrls.set(key, uniqueLinks.length);
+      uniqueLinks.push({ ...normalized, url: trimmedUrl });
+      return;
+    }
+
+    const existing = uniqueLinks[existingIndex];
+    uniqueLinks[existingIndex] = {
+      ...existing,
+      url: existing.url || trimmedUrl,
+      comment: existing.comment || normalized.comment,
+      isUploaded: existing.isUploaded || normalized.isUploaded,
+    };
+  });
+
+  return uniqueLinks;
+}
+
 export default function SourceMaterialCard({
   files,
   setFiles,
@@ -60,6 +161,7 @@ export default function SourceMaterialCard({
               linkMaterials.push({
                 url: url.trim(),
                 comment: material.comment ?? "",
+                isUploaded: true,
               });
             }
           } else {
@@ -73,9 +175,9 @@ export default function SourceMaterialCard({
           }
         }
 
-        setFiles(fileMaterials);
+        setFiles(dedupeFiles(fileMaterials, true));
         if (linkMaterials.length > 0) {
-          setWebpageUrls(linkMaterials);
+          setWebpageUrls(dedupeWebLinks(linkMaterials, true));
         }
       }
     } catch (error) {
@@ -214,9 +316,13 @@ export default function SourceMaterialCard({
     }
 
     // Check for duplicate file names against already loaded materials
-    const existingFileNames = new Set(files.map((f) => f.name));
+    const existingFileNames = new Set(files.map((f) => getFileKey(f.name)));
+    const seenSelectedNames = new Set();
     const duplicateFiles = filteredByType.filter((file) =>
-      existingFileNames.has(file.name),
+      existingFileNames.has(getFileKey(file.name)) ||
+      seenSelectedNames.has(getFileKey(file.name))
+        ? true
+        : (seenSelectedNames.add(getFileKey(file.name)), false),
     );
 
     if (duplicateFiles.length > 0) {
@@ -229,7 +335,10 @@ export default function SourceMaterialCard({
     }
 
     const newFiles = filteredByType.filter(
-      (file) => !existingFileNames.has(file.name),
+      (file) =>
+        !duplicateFiles.some(
+          (duplicateFile) => getFileKey(duplicateFile.name) === getFileKey(file.name),
+        ),
     );
 
     if (newFiles.length === 0) {
@@ -239,26 +348,24 @@ export default function SourceMaterialCard({
 
     // Don't upload immediately — let the user add comments first.
     // Files will be uploaded when "Create Outline" is clicked (via uploadAllFiles).
-    setFiles((prev) => [
-      ...prev,
-      ...newFiles.map((file) => ({
-        name: file.name,
-        size: file.size,
-        isUploaded: false,
-        comment: "",
-        file,
-      })),
-    ]);
+    setFiles((prev) =>
+      dedupeFiles([
+        ...prev,
+        ...newFiles.map((file) => ({
+          name: file.name,
+          size: file.size,
+          isUploaded: false,
+          comment: "",
+          file,
+        })),
+      ]),
+    );
     event.target.value = "";
   };
 
   // Normalize: ensure each entry is { url, comment } (defined before useEffect that uses it)
   const normalizedUrls = Array.isArray(webpageUrls)
-    ? webpageUrls.map((item) =>
-        typeof item === "string"
-          ? { url: item, comment: "" }
-          : { url: item?.url ?? "", comment: item?.comment ?? "" },
-      )
+    ? webpageUrls.map((item) => normalizeWebLink(item))
     : [];
 
   useEffect(() => {
@@ -268,20 +375,38 @@ export default function SourceMaterialCard({
         setIsUploading(true);
         onUploadingChange(true);
         try {
-          const linksToUpload = normalizedUrls.filter(
-            (entry) => (entry?.url ?? "").trim().length > 0,
+          const linksToUpload = dedupeWebLinks(normalizedUrls).filter(
+            (entry) => (entry?.url ?? "").trim().length > 0 && !entry.isUploaded,
           );
           if (linksToUpload.length > 0 && currentSessionId) {
             await Promise.all(linksToUpload.map((entry) => uploadWebLink(entry)));
+            const uploadedUrls = new Set(
+              linksToUpload.map((entry) => entry.url.trim().toLowerCase()),
+            );
+            setWebpageUrls((prev) =>
+              prev.map((entry) => {
+                const normalized = normalizeWebLink(entry);
+                const key = normalized.url.trim().toLowerCase();
+                return uploadedUrls.has(key)
+                  ? { ...normalized, isUploaded: true }
+                  : normalized;
+              }),
+            );
           }
 
           // 2. Upload files that haven't been uploaded
-          const newFiles = files.filter((file) => !file.isUploaded);
+          const newFiles = dedupeFiles(files).filter((file) => !file.isUploaded);
           if (newFiles.length > 0 && currentSessionId) {
             await Promise.all(newFiles.map((file) => uploadFile(file)));
             // Mark files as uploaded so they aren't re-uploaded on next call
             setFiles((prev) =>
-              prev.map((f) => (!f.isUploaded ? { ...f, isUploaded: true } : f)),
+              prev.map((f) =>
+                newFiles.some(
+                  (newFile) => getFileKey(newFile.name) === getFileKey(f.name),
+                )
+                  ? { ...f, isUploaded: true }
+                  : f,
+              ),
             );
           } else if (newFiles.length === 0 && linksToUpload.length === 0) {
             console.log("No new files or links to upload");
@@ -310,6 +435,21 @@ export default function SourceMaterialCard({
   };
 
   const handleLinkChange = (index, field, value) => {
+    if (field === "url") {
+      const nextKey = getWebLinkKey(value);
+
+      if (nextKey) {
+        const isDuplicate = normalizedUrls.some(
+          (entry, i) => i !== index && getWebLinkKey(entry?.url) === nextKey,
+        );
+
+        if (isDuplicate) {
+          toast.error("This link is already added");
+          return;
+        }
+      }
+    }
+
     const updated = normalizedUrls.map((entry, i) =>
       i === index ? { ...entry, [field]: value } : entry
     );
@@ -320,14 +460,7 @@ export default function SourceMaterialCard({
       setFiles((prev) =>
         prev.map((item) => {
           if (item === fileItem) {
-            if (item.file !== undefined) return { ...item, comment: value };
-            return {
-              name: item.name,
-              size: item.size,
-              isUploaded: false,
-              comment: value,
-              file: item,
-            };
+            return { ...item, comment: value };
           }
           return item;
         }),

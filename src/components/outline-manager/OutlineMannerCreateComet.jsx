@@ -30,6 +30,8 @@ export default function OutlineMannerCreateComet({
   setIsAskingKyper = () => {},
   isSubmittingStep = false,
   setIsSubmittingStep = () => {},
+  isSubmittingChapter = false,
+  setIsSubmittingChapter = () => {},
 }) {
   // console.log("sessionData in OutlineMannerCreateComet:", sessionData);
   // console.log("prefillData in OutlineMannerCreateComet:", prefillData);
@@ -584,6 +586,7 @@ export default function OutlineMannerCreateComet({
                   variant="outline"
                   className="text-primary border-2 border-primary"
                   onClick={() => setShowChapterTextarea(true)}
+                  disabled={isSubmittingChapter}
                 >
                   <Plus size={16} />
                   Add Chapter
@@ -595,6 +598,8 @@ export default function OutlineMannerCreateComet({
                     sessionData={prefillData || sessionData}
                     setAllMessages={setAllMessages}
                     onClose={() => setShowChapterTextarea(false)}
+                    isSubmittingChapter={isSubmittingChapter}
+                    setIsSubmittingChapter={setIsSubmittingChapter}
                   />
                 </div>
               ) : null}
@@ -639,7 +644,7 @@ export default function OutlineMannerCreateComet({
                               </p>
                             </div>
                             <div className="flex justify-end items-start gap-2 h-full shrink-0">
-                              <button
+                              {/* <button
                                 onClick={(e) => handleDeleteChapter(e, index)}
                                 className={`p-1 rounded-md hover:bg-red-100 transition-colors ${
                                   selectedChapter?.chapter === chapter?.chapter
@@ -650,7 +655,7 @@ export default function OutlineMannerCreateComet({
                                 aria-label={`Delete ${chapter?.chapter || `Chapter ${index + 1}`}`}
                               >
                                 <Trash2 className="w-4 h-4 text-red-500" />
-                              </button>
+                              </button> */}
                               <div
                                 className={`p-1 flex gap-2 rounded-full text-nowrap ${
                                   selectedChapter?.chapter === chapter?.chapter
@@ -899,7 +904,7 @@ export default function OutlineMannerCreateComet({
                                       }
                                     >
                                       {/* Delete Step Button - Top Right */}
-                                      <button
+                                      {/* <button
                                         onClick={(e) =>
                                           handleDeleteStep(
                                             e,
@@ -916,7 +921,7 @@ export default function OutlineMannerCreateComet({
                                         title="Delete Step"
                                       >
                                         <Trash2 className="w-4 h-4" />
-                                      </button>
+                                      </button> */}
 
                                       <button
                                         onClick={(e) =>
