@@ -27,6 +27,29 @@ function stripHtmlToPlainText(html) {
     .trim();
 }
 
+function shouldShowScreenCardImage(screen) {
+  const contentType = screen?.screenContents?.contentType;
+  const content = screen?.screenContents?.content || {};
+
+  if (
+    contentType === "content" ||
+    contentType === "reflection" ||
+    contentType === "habits" ||
+    contentType === "manager_email" ||
+    contentType === "managerEmail" ||
+    contentType === "accountability_partner_email" ||
+    contentType === "accountabilityPartnerEmail"
+  ) {
+    return true;
+  }
+
+  if (contentType === "notifications") {
+    return content.media?.type !== "none";
+  }
+
+  return false;
+}
+
 export default function ScreenCard({
   screen,
   chapter,
@@ -79,6 +102,8 @@ export default function ScreenCard({
     setIsMenuOpen(false);
     onDeleteScreen(screen.id);
   };
+
+  const showImagePreview = shouldShowScreenCardImage(screen);
 
   const AddButton = ({ position, insertIndex }) => (
     <div
@@ -208,23 +233,25 @@ export default function ScreenCard({
                 </div>
 
                 {/* Thumbnail */}
-                <div
-                  className={`relative w-full mb-2 ${
-                    selectedScreen?.id === screen.id ? "h-25" : "h-22.5"
-                  }`}
-                >
-                  <img
-                    src={screen.thumbnail || "/noImage.png"}
-                    alt={screen.title || "Screen preview"}
-                    className="w-full h-full object-cover transition-all duration-300"
-                    onError={(e) => (e.target.src = "/error-img.png")}
-                  />
-                  {isGeneratingImages && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/60 rounded">
-                      <GradientLoader size={32} />
-                    </div>
-                  )}
-                </div>
+                {showImagePreview && (
+                  <div
+                    className={`relative w-full mb-2 ${
+                      selectedScreen?.id === screen.id ? "h-25" : "h-22.5"
+                    }`}
+                  >
+                    <img
+                      src={screen.thumbnail || "/noImage.png"}
+                      alt={screen.title || "Screen preview"}
+                      className="w-full h-full object-cover transition-all duration-300"
+                      onError={(e) => (e.target.src = "/error-img.png")}
+                    />
+                    {isGeneratingImages && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-white/60 rounded">
+                        <GradientLoader size={32} />
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Key Learning Heading */}
                 {/* <div
@@ -238,6 +265,8 @@ export default function ScreenCard({
 
                 <div
                   className={`w-full text-xs font-medium overflow-hidden text-ellipsis line-clamp-3 transition-colors duration-300 ${
+                    !showImagePreview ? "mt-auto" : ""
+                  } ${
                     selectedScreen?.id === screen.id
                       ? "text-black"
                       : "text-gray-700"

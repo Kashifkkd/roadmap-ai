@@ -990,7 +990,7 @@ export default function CometManagerSidebar({
                               <>
                                 <div className="flex items-center gap-2 justify-between">
                                   <p className="text-[10px] font-medium text-gray-900">
-                                    Chapter {index + 1}
+                                    Chapter {index }
                                   </p>
                                   <div className="flex items-center gap-2">
                                     <p

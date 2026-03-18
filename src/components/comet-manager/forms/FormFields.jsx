@@ -230,17 +230,12 @@ export const ListField = ({
 };
 
 /**
- * Normalize Quill HTML output so H1/H2/H3 stay inline with no extra spacing.
- * - Remove empty paragraphs (<p><br></p> or <p></p>) that add line breaks around headings
- * - Merge paragraph boundaries (</p><p>) into spaces so content flows in one block
+ * Preserve Quill's paragraph structure so Enter/Space/Tab interactions keep working
+ * after value syncs back from parent state.
  */
 const normalizeQuillHtmlOutput = (html) => {
   if (typeof html !== "string") return html;
-  // 1. Remove empty paragraphs
-  let result = html.replace(/<p>(?:<br\s*\/?>)?<\/p>/gi, "");
-  // 2. Merge paragraphs: replace </p><p> with space so headings flow inline
-  result = result.replace(/<\/p>\s*<p>/gi, " ");
-  return result;
+  return html;
 };
 
 /** When "html", value is always simple HTML for backend; delta is normalized to HTML on load. */
@@ -599,6 +594,8 @@ export const RichTextArea = ({
           <button type="button" className="ql-heading1" title="Heading 1 (selected text)">H1</button>
           <button type="button" className="ql-heading2" title="Heading 2 (selected text)">H2</button>
           <button type="button" className="ql-heading3" title="Heading 3 (selected text)">H3</button>
+          <button type="button" className="ql-list" value="bullet" title="Bulleted List" />
+          <button type="button" className="ql-list" value="ordered" title="Numbered List" />
           <button type="button" className="ql-strike" title="Strikethrough" />
           <button type="button" className="ql-link" title="Link" />
           <button type="button" className="ql-image" title="Image" />

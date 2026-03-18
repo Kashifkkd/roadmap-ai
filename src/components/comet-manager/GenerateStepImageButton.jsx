@@ -394,7 +394,8 @@ export default function GenerateStepImageButton({
         /* Generating Images state button */
         <button
           type="button"
-          onClick={handleOpenStatusDialog}
+          // onClick={handleOpenStatusDialog}
+          disabled
           className="w-full flex items-center gap-3 rounded-full px-3 py-2 bg-[#C7C2F9] hover:bg-[#cfc7f5] transition-colors sticky bottom-0 cursor-pointer"
         >
           <span className="shrink-0 w-8 h-8 rounded-full bg-white flex items-center justify-center">
