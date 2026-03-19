@@ -28,7 +28,6 @@ import {
   Check,
   X,
   MoreVertical,
-  MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Stack } from "@mui/material";
@@ -913,32 +912,28 @@ export default function CometManagerSidebar({
                               : "cursor-pointer"
                           }`}
                         >
-                          {editingChapterId !== chapterId && (
-                            <>
-                              {isDraggable ? (
-                                <GripVertical
-                                  size={18}
-                                  className="cursor-grab active:cursor-grabbing text-gray-400 shrink-0"
-                                />
-                              ) : (
-                                <div className="w-[18px] shrink-0" />
-                              )}
-                              <div
-                                className={`rounded-full p-1 ${
-                                  isSelected ? "bg-primary" : "bg-primary-100"
-                                }`}
-                              >
-                                <ChevronDown
-                                  size={16}
-                                  className={`${
-                                    isSelected ? "text-white" : "text-primary"
-                                  } transition-transform ${
-                                    isExpanded ? "rotate-180" : ""
-                                  }`}
-                                />
-                              </div>
-                            </>
+                          {isDraggable ? (
+                            <GripVertical
+                              size={18}
+                              className="cursor-grab active:cursor-grabbing text-gray-400 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-[18px] shrink-0" />
                           )}
+                          <div
+                            className={`rounded-full p-1 ${
+                              isSelected ? "bg-primary" : "bg-primary-100"
+                            }`}
+                          >
+                            <ChevronDown
+                              size={16}
+                              className={`${
+                                isSelected ? "text-white" : "text-primary"
+                              } transition-transform ${
+                                isExpanded ? "rotate-180" : ""
+                              }`}
+                            />
+                          </div>
                           <div className="flex flex-col flex-1 min-w-0">
                             {editingChapterId === chapterId ? (
                               <div
@@ -955,11 +950,11 @@ export default function CometManagerSidebar({
                                     Ready for Review
                                   </p>
                                 </div>
-                                <div className="border border-gray-300 rounded-md p-2 bg-white">
-                                  {/* <label className="text-xs font-medium text-gray-600 mb-1 block ">
+                                <div>
+                                  <label className="text-xs font-medium text-gray-600 mb-1 block">
                                     Chapter name
-                                  </label> */}
-                                  <textarea
+                                  </label>
+                                  <input
                                     ref={chapterEditInputRef}
                                     value={editChapterName}
                                     onChange={(e) =>
@@ -968,107 +963,105 @@ export default function CometManagerSidebar({
                                     onKeyDown={(e) =>
                                       handleChapterEditKeyDown(e, chapterId)
                                     }
-                                    className="w-full px-2 py-1.5 text-xs focus:outline-none resize-none overflow-y-auto"
+                                    className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                                     placeholder="Chapter name"
-                                    rows={2}
                                   />
-                                  <div className="border-t border-gray-300 mt-1 mb-2"></div>
-                                  <div className="flex gap-2 items-end justify-end">
-                                    <button
-                                      onClick={(e) =>
-                                        handleSaveChapterEdit(e, chapterId)
-                                      }
-                                      className="flex items-center px-2 py-1 text-xs font-medium text-white bg-primary rounded-sm hover:bg-primary-700 transition-colors border border-primary"
-                                    >
-                                      Save
-                                    </button>
-                                    <button
-                                      onClick={handleCancelChapterEdit}
-                                      className="flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white rounded-sm hover:bg-primary-100 transition-colors border border-gray-300"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={(e) =>
+                                      handleSaveChapterEdit(e, chapterId)
+                                    }
+                                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-md hover:bg-primary-700 transition-colors"
+                                  >
+                                    <Check className="w-3 h-3" />
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={handleCancelChapterEdit}
+                                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                                  >
+                                    <X className="w-3 h-3" />
+                                    Cancel
+                                  </button>
                                 </div>
                               </div>
                             ) : (
                               <>
                                 <div className="flex items-center gap-2 justify-between">
                                   <p className="text-[10px] font-medium text-gray-900">
-                                    Chapter {index}
+                                    Chapter {index }
                                   </p>
-                                  <p
-                                    className={`rounded-lg px-2 bg-primary-100 text-[8px] text-primary-600 ${isExpanded ? "bg-primary-700 text-white" : "bg-primary-100 text-primary-600"}`}
-                                  >
-                                    Ready for Review
-                                  </p>
-                                </div>
-                                <div className="relative flex flex-row justify-between">
-                                  <p
-                                    className={`text-sm sm:text-sm font-medium ${
-                                      isSelected
-                                        ? "text-gray-900 "
-                                        : "text-primary"
-                                    }`}
-                                  >
-                                    {chapter.chapter ||
-                                      chapter.name ||
-                                      "Untitled Chapter"}
-                                  </p>
-                                  <div
-                                    className={`relative flex items-end justify-end ${
-                                      isSelected
-                                        ? "opacity-100"
-                                        : "opacity-0 group-hover:opacity-100"
-                                    }`}
-                                    ref={
-                                      openChapterMenuId === chapterId
-                                        ? menuRef
-                                        : null
-                                    }
-                                  >
-                                    <button
-                                      type="button"
-                                      onClick={(e) =>
-                                        toggleChapterMenu(e, chapterId)
-                                      }
-                                      className="rounded-md p-1 transition-colors hover:bg-gray-100"
-                                      title="More options"
-                                      aria-label={`More options for ${chapter.chapter || chapter.name || `Chapter ${index + 1}`}`}
+                                  <div className="flex items-center gap-2">
+                                    <p
+                                      className={`rounded-lg px-2 bg-primary-100 text-[8px] text-primary-600 ${isExpanded ? "bg-primary-700 text-white" : "bg-primary-100 text-primary-600"}`}
                                     >
-                                      <MoreHorizontal className="h-4 w-4 text-gray-500" />
-                                    </button>
-                                    {openChapterMenuId === chapterId && (
-                                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
-                                        <button
-                                          onClick={(e) =>
-                                            handleEditChapterClick(
-                                              e,
-                                              chapterId,
-                                              chapter,
-                                            )
-                                          }
-                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
-                                        >
-                                          <Pencil className="w-3.5 h-3.5" />
-                                          Edit
-                                        </button>
-                                        <button
-                                          onClick={(e) =>
-                                            handleDeleteChapterClick(
-                                              e,
-                                              chapterId,
-                                            )
-                                          }
-                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                          Delete
-                                        </button>
-                                      </div>
-                                    )}
+                                      Ready for Review
+                                    </p>
+                                    <div
+                                      className={`relative ${
+                                        isSelected
+                                          ? "opacity-100"
+                                          : "opacity-0 group-hover:opacity-100"
+                                      }`}
+                                      ref={
+                                        openChapterMenuId === chapterId
+                                          ? menuRef
+                                          : null
+                                      }
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={(e) =>
+                                          toggleChapterMenu(e, chapterId)
+                                        }
+                                        className="rounded-md p-1 transition-colors hover:bg-gray-100"
+                                        title="More options"
+                                        aria-label={`More options for ${chapter.chapter || chapter.name || `Chapter ${index + 1}`}`}
+                                      >
+                                        <MoreVertical className="h-4 w-4 text-gray-500" />
+                                      </button>
+                                      {openChapterMenuId === chapterId && (
+                                        <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                                          <button
+                                            onClick={(e) =>
+                                              handleEditChapterClick(
+                                                e,
+                                                chapterId,
+                                                chapter,
+                                              )
+                                            }
+                                            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                          >
+                                            <Pencil className="w-3.5 h-3.5" />
+                                            Edit
+                                          </button>
+                                          <button
+                                            onClick={(e) =>
+                                              handleDeleteChapterClick(
+                                                e,
+                                                chapterId,
+                                              )
+                                            }
+                                            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            Delete
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
+                                <p
+                                  className={`text-sm sm:text-sm font-medium ${
+                                    isSelected ? "text-gray-900 " : "text-primary"
+                                  }`}
+                                >
+                                  {chapter.chapter ||
+                                    chapter.name ||
+                                    "Untitled Chapter"}
+                                </p>
                               </>
                             )}
                           </div>
@@ -1231,119 +1224,69 @@ export default function CometManagerSidebar({
                                               {editingStepId === stepId ? (
                                                 /* Inline Edit Form*/
                                                 <div className="flex flex-col gap-2">
-                                                  {/* <h4 className="text-sm font-semibold text-black mb-1">
+                                                  <h4 className="text-sm font-semibold text-black mb-1">
                                                     {step.name ||
                                                       `Step ${stepIndex + 1}`}
-                                                  </h4> */}
-                                                  <div className="border border-gray-300 rounded-md p-2 bg-white">
+                                                  </h4>
+                                                  <div>
+                                                    <label className="text-xs font-medium text-gray-600 mb-1 block">
+                                                      Description
+                                                    </label>
                                                     <textarea
                                                       ref={editInputRef}
-                                                      value={
-                                                        editStepDescription
-                                                      }
-                                                      onChange={(e) =>
-                                                        setEditStepDescription(
-                                                          e.target.value,
-                                                        )
-                                                      }
-                                                      onKeyDown={(e) =>
-                                                        handleStepEditKeyDown(
-                                                          e,
-                                                          chapterId,
-                                                          stepId,
-                                                          step.name,
-                                                        )
-                                                      }
-                                                      className="w-full px-2 text-xs focus:outline-none resize-none overflow-y-auto"
+                                                      value={editStepDescription}
+                                                      onChange={(e) => setEditStepDescription(e.target.value)}
+                                                      onKeyDown={(e) => handleStepEditKeyDown(e, chapterId, stepId, step.name)}
+                                                      className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none"
                                                       rows={3}
                                                       placeholder="Step description"
                                                     />
-                                                    <div className="border-t border-gray-300 mb-2"></div>
-
-                                                    <div className="flex gap-2 items-end justify-end">
-                                                      <button
-                                                        onClick={(e) =>
-                                                          handleSaveStepEdit(
-                                                            e,
-                                                            chapterId,
-                                                            stepId,
-                                                            step.name,
-                                                          )
-                                                        }
-                                                        className="flex items-center px-2 py-1 text-xs font-medium text-white bg-primary rounded-sm hover:bg-primary-700 transition-colors border border-primary"
-                                                      >
-                                                        Save
-                                                      </button>
-                                                      <button
-                                                        onClick={
-                                                          handleCancelStepEdit
-                                                        }
-                                                        className="flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white rounded-sm hover:bg-primary-100 transition-colors border border-gray-300"
-                                                      >
-                                                        Cancel
-                                                      </button>
-                                                    </div>
+                                                  </div>
+                                                  <div className="flex gap-2">
+                                                    <button
+                                                      onClick={(e) => handleSaveStepEdit(e, chapterId, stepId, step.name)}
+                                                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-md hover:bg-primary-700 transition-colors"
+                                                    >
+                                                      <Check className="w-3 h-3" />
+                                                      Save
+                                                    </button>
+                                                    <button
+                                                      onClick={handleCancelStepEdit}
+                                                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                                                    >
+                                                      <X className="w-3 h-3" />
+                                                      Cancel
+                                                    </button>
                                                   </div>
                                                 </div>
                                               ) : (
                                                 /* Normal Display with 3-dot menu */
-                                                <div className="relative flex flex-row ">
-                                                  {step.description && (
-                                                    <p className="text-xs text-black leading-relaxed">
-                                                      {step.description}
-                                                    </p>
-                                                  )}
-                                                  <div className="flex items-end justify-end">
-                                                    {/* <h4 className="text-sm font-semibold text-black mb-1">
+                                                <div className="relative">
+                                                  <div className="flex items-start justify-between">
+                                                    <h4 className="text-sm font-semibold text-black mb-1">
                                                       {step.name ||
                                                         `Step ${stepIndex + 1}`}
-                                                    </h4> */}
+                                                    </h4>
                                                     {/* 3-dot menu */}
-                                                    <div
-                                                      className="relative"
-                                                      ref={
-                                                        openStepMenuId ===
-                                                        stepId
-                                                          ? menuRef
-                                                          : null
-                                                      }
-                                                    >
+                                                    <div className="relative" ref={openStepMenuId === stepId ? menuRef : null}>
                                                       <button
-                                                        onClick={(e) =>
-                                                          toggleStepMenu(
-                                                            e,
-                                                            stepId,
-                                                          )
-                                                        }
+                                                        onClick={(e) => toggleStepMenu(e, stepId)}
                                                         className="p-1 rounded-md hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
                                                         title="More options"
                                                       >
-                                                        <MoreHorizontal className="w-4 h-4" />
+                                                        <MoreVertical className="w-4 h-4" />
                                                       </button>
-                                                      {openStepMenuId ===
-                                                        stepId && (
+                                                      {openStepMenuId === stepId && (
                                                         <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
                                                           <button
-                                                            onClick={(e) =>
-                                                              handleEditStepClick(
-                                                                e,
-                                                                step,
-                                                                stepId,
-                                                              )
-                                                            }
+                                                            onClick={(e) => handleEditStepClick(e, step, stepId)}
                                                             className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
                                                           >
                                                             <Pencil className="w-3.5 h-3.5" />
                                                             Edit
                                                           </button>
                                                           <button
-                                                            onClick={(e) =>
-                                                              handleDeleteStepClick(
-                                                                e,
-                                                                chapterId,
-                                                                stepId,
-                                                              )
-                                                            }
+                                                            onClick={(e) => handleDeleteStepClick(e, chapterId, stepId)}
                                                             className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
                                                           >
                                                             <Trash2 className="w-3.5 h-3.5" />
@@ -1353,6 +1296,11 @@ export default function CometManagerSidebar({
                                                       )}
                                                     </div>
                                                   </div>
+                                                  {step.description && (
+                                                    <p className="text-xs text-black leading-relaxed">
+                                                      {step.description}
+                                                    </p>
+                                                  )}
                                                 </div>
                                               )}
                                             </div>
@@ -1776,9 +1724,10 @@ export default function CometManagerSidebar({
                               <div className="flex flex-col gap-2 px-3 pb-3">
                                 {category.materials.map(
                                   (material, materialIndex) => {
-                                    const materialId = material.uuid
-                                      ? `${material.uuid}-${categoryId}-${materialIndex}`
-                                      : `material-${categoryId}-${materialIndex}`;
+                                    const materialId =
+                                      material.uuid
+                                        ? `${material.uuid}-${categoryId}-${materialIndex}`
+                                        : `material-${categoryId}-${materialIndex}`;
                                     const isMaterialSelected =
                                       selectedMaterial === materialId;
                                     const fileSize = getMaterialSize(material);

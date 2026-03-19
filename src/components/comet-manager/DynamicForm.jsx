@@ -963,7 +963,9 @@ export default function DynamicForm({
               const currentScreen = stepItem.screens[screenIndex];
               if (!currentScreen.assets) currentScreen.assets = [];
               const existingAssets = currentScreen.assets || [];
-              const newAssets = Array.isArray(assets) ? assets : [assets];
+              const newAssets = Array.isArray(assets)
+                ? [...existingAssets, ...assets]
+                : [...existingAssets, assets];
 
               stepItem.screens[screenIndex] = {
                 ...currentScreen,

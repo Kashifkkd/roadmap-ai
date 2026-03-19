@@ -199,12 +199,13 @@ export default function CometManagerLayout() {
                     sessionData?.chatbot_conversation ||
                     [],
                 };
-                // Ensure local edits are preserved
-                savedData.response_path = currentOutline;
                 // Preserve enabled_attributes so they persist from dashboard through comet_manager
-                if (sessionData?.response_path?.enabled_attributes && !savedData.response_path.enabled_attributes) {
-                  savedData.response_path.enabled_attributes = sessionData.response_path.enabled_attributes;
-                }
+                savedData.response_path = {
+                  ...sessionData?.response_path,
+                  ...(parsedResponse?.response_path ||
+                    savedData?.response_path ||
+                    {}),
+                };
               } else {
                 savedData = {
                   ...sessionData,
@@ -213,6 +214,7 @@ export default function CometManagerLayout() {
               }
 
               localStorage.setItem("sessionData", JSON.stringify(savedData));
+
               setPrevOutline(currentOutline);
             } catch (parseError) {
               console.error("Error parsing auto-save response:", parseError);

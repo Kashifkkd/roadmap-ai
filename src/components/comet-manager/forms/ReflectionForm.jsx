@@ -32,7 +32,6 @@ export default function ReflectionForm({
   const handleRemoveAsset = (index) => {
     if (removeScreenAsset) {
       removeScreenAsset(index);
-      updateField("reflectionImage", "");
     }
   };
   console.log("formData of ReflectionForm>>>>>>>>>>", formData);
