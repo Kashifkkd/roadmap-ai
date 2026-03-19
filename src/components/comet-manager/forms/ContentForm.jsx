@@ -143,6 +143,7 @@ export default function ContentForm({
   const handleRemoveAsset = (index) => {
     if (removeScreenAsset) {
       removeScreenAsset(index);
+      updateField("contentImageIcon", "");
     }
   };
 

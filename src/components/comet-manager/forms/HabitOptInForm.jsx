@@ -37,6 +37,7 @@ export default function HabitOptInForm({
   const handleRemoveAsset = (index) => {
     if (removeScreenAsset) {
       removeScreenAsset(index);
+      updateField("habit_image", "");
     }
   };
 

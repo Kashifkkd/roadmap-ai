@@ -33,6 +33,7 @@ export default function NotificationsForm({
   const handleRemoveAsset = (index) => {
     if (removeScreenAsset) {
       removeScreenAsset(index);
+      updateField("mediaUrl", "");
     }
   };
   return (

@@ -524,6 +524,12 @@ export default function CometManager({
   // Bump sessionUpdateKey when sessionData changes (subscription or chat response)
   // so DynamicForm remounts and shows fresh data. Skip initial load.
   const prevSessionDataRef = useRef(undefined);
+  const outlineRef = useRef(outline);
+  
+  useEffect(() => {
+    outlineRef.current = outline;
+  }, [outline]);
+
   useEffect(() => {
     if (sessionData == null) return;
     if (prevSessionDataRef.current === undefined) {
@@ -531,8 +537,16 @@ export default function CometManager({
       return;
     }
     if (prevSessionDataRef.current !== sessionData) {
+      // If the response_path matches our local outlineRef perfectly, it means
+      // Don't remount the form!
+      const pathChanged = JSON.stringify(prevSessionDataRef.current?.response_path) !== JSON.stringify(sessionData?.response_path);
+      const isFromServer = JSON.stringify(sessionData?.response_path) !== JSON.stringify(outlineRef.current);
+      
       prevSessionDataRef.current = sessionData;
-      setSessionUpdateKey((k) => k + 1);
+      
+      if (pathChanged && isFromServer) {
+        setSessionUpdateKey((k) => k + 1);
+      }
     }
   }, [sessionData]);
 
@@ -542,14 +556,19 @@ export default function CometManager({
     sessionId,
     (updatedSessionData) => {
       try {
-        localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
-        setSessionData(updatedSessionData);
-        const hasPathUpdate = Boolean(
-          updatedSessionData?.response_path?.chapters?.length,
-        );
-        if (isAskingKyperRef.current && hasPathUpdate) {
-          setIsAskingKyper(false);
-        }
+        setSessionData((prev) => {
+          if (!isGeneratingNextChapterRef.current && !isAskingKyperRef.current && outlineRef.current) {
+            updatedSessionData.response_path = outlineRef.current;
+          }
+
+          localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
+          
+          if (isAskingKyperRef.current && updatedSessionData?.response_path?.chapters?.length) {
+            setIsAskingKyper(false);
+          }
+          
+          return updatedSessionData;
+        });
       } catch {}
     },
     (err) => {
