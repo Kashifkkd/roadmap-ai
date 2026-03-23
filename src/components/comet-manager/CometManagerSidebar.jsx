@@ -71,8 +71,6 @@ function filterAssetsByType(assets, assetType) {
   });
 }
 
-const OPERATION_LOADER_MS = 5000;
-
 export default function CometManagerSidebar({
   selectedScreen,
   onAddScreen,
@@ -124,32 +122,43 @@ export default function CometManagerSidebar({
   const [draggedStep, setDraggedStep] = useState(null);
   const [dropTargetStep, setDropTargetStep] = useState(null);
 
-  // Step description editing state
-  const [openStepMenuId, setOpenStepMenuId] = useState(null);
+  // Step editing state
+  const [openStepHeaderMenuId, setOpenStepHeaderMenuId] = useState(null);
+  const [openStepDescriptionMenuId, setOpenStepDescriptionMenuId] =
+    useState(null);
   const [openChapterMenuId, setOpenChapterMenuId] = useState(null);
   const [editingChapterId, setEditingChapterId] = useState(null);
-  const [editingStepId, setEditingStepId] = useState(null);
+  const [editingStepNameId, setEditingStepNameId] = useState(null);
+  const [editingStepDescriptionId, setEditingStepDescriptionId] =
+    useState(null);
   const [editChapterName, setEditChapterName] = useState("");
+  const [editStepName, setEditStepName] = useState("");
   const [editStepDescription, setEditStepDescription] = useState("");
   const [pendingChapterOperation, setPendingChapterOperation] = useState(null);
   const [pendingStepOperation, setPendingStepOperation] = useState(null);
   const chapterEditInputRef = useRef(null);
-  const editInputRef = useRef(null);
+  const stepNameEditInputRef = useRef(null);
+  const stepDescriptionEditInputRef = useRef(null);
   const menuRef = useRef(null);
 
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setOpenStepMenuId(null);
+        setOpenStepHeaderMenuId(null);
+        setOpenStepDescriptionMenuId(null);
         setOpenChapterMenuId(null);
       }
     };
-    if (openStepMenuId || openChapterMenuId) {
+    if (
+      openStepHeaderMenuId ||
+      openStepDescriptionMenuId ||
+      openChapterMenuId
+    ) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [openStepMenuId, openChapterMenuId]);
+  }, [openStepHeaderMenuId, openStepDescriptionMenuId, openChapterMenuId]);
 
   useEffect(() => {
     if (editingChapterId && chapterEditInputRef.current) {
@@ -159,18 +168,22 @@ export default function CometManagerSidebar({
   }, [editingChapterId]);
 
   useEffect(() => {
-    if (editingStepId && editInputRef.current) {
-      editInputRef.current.focus();
+    if (editingStepNameId && stepNameEditInputRef.current) {
+      stepNameEditInputRef.current.focus();
+      stepNameEditInputRef.current.select();
     }
-  }, [editingStepId]);
+  }, [editingStepNameId]);
+
+  useEffect(() => {
+    if (editingStepDescriptionId && stepDescriptionEditInputRef.current) {
+      stepDescriptionEditInputRef.current.focus();
+    }
+  }, [editingStepDescriptionId]);
 
   const runOperationWithLoader = useCallback(
     async (setPendingOperation, pendingOperation, action, cleanup) => {
       setPendingOperation(pendingOperation);
       try {
-        await new Promise((resolve) =>
-          setTimeout(resolve, OPERATION_LOADER_MS),
-        );
         await Promise.resolve(action?.());
       } finally {
         cleanup?.();
@@ -180,60 +193,125 @@ export default function CometManagerSidebar({
     [],
   );
 
-  const toggleStepMenu = (e, stepId) => {
+  const toggleStepMenu = (e, stepId, section = "header") => {
     e.stopPropagation();
     setOpenChapterMenuId(null);
-    setOpenStepMenuId((prev) => (prev === stepId ? null : stepId));
+    if (section === "description") {
+      setOpenStepHeaderMenuId(null);
+      setOpenStepDescriptionMenuId((prev) => (prev === stepId ? null : stepId));
+      return;
+    }
+    setOpenStepDescriptionMenuId(null);
+    setOpenChapterMenuId(null);
+    setOpenStepHeaderMenuId((prev) => (prev === stepId ? null : stepId));
   };
 
   const toggleChapterMenu = (e, chapterId) => {
     e.stopPropagation();
-    setOpenStepMenuId(null);
+    setOpenStepHeaderMenuId(null);
+    setOpenStepDescriptionMenuId(null);
     setOpenChapterMenuId((prev) => (prev === chapterId ? null : chapterId));
   };
 
-  const handleEditStepClick = (e, step, stepId) => {
+  const handleEditStepNameClick = (e, step, stepId) => {
     e.stopPropagation();
-    setOpenStepMenuId(null);
-    setEditingStepId(stepId);
+    setOpenStepHeaderMenuId(null);
+    setEditingStepDescriptionId(null);
+    setEditStepDescription("");
+    setEditingStepNameId(stepId);
+    setEditStepName(step.name || "");
+  };
+
+  const handleSaveStepNameEdit = async (e, chapterId, stepId, stepDescription) => {
+    e.stopPropagation();
+    if (!onEditStep) {
+      setEditingStepNameId(null);
+      setEditStepName("");
+      return;
+    }
+    await runOperationWithLoader(
+      setPendingStepOperation,
+      { stepId, type: "edit-name" },
+      () =>
+        onEditStep(chapterId, stepId, {
+          name: editStepName.trim(),
+          description: stepDescription || "",
+        }),
+      () => {
+        setEditingStepNameId(null);
+        setEditStepName("");
+      },
+    );
+  };
+
+  const handleCancelStepNameEdit = (e) => {
+    e.stopPropagation();
+    setEditingStepNameId(null);
+    setEditStepName("");
+  };
+
+  const handleStepNameEditKeyDown = (e, chapterId, stepId, stepDescription) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      handleSaveStepNameEdit(e, chapterId, stepId, stepDescription);
+    } else if (e.key === "Escape") {
+      handleCancelStepNameEdit(e);
+    }
+  };
+
+  const handleEditStepDescriptionClick = (e, step, stepId) => {
+    e.stopPropagation();
+    setOpenStepDescriptionMenuId(null);
+    setEditingStepNameId(null);
+    setEditStepName("");
+    setEditingStepDescriptionId(stepId);
     setEditStepDescription(step.description || "");
   };
 
-  const handleSaveStepEdit = async (e, chapterId, stepId, stepName) => {
+  const handleSaveStepDescriptionEdit = async (
+    e,
+    chapterId,
+    stepId,
+    stepName,
+  ) => {
     e.stopPropagation();
     if (!onEditStep) {
-      setEditingStepId(null);
+      setEditingStepDescriptionId(null);
       setEditStepDescription("");
       return;
     }
     await runOperationWithLoader(
       setPendingStepOperation,
-      { stepId, type: "edit" },
-      () => onEditStep(chapterId, stepId, stepName, editStepDescription.trim()),
+      { stepId, type: "edit-description" },
+      () =>
+        onEditStep(chapterId, stepId, {
+          name: stepName || "",
+          description: editStepDescription.trim(),
+        }),
       () => {
-        setEditingStepId(null);
+        setEditingStepDescriptionId(null);
         setEditStepDescription("");
       },
     );
   };
 
-  const handleCancelStepEdit = (e) => {
+  const handleCancelStepDescriptionEdit = (e) => {
     e.stopPropagation();
-    setEditingStepId(null);
+    setEditingStepDescriptionId(null);
     setEditStepDescription("");
   };
 
-  const handleStepEditKeyDown = (e, chapterId, stepId, stepName) => {
+  const handleStepDescriptionEditKeyDown = (e, chapterId, stepId, stepName) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      handleSaveStepEdit(e, chapterId, stepId, stepName);
+      handleSaveStepDescriptionEdit(e, chapterId, stepId, stepName);
     } else if (e.key === "Escape") {
-      handleCancelStepEdit(e);
+      handleCancelStepDescriptionEdit(e);
     }
   };
 
   const handleDeleteStepClick = async (e, chapterId, stepId) => {
     e.stopPropagation();
-    setOpenStepMenuId(null);
+    setOpenStepHeaderMenuId(null);
+    setOpenStepDescriptionMenuId(null);
     if (!onDeleteStep) {
       return;
     }
@@ -1174,7 +1252,18 @@ export default function CometManagerSidebar({
                                 const stepPendingLabel =
                                   pendingStepOperation?.type === "delete"
                                     ? "Deleting step"
-                                    : "Saving step changes";
+                                    : pendingStepOperation?.type === "edit-name"
+                                      ? "Saving step name"
+                                      : "Saving step changes";
+                                const showStepHeaderLoader =
+                                  isStepOperationPending &&
+                                  (!isStepExpanded ||
+                                    pendingStepOperation?.type === "edit-name" ||
+                                    pendingStepOperation?.type === "delete");
+                                const showStepDetailsLoader =
+                                  isStepOperationPending &&
+                                  isStepExpanded &&
+                                  !showStepHeaderLoader;
                                 const isStepDragged =
                                   draggedStep &&
                                   draggedStep.chapterId === chapterId &&
@@ -1208,7 +1297,11 @@ export default function CometManagerSidebar({
                                       <div className="h-1 bg-primary rounded-full mx-2 mb-1 transition-all shadow-sm pointer-events-none" />
                                     )}
                                     <div
-                                      draggable={!isStepOperationPending}
+                                      draggable={
+                                        !isStepOperationPending &&
+                                        editingStepNameId !== stepId &&
+                                        editingStepDescriptionId !== stepId
+                                      }
                                       onDragStart={(e) =>
                                         handleStepDragStart(
                                           e,
@@ -1217,7 +1310,7 @@ export default function CometManagerSidebar({
                                         )
                                       }
                                       onDragEnd={handleStepDragEnd}
-                                      className={`flex flex-col rounded-sm transition-all ${
+                                      className={`group flex flex-col rounded-sm transition-all ${
                                         isStepExpanded
                                           ? "bg-primary-700"
                                           : isStepSelected
@@ -1289,30 +1382,176 @@ export default function CometManagerSidebar({
                                             }`}
                                           />
                                         </div>
-                                        <div className="flex flex-col py-1 flex-1 min-w-0">
-                                          <p
-                                            className={`text-xs sm:text-xs  ${
-                                              isStepSelected || isStepExpanded
-                                                ? "text-white"
-                                                : "text-gray-900"
-                                            }`}
-                                          >
-                                            Step {stepIndex + 1}
-                                          </p>
-                                          <p
-                                            className={`text-xs sm:text-sm font-semibold ${
-                                              isStepSelected || isStepExpanded
-                                                ? ""
-                                                : ""
-                                            } ${
-                                              isStepSelected || isStepExpanded
-                                                ? "text-white"
-                                                : "text-gray-900"
-                                            }`}
-                                          >
-                                            {step.name ||
-                                              `Step ${stepIndex + 1}`}
-                                          </p>
+                                        <div className="flex items-start gap-2 py-1 flex-1 min-w-0">
+                                          {showStepHeaderLoader ? (
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-center gap-3 rounded-xl border border-[#D9D6FF] bg-gradient-to-r from-[#F4F2FF] via-white to-[#F8F7FF] px-4 py-3 shadow-sm">
+                                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+                                                  <GradientLoader size={20} />
+                                                </span>
+                                                <div className="min-w-0">
+                                                  <p className="text-sm font-semibold text-[#352F6E]">
+                                                    {stepPendingLabel}
+                                                  </p>
+                                                  <p className="text-xs text-[#574EB6]">
+                                                    Please wait while we update
+                                                    this step.
+                                                  </p>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ) : editingStepNameId === stepId ? (
+                                            <div
+                                              className="flex-1 min-w-0"
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              <div className="border border-gray-300 rounded-md p-2 bg-white">
+                                                <textarea
+                                                  ref={stepNameEditInputRef}
+                                                  value={editStepName}
+                                                  onChange={(e) =>
+                                                    setEditStepName(
+                                                      e.target.value,
+                                                    )
+                                                  }
+                                                  onKeyDown={(e) =>
+                                                    handleStepNameEditKeyDown(
+                                                      e,
+                                                      chapterId,
+                                                      stepId,
+                                                      step.description,
+                                                    )
+                                                  }
+                                                  className="w-full px-2 py-1.5 text-xs focus:outline-none resize-none overflow-y-auto text-gray-900"
+                                                  placeholder="Step name"
+                                                  rows={2}
+                                                />
+                                                <div className="border-t border-gray-300 mt-1 mb-2"></div>
+                                                <div className="flex gap-2 items-end justify-end">
+                                                  <button
+                                                    onClick={(e) =>
+                                                      handleSaveStepNameEdit(
+                                                        e,
+                                                        chapterId,
+                                                        stepId,
+                                                        step.description,
+                                                      )
+                                                    }
+                                                    className="flex items-center px-2 py-1 text-xs font-medium text-white bg-primary rounded-sm hover:bg-primary-700 transition-colors border border-primary"
+                                                  >
+                                                    Save
+                                                  </button>
+                                                  <button
+                                                    onClick={
+                                                      handleCancelStepNameEdit
+                                                    }
+                                                    className="flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white rounded-sm hover:bg-primary-100 transition-colors border border-gray-300"
+                                                  >
+                                                    Cancel
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <>
+                                              <div className="flex flex-col flex-1 min-w-0">
+                                                <p
+                                                  className={`text-xs sm:text-xs  ${
+                                                    isStepSelected ||
+                                                    isStepExpanded
+                                                      ? "text-white"
+                                                      : "text-gray-900"
+                                                  }`}
+                                                >
+                                                  Step {stepIndex + 1}
+                                                </p>
+                                                <p
+                                                  className={`text-xs sm:text-sm font-semibold ${
+                                                    isStepSelected ||
+                                                    isStepExpanded
+                                                      ? "text-white"
+                                                      : "text-gray-900"
+                                                  }`}
+                                                >
+                                                  {step.name ||
+                                                    `Step ${stepIndex + 1}`}
+                                                </p>
+                                              </div>
+                                              <div
+                                                className={`step-actions relative flex items-start justify-end shrink-0 ${
+                                                  isStepSelected ||
+                                                  isStepExpanded
+                                                    ? "opacity-100"
+                                                    : "opacity-0 group-hover:opacity-100"
+                                                }`}
+                                                ref={
+                                                  openStepHeaderMenuId ===
+                                                  stepId
+                                                    ? menuRef
+                                                    : null
+                                                }
+                                              >
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) =>
+                                                    toggleStepMenu(
+                                                      e,
+                                                      stepId,
+                                                      "header",
+                                                    )
+                                                  }
+                                                  className={`rounded-md p-1 transition-colors ${
+                                                    isStepSelected ||
+                                                    isStepExpanded
+                                                      ? "hover:bg-primary-600"
+                                                      : "hover:bg-gray-100"
+                                                  }`}
+                                                  title="More options"
+                                                  aria-label={`More options for ${step.name || `Step ${stepIndex + 1}`}`}
+                                                >
+                                                  <MoreHorizontal
+                                                    className={`h-4 w-4 ${
+                                                      isStepSelected ||
+                                                      isStepExpanded
+                                                        ? "text-white"
+                                                        : "text-gray-500"
+                                                    }`}
+                                                  />
+                                                </button>
+                                                {openStepHeaderMenuId ===
+                                                  stepId && (
+                                                  <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                                                    <button
+                                                      onClick={(e) =>
+                                                        handleEditStepNameClick(
+                                                          e,
+                                                          step,
+                                                          stepId,
+                                                        )
+                                                      }
+                                                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                                    >
+                                                      <Pencil className="w-3.5 h-3.5" />
+                                                      Edit
+                                                    </button>
+                                                    <button
+                                                      onClick={(e) =>
+                                                        handleDeleteStepClick(
+                                                          e,
+                                                          chapterId,
+                                                          stepId,
+                                                        )
+                                                      }
+                                                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                                                    >
+                                                      <Trash2 className="w-3.5 h-3.5" />
+                                                      Delete
+                                                    </button>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </>
+                                          )}
                                         </div>
                                       </div>
 
@@ -1321,7 +1560,7 @@ export default function CometManagerSidebar({
                                         <div className="px-2 pb-2">
                                           <div className="px-3 py-3 bg-white rounded-lg">
                                             <div className="flex flex-col gap-2">
-                                              {isStepOperationPending ? (
+                                              {showStepDetailsLoader ? (
                                                 <div className="flex items-center gap-3 rounded-xl border border-[#D9D6FF] bg-gradient-to-r from-[#F4F2FF] via-white to-[#F8F7FF] px-4 py-4 shadow-sm">
                                                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
                                                     <GradientLoader size={22} />
@@ -1335,7 +1574,8 @@ export default function CometManagerSidebar({
                                                     </p>
                                                   </div>
                                                 </div>
-                                              ) : editingStepId === stepId ? (
+                                              ) : editingStepDescriptionId ===
+                                                stepId ? (
                                                 /* Inline Edit Form*/
                                                 <div className="flex flex-col gap-2">
                                                   {/* <h4 className="text-sm font-semibold text-black mb-1">
@@ -1344,7 +1584,9 @@ export default function CometManagerSidebar({
                                                   </h4> */}
                                                   <div className="border border-gray-300 rounded-md p-2 bg-white">
                                                     <textarea
-                                                      ref={editInputRef}
+                                                      ref={
+                                                        stepDescriptionEditInputRef
+                                                      }
                                                       value={
                                                         editStepDescription
                                                       }
@@ -1354,7 +1596,7 @@ export default function CometManagerSidebar({
                                                         )
                                                       }
                                                       onKeyDown={(e) =>
-                                                        handleStepEditKeyDown(
+                                                        handleStepDescriptionEditKeyDown(
                                                           e,
                                                           chapterId,
                                                           stepId,
@@ -1370,7 +1612,7 @@ export default function CometManagerSidebar({
                                                     <div className="flex gap-2 items-end justify-end">
                                                       <button
                                                         onClick={(e) =>
-                                                          handleSaveStepEdit(
+                                                          handleSaveStepDescriptionEdit(
                                                             e,
                                                             chapterId,
                                                             stepId,
@@ -1383,7 +1625,7 @@ export default function CometManagerSidebar({
                                                       </button>
                                                       <button
                                                         onClick={
-                                                          handleCancelStepEdit
+                                                          handleCancelStepDescriptionEdit
                                                         }
                                                         className="flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white rounded-sm hover:bg-primary-100 transition-colors border border-gray-300"
                                                       >
@@ -1393,72 +1635,72 @@ export default function CometManagerSidebar({
                                                   </div>
                                                 </div>
                                               ) : (
-                                                /* Normal Display with 3-dot menu */
-                                                <div className="relative flex flex-row ">
-                                                  {step.description && (
-                                                    <p className="text-xs text-black leading-relaxed">
-                                                      {step.description}
-                                                    </p>
-                                                  )}
-                                                  <div className="flex items-end justify-end">
-                                                    {/* <h4 className="text-sm font-semibold text-black mb-1">
-                                                      {step.name ||
-                                                        `Step ${stepIndex + 1}`}
-                                                    </h4> */}
-                                                    {/* 3-dot menu */}
-                                                    <div
-                                                      className="relative"
-                                                      ref={
-                                                        openStepMenuId ===
-                                                        stepId
-                                                          ? menuRef
-                                                          : null
+                                                <div className="relative flex items-start justify-between gap-2">
+                                                  <p
+                                                    className={`text-xs leading-relaxed ${
+                                                      step.description
+                                                        ? "text-black"
+                                                        : "text-gray-400"
+                                                    }`}
+                                                  >
+                                                    {step.description ||
+                                                      "Add step description"}
+                                                  </p>
+                                                  <div
+                                                    className="relative flex items-start justify-end shrink-0"
+                                                    ref={
+                                                      openStepDescriptionMenuId ===
+                                                      stepId
+                                                        ? menuRef
+                                                        : null
+                                                    }
+                                                  >
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) =>
+                                                        toggleStepMenu(
+                                                          e,
+                                                          stepId,
+                                                          "description",
+                                                        )
                                                       }
+                                                      className="rounded-md p-1 transition-colors hover:bg-gray-100"
+                                                      title="More options"
+                                                      aria-label={`Description options for ${step.name || `Step ${stepIndex + 1}`}`}
                                                     >
-                                                      <button
-                                                        onClick={(e) =>
-                                                          toggleStepMenu(
-                                                            e,
-                                                            stepId,
-                                                          )
-                                                        }
-                                                        className="p-1 rounded-md hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
-                                                        title="More options"
-                                                      >
-                                                        <MoreHorizontal className="w-4 h-4" />
-                                                      </button>
-                                                      {openStepMenuId ===
-                                                        stepId && (
-                                                        <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
-                                                          <button
-                                                            onClick={(e) =>
-                                                              handleEditStepClick(
-                                                                e,
-                                                                step,
-                                                                stepId,
-                                                              )
-                                                            }
-                                                            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
-                                                          >
-                                                            <Pencil className="w-3.5 h-3.5" />
-                                                            Edit
-                                                          </button>
-                                                          <button
-                                                            onClick={(e) =>
-                                                              handleDeleteStepClick(
-                                                                e,
-                                                                chapterId,
-                                                                stepId,
-                                                              )
-                                                            }
-                                                            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
-                                                          >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                            Delete
-                                                          </button>
-                                                        </div>
-                                                      )}
-                                                    </div>
+                                                      <MoreHorizontal className="h-4 w-4 text-gray-500" />
+                                                    </button>
+                                                    {openStepDescriptionMenuId ===
+                                                      stepId && (
+                                                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                                                        <button
+                                                          onClick={(e) =>
+                                                            handleEditStepDescriptionClick(
+                                                              e,
+                                                              step,
+                                                              stepId,
+                                                            )
+                                                          }
+                                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                                        >
+                                                          <Pencil className="w-3.5 h-3.5" />
+                                                          Edit
+                                                        </button>
+                                                        <button
+                                                          onClick={(e) =>
+                                                            handleDeleteStepClick(
+                                                              e,
+                                                              chapterId,
+                                                              stepId,
+                                                            )
+                                                          }
+                                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                                                        >
+                                                          <Trash2 className="w-3.5 h-3.5" />
+                                                          Delete
+                                                        </button>
+                                                      </div>
+                                                    )}
                                                   </div>
                                                 </div>
                                               )}

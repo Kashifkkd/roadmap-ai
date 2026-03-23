@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import ChatWindow from "@/components/chat/ChatWindow";
 import CometManager from "./CometManager";
 import { usePreviewMode } from "@/contexts/PreviewModeContext";
@@ -19,6 +19,7 @@ export default function CometManagerLayout() {
   const [prevOutline, setPrevOutline] = useState(null);
   const autoSaveTimerRef = useRef(null);
   const isSavingRef = useRef(false);
+  const savePromiseRef = useRef(Promise.resolve());
   const outlineRef = useRef(null);
   const initializedSessionIdRef = useRef(null);
 
@@ -131,6 +132,97 @@ export default function CometManagerLayout() {
     }
   };
 
+  const saveOutlineImmediately = useCallback(
+    async (outlineToSave) => {
+      if (!outlineToSave) {
+        return false;
+      }
+
+      const executeSave = async () => {
+        try {
+          isSavingRef.current = true;
+
+          const sessionId =
+            sessionData?.session_id ||
+            (typeof window !== "undefined" &&
+              localStorage.getItem("sessionId")) ||
+            null;
+
+          if (!sessionId) {
+            console.warn("No session ID available for auto-save");
+            return false;
+          }
+
+          const cometJsonForSave = JSON.stringify({
+            session_id: sessionId,
+            input_type: "source_material_based_outliner",
+            comet_creation_data: sessionData?.comet_creation_data || {},
+            response_outline: sessionData?.response_outline || {},
+            response_path: outlineToSave || sessionData?.response_path || {},
+            chatbot_conversation: sessionData?.chatbot_conversation || [],
+            to_modify: sessionData?.to_modify || {},
+            webpage_url: sessionData?.webpage_url || [],
+          });
+
+          const response = await graphqlClient.autoSaveComet(cometJsonForSave);
+          if (response && response.autoSaveComet) {
+            try {
+              let savedData;
+              if (typeof response.autoSaveComet === "string") {
+                const parsedResponse = JSON.parse(response.autoSaveComet);
+                savedData = {
+                  ...sessionData,
+                  ...parsedResponse,
+                  chatbot_conversation:
+                    parsedResponse.chatbot_conversation ||
+                    sessionData?.chatbot_conversation ||
+                    [],
+                };
+                savedData.response_path = {
+                  ...sessionData?.response_path,
+                  ...(parsedResponse?.response_path ||
+                    savedData?.response_path ||
+                    {}),
+                };
+              } else {
+                savedData = {
+                  ...sessionData,
+                  response_path: outlineToSave,
+                };
+              }
+
+              localStorage.setItem("sessionData", JSON.stringify(savedData));
+              setPrevOutline(outlineToSave);
+            } catch (parseError) {
+              console.error("Error parsing auto-save response:", parseError);
+              const updatedSessionData = {
+                ...sessionData,
+                response_path: outlineToSave,
+                chatbot_conversation: sessionData?.chatbot_conversation || [],
+              };
+              localStorage.setItem(
+                "sessionData",
+                JSON.stringify(updatedSessionData),
+              );
+              setPrevOutline(outlineToSave);
+            }
+          }
+
+          return true;
+        } catch (error) {
+          console.error("Error during auto-save:", error);
+          return false;
+        } finally {
+          isSavingRef.current = false;
+        }
+      };
+
+      savePromiseRef.current = savePromiseRef.current.then(executeSave);
+      return savePromiseRef.current;
+    },
+    [sessionData],
+  );
+
   useEffect(() => {
     if (autoSaveTimerRef.current) {
       clearInterval(autoSaveTimerRef.current);
@@ -151,90 +243,7 @@ export default function CometManagerLayout() {
         JSON.stringify(currentOutline) !== JSON.stringify(prevOutline);
 
       if (outlineChanged && currentOutline !== null) {
-        try {
-          isSavingRef.current = true;
-
-          const sessionId =
-            sessionData?.session_id ||
-            (typeof window !== "undefined" &&
-              localStorage.getItem("sessionId")) ||
-            null;
-
-          if (!sessionId) {
-            console.warn("No session ID available for auto-save");
-            return;
-          }
-
-          const cometJsonForSave = JSON.stringify({
-            session_id: sessionId,
-            input_type: "source_material_based_outliner",
-            comet_creation_data: sessionData?.comet_creation_data || {},
-            response_outline: sessionData?.response_outline || {},
-            response_path: currentOutline || sessionData?.response_path || {},
-            // additional_data: {
-            //   personalization_enabled:
-            //     sessionData?.additional_data?.personalization_enabled || false,
-            //   habit_enabled:
-            //     sessionData?.additional_data?.habit_enabled || false,
-            //   habit_description:
-            //     sessionData?.additional_data?.habit_description || "",
-            // },
-            chatbot_conversation: sessionData?.chatbot_conversation || [],
-            to_modify: sessionData?.to_modify || {},
-            webpage_url: sessionData?.webpage_url || [],
-          });
-
-          const response = await graphqlClient.autoSaveComet(cometJsonForSave);
-          if (response && response.autoSaveComet) {
-            try {
-              let savedData;
-              if (typeof response.autoSaveComet === "string") {
-                // savedData = JSON.parse(response.autoSaveComet);
-                const parsedResponse = JSON.parse(response.autoSaveComet);
-                savedData = {
-                  ...sessionData,
-                  ...parsedResponse,
-                  chatbot_conversation:
-                    parsedResponse.chatbot_conversation ||
-                    sessionData?.chatbot_conversation ||
-                    [],
-                };
-                // Preserve enabled_attributes so they persist from dashboard through comet_manager
-                savedData.response_path = {
-                  ...sessionData?.response_path,
-                  ...(parsedResponse?.response_path ||
-                    savedData?.response_path ||
-                    {}),
-                };
-              } else {
-                savedData = {
-                  ...sessionData,
-                  response_path: currentOutline,
-                };
-              }
-
-              localStorage.setItem("sessionData", JSON.stringify(savedData));
-
-              setPrevOutline(currentOutline);
-            } catch (parseError) {
-              console.error("Error parsing auto-save response:", parseError);
-              const updatedSessionData = {
-                ...sessionData,
-                response_path: currentOutline,
-                chatbot_conversation: sessionData?.chatbot_conversation || [],
-              };
-              localStorage.setItem(
-                "sessionData",
-                JSON.stringify(updatedSessionData),
-              );
-              setPrevOutline(currentOutline);
-            }
-          }
-        } catch (error) {
-          console.error("Error during auto-save:", error);
-        } finally {
-          isSavingRef.current = false;
-        }
+        await saveOutlineImmediately(currentOutline);
       }
     }, 5000);
     return () => {
@@ -242,7 +251,7 @@ export default function CometManagerLayout() {
         clearInterval(autoSaveTimerRef.current);
       }
     };
-  }, [sessionData, outline, prevOutline]);
+  }, [sessionData, outline, prevOutline, saveOutlineImmediately]);
 
   useEffect(() => {
     if (outline !== null) {
@@ -292,6 +301,7 @@ export default function CometManagerLayout() {
             isPreviewMode={isPreviewMode}
             setIsPreviewMode={setIsPreviewMode}
             onOutlineChange={handleOutlineChange}
+            saveOutlineImmediately={saveOutlineImmediately}
             isAskingKyper={isAskingKyper}
             setIsAskingKyper={setIsAskingKyper}
           />

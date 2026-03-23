@@ -208,6 +208,7 @@ export default function CometManager({
   isPreviewMode,
   setIsPreviewMode,
   onOutlineChange,
+  saveOutlineImmediately,
   isAskingKyper = false,
   setIsAskingKyper = () => {},
 }) {
@@ -237,8 +238,24 @@ export default function CometManager({
     }
   }, [outline, onOutlineChange]);
 
-  // Edit a step's description
-  const handleEditStep = (chapterId, stepId, _name, newDescription) => {
+  // Support both the legacy args signature and the newer payload object.
+  const handleEditStep = async (
+    chapterId,
+    stepId,
+    updatesOrName,
+    newDescription,
+  ) => {
+    const normalizedUpdates =
+      updatesOrName &&
+      typeof updatesOrName === "object" &&
+      !Array.isArray(updatesOrName)
+        ? updatesOrName
+        : {
+            name: updatesOrName,
+            description: newDescription,
+          };
+
+    let updatedOutline = null;
     setOutline((prevOutline) => {
       if (!prevOutline || !prevOutline.chapters) return prevOutline;
       const newOutline = JSON.parse(JSON.stringify(prevOutline));
@@ -252,17 +269,31 @@ export default function CometManager({
           const step = stepItem.step || {};
           const sId = step.uuid || step.id;
           if (sId === stepId) {
-            step.description = newDescription;
+            if (normalizedUpdates.name !== undefined) {
+              step.name = normalizedUpdates.name;
+              if (step.title !== undefined) {
+                step.title = normalizedUpdates.name;
+              }
+            }
+            if (normalizedUpdates.description !== undefined) {
+              step.description = normalizedUpdates.description;
+            }
             break;
           }
         }
         break;
       }
+      updatedOutline = newOutline;
       return newOutline;
     });
+
+    if (updatedOutline && saveOutlineImmediately) {
+      await saveOutlineImmediately(updatedOutline);
+    }
   };
 
-  const handleEditChapter = (chapterId, newName) => {
+  const handleEditChapter = async (chapterId, newName) => {
+    let updatedOutline = null;
     setOutline((prevOutline) => {
       if (!prevOutline || !prevOutline.chapters) return prevOutline;
       const newOutline = JSON.parse(JSON.stringify(prevOutline));
@@ -281,8 +312,13 @@ export default function CometManager({
         break;
       }
 
+      updatedOutline = newOutline;
       return newOutline;
     });
+
+    if (updatedOutline && saveOutlineImmediately) {
+      await saveOutlineImmediately(updatedOutline);
+    }
   };
 
   // Delete a step
