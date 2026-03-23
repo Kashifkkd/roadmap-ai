@@ -104,6 +104,11 @@ export default function ScreenCard({
   };
 
   const showImagePreview = shouldShowScreenCardImage(screen);
+  const hasExistingThumbnail = !!(
+    screen?.thumbnail &&
+    screen.thumbnail !== "/noImage.png" &&
+    screen.thumbnail !== "/error-img.png"
+  );
 
   const AddButton = ({ position, insertIndex }) => (
     <div
@@ -245,7 +250,7 @@ export default function ScreenCard({
                       className="w-full h-full object-cover transition-all duration-300"
                       onError={(e) => (e.target.src = "/error-img.png")}
                     />
-                    {isGeneratingImages && (
+                    {isGeneratingImages && !hasExistingThumbnail && (
                       <div className="absolute inset-0 flex items-center justify-center bg-white/60 rounded">
                         <GradientLoader size={32} />
                       </div>
