@@ -385,7 +385,7 @@ export default function CometManagerSidebar({
           }
         }
 
-        onDeleteChapter(chapterId);
+        return onDeleteChapter(chapterId);
       },
     );
   };
@@ -1686,7 +1686,7 @@ export default function CometManagerSidebar({
                                                           <Pencil className="w-3.5 h-3.5" />
                                                           Edit
                                                         </button>
-                                                        <button
+                                                        {/* <button
                                                           onClick={(e) =>
                                                             handleDeleteStepClick(
                                                               e,
@@ -1698,7 +1698,7 @@ export default function CometManagerSidebar({
                                                         >
                                                           <Trash2 className="w-3.5 h-3.5" />
                                                           Delete
-                                                        </button>
+                                                        </button> */}
                                                       </div>
                                                     )}
                                                   </div>

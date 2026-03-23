@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { useRouter } from "next/navigation";
 import {
   File,
@@ -232,6 +238,14 @@ export default function CometManager({
   } = useCometManager(sessionData);
   console.log("screens >>>>>>>>>>>>>>>>>>>>>>>", screens);
 
+  const cloneOutline = useCallback((sourceOutline) => {
+    if (!sourceOutline) {
+      return null;
+    }
+
+    return JSON.parse(JSON.stringify(sourceOutline));
+  }, []);
+
   useEffect(() => {
     if (onOutlineChange && outline !== null) {
       onOutlineChange(outline);
@@ -322,11 +336,16 @@ export default function CometManager({
   };
 
   // Delete a step
-  const handleDeleteStep = (chapterId, stepId) => {
+  const handleDeleteStep = async (chapterId, stepId) => {
+    const nextOutline = cloneOutline(outline);
+    if (!nextOutline?.chapters) {
+      return false;
+    }
+
     // Pre-compute which step to select after deletion (before state update)
     let nextStepId = null;
-    if (outline?.chapters && selectedStepId === stepId) {
-      for (const chapter of outline.chapters) {
+    if (nextOutline.chapters && selectedStepId === stepId) {
+      for (const chapter of nextOutline.chapters) {
         const cId = chapter.uuid || chapter.id;
         if (cId !== chapterId) continue;
         const steps = chapter.steps || [];
@@ -342,11 +361,11 @@ export default function CometManager({
             nextStepId =
               steps[stepIndex - 1].step?.uuid || steps[stepIndex - 1].step?.id;
           } else {
-            const chIndex = outline.chapters.findIndex(
+            const chIndex = nextOutline.chapters.findIndex(
               (ch) => (ch.uuid || ch.id) === chapterId,
             );
-            if (chIndex >= 0 && chIndex + 1 < outline.chapters.length) {
-              const firstStep = outline.chapters[chIndex + 1].steps?.[0];
+            if (chIndex >= 0 && chIndex + 1 < nextOutline.chapters.length) {
+              const firstStep = nextOutline.chapters[chIndex + 1].steps?.[0];
               nextStepId = firstStep?.step?.uuid || firstStep?.step?.id || null;
             }
           }
@@ -355,36 +374,47 @@ export default function CometManager({
       }
     }
 
-    setOutline((prevOutline) => {
-      if (!prevOutline || !prevOutline.chapters) return prevOutline;
-      const newOutline = JSON.parse(JSON.stringify(prevOutline));
-      const pathChapters = newOutline.chapters || [];
-
-      for (const chapter of pathChapters) {
-        const cId = chapter.uuid || chapter.id;
-        if (cId !== chapterId) continue;
-        const chapterSteps = chapter.steps || [];
-        const stepIndex = chapterSteps.findIndex((stepItem) => {
-          const step = stepItem.step || {};
-          return (step.uuid || step.id) === stepId;
-        });
-        if (stepIndex !== -1) {
-          chapterSteps.splice(stepIndex, 1);
-          chapter.steps = chapterSteps;
-        }
-        break;
+    let stepWasDeleted = false;
+    for (const chapter of nextOutline.chapters || []) {
+      const cId = chapter.uuid || chapter.id;
+      if (cId !== chapterId) continue;
+      const chapterSteps = chapter.steps || [];
+      const stepIndex = chapterSteps.findIndex((stepItem) => {
+        const step = stepItem.step || {};
+        return (step.uuid || step.id) === stepId;
+      });
+      if (stepIndex !== -1) {
+        chapterSteps.splice(stepIndex, 1);
+        chapter.steps = chapterSteps;
+        stepWasDeleted = true;
       }
+      break;
+    }
 
-      return newOutline;
-    });
+    if (!stepWasDeleted) {
+      return false;
+    }
+
+    const saveSucceeded = saveOutlineImmediately
+      ? await saveOutlineImmediately(nextOutline)
+      : true;
+
+    if (!saveSucceeded) {
+      return false;
+    }
+
+    setOutline(nextOutline);
 
     if (selectedStepId === stepId) {
       setSelectedStep(nextStepId);
     }
+
+    return true;
   };
 
-  const handleDeleteChapter = (chapterId) => {
-    const outlineChapters = outline?.chapters || [];
+  const handleDeleteChapter = async (chapterId) => {
+    const nextOutline = cloneOutline(outline);
+    const outlineChapters = nextOutline?.chapters || [];
     const chapterIndex = outlineChapters.findIndex(
       (chapter) => (chapter.uuid || chapter.id) === chapterId,
     );
@@ -417,25 +447,23 @@ export default function CometManager({
       nextSelectedStepId = fallbackStep?.uuid || fallbackStep?.id || null;
     }
 
-    setOutline((prevOutline) => {
-      if (!prevOutline || !prevOutline.chapters) return prevOutline;
+    nextOutline.chapters.splice(chapterIndex, 1);
 
-      const newOutline = JSON.parse(JSON.stringify(prevOutline));
-      const newChapterIndex = newOutline.chapters.findIndex(
-        (chapter) => (chapter.uuid || chapter.id) === chapterId,
-      );
+    const saveSucceeded = saveOutlineImmediately
+      ? await saveOutlineImmediately(nextOutline)
+      : true;
 
-      if (newChapterIndex === -1) {
-        return prevOutline;
-      }
+    if (!saveSucceeded) {
+      return false;
+    }
 
-      newOutline.chapters.splice(newChapterIndex, 1);
-      return newOutline;
-    });
+    setOutline(nextOutline);
 
     if (deletedChapterHasSelectedStep) {
       setSelectedStep(nextSelectedStepId);
     }
+
+    return true;
   };
 
   // Extract session_id from sessionData or temp
