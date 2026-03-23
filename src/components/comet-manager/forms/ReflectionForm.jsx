@@ -18,6 +18,7 @@ export default function ReflectionForm({
   stepUuid = "",
   screenUuid = "",
   askKyperHandlers = {},
+  onRequestAutoSave,
 }) {
   const {
     onTextFieldSelect,
@@ -97,6 +98,7 @@ export default function ReflectionForm({
           existingAssets={existingAssets}
           onRemoveAsset={handleRemoveAsset}
           showSavedImages={true}
+          onRequestAutoSave={onRequestAutoSave}
         />
       </div>
     </div>

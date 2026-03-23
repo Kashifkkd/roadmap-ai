@@ -45,6 +45,8 @@ export default function ImageUpload({
   existingAssets = [],
   onRemoveAsset,
   showSavedImages = true,
+  /** After local outline/state updates from save, persist via the same path as interval auto-save (e.g. saveOutlineImmediately). */
+  onRequestAutoSave,
 }) {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadErrorImage, setUploadErrorImage] = useState(null);
@@ -589,7 +591,7 @@ export default function ImageUpload({
       .forEach((assetIndex) => onRemoveAsset(assetIndex));
   };
 
-  const handleSaveImage = () => {
+  const handleSaveImage = async () => {
     if (!selectedImageAsset) return;
 
     removeExistingImages();
@@ -598,6 +600,14 @@ export default function ImageUpload({
       onAIGenerateSuccess(selectedImageAsset);
     } else if (onUploadSuccess) {
       onUploadSuccess(selectedImageAsset);
+    }
+
+    if (onRequestAutoSave) {
+      try {
+        await onRequestAutoSave();
+      } catch (err) {
+        console.error("Auto-save after saving image failed:", err);
+      }
     }
 
     setIsImageDialogOpen(false);
@@ -879,7 +889,18 @@ export default function ImageUpload({
                       <p className="text-sm font-medium text-gray-700">
                         Add Image
                       </p>
-                      {previewImageUrl ? (
+                      {isUploadingImage ? (
+                        <div className="h-full rounded-lg border border-primary p-0.5">
+                          <div className="flex h-full min-h-[240px] sm:min-h-[280px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-6 sm:p-8">
+                            <div className="flex flex-col items-center gap-3">
+                              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                              <span className="text-sm text-gray-600">
+                                Uploading...
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : previewImageUrl ? (
                         <div className="flex flex-col items-center justify-center rounded-lg p-4">
                           <div className="group relative overflow-hidden rounded-lg bg-gray-100 p-2">
                             <img
@@ -945,33 +966,24 @@ export default function ImageUpload({
                               }}
                               className="hidden"
                             />
-                            {isUploadingImage ? (
-                              <div className="flex flex-col items-center gap-3">
-                                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                                <span className="text-sm text-gray-600">
-                                  Uploading...
-                                </span>
+                            <>
+                              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                                <Image
+                                  src="/upload.svg"
+                                  alt=""
+                                  width={42}
+                                  height={42}
+                                />
                               </div>
-                            ) : (
-                              <>
-                                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                                  <Image
-                                    src="/upload.svg"
-                                    alt=""
-                                    width={42}
-                                    height={42}
-                                  />
-                                </div>
-                                <p className="text-sm font-medium text-gray-700">
-                                  Drag files here or click to upload
-                                </p>
-                                <p className="mt-1 text-center text-xs text-gray-400">
-                                  Supported formats:
-                                  <br />
-                                  PDFs, Videos, Audio, Images
-                                </p>
-                              </>
-                            )}
+                              <p className="text-sm font-medium text-gray-700">
+                                Drag files here or click to upload
+                              </p>
+                              <p className="mt-1 text-center text-xs text-gray-400">
+                                Supported formats:
+                                <br />
+                                PDFs, Videos, Audio, Images
+                              </p>
+                            </>
                           </div>
                         </div>
                       )}
@@ -1099,7 +1111,7 @@ export default function ImageUpload({
 
                             <div className="flex flex-col gap-2">
                               <div className="space-y-2">
-                                <div className="flex items-center justify-between">
+                                {/* <div className="flex items-center justify-between">
                                   <Label htmlFor="ai-prompt">Prompt</Label>
                                   <Button
                                     type="button"
@@ -1124,7 +1136,7 @@ export default function ImageUpload({
                                       "Suggest Prompt"
                                     )}
                                   </Button>
-                                </div>
+                                </div> */}
                                 <Input
                                   id="ai-prompt"
                                   value={aiPrompt}

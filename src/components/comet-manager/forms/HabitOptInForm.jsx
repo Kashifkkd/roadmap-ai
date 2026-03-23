@@ -20,6 +20,7 @@ export default function HabitOptInForm({
   stepUuid = "",
   screenUuid = "",
   askKyperHandlers = {},
+  onRequestAutoSave,
 }) {
   const {
     onTextFieldSelect,
@@ -126,6 +127,7 @@ export default function HabitOptInForm({
           existingAssets={existingAssets}
           onRemoveAsset={handleRemoveAsset}
           showSavedImages={true}
+          onRequestAutoSave={onRequestAutoSave}
         />
 
         <div className="rounded-lg border border-gray-200 p-4">

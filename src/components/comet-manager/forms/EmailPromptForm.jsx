@@ -15,6 +15,7 @@ export default function EmailPromptForm({
   chapterUuid = "",
   stepUuid = "",
   screenUuid = "",
+  onRequestAutoSave,
 }) {
   const {
     onTextFieldSelect,
@@ -94,6 +95,7 @@ export default function EmailPromptForm({
             existingAssets={existingAssets}
             onRemoveAsset={handleRemoveAsset}
             showSavedImages={true}
+            onRequestAutoSave={onRequestAutoSave}
           />
         </div>
       </div>

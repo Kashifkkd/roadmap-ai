@@ -220,6 +220,7 @@ export default function DynamicForm({
   stepNumber,
   isAskingKyper = false,
   setIsAskingKyper = () => {},
+  onRequestAutoSave,
 }) {
   // No local state - derive form values directly from screen
   const formData = useMemo(() => {
@@ -943,6 +944,10 @@ export default function DynamicForm({
       }
     }
 
+    // Align with ImageUpload: one screen image slot — ImageUrl, no audio/video track.
+    const isOutlineScreenImageAsset = (asset) =>
+      Boolean(asset?.ImageUrl && !asset?.audioUrl && !asset?.videoUrl);
+
     // Function to update screen assets
     const updateScreenAssets = (assets) => {
       const screenId = screen?.id;
@@ -963,9 +968,16 @@ export default function DynamicForm({
               const currentScreen = stepItem.screens[screenIndex];
               if (!currentScreen.assets) currentScreen.assets = [];
               const existingAssets = currentScreen.assets || [];
-              const newAssets = Array.isArray(assets)
-                ? [...existingAssets, ...assets]
-                : [...existingAssets, assets];
+              const incomingList = Array.isArray(assets) ? assets : [assets];
+              const replacesScreenImages = incomingList.some(
+                isOutlineScreenImageAsset,
+              );
+              const newAssets = replacesScreenImages
+                ? [
+                    ...existingAssets.filter((a) => !isOutlineScreenImageAsset(a)),
+                    ...incomingList,
+                  ]
+                : [...existingAssets, ...incomingList];
 
               stepItem.screens[screenIndex] = {
                 ...currentScreen,
@@ -1030,6 +1042,7 @@ export default function DynamicForm({
       chapterUuid,
       stepUuid,
       screenUuid,
+      onRequestAutoSave,
     };
 
     //1-Content

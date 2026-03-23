@@ -20,6 +20,7 @@ export default function AccountabilityPartnerEmailForm({
   chapterUuid = "",
   stepUuid = "",
   screenUuid = "",
+  onRequestAutoSave,
 }) {
   const {
     onTextFieldSelect,
@@ -122,6 +123,7 @@ export default function AccountabilityPartnerEmailForm({
             existingAssets={existingAssets}
             onRemoveAsset={handleRemoveAsset}
             showSavedImages={true}
+            onRequestAutoSave={onRequestAutoSave}
           />
         </div>
       </div>

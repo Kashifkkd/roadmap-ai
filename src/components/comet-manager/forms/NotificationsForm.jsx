@@ -18,6 +18,7 @@ export default function NotificationsForm({
   stepUuid = "",
   screenUuid = "",
   askKyperHandlers = {},
+  onRequestAutoSave,
 }) {
   const {
     onTextFieldSelect,
@@ -99,6 +100,7 @@ export default function NotificationsForm({
             existingAssets={existingAssets}
             onRemoveAsset={handleRemoveAsset}
             showSavedImages={true}
+            onRequestAutoSave={onRequestAutoSave}
           />
         )}
       </div>

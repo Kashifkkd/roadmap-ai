@@ -238,6 +238,20 @@ export default function CometManager({
   } = useCometManager(sessionData);
   console.log("screens >>>>>>>>>>>>>>>>>>>>>>>", screens);
 
+  const outlineRef = useRef(outline);
+  useEffect(() => {
+    outlineRef.current = outline;
+  }, [outline]);
+
+  const requestAutoSaveAfterOutlineCommit = useCallback(async () => {
+    if (!saveOutlineImmediately) return;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const current = outlineRef.current;
+    if (current) {
+      await saveOutlineImmediately(current);
+    }
+  }, [saveOutlineImmediately]);
+
   const cloneOutline = useCallback((sourceOutline) => {
     if (!sourceOutline) {
       return null;
@@ -2327,6 +2341,7 @@ export default function CometManager({
                             stepNumber={stepNumber}
                             isAskingKyper={isAskingKyper}
                             setIsAskingKyper={setIsAskingKyper}
+                            onRequestAutoSave={requestAutoSaveAfterOutlineCommit}
                           />
                         </div>
                       )}

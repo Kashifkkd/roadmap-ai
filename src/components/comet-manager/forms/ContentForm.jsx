@@ -20,6 +20,7 @@ export default function ContentForm({
   chapterUuid = "",
   stepUuid = "",
   screenUuid = "",
+  onRequestAutoSave,
 }) {
   const {
     onTextFieldSelect,
@@ -256,6 +257,7 @@ export default function ContentForm({
               existingAssets={existingAssets}
               onRemoveAsset={handleRemoveAsset}
               showSavedImages={true}
+              onRequestAutoSave={onRequestAutoSave}
             />
           </div>
 
