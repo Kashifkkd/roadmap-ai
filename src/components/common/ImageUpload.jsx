@@ -1,23 +1,16 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
+import { Plus, X, Loader2, Check, Trash2, Pencil, Upload, Sparkles, Paperclip } from "lucide-react";
 import {
-  Plus,
-  X,
-  Loader2,
-  Check,
-  Trash2,
-  Pencil,
-  Upload,
-  Sparkles,
-  Paperclip,
-  CloudUpload,
-  CircleX,
-} from "lucide-react";
-
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -35,7 +28,6 @@ import {
   getSuggestPrompt,
 } from "@/api/generateStepImages";
 import { ART_STYLE_KEYS } from "@/constants/artStyles";
-import Image from "next/image";
 
 export default function ImageUpload({
   label = "Upload Image/Icon",
@@ -51,32 +43,10 @@ export default function ImageUpload({
 }) {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadErrorImage, setUploadErrorImage] = useState(null);
-  const [uploadedImage, setUploadedImage] = useState(null);
-  const getAssetUrl = (asset) => {
-    if (!asset) return null;
-    return (
-      asset.ImageUrl ||
-      asset.image_url ||
-      asset.url ||
-      asset.mediaUrl ||
-      asset.s3_url
-    );
-  };
-
-  const isAIAsset = (asset) => {
-    if (!asset) return false;
-    return (
-      asset.source === "ai_generated" ||
-      asset.source === "ai" ||
-      asset.generated_by === "generative_ai" ||
-      asset.generated_by === "ai" ||
-      asset.type === "ai_generated"
-    );
-  };
-
   console.log("Existing assets passed to ImageUpload:", existingAssets);
 
-  // AI Generate Image Dialog State
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("upload");
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiArtStyle, setAiArtStyle] = useState("Editorial Illustration");
   const [imageGuidance, setImageGuidance] = useState("");
@@ -87,56 +57,16 @@ export default function ImageUpload({
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
   const [promptError, setPromptError] = useState(null);
 
-  // Asset Selection State
   const [assets, setAssets] = useState([]);
   const [isLoadingAssets, setIsLoadingAssets] = useState(false);
   const [assetsError, setAssetsError] = useState(null);
   const [isCreatingAsset, setIsCreatingAsset] = useState(false);
   const [createAssetError, setCreateAssetError] = useState(null);
-
-  // Unified Dialog State
-  const [isMainDialogOpen, setIsMainDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("upload");
-  const [isDragging, setIsDragging] = useState(false);
-  const dropZoneFileInputRef = useRef(null);
-  const replaceFileInputRef = useRef(null);
-
-  // Staged Upload State
-  const [stagedFile, setStagedFile] = useState(null);
-  const [stagedPreviewUrl, setStagedPreviewUrl] = useState(null);
-  const [stagedAiImage, setStagedAiImage] = useState(null);
-
-  // Cleanup staged preview URL to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      if (stagedPreviewUrl) URL.revokeObjectURL(stagedPreviewUrl);
-    };
-  }, [stagedPreviewUrl]);
-
-  // Reset staging when dialog opens or closes
-  useEffect(() => {
-    if (!isMainDialogOpen) {
-      setStagedFile(null);
-      if (stagedPreviewUrl) URL.revokeObjectURL(stagedPreviewUrl);
-      setStagedPreviewUrl(null);
-      setStagedAiImage(null);
-    }
-  }, [isMainDialogOpen]);
-
-  const handleFilePick = (file) => {
-    if (!file) return;
-    setStagedFile(file);
-    if (stagedPreviewUrl) URL.revokeObjectURL(stagedPreviewUrl);
-    setStagedPreviewUrl(URL.createObjectURL(file));
-    setUploadErrorImage(null);
-  };
+  const [selectedImageAsset, setSelectedImageAsset] = useState(null);
 
   const getUploadErrorMessage = (uploadResponse, error) => {
     if (uploadResponse?.response) {
-      const msg =
-        uploadResponse.response?.message ??
-        uploadResponse.response?.detail ??
-        uploadResponse.response?.error;
+      const msg = uploadResponse.response?.message ?? uploadResponse.response?.detail ?? uploadResponse.response?.error;
       if (msg && typeof msg === "string") return msg;
       if (Array.isArray(msg)) return msg.join(". ");
     }
@@ -157,8 +87,7 @@ export default function ImageUpload({
       503: "Service unavailable. Please try again later.",
     };
     if (status && statusMessages[status]) return statusMessages[status];
-    if (status && status >= 400)
-      return `Upload failed (${status}). Please try again.`;
+    if (status && status >= 400) return `Upload failed (${status}). Please try again.`;
     return "Upload failed. Please try again.";
   };
 
@@ -174,7 +103,7 @@ export default function ImageUpload({
         chapterUid || "",
         stepUid || "",
         screenUid || "",
-        "",
+        "", // link parameter (optional, not used for file uploads)
       );
 
       if (uploadResponse?.success && uploadResponse?.response) {
@@ -190,26 +119,20 @@ export default function ImageUpload({
           title: uploadResponse.response.name || file.name,
           source: "computer",
         };
-        if (onUploadSuccess) {
-          onUploadSuccess(assetData);
-        }
-        setUploadedImage(file.name);
-        return true; // Success
+        setSelectedImageAsset(assetData);
       } else {
         setUploadErrorImage(getUploadErrorMessage(uploadResponse, null));
-        return false; // Failed
       }
     } catch (error) {
       setUploadErrorImage(getUploadErrorMessage(null, error));
       console.error("Error uploading image:", error);
-      return false; // Failed
     } finally {
       setIsUploadingImage(false);
     }
   };
 
-  // Handle opening AI dialog - fetch attributes first
-  const handleOpenAIDialog = async () => {
+  // Fetch AI attributes for generate tab
+  const loadAIAttributes = async () => {
     setIsLoadingAttributes(true);
     setAttributesError(null);
     setAiGenerateError(null);
@@ -381,9 +304,10 @@ export default function ImageUpload({
       }
 
       if (response) {
+        // Normalize asset data to always have ImageUrl
         const assetToSave = {
           status: response.status || "success",
-          ImageUrl: response.image_url || response.url || response.ImageUrl,
+          ImageUrl: response.image_url || response.url,
           asset_id: response.asset_id || response.id,
           style: response.style,
           prompt_used: response.prompt_used,
@@ -392,8 +316,7 @@ export default function ImageUpload({
           source: "ai_generated",
         };
 
-        // Stage the generated image instead of closing immediately
-        setStagedAiImage(assetToSave);
+        setSelectedImageAsset(assetToSave);
       }
     } catch (error) {
       setAiGenerateError(
@@ -442,6 +365,39 @@ export default function ImageUpload({
       setAssets([]);
     } finally {
       setIsLoadingAssets(false);
+    }
+  };
+
+  const openImageDialog = async (tab = "upload") => {
+    setActiveTab(tab);
+    setIsImageDialogOpen(true);
+    setUploadErrorImage(null);
+    setAiGenerateError(null);
+    setAttributesError(null);
+    setAssetsError(null);
+    setCreateAssetError(null);
+
+    if (tab === "generate") {
+      await loadAIAttributes();
+    }
+
+    if (tab === "assets") {
+      fetchAssets();
+    }
+  };
+
+  const handleTabChange = async (tab) => {
+    setActiveTab(tab);
+    setUploadErrorImage(null);
+    setAiGenerateError(null);
+    setCreateAssetError(null);
+
+    if (tab === "generate" && !isLoadingAttributes) {
+      await loadAIAttributes();
+    }
+
+    if (tab === "assets" && !isLoadingAssets) {
+      fetchAssets();
     }
   };
 
@@ -515,10 +471,6 @@ export default function ImageUpload({
         source: response.source || "direct_link",
       };
 
-      if (onUploadSuccess) {
-        onUploadSuccess(assetToSave);
-      }
-
       // Add the newly selected/created asset to the local assets array so it appears in the assets list
       const assetForList = {
         id: response.id,
@@ -529,13 +481,11 @@ export default function ImageUpload({
       };
       setAssets((prev) => {
         const alreadyInList = prev.some(
-          (a) => (a.id || a.asset_id) === response.id,
+          (a) => (a.id || a.asset_id) === response.id
         );
         return alreadyInList ? prev : [...prev, assetForList];
       });
-
-      // Close dialog on success
-      setIsMainDialogOpen(false);
+      setSelectedImageAsset(assetToSave);
     } catch (error) {
       console.error("Error creating asset:", error);
       setCreateAssetError(
@@ -546,112 +496,115 @@ export default function ImageUpload({
     }
   };
 
-  const imageAssetsCount = assets.filter(
-    (asset) => asset.asset_type === "image",
-  ).length;
+  const isImageAsset = (asset) =>
+    asset?.ImageUrl && !asset.audioUrl && !asset.videoUrl;
 
-  // First image of any source — for the inline preview area
-  const existingImageAsset = existingAssets.find(
-    (asset) => getAssetUrl(asset) && !asset.audioUrl && !asset.videoUrl,
-  );
-  const existingImageUrl = getAssetUrl(existingImageAsset);
-  const existingImageIndex = existingImageAsset
-    ? existingAssets.findIndex((a) => a === existingImageAsset)
-    : -1;
-
-  // Per-source images — for each tab
-  const computerImageAsset = existingAssets.find(
-    (asset) =>
-      getAssetUrl(asset) &&
-      !asset.audioUrl &&
-      !asset.videoUrl &&
-      asset.source === "computer",
-  );
-  const aiImageAsset = existingAssets.find(
-    (asset) =>
-      getAssetUrl(asset) &&
-      !asset.audioUrl &&
-      !asset.videoUrl &&
-      isAIAsset(asset),
+  const imageAssetEntries = useMemo(
+    () =>
+      existingAssets.reduce((acc, asset, index) => {
+        if (isImageAsset(asset)) {
+          acc.push({ asset, index });
+        }
+        return acc;
+      }, []),
+    [existingAssets],
   );
 
-  const computerImageUrl = getAssetUrl(computerImageAsset);
-  const aiImageUrl = getAssetUrl(aiImageAsset);
+  const currentImageEntry =
+    imageAssetEntries.length > 0
+      ? imageAssetEntries[imageAssetEntries.length - 1]
+      : null;
+  const currentImageAsset = currentImageEntry?.asset || null;
+  const currentImageUrl = currentImageAsset?.ImageUrl || null;
+  const currentImageIndices = imageAssetEntries.map(({ index }) => index);
+  const previewImageUrl =
+    selectedImageAsset?.ImageUrl || currentImageUrl || null;
 
-  const computerImageIndex = computerImageAsset
-    ? existingAssets.findIndex((a) => a === computerImageAsset)
-    : -1;
+  const removeExistingImages = () => {
+    if (!onRemoveAsset || currentImageIndices.length === 0) return;
 
-  const aiImageIndex = aiImageAsset
-    ? existingAssets.findIndex((a) => a === aiImageAsset)
-    : -1;
-
-  // Dialog controls
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
+    [...currentImageIndices]
+      .sort((a, b) => b - a)
+      .forEach((assetIndex) => onRemoveAsset(assetIndex));
   };
 
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
+  const handleSaveImage = () => {
+    if (!selectedImageAsset) return;
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    const file = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file && file.type.startsWith("image/")) {
-      handleFilePick(file);
+    removeExistingImages();
+
+    if (
+      selectedImageAsset.source === "ai_generated" &&
+      onAIGenerateSuccess
+    ) {
+      onAIGenerateSuccess(selectedImageAsset);
+    } else if (onUploadSuccess) {
+      onUploadSuccess(selectedImageAsset);
     }
+
+    setIsImageDialogOpen(false);
+    setSelectedImageAsset(null);
+    setAiPrompt("");
+    setAiGenerateError(null);
+    setAttributesError(null);
+    setPromptError(null);
+    setCreateAssetError(null);
   };
 
-  const handleOpenMainDialog = () => {
-    setIsMainDialogOpen(true);
-    setActiveTab("upload");
+  const handleCloseDialog = () => {
+    setIsImageDialogOpen(false);
+    setSelectedImageAsset(null);
+    setAiPrompt("");
     setUploadErrorImage(null);
+    setAiGenerateError(null);
+    setAttributesError(null);
+    setPromptError(null);
+    setCreateAssetError(null);
   };
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    if (tab === "generate") {
-      handleOpenAIDialog();
-    } else if (tab === "assets") {
-      fetchAssets();
+  const handleRemoveCurrentImage = () => {
+    removeExistingImages();
+    setSelectedImageAsset(null);
+  };
+
+  const handleRemovePreviewImage = () => {
+    if (selectedImageAsset) {
+      setSelectedImageAsset(null);
+      return;
     }
+
+    handleRemoveCurrentImage();
   };
 
-  const handleSave = async () => {
-    if (activeTab === "upload" && stagedFile) {
-      // User is in upload tab and has picked a new file
-      const success = await handleFileUpload(stagedFile);
-      if (success) {
-        setIsMainDialogOpen(false);
-      }
-    } else if (activeTab === "generate" && stagedAiImage) {
-      // User generated an AI image and wants to save it
-      if (onAIGenerateSuccess) {
-        onAIGenerateSuccess(stagedAiImage);
-      }
-      setIsMainDialogOpen(false);
-    } else {
-      setIsMainDialogOpen(false);
-    }
-  };
+  const tabButtonClass = (tab) =>
+    `flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+      activeTab === tab
+        ? "bg-primary text-white shadow-sm"
+        : "text-gray-500 hover:text-gray-700"
+    }`;
 
-  // Tab definitions
-  const tabs = [
-    { key: "upload", label: "Upload", icon: <Upload className="h-4 w-4" /> },
+  const hoverOptions = [
     {
-      key: "generate",
-      label: "Generate",
-      icon: <Sparkles className="h-4 w-4" />,
+      id: "upload",
+      label: "Upload",
+      icon: Upload,
     },
-    { key: "assets", label: "Assets", icon: <Paperclip className="h-4 w-4" /> },
+    {
+      id: "generate",
+      label: "Generate",
+      icon: Sparkles,
+    },
+    {
+      id: "assets",
+      label: "Assets",
+      icon: Paperclip,
+    },
   ];
+
+  // Count image assets
+  const imageAssetsCount = assets.filter((asset) => {
+    return asset.asset_type === "image";
+  }).length;
 
   return (
     <>
@@ -659,78 +612,85 @@ export default function ImageUpload({
         <Label className="block text-sm font-medium text-gray-700 mb-4">
           {label}
         </Label>
-        {/* ── Inline Upload Area ── */}
-        <div className={existingImageUrl ? "" : "p-2 bg-gray-100 rounded-md"}>
-          <div
-            className={`w-full rounded-md flex flex-col items-center justify-center transition-colors relative ${
-              existingImageUrl
-                ? ""
-                : "border-2 border-dashed border-gray-300 bg-white hover:border-primary/50 cursor-pointer py-2"
-            }`}
-            style={{ minHeight: "80px" }}
-            onClick={() => {
-              if (!existingImageUrl) {
-                handleOpenMainDialog();
-              }
-            }}
-          >
-            {existingImageUrl ? (
-              <div className="relative w-full max-w-[500px] mx-auto rounded-xl overflow-hidden group bg-white shadow-sm border border-gray-100 flex items-center justify-center p-1">
-                <img
-                  src={existingImageUrl}
-                  alt="Uploaded preview"
-                  className="w-full h-auto max-w-[200px] max-h-[180px] object-cover"
-                />
 
-                {/* Black Overlay*/}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 scale-x-50 group-hover:scale-x-100 origin-center transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] pointer-events-none" />
-
-                {/* Animated Buttons*/}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="flex flex-col items-center gap-3 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]">
-                    <div className="transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] transform translate-x-16 scale-90 opacity-0 group-hover:translate-x-0 group-hover:scale-100 group-hover:opacity-100 pointer-events-auto">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenMainDialog();
-                        }}
-                        className="flex items-center justify-center gap-1.5 bg-white/95 backdrop-blur-md text-gray-800 shadow-md rounded-md px-5 py-2 text-sm font-medium hover:text-white hover:bg-primary-600 hover:shadow-lg active:scale-95 transition-all w-32 hover:cursor-pointer"
-                      >
-                        <Pencil className="w-4 h-4" /> Replace
-                      </button>
-                    </div>
-
-                    {onRemoveAsset && (
-                      <div className="transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] transform -translate-x-16 scale-90 opacity-0 group-hover:translate-x-0 group-hover:scale-100 group-hover:opacity-100 pointer-events-auto">
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
+          {showSavedImages && currentImageUrl ? (
+            <div className="relative h-[180px] overflow-hidden rounded-lg bg-white group/current">
+              <img
+                src={currentImageUrl}
+                alt="Selected image"
+                className="w-full h-full object-contain rounded-lg"
+              />
+              <div className="absolute inset-0 bg-black/35 opacity-0 group-hover/current:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-3">
+                <div className="relative group/replace">
+                  <button
+                    type="button"
+                    className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-primary shadow-sm hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Replace
+                  </button>
+                  <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-44 -translate-x-1/2 rounded-xl border border-gray-200 bg-white p-2 opacity-0 shadow-lg transition-all group-hover/replace:pointer-events-auto group-hover/replace:opacity-100">
+                    {hoverOptions.map((option) => {
+                      const Icon = option.icon;
+                      return (
                         <button
+                          key={option.id}
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRemoveAsset(existingImageIndex);
-                          }}
-                          className="flex items-center justify-center gap-1.5 bg-red-500 backdrop-blur-md shadow-md rounded-md px-5 py-2 text-sm font-medium text-white hover:shadow-lg active:scale-95 transition-all w-32 hover:cursor-pointer"
+                          onClick={() => openImageDialog(option.id)}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
-                          <Trash2 className="w-4 h-4" /> Remove
+                          <Icon className="h-4 w-4 text-primary" />
+                          {option.label}
                         </button>
-                      </div>
-                    )}
+                      );
+                    })}
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveCurrentImage}
+                  className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-red-500 shadow-sm hover:bg-red-50 transition-colors flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Remove
+                </button>
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-6 gap-3 w-full">
-                <p className="text-sm text-gray-500">{label}</p>
-                <div className="border border-primary rounded-lg px-4 py-2 bg-white hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-primary text-sm font-medium cursor-pointer">
+            </div>
+          ) : (
+            <div className="flex min-h-[120px] flex-col items-center justify-center text-center">
+              <p className="text-base text-gray-800">{label}</p>
+              <div className="relative mt-4 group/menu">
+                <button
+                  type="button"
+                  className="border border-primary rounded-lg px-5 py-2.5 bg-white hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-primary text-sm font-medium"
+                >
                   <Plus className="h-4 w-4" />
                   Browse
+                </button>
+                <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-48 -translate-x-1/2 rounded-xl border border-gray-200 bg-white p-2 opacity-0 shadow-lg transition-all group-hover/menu:pointer-events-auto group-hover/menu:opacity-100">
+                  {hoverOptions.map((option) => {
+                    const Icon = option.icon;
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => openImageDialog(option.id)}
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <Icon className="h-4 w-4 text-primary" />
+                        {option.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-        {/* Inline error display */}
-        {uploadErrorImage && !isMainDialogOpen && (
+
+        {/* Error display */}
+        {uploadErrorImage && (
           <div className="mt-3 p-2 bg-white rounded-lg border border-gray-200">
             <div className="flex items-center gap-2 text-sm text-red-600">
               <X className="h-4 w-4" />
@@ -740,492 +700,417 @@ export default function ImageUpload({
         )}
       </div>
 
-      {/* Add Image Dialog */}
-      {isMainDialogOpen && (
-        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-hidden pointer-events-auto">
-          {/* Backdrop click to close */}
-          <div
-            className="absolute inset-0"
-            onClick={() => {
-              if (!(isUploadingImage || isGeneratingImage || isCreatingAsset)) {
-                setIsMainDialogOpen(false);
-              }
-            }}
-          />
-
-          {/* Dialog Panel */}
-          <div className="w-full max-w-[600px] h-[80vh] bg-white shadow-2xl rounded-2xl border border-gray-200 flex flex-col relative z-[101] animate-in zoom-in-95 duration-200 overflow-hidden">
-            {/* Header */}
-            <div className="px-6 py-2 flex items-center justify-between bg-white">
-              <h2 className="text-lg font-bold text-gray-900 line-height-1">
-                Add Image
-              </h2>
+      <Dialog
+        open={isImageDialogOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setIsImageDialogOpen(true);
+            return;
+          }
+          handleCloseDialog();
+        }}
+      >
+        <DialogContent className="sm:max-w-[760px]">
+          <DialogHeader>
+            <DialogTitle>Add Image</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-3 gap-2 rounded-xl bg-gray-100 p-1">
               <button
-                onClick={() => {
-                  if (
-                    !(isUploadingImage || isGeneratingImage || isCreatingAsset)
-                  ) {
-                    setIsMainDialogOpen(false);
-                  }
-                }}
-                className="text-gray-800 hover:text-gray-600"
+                type="button"
+                onClick={() => handleTabChange("upload")}
+                className={tabButtonClass("upload")}
               >
-                <CircleX size={20} />
+                <Upload className="h-4 w-4" />
+                Upload
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTabChange("generate")}
+                className={tabButtonClass("generate")}
+              >
+                <Sparkles className="h-4 w-4" />
+                Generate
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTabChange("assets")}
+                className={tabButtonClass("assets")}
+              >
+                <Paperclip className="h-4 w-4" />
+                Assets
               </button>
             </div>
 
-            <div className="flex-1 overflow-hidden flex flex-col">
-              <div className="mx-2 mt-4 mb-6 p-2 bg-gray-50 rounded-lg flex flex-col gap-2 overflow-hidden flex-1">
-                {/* Tabs List */}
-                <div className="bg-white rounded-lg p-1.5 flex shadow-sm shrink-0">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      onClick={() => handleTabChange(tab.key)}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-2 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
-                        activeTab === tab.key
-                          ? "bg-primary text-white shadow-sm"
-                          : "text-gray-600 hover:text-gray-800 hover:bg-primary-100"
-                      }`}
-                    >
-                      {tab.icon}
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="px-2 py-2 overflow-y-auto bg-white rounded-t-lg -mb-0.5 flex-1 custom-scrollbar">
-                  {/*UPLOAD TAB  */}
-                  {activeTab === "upload" && (
-                    <div className="space-y-4">
-                      <p className="text-sm font-medium text-gray-700">
-                        Add Image
-                      </p>
-
-                      {stagedPreviewUrl || computerImageUrl ? (
-                        <div className="border-2 border-dashed border-primary/30 rounded-lg p-4 flex flex-col items-center justify-center bg-gray-50">
-                          <div className="relative group rounded-lg overflow-hidden">
-                            <img
-                              src={stagedPreviewUrl || computerImageUrl}
-                              alt="Uploaded preview"
-                              className="max-h-[250px] w-auto object-contain rounded-lg"
-                            />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2">
-                              <div className="relative inline-block">
-                                <Input
-                                  type="file"
-                                  accept="image/*"
-                                  ref={replaceFileInputRef}
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0] ?? null;
-                                    if (file) handleFilePick(file);
-                                  }}
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                />
-                                <button
-                                  type="button"
-                                  className="bg-white text-primary border border-primary rounded-md px-5 py-1.5 text-sm font-medium hover:bg-primary/5 transition-colors"
-                                >
-                                  Replace
-                                </button>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (stagedFile) {
-                                    setStagedFile(null);
-                                    if (stagedPreviewUrl)
-                                      URL.revokeObjectURL(stagedPreviewUrl);
-                                    setStagedPreviewUrl(null);
-                                  } else if (
-                                    onRemoveAsset &&
-                                    computerImageIndex >= 0
-                                  ) {
-                                    onRemoveAsset(computerImageIndex);
-                                  }
-                                }}
-                                className="bg-white text-red-500 border border-red-400 rounded-md px-5 py-1.5 text-sm font-medium hover:bg-red-50 transition-colors"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        /* Drag & Drop Zone */
-                        <div className="h-full border border-primary rounded-lg p-0.5">
-                          <div
-                            className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center transition-colors h-full ${
-                              isDragging
-                                ? "border-primary bg-primary/5"
-                                : "border-gray-300 bg-gray-50 hover:border-primary/40"
-                            }`}
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onDrop={handleDrop}
-                            onClick={() =>
-                              dropZoneFileInputRef.current?.click()
-                            }
-                            style={{ cursor: "pointer", minHeight: "280px" }}
-                          >
+            {activeTab === "upload" && (
+              <div className="space-y-4">
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-3">
+                    Add Image
+                  </Label>
+                  <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                    {previewImageUrl ? (
+                      <div className="flex flex-col items-center gap-4">
+                        <img
+                          src={previewImageUrl}
+                          alt="Selected preview"
+                          className="max-h-[320px] w-auto max-w-full rounded-lg border border-gray-200 object-contain"
+                        />
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
                             <Input
                               type="file"
                               accept="image/*"
-                              ref={dropZoneFileInputRef}
                               onChange={(e) => {
-                                const file = e.target.files?.[0] ?? null;
-                                if (file) handleFilePick(file);
+                                const file =
+                                  e.target.files && e.target.files[0]
+                                    ? e.target.files[0]
+                                    : null;
+                                if (file) {
+                                  handleFileUpload(file);
+                                }
                               }}
-                              className="hidden"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                             />
-                            {isUploadingImage ? (
-                              <div className="flex flex-col items-center gap-3">
-                                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                                <span className="text-sm text-gray-600">
-                                  Uploading...
-                                </span>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                                  <Image
-                                    src="/upload.svg"
-                                    alt="Icon"
-                                    width={42}
-                                    height={42}
-                                  />
-                                </div>
-                                <p className="text-sm font-medium text-gray-700">
-                                  Drag files here or click to upload
-                                </p>
-                                <p className="text-xs text-center text-gray-400 mt-1">
-                                  Supported formats:
-                                  <br />
-                                  PDFs, Videos, Audio, Images
-                                </p>
-                              </>
-                            )}
+                            <div className="rounded-lg border border-primary bg-white px-4 py-2 text-sm font-medium text-primary hover:bg-gray-50 transition-colors">
+                              Replace
+                            </div>
                           </div>
+                          <button
+                            type="button"
+                            onClick={handleRemovePreviewImage}
+                            className="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
+                          >
+                            Remove
+                          </button>
                         </div>
-                      )}
+                      </div>
+                    ) : isUploadingImage ? (
+                      <div className="flex flex-col items-center justify-center gap-2 py-16">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="text-sm text-gray-600">Uploading image...</p>
+                      </div>
+                    ) : (
+                      <div className="relative flex min-h-[280px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary/40 bg-gray-50 text-center">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file =
+                              e.target.files && e.target.files[0]
+                                ? e.target.files[0]
+                                : null;
+                            if (file) {
+                              handleFileUpload(file);
+                            }
+                          }}
+                          className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                        />
+                        <Upload className="mb-4 h-10 w-10 text-primary" />
+                        <p className="text-sm font-medium text-gray-700">
+                          Drag file here or click to upload
+                        </p>
+                        <p className="mt-2 text-xs text-gray-500">
+                          Supported formats: Images
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {uploadErrorImage && (
+                  <div className="flex items-center gap-2 text-sm text-red-600">
+                    <X className="h-4 w-4" />
+                    <span>{uploadErrorImage}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
-                      {uploadErrorImage && (
-                        <div className="flex items-center gap-2 text-sm text-red-600">
-                          <X size={16} />
-                          <span>{uploadErrorImage}</span>
+            {activeTab === "generate" && (
+              <>
+                {isLoadingAttributes ? (
+                  <div className="flex flex-col items-center justify-center gap-2 py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm text-gray-600">
+                      Loading image attributes...
+                    </p>
+                  </div>
+                ) : attributesError ? (
+                  <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                    <div className="rounded-full bg-red-50 p-3">
+                      <X className="h-6 w-6 text-red-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">
+                        Unable to load image attributes
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {attributesError}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="ai-prompt">Prompt</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSuggestPrompt}
+                          disabled={
+                            isLoadingPrompt ||
+                            !sessionId ||
+                            !chapterUid ||
+                            !stepUid ||
+                            !screenUid
+                          }
+                          className="text-xs"
+                        >
+                          {isLoadingPrompt ? (
+                            <>
+                              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              Loading...
+                            </>
+                          ) : (
+                            "Suggest Prompt"
+                          )}
+                        </Button>
+                      </div>
+                      <Input
+                        id="ai-prompt"
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        placeholder="Enter a description for the image..."
+                        className="w-full"
+                      />
+                      {promptError && (
+                        <div className="flex items-center gap-2 text-xs text-red-600">
+                          <X className="h-3 w-3" />
+                          <span>{promptError}</span>
                         </div>
                       )}
                     </div>
-                  )}
 
-                  {activeTab === "generate" && (
-                    <div className="space-y-4">
-                      {isLoadingAttributes ? (
-                        <div className="flex flex-col items-center justify-center gap-2 py-8">
-                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                          <p className="text-sm text-gray-600">
-                            Loading image attributes...
-                          </p>
-                        </div>
-                      ) : attributesError ? (
-                        <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
-                          <div className="rounded-full bg-red-50 p-3">
-                            <X size={24} className="text-red-400" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-700">
-                              Unable to load image attributes
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {attributesError}
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          {/* Image Review Area */}
-                          <div className="space-y-2">
-                            <p className="text-sm font-medium text-gray-700">
-                              Image Preview
-                            </p>
-                            <div className="rounded-xl p-4 min-h-[150px] flex flex-col items-center justify-center bg-gray-50/50 transition-all">
-                              {stagedAiImage?.ImageUrl || aiImageUrl ? (
-                                <div className="relative group rounded-lg overflow-hidden shadow-md bg-white p-1">
-                                  <img
-                                    src={stagedAiImage?.ImageUrl || aiImageUrl}
-                                    alt="AI Generated preview"
-                                    className="max-h-[250px] w-auto object-contain rounded-md"
-                                  />
-                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (stagedAiImage) {
-                                          setStagedAiImage(null);
-                                        } else if (
-                                          onRemoveAsset &&
-                                          aiImageIndex >= 0
-                                        ) {
-                                          onRemoveAsset(aiImageIndex);
-                                        }
-                                      }}
-                                      className="bg-white text-red-500 border border-red-400 rounded-md px-5 py-1.5 text-sm font-medium hover:bg-red-50 transition-colors"
-                                    >
-                                      Remove
-                                    </button>
-                                  </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ai-art-style">Art Style</Label>
+                      <Select value={aiArtStyle} onValueChange={setAiArtStyle}>
+                        <SelectTrigger id="ai-art-style" className="w-full">
+                          <SelectValue placeholder="Select art style" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ART_STYLE_KEYS.map((style) => (
+                            <SelectItem key={style} value={style}>
+                              {style}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="image-guidance">Image Guidance</Label>
+                      <Input
+                        id="image-guidance"
+                        type="text"
+                        value={imageGuidance}
+                        onChange={(e) => setImageGuidance(e.target.value)}
+                        placeholder="Enter image guidance"
+                        className="w-full"
+                      />
+                    </div>
+
+                    {aiGenerateError && (
+                      <div className="flex items-center gap-2 text-sm text-red-600">
+                        <X className="h-4 w-4" />
+                        <span>{aiGenerateError}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={handleGenerateImage}
+                        disabled={
+                          isGeneratingImage ||
+                          isLoadingAttributes ||
+                          !!attributesError
+                        }
+                      >
+                        {isGeneratingImage ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          "Generate Image"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {activeTab === "assets" && (
+              <div className="space-y-4">
+                <div className="text-sm font-medium text-gray-700">
+                  Select from Assets
+                  {assets && assets.length > 0 ? ` (${imageAssetsCount})` : ""}
+                </div>
+                {createAssetError && (
+                  <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                    <X className="h-4 w-4" />
+                    <span>{createAssetError}</span>
+                  </div>
+                )}
+                <div className="max-h-[360px] overflow-y-auto">
+                  {isLoadingAssets ? (
+                    <div className="flex flex-col items-center justify-center gap-2 py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <p className="text-sm text-gray-600">Loading assets...</p>
+                    </div>
+                  ) : assetsError ? (
+                    <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                      <div className="rounded-full bg-red-50 p-3">
+                        <X className="h-6 w-6 text-red-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">
+                          Unable to load assets
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {assetsError}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={fetchAssets}
+                        className="text-xs"
+                      >
+                        Retry
+                      </Button>
+                    </div>
+                  ) : assets.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+                      <div className="rounded-full bg-gray-50 p-3">
+                        <Plus className="h-6 w-6 text-gray-400" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-700">
+                        No assets available
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Upload assets to see them here
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-3">
+                      {assets
+                        .filter((asset) => asset.asset_type === "image")
+                        .map((asset, index) => {
+                          const image_url = asset.asset_url;
+                          const assetName =
+                            getFilenameFromUrl(image_url) || `Image ${index + 1}`;
+                          const isSelected =
+                            selectedImageAsset?.asset_id ===
+                              (asset.id || asset.asset_id) ||
+                            selectedImageAsset?.ImageUrl === image_url;
+
+                          return (
+                            <div
+                              key={asset.id || asset.asset_id || index}
+                              className={`relative border-2 rounded-lg overflow-hidden group aspect-square transition-colors ${
+                                isCreatingAsset
+                                  ? "opacity-50 cursor-not-allowed border-gray-200"
+                                  : isSelected
+                                    ? "border-primary"
+                                    : "border-gray-200 cursor-pointer hover:border-primary"
+                              }`}
+                              onClick={() => {
+                                if (!isCreatingAsset) {
+                                  handleSelectAsset(asset);
+                                }
+                              }}
+                            >
+                              {typeof image_url === "string" &&
+                              image_url.startsWith("http") ? (
+                                <img
+                                  src={image_url}
+                                  alt={assetName}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-gray-500 p-2 text-center">
+                                  {assetName}
+                                </div>
+                              )}
+                              {isCreatingAsset ? (
+                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                  <Loader2 className="h-6 w-6 text-white animate-spin drop-shadow-lg" />
                                 </div>
                               ) : (
-                                <div className="flex flex-col items-center gap-3 text-gray-400">
-                                  <Sparkles className="h-8 w-8 opacity-20" />
-                                  <p className="text-sm italic">
-                                    Generated image preview
-                                  </p>
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                  <div
+                                    className={`transition-opacity ${
+                                      isSelected
+                                        ? "opacity-100"
+                                        : "opacity-0 group-hover:opacity-100"
+                                    }`}
+                                  >
+                                    <Check className="h-6 w-6 text-white drop-shadow-lg" />
+                                  </div>
+                                </div>
+                              )}
+                              {assetName && (
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate">
+                                  {assetName}
                                 </div>
                               )}
                             </div>
-                          </div>
-
-                          {/* Generate form */}
-                          <div className="space-y-4">
-                            <p className="text-sm font-bold text-primary">
-                              Generate AI Image
-                            </p>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="ai-art-style">Art Style</Label>
-                              <Select
-                                value={aiArtStyle}
-                                onValueChange={setAiArtStyle}
-                              >
-                                <SelectTrigger
-                                  id="ai-art-style"
-                                  className="w-full"
-                                >
-                                  <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {ART_STYLE_KEYS.map((style) => (
-                                    <SelectItem key={style} value={style}>
-                                      {style}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="image-guidance">
-                                Image Guidance
-                              </Label>
-                              <Input
-                                id="image-guidance"
-                                type="text"
-                                value={imageGuidance}
-                                onChange={(e) =>
-                                  setImageGuidance(e.target.value)
-                                }
-                                placeholder="Enter image guidance"
-                                className="w-full"
-                              />
-                            </div>
-
-                            {aiGenerateError && (
-                              <div className="flex items-center gap-2 text-sm text-red-600">
-                                <X size={16} />
-                                <span>{aiGenerateError}</span>
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      )}
+                          );
+                        })}
                     </div>
                   )}
-
-                  {/* ASSETS TAB */}
-                  {activeTab === "assets" && (
-                    <div className="space-y-4">
-                      {createAssetError && (
-                        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
-                          <X size={16} />
-                          <span>{createAssetError}</span>
-                        </div>
-                      )}
-                      {isLoadingAssets ? (
-                        <div className="flex flex-col items-center justify-center gap-2 py-8">
-                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                          <p className="text-sm text-gray-600">
-                            Loading assets...
-                          </p>
-                        </div>
-                      ) : assetsError ? (
-                        <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
-                          <div className="rounded-full bg-red-50 p-3">
-                            <X size={24} className="text-red-400" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-700">
-                              Unable to load assets
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {assetsError}
-                            </p>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={fetchAssets}
-                            className="text-xs"
-                          >
-                            Retry
-                          </Button>
-                        </div>
-                      ) : assets.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-                          <div className="rounded-full bg-gray-50 p-3">
-                            <Plus size={24} className="text-gray-400" />
-                          </div>
-                          <p className="text-sm font-medium text-gray-700">
-                            No assets available
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Upload assets to see them here
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-3 gap-3">
-                          {assets
-                            .filter((asset) => asset.asset_type === "image")
-                            .map((asset, index) => {
-                              const image_url = asset.asset_url;
-                              const assetName =
-                                getFilenameFromUrl(image_url) ||
-                                `Image ${index + 1}`;
-                              const isSelected = image_url === existingImageUrl;
-
-                              return (
-                                <div
-                                  key={asset.id || asset.asset_id || index}
-                                  className={`p-2 transition-all relative group  rounded-lg ${
-                                    isSelected
-                                      ? "bg-primary/10"
-                                      : "hover:bg-gray-50"
-                                  } ${
-                                    isCreatingAsset
-                                      ? "opacity-50 cursor-not-allowed"
-                                      : "cursor-pointer"
-                                  }`}
-                                  onClick={() => {
-                                    if (!isCreatingAsset)
-                                      handleSelectAsset(asset);
-                                  }}
-                                >
-                                  <div className="aspect-video overflow-hidden mb-2 relative  bg-gray-100">
-                                    {typeof image_url === "string" &&
-                                    image_url.startsWith("http") ? (
-                                      <img
-                                        src={image_url}
-                                        alt={assetName}
-                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                      />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500 p-2 text-center break-all">
-                                        {assetName}
-                                      </div>
-                                    )}
-
-                                    {isCreatingAsset ? (
-                                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                                        <Loader2 className="h-6 w-6 text-white animate-spin" />
-                                      </div>
-                                    ) : (
-                                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                          <Check className="h-6 w-6 text-white drop-shadow-lg" />
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="px-0.5 space-y-0.5">
-                                    <p className="text-xs font-bold text-gray-900 truncate">
-                                      {assetName}
-                                    </p>
-                                    <p className="text-[10px] font-medium text-gray-500">
-                                      {asset.size}
-                                    </p>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer */}
-                <div className="bg-white p-2 rounded-b-lg flex items-center justify-between shrink-0">
-                  {/* Generate button (left side) */}
-                  <div className="flex-1">
-                    {activeTab === "generate" &&
-                      !isLoadingAttributes &&
-                      !attributesError && (
-                        <Button
-                          onClick={handleGenerateImage}
-                          disabled={isGeneratingImage}
-                          className="bg-primary hover:bg-primary/90"
-                        >
-                          {isGeneratingImage ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4 mr-2" />
-                              Generate Image
-                            </>
-                          )}
-                        </Button>
-                      )}
-                  </div>
-
-                  {/* Cancel + Save Image (right side) */}
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setIsMainDialogOpen(false);
-                        setUploadErrorImage(null);
-                        setAiGenerateError(null);
-                        setAttributesError(null);
-                        setPromptError(null);
-                      }}
-                      disabled={
-                        isGeneratingImage || isUploadingImage || isCreatingAsset
-                      }
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleSave}
-                      disabled={
-                        isGeneratingImage || isUploadingImage || isCreatingAsset
-                      }
-                      className="bg-primary hover:bg-primary/90"
-                    >
-                      Save Image
-                    </Button>
-                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {selectedImageAsset?.ImageUrl && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <p className="mb-3 text-sm font-medium text-gray-700">
+                  Selected image
+                </p>
+                <img
+                  src={selectedImageAsset.ImageUrl}
+                  alt="Selected asset"
+                  className="max-h-[220px] w-auto max-w-full rounded-lg border border-gray-200 object-contain"
+                />
+              </div>
+            )}
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleCloseDialog}
+              disabled={isCreatingAsset || isGeneratingImage || isUploadingImage}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveImage}
+              disabled={
+                !selectedImageAsset ||
+                isCreatingAsset ||
+                isGeneratingImage ||
+                isUploadingImage
+              }
+            >
+              Save Image
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

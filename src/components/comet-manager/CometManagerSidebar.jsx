@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/Button";
 import { Stack } from "@mui/material";
 import DevicePreview from "./DevicePreview";
 import GenerateStepImageButton from "./GenerateStepImageButton";
+import GradientLoader from "@/components/ui/GradientLoader";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
@@ -69,6 +70,8 @@ function filterAssetsByType(assets, assetType) {
     return type === wanted;
   });
 }
+
+const OPERATION_LOADER_MS = 5000;
 
 export default function CometManagerSidebar({
   selectedScreen,
@@ -128,6 +131,8 @@ export default function CometManagerSidebar({
   const [editingStepId, setEditingStepId] = useState(null);
   const [editChapterName, setEditChapterName] = useState("");
   const [editStepDescription, setEditStepDescription] = useState("");
+  const [pendingChapterOperation, setPendingChapterOperation] = useState(null);
+  const [pendingStepOperation, setPendingStepOperation] = useState(null);
   const chapterEditInputRef = useRef(null);
   const editInputRef = useRef(null);
   const menuRef = useRef(null);
@@ -159,6 +164,22 @@ export default function CometManagerSidebar({
     }
   }, [editingStepId]);
 
+  const runOperationWithLoader = useCallback(
+    async (setPendingOperation, pendingOperation, action, cleanup) => {
+      setPendingOperation(pendingOperation);
+      try {
+        await new Promise((resolve) =>
+          setTimeout(resolve, OPERATION_LOADER_MS),
+        );
+        await Promise.resolve(action?.());
+      } finally {
+        cleanup?.();
+        setPendingOperation(null);
+      }
+    },
+    [],
+  );
+
   const toggleStepMenu = (e, stepId) => {
     e.stopPropagation();
     setOpenChapterMenuId(null);
@@ -178,13 +199,22 @@ export default function CometManagerSidebar({
     setEditStepDescription(step.description || "");
   };
 
-  const handleSaveStepEdit = (e, chapterId, stepId, stepName) => {
+  const handleSaveStepEdit = async (e, chapterId, stepId, stepName) => {
     e.stopPropagation();
-    if (onEditStep) {
-      onEditStep(chapterId, stepId, stepName, editStepDescription.trim());
+    if (!onEditStep) {
+      setEditingStepId(null);
+      setEditStepDescription("");
+      return;
     }
-    setEditingStepId(null);
-    setEditStepDescription("");
+    await runOperationWithLoader(
+      setPendingStepOperation,
+      { stepId, type: "edit" },
+      () => onEditStep(chapterId, stepId, stepName, editStepDescription.trim()),
+      () => {
+        setEditingStepId(null);
+        setEditStepDescription("");
+      },
+    );
   };
 
   const handleCancelStepEdit = (e) => {
@@ -201,12 +231,17 @@ export default function CometManagerSidebar({
     }
   };
 
-  const handleDeleteStepClick = (e, chapterId, stepId) => {
+  const handleDeleteStepClick = async (e, chapterId, stepId) => {
     e.stopPropagation();
     setOpenStepMenuId(null);
-    if (onDeleteStep) {
-      onDeleteStep(chapterId, stepId);
+    if (!onDeleteStep) {
+      return;
     }
+    await runOperationWithLoader(
+      setPendingStepOperation,
+      { stepId, type: "delete" },
+      () => onDeleteStep(chapterId, stepId),
+    );
   };
 
   const handleEditChapterClick = (e, chapterId, chapter) => {
@@ -216,13 +251,22 @@ export default function CometManagerSidebar({
     setEditChapterName(chapter.chapter || chapter.name || "");
   };
 
-  const handleSaveChapterEdit = (e, chapterId) => {
+  const handleSaveChapterEdit = async (e, chapterId) => {
     e.stopPropagation();
-    if (onEditChapter) {
-      onEditChapter(chapterId, editChapterName.trim());
+    if (!onEditChapter) {
+      setEditingChapterId(null);
+      setEditChapterName("");
+      return;
     }
-    setEditingChapterId(null);
-    setEditChapterName("");
+    await runOperationWithLoader(
+      setPendingChapterOperation,
+      { chapterId, type: "edit" },
+      () => onEditChapter(chapterId, editChapterName.trim()),
+      () => {
+        setEditingChapterId(null);
+        setEditChapterName("");
+      },
+    );
   };
 
   const handleCancelChapterEdit = (e) => {
@@ -239,27 +283,33 @@ export default function CometManagerSidebar({
     }
   };
 
-  const handleDeleteChapterClick = (e, chapterId) => {
+  const handleDeleteChapterClick = async (e, chapterId) => {
     e.stopPropagation();
     setOpenChapterMenuId(null);
-
-    setExpandedChapters((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(chapterId);
-      return newSet;
-    });
-
-    if (selectedChapter === chapterId) {
-      setSelectedChapter(null);
-      setExpandedSteps(new Set());
-      if (setSelectedStepFromHook) {
-        setSelectedStepFromHook(null);
-      }
+    if (!onDeleteChapter) {
+      return;
     }
+    await runOperationWithLoader(
+      setPendingChapterOperation,
+      { chapterId, type: "delete" },
+      () => {
+        setExpandedChapters((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(chapterId);
+          return newSet;
+        });
 
-    if (onDeleteChapter) {
-      onDeleteChapter(chapterId);
-    }
+        if (selectedChapter === chapterId) {
+          setSelectedChapter(null);
+          setExpandedSteps(new Set());
+          if (setSelectedStepFromHook) {
+            setSelectedStepFromHook(null);
+          }
+        }
+
+        onDeleteChapter(chapterId);
+      },
+    );
   };
 
   // Chapter drag handlers - chapter 0 cannot be dragged
@@ -866,6 +916,12 @@ export default function CometManagerSidebar({
                   const stepCount = chapter.steps?.length || 0;
                   const isSelected = selectedChapter === chapterId;
                   const isExpanded = expandedChapters.has(chapterId);
+                  const isChapterOperationPending =
+                    pendingChapterOperation?.chapterId === chapterId;
+                  const chapterPendingLabel =
+                    pendingChapterOperation?.type === "delete"
+                      ? "Deleting chapter"
+                      : "Saving chapter changes";
                   const isDraggable = index !== 0; // Chapter 0 cannot be dragged
                   const isDraggedOver =
                     dropTargetChapter === index &&
@@ -894,7 +950,12 @@ export default function CometManagerSidebar({
                         {/* Chapter Header */}
                         <div
                           onClick={() => {
-                            if (editingChapterId === chapterId) return;
+                            if (
+                              editingChapterId === chapterId ||
+                              isChapterOperationPending
+                            ) {
+                              return;
+                            }
                             setSelectedChapter(chapterId);
                             toggleChapter(chapterId);
                             // Clear step selection when clicking chapter
@@ -908,12 +969,14 @@ export default function CometManagerSidebar({
                             }
                           }}
                           className={`flex items-center gap-2 p-3 sm:p-4 transition-all ${
-                            editingChapterId === chapterId
+                            editingChapterId === chapterId ||
+                            isChapterOperationPending
                               ? "cursor-default"
                               : "cursor-pointer"
                           }`}
                         >
-                          {editingChapterId !== chapterId && (
+                          {editingChapterId !== chapterId &&
+                            !isChapterOperationPending && (
                             <>
                               {isDraggable ? (
                                 <GripVertical
@@ -940,7 +1003,24 @@ export default function CometManagerSidebar({
                             </>
                           )}
                           <div className="flex flex-col flex-1 min-w-0">
-                            {editingChapterId === chapterId ? (
+                            {isChapterOperationPending ? (
+                              <div
+                                className="flex items-center gap-3 rounded-xl border border-[#D9D6FF] bg-gradient-to-r from-[#F4F2FF] via-white to-[#F8F7FF] px-3 py-3 shadow-sm"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+                                  <GradientLoader size={20} />
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-[#352F6E]">
+                                    {chapterPendingLabel}
+                                  </p>
+                                  <p className="text-xs text-[#574EB6]">
+                                    Please wait while we update this chapter.
+                                  </p>
+                                </div>
+                              </div>
+                            ) : editingChapterId === chapterId ? (
                               <div
                                 className="flex flex-col gap-3"
                                 onClick={(e) => e.stopPropagation()}
@@ -1075,7 +1155,8 @@ export default function CometManagerSidebar({
                         </div>
 
                         {/* Expanded Steps - Inside the same card */}
-                        {isExpanded &&
+                        {!isChapterOperationPending &&
+                          isExpanded &&
                           chapter.steps &&
                           chapter.steps.length > 0 && (
                             <div className="flex flex-col gap-2 px-3 pb-3">
@@ -1088,6 +1169,12 @@ export default function CometManagerSidebar({
                                   selectedStepId === stepId;
                                 const isStepExpanded =
                                   expandedSteps.has(stepId);
+                                const isStepOperationPending =
+                                  pendingStepOperation?.stepId === stepId;
+                                const stepPendingLabel =
+                                  pendingStepOperation?.type === "delete"
+                                    ? "Deleting step"
+                                    : "Saving step changes";
                                 const isStepDragged =
                                   draggedStep &&
                                   draggedStep.chapterId === chapterId &&
@@ -1121,7 +1208,7 @@ export default function CometManagerSidebar({
                                       <div className="h-1 bg-primary rounded-full mx-2 mb-1 transition-all shadow-sm pointer-events-none" />
                                     )}
                                     <div
-                                      draggable
+                                      draggable={!isStepOperationPending}
                                       onDragStart={(e) =>
                                         handleStepDragStart(
                                           e,
@@ -1142,6 +1229,9 @@ export default function CometManagerSidebar({
                                       <div
                                         onClick={(e) => {
                                           e.stopPropagation();
+                                          if (isStepOperationPending) {
+                                            return;
+                                          }
                                           // Don't handle click if it's on the chevron (let chevron handler do it)
                                           if (
                                             e.target.closest(".step-chevron") ||
@@ -1172,6 +1262,9 @@ export default function CometManagerSidebar({
                                         <div
                                           onClick={(e) => {
                                             e.stopPropagation();
+                                            if (isStepOperationPending) {
+                                              return;
+                                            }
                                             // Select the step first, then toggle expansion
                                             // Use the hook's setSelectedStep which manages selectedStepId
                                             if (setSelectedStepFromHook) {
@@ -1228,7 +1321,21 @@ export default function CometManagerSidebar({
                                         <div className="px-2 pb-2">
                                           <div className="px-3 py-3 bg-white rounded-lg">
                                             <div className="flex flex-col gap-2">
-                                              {editingStepId === stepId ? (
+                                              {isStepOperationPending ? (
+                                                <div className="flex items-center gap-3 rounded-xl border border-[#D9D6FF] bg-gradient-to-r from-[#F4F2FF] via-white to-[#F8F7FF] px-4 py-4 shadow-sm">
+                                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+                                                    <GradientLoader size={22} />
+                                                  </span>
+                                                  <div className="min-w-0">
+                                                    <p className="text-sm font-semibold text-[#352F6E]">
+                                                      {stepPendingLabel}
+                                                    </p>
+                                                    <p className="text-xs text-[#574EB6]">
+                                                      Please wait while we update this step.
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              ) : editingStepId === stepId ? (
                                                 /* Inline Edit Form*/
                                                 <div className="flex flex-col gap-2">
                                                   {/* <h4 className="text-sm font-semibold text-black mb-1">
