@@ -32,7 +32,10 @@ import {
   setImageAttributes,
   getSuggestPrompt,
 } from "@/api/generateStepImages";
-import { ART_STYLE_KEYS } from "@/constants/artStyles";
+import {
+  ART_STYLE_KEYS,
+  normalizeArtStyleFromApi,
+} from "@/constants/artStyles";
 
 export default function ImageUpload({
   label = "Upload Image/Icon",
@@ -74,6 +77,15 @@ export default function ImageUpload({
   const [isCreatingAsset, setIsCreatingAsset] = useState(false);
   const [createAssetError, setCreateAssetError] = useState(null);
   const [selectedImageAsset, setSelectedImageAsset] = useState(null);
+
+  const promptToUse = useMemo(
+    () =>
+      aiPrompt?.trim() ||
+      aiSuggestedPrompt?.trim() ||
+      imageGuidance?.trim() ||
+      "",
+    [aiPrompt, aiSuggestedPrompt, imageGuidance],
+  );
 
   const getUploadErrorMessage = (uploadResponse, error) => {
     if (uploadResponse?.response) {
@@ -175,7 +187,7 @@ export default function ImageUpload({
 
       // Set the fields from the API response
       if (attributes.art_style) {
-        setAiArtStyle(attributes.art_style);
+        setAiArtStyle(normalizeArtStyleFromApi(attributes.art_style));
       }
       if (attributes.image_guidance) {
         setImageGuidance(attributes.image_guidance);
@@ -303,7 +315,7 @@ export default function ImageUpload({
 
       // Then, generate the image
       const payload = {
-        prompt: aiPrompt?.trim() || aiSuggestedPrompt?.trim() || "",
+        prompt: promptToUse,
         art_style: aiArtStyle,
         session_id: sessionId || "",
         chapter_uid: chapterUid || "",
@@ -541,7 +553,6 @@ export default function ImageUpload({
   const currentImageIndices = imageAssetEntries.map(({ index }) => index);
   const previewImageUrl =
     selectedImageAsset?.ImageUrl || currentImageUrl || null;
-  const promptToUse = aiPrompt?.trim() || aiSuggestedPrompt?.trim() || "";
 
   const getAssetUrl = (asset) => {
     if (!asset) return null;
@@ -632,9 +643,16 @@ export default function ImageUpload({
     setCreateAssetError(null);
   };
 
-  const handleRemoveCurrentImage = () => {
+  const handleRemoveCurrentImage = async () => {
     removeExistingImages();
     setSelectedImageAsset(null);
+    if (onRequestAutoSave) {
+      try {
+        await onRequestAutoSave();
+      } catch (err) {
+        console.error("Auto-save after removing image failed:", err);
+      }
+    }
   };
 
   const handleRemovePreviewImage = () => {
@@ -829,7 +847,7 @@ export default function ImageUpload({
 
       {isImageDialogOpen && (
         <div
-          className="fixed z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4 overflow-hidden pointer-events-auto"
+          className="fixed z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4 overflow-hidden pointer-events-auto"
           style={
             rightPaneBounds
               ? {
@@ -1070,20 +1088,20 @@ export default function ImageUpload({
                             {generateTabPreviewUrl && (
                               <button
                                 type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (
-                                    selectedImageAsset?.source ===
-                                    "ai_generated"
-                                  ) {
-                                    setSelectedImageAsset(null);
-                                  } else if (
-                                    onRemoveAsset &&
-                                    aiImageIndex >= 0
-                                  ) {
-                                    onRemoveAsset(aiImageIndex);
-                                  }
-                                }}
+                                // onClick={(e) => {
+                                //   e.stopPropagation();
+                                //   if (
+                                //     selectedImageAsset?.source ===
+                                //     "ai_generated"
+                                //   ) {
+                                //     setSelectedImageAsset(null);
+                                //   } else if (
+                                //     onRemoveAsset &&
+                                //     aiImageIndex >= 0
+                                //   ) {
+                                //     onRemoveAsset(aiImageIndex);
+                                //   }
+                                // }}
                                 className="md:hidden mx-auto w-fit text-sm font-medium text-primary hover:text-primary/90"
                               >
                                 Generate New AI Image
@@ -1137,13 +1155,13 @@ export default function ImageUpload({
                                     )}
                                   </Button>
                                 </div> */}
-                                <Input
+                                {/* <Input
                                   id="ai-prompt"
                                   value={aiPrompt}
                                   onChange={(e) => setAiPrompt(e.target.value)}
                                   placeholder="Enter a description for the image..."
                                   className="w-full"
-                                />
+                                /> */}
                                 {promptError && (
                                   <div className="flex items-center gap-2 text-xs text-red-600">
                                     <X className="h-3 w-3" />
@@ -1155,16 +1173,16 @@ export default function ImageUpload({
                               <div className="space-y-2">
                                 <Label htmlFor="ai-art-style">Art Style</Label>
                                 <Select
-                                  value={aiArtStyle}
+                                  value={aiArtStyle || undefined}
                                   onValueChange={setAiArtStyle}
                                 >
                                   <SelectTrigger
                                     id="ai-art-style"
                                     className="w-full"
                                   >
-                                    <SelectValue placeholder="Select" />
+                                    <SelectValue placeholder="Select art style" />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="!z-[200]">
                                     {ART_STYLE_KEYS.map((style) => (
                                       <SelectItem key={style} value={style}>
                                         {style}
