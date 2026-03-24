@@ -77,7 +77,6 @@ export default function ImageUpload({
   const [isLoadingAssets, setIsLoadingAssets] = useState(false);
   const [assetsError, setAssetsError] = useState(null);
   const [isCreatingAsset, setIsCreatingAsset] = useState(false);
-  const [creatingAssetId, setCreatingAssetId] = useState(null);
   const [createAssetError, setCreateAssetError] = useState(null);
   const [selectedImageAsset, setSelectedImageAsset] = useState(null);
 
@@ -453,13 +452,11 @@ export default function ImageUpload({
   const handleSelectAsset = async (asset) => {
     // Use exact API response fields: asset_url, asset_type, id
     const image_url = asset.asset_url;
-    const selectingAssetId = asset.id || asset.asset_id || image_url;
     const filename = getFilenameFromUrl(image_url);
     const assetType = asset.asset_type || asset.type || "image";
     const assetName = asset.name || filename || `Image ${asset.id}`;
 
     setIsCreatingAsset(true);
-    setCreatingAssetId(selectingAssetId);
     setCreateAssetError(null);
 
     try {
@@ -532,7 +529,6 @@ export default function ImageUpload({
       );
     } finally {
       setIsCreatingAsset(false);
-      setCreatingAssetId(null);
     }
   };
 
@@ -813,16 +809,16 @@ export default function ImageUpload({
                       </button>
 
                       {onRemoveAsset && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveCurrentImage();
-                          }}
-                          className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-[#F04438] hover:border-none hover:text-white cursor-pointer"
-                        >
-                          Remove
-                        </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveCurrentImage();
+                        }}
+                        className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-none hover:text-white cursor-pointer"
+                      >
+                        Remove
+                      </button>
                       )}
                     </div>
                   </div>
@@ -943,7 +939,7 @@ export default function ImageUpload({
                               className="max-h-[250px] w-auto rounded-lg object-contain"
                             />
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                              <div className="group/replace relative inline-block cursor-pointer">
+                              <div className="relative inline-block">
                                 <Input
                                   type="file"
                                   accept="image/*"
@@ -956,7 +952,7 @@ export default function ImageUpload({
                                 />
                                 <button
                                   type="button"
-                                  className="cursor-pointer rounded-md border border-primary bg-white px-5 py-1.5 text-sm font-medium text-primary transition-colors group-hover/replace:border-transparent group-hover/replace:bg-primary-600 group-hover/replace:text-white"
+                                  className="rounded-md border border-primary bg-white px-5 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary-600 hover:border-none hover:text-white cursor-pointer"
                                 >
                                   Replace
                                 </button>
@@ -967,7 +963,7 @@ export default function ImageUpload({
                                   e.stopPropagation();
                                   handleRemovePreviewImage();
                                 }}
-                                className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-[#F04438] hover:border-none hover:text-white cursor-pointer"
+                                className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-none hover:text-white cursor-pointer"
                               >
                                 Remove
                               </button>
@@ -1060,7 +1056,7 @@ export default function ImageUpload({
                               Image Preview
                             </p>
 
-                            <div className="relative flex min-h-[150px] flex-col items-center justify-center rounded-xl bg-gray-50/50 p-4 transition-all">
+                            <div className="flex min-h-[150px] flex-col items-center justify-center rounded-xl bg-gray-50/50 p-4 transition-all">
                               {generateTabPreviewUrl ? (
                                 <div className="group relative overflow-hidden rounded-lg bg-white p-1 shadow-md">
                                   <img
@@ -1085,7 +1081,7 @@ export default function ImageUpload({
                                           onRemoveAsset(aiImageIndex);
                                         }
                                       }}
-                                      className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-[#F04438] hover:border-none hover:text-white cursor-pointer"
+                                      className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-none hover:text-white cursor-pointer"
                                     >
                                       Remove
                                     </button>
@@ -1097,11 +1093,6 @@ export default function ImageUpload({
                                   <p className="text-sm italic">
                                     Generated image preview
                                   </p>
-                                </div>
-                              )}
-                              {isGeneratingImage && (
-                                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl bg-white/70 backdrop-blur-[1px]">
-                                  <div className="gradient-loader gradient-loader--primary" />
                                 </div>
                               )}
                             </div>
@@ -1242,16 +1233,12 @@ export default function ImageUpload({
                                   !!aiGenerateError ||
                                   !promptToUse
                                 }
-                                className={`w-full border-primary text-primary transition-all duration-200 hover:bg-primary-100 ${
-                                  isGeneratingImage
-                                    ? "bg-primary-800 text-white hover:bg-primary-600 "
-                                    : ""
-                                }`}
+                                className="w-full border-primary text-primary hover:bg-primary-100"
                               >
                                 {isGeneratingImage ? (
                                   <>
-                                    <Sparkles className="mr-1 h-4 w-4 animate-pulse" />
-                                    Generating Image
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Generating...
                                   </>
                                 ) : (
                                   <>
@@ -1322,12 +1309,9 @@ export default function ImageUpload({
                             .filter((asset) => asset.asset_type === "image")
                             .map((asset, index) => {
                               const image_url = asset.asset_url;
-                              const assetId = asset.id || asset.asset_id || image_url;
                               const assetName =
                                 getFilenameFromUrl(image_url) ||
                                 `Image ${index + 1}`;
-                              const isThisAssetCreating =
-                                isCreatingAsset && creatingAssetId === assetId;
                               const isSelected =
                                 image_url === currentImageUrl ||
                                 selectedImageAsset?.asset_id ===
@@ -1364,7 +1348,7 @@ export default function ImageUpload({
                                         {assetName}
                                       </div>
                                     )}
-                                    {isThisAssetCreating ? (
+                                    {isCreatingAsset ? (
                                       <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                         <Loader2 className="h-6 w-6 animate-spin text-white" />
                                       </div>
