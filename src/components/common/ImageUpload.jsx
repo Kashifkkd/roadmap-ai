@@ -809,16 +809,16 @@ export default function ImageUpload({
                       </button>
 
                       {onRemoveAsset && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveCurrentImage();
-                        }}
-                        className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-none hover:text-white cursor-pointer"
-                      >
-                        Remove
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveCurrentImage();
+                          }}
+                          className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-none hover:text-white cursor-pointer"
+                        >
+                          Remove
+                        </button>
                       )}
                     </div>
                   </div>
@@ -1233,12 +1233,13 @@ export default function ImageUpload({
                                   !!aiGenerateError ||
                                   !promptToUse
                                 }
-                                className="w-full border-primary text-primary hover:bg-primary-100"
+                                className={`w-full border-primary text-primary hover:bg-primary-100 
+                                  ${isGeneratingImage ? "bg-primary-600 text-white hover:bg-primary-600" : ""}`}
                               >
                                 {isGeneratingImage ? (
                                   <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Generating...
+                                    <Sparkles className="mr-2 h-4 w-4" />
+                                    Generating Image
                                   </>
                                 ) : (
                                   <>
