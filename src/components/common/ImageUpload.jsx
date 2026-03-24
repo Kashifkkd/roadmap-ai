@@ -47,6 +47,8 @@ export default function ImageUpload({
   onAIGenerateSuccess,
   existingAssets = [],
   onRemoveAsset,
+  /** Called after saved screen image(s) are removed — clear mirrored form fields (e.g. reflectionImage). */
+  onAfterRemoveImages,
   showSavedImages = true,
   /** After local outline/state updates from save, persist via the same path as interval auto-save (e.g. saveOutlineImmediately). */
   onRequestAutoSave,
@@ -530,8 +532,20 @@ export default function ImageUpload({
     }
   };
 
+  const getAssetUrl = (asset) => {
+    if (!asset) return null;
+    return (
+      asset.ImageUrl ||
+      asset.image_url ||
+      asset.url ||
+      asset.mediaUrl ||
+      asset.s3_url ||
+      null
+    );
+  };
+
   const isImageAsset = (asset) =>
-    asset?.ImageUrl && !asset.audioUrl && !asset.videoUrl;
+    Boolean(getAssetUrl(asset) && !asset?.audioUrl && !asset?.videoUrl);
 
   const imageAssetEntries = useMemo(
     () =>
@@ -549,21 +563,10 @@ export default function ImageUpload({
       ? imageAssetEntries[imageAssetEntries.length - 1]
       : null;
   const currentImageAsset = currentImageEntry?.asset || null;
-  const currentImageUrl = currentImageAsset?.ImageUrl || null;
+  const currentImageUrl = getAssetUrl(currentImageAsset);
   const currentImageIndices = imageAssetEntries.map(({ index }) => index);
   const previewImageUrl =
     selectedImageAsset?.ImageUrl || currentImageUrl || null;
-
-  const getAssetUrl = (asset) => {
-    if (!asset) return null;
-    return (
-      asset.ImageUrl ||
-      asset.image_url ||
-      asset.url ||
-      asset.mediaUrl ||
-      asset.s3_url
-    );
-  };
 
   const isAIAsset = (asset) => {
     if (!asset) return false;
@@ -597,9 +600,8 @@ export default function ImageUpload({
   const removeExistingImages = () => {
     if (!onRemoveAsset || currentImageIndices.length === 0) return;
 
-    [...currentImageIndices]
-      .sort((a, b) => b - a)
-      .forEach((assetIndex) => onRemoveAsset(assetIndex));
+    const sorted = [...currentImageIndices].sort((a, b) => b - a);
+    onRemoveAsset(sorted.length === 1 ? sorted[0] : sorted);
   };
 
   const handleSaveImage = async () => {
@@ -646,6 +648,16 @@ export default function ImageUpload({
   const handleRemoveCurrentImage = async () => {
     removeExistingImages();
     setSelectedImageAsset(null);
+    setAiPrompt("");
+    setAiSuggestedPrompt("");
+    setAiGenerateError(null);
+    setUploadErrorImage(null);
+    setAttributesError(null);
+    setPromptError(null);
+    setCreateAssetError(null);
+    if (onAfterRemoveImages) {
+      onAfterRemoveImages();
+    }
     if (onRequestAutoSave) {
       try {
         await onRequestAutoSave();

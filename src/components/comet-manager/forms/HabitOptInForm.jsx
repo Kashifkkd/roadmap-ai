@@ -126,6 +126,7 @@ export default function HabitOptInForm({
           }}
           existingAssets={existingAssets}
           onRemoveAsset={handleRemoveAsset}
+          onAfterRemoveImages={() => updateField("habit_image", "")}
           showSavedImages={true}
           onRequestAutoSave={onRequestAutoSave}
         />

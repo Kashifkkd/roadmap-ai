@@ -256,6 +256,7 @@ export default function ContentForm({
               }}
               existingAssets={existingAssets}
               onRemoveAsset={handleRemoveAsset}
+              onAfterRemoveImages={() => updateField("contentImageIcon", "")}
               showSavedImages={true}
               onRequestAutoSave={onRequestAutoSave}
             />
