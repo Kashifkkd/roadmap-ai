@@ -571,6 +571,17 @@
   flex-shrink: 0;
 }
 
+.gradient-loader--primary {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    transparent 10%,
+    var(--primary-300) 40%,
+    var(--primary) 70%,
+    var(--primary-700) 100%
+  );
+}
+
 /* shimmer animation */
 @keyframes shimmer-animation {
   0%{ background-position: 120% 0; }
