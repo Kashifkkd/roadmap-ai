@@ -886,8 +886,8 @@ export default function ImageUpload({
         >
           <div className="absolute inset-0 z-0" />
           <div className="relative z-10 flex h-[min(85vh,720px)] max-h-[85vh] w-full max-w-[95vw] sm:max-w-[700px] flex-col gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-0 shadow-2xl [&>button.absolute]:hidden">
-            <div className="flex shrink-0 items-center justify-between bg-white px-4 py-2 sm:px-6">
-              <h2 className="text-lg font-bold leading-none text-gray-900">
+            <div className="flex shrink-0 items-center justify-between bg-white px-4 py-4 sm:px-6">
+              <h2 className="text-md font-semibold leading-none text-gray-900">
                 Add Image
               </h2>
               <button
@@ -933,15 +933,8 @@ export default function ImageUpload({
                         Add Image
                       </p>
                       {isUploadingImage ? (
-                        <div className="h-full rounded-lg border border-primary p-0.5">
-                          <div className="flex h-full min-h-[240px] sm:min-h-[280px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-6 sm:p-8">
-                            <div className="flex flex-col items-center gap-3">
-                              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                              <span className="text-sm text-gray-600">
-                                Uploading...
-                              </span>
-                            </div>
-                          </div>
+                        <div className="flex min-h-[150px] flex-col items-center justify-center  p-4 transition-all">
+                          <div className="gradient-loader--primary"></div>
                         </div>
                       ) : previewImageUrl ? (
                         <div className="flex flex-col items-center justify-center rounded-lg p-4">
@@ -1070,7 +1063,9 @@ export default function ImageUpload({
                             </p>
 
                             <div className="flex min-h-[150px] flex-col items-center justify-center rounded-xl bg-gray-50/50 p-4 transition-all">
-                              {generateTabPreviewUrl ? (
+                              {isGeneratingImage ? (
+                                <div className="gradient-loader gradient-loader--primary"></div>
+                              ) : generateTabPreviewUrl ? (
                                 <div className="group relative overflow-hidden rounded-lg bg-white p-1 shadow-md">
                                   <img
                                     src={generateTabPreviewUrl}

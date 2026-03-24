@@ -567,19 +567,26 @@
   );
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-  animation: gradientSpin 1s linear infinite;
+  animation: gradientSpin 1.3s linear infinite;
   flex-shrink: 0;
 }
 
 .gradient-loader--primary {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   background: conic-gradient(
     from 0deg,
     transparent 0%,
     transparent 10%,
-    var(--primary-300) 40%,
+    var(--primary-100) 40%,
     var(--primary) 70%,
-    var(--primary-700) 100%
+    var(--primary-400) 100%
   );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 6px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 6px));
+  animation: gradientSpin 1.3s linear infinite;
+  flex-shrink: 0;
 }
 
 /* shimmer animation */
