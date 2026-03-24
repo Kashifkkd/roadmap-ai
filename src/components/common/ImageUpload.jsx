@@ -76,7 +76,9 @@ export default function ImageUpload({
   const [assets, setAssets] = useState([]);
   const [isLoadingAssets, setIsLoadingAssets] = useState(false);
   const [assetsError, setAssetsError] = useState(null);
-  const [isCreatingAsset, setIsCreatingAsset] = useState(false);
+  /** Null when idle; otherwise stable key for the asset row being registered via create API */
+  const [creatingAssetKey, setCreatingAssetKey] = useState(null);
+  const isCreatingAsset = creatingAssetKey != null;
   const [createAssetError, setCreateAssetError] = useState(null);
   const [selectedImageAsset, setSelectedImageAsset] = useState(null);
 
@@ -448,6 +450,15 @@ export default function ImageUpload({
     }
   };
 
+  const getAssetRowKey = (asset, imageUrl) => {
+    const url = imageUrl ?? asset?.asset_url;
+    if (asset?.id != null && asset.id !== "") return `id:${asset.id}`;
+    if (asset?.asset_id != null && asset.asset_id !== "")
+      return `id:${asset.asset_id}`;
+    if (url) return `url:${url}`;
+    return null;
+  };
+
   // Handle asset selection
   const handleSelectAsset = async (asset) => {
     // Use exact API response fields: asset_url, asset_type, id
@@ -456,7 +467,9 @@ export default function ImageUpload({
     const assetType = asset.asset_type || asset.type || "image";
     const assetName = asset.name || filename || `Image ${asset.id}`;
 
-    setIsCreatingAsset(true);
+    setCreatingAssetKey(
+      getAssetRowKey(asset, image_url) ?? `url:${String(image_url)}`,
+    );
     setCreateAssetError(null);
 
     try {
@@ -528,7 +541,7 @@ export default function ImageUpload({
         error.message || "Failed to create asset. Please try again.",
       );
     } finally {
-      setIsCreatingAsset(false);
+      setCreatingAssetKey(null);
     }
   };
 
@@ -1312,6 +1325,12 @@ export default function ImageUpload({
                               const assetName =
                                 getFilenameFromUrl(image_url) ||
                                 `Image ${index + 1}`;
+                              const assetRowKey =
+                                getAssetRowKey(asset, image_url) ??
+                                `url:${String(image_url)}`;
+                              const isThisAssetCreating =
+                                creatingAssetKey != null &&
+                                creatingAssetKey === assetRowKey;
                               const isSelected =
                                 image_url === currentImageUrl ||
                                 selectedImageAsset?.asset_id ===
@@ -1327,12 +1346,14 @@ export default function ImageUpload({
                                       : "hover:bg-gray-50"
                                   } ${
                                     isCreatingAsset
-                                      ? "cursor-not-allowed opacity-50"
+                                      ? isThisAssetCreating
+                                        ? "cursor-wait"
+                                        : "cursor-not-allowed"
                                       : "cursor-pointer"
                                   }`}
                                   onClick={() => {
-                                    if (!isCreatingAsset)
-                                      handleSelectAsset(asset);
+                                    if (isCreatingAsset) return;
+                                    handleSelectAsset(asset);
                                   }}
                                 >
                                   <div className="relative mb-2 aspect-video overflow-hidden  bg-gray-100">
@@ -1348,7 +1369,7 @@ export default function ImageUpload({
                                         {assetName}
                                       </div>
                                     )}
-                                    {isCreatingAsset ? (
+                                    {isThisAssetCreating ? (
                                       <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                         <Loader2 className="h-6 w-6 animate-spin text-white" />
                                       </div>
