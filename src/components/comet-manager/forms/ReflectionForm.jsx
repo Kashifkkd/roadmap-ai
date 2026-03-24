@@ -97,6 +97,7 @@ export default function ReflectionForm({
           }}
           existingAssets={existingAssets}
           onRemoveAsset={handleRemoveAsset}
+          onAfterRemoveImages={() => updateField("reflectionImage", "")}
           showSavedImages={true}
           onRequestAutoSave={onRequestAutoSave}
         />

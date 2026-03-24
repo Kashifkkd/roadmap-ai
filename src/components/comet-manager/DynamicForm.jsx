@@ -992,10 +992,20 @@ export default function DynamicForm({
       });
     };
 
-    // Function to remove asset from screen
-    const removeScreenAsset = (assetIndex) => {
+    // Function to remove asset(s) from screen. Pass a single index or an array (e.g. all image indices) — arrays are applied in one update, highest index first.
+    const removeScreenAsset = (assetIndexOrIndices) => {
       const screenId = screen?.id;
       if (!screenId) return;
+
+      const rawIndices = Array.isArray(assetIndexOrIndices)
+        ? assetIndexOrIndices
+        : [assetIndexOrIndices];
+      const indices = [...new Set(rawIndices)]
+        .filter(
+          (i) => typeof i === "number" && !Number.isNaN(i) && i >= 0,
+        )
+        .sort((a, b) => b - a);
+      if (indices.length === 0) return;
 
       setOutline((prevOutline) => {
         if (!prevOutline || !prevOutline.chapters) return prevOutline;
@@ -1003,7 +1013,7 @@ export default function DynamicForm({
         const newOutline = JSON.parse(JSON.stringify(prevOutline));
         const pathChapters = newOutline.chapters || [];
 
-        // Find the screen in the outline and remove asset
+        // Find the screen in the outline and remove asset(s)
         for (const chapter of pathChapters) {
           for (const stepItem of chapter.steps || []) {
             const screenIndex = stepItem.screens?.findIndex(
@@ -1011,8 +1021,12 @@ export default function DynamicForm({
             );
             if (screenIndex !== undefined && screenIndex >= 0) {
               const currentScreen = stepItem.screens[screenIndex];
-              const existingAssets = currentScreen.assets || [];
-              existingAssets.splice(assetIndex, 1);
+              const existingAssets = [...(currentScreen.assets || [])];
+              for (const assetIndex of indices) {
+                if (assetIndex < existingAssets.length) {
+                  existingAssets.splice(assetIndex, 1);
+                }
+              }
               stepItem.screens[screenIndex] = {
                 ...currentScreen,
                 assets: existingAssets,

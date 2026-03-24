@@ -99,6 +99,7 @@ export default function NotificationsForm({
             }}
             existingAssets={existingAssets}
             onRemoveAsset={handleRemoveAsset}
+            onAfterRemoveImages={() => updateField("mediaUrl", "")}
             showSavedImages={true}
             onRequestAutoSave={onRequestAutoSave}
           />
