@@ -452,7 +452,8 @@ export default function ImageUpload({
   const handleSelectAsset = async (asset) => {
     const image_url = asset.asset_url;
     const assetType = asset.asset_type || asset.type || "image";
-    const assetName = asset.name || getFilenameFromUrl(image_url) || `Image ${asset.id}`;
+    const assetName =
+      asset.name || getFilenameFromUrl(image_url) || `Image ${asset.id}`;
     const assetId = asset.id || asset.asset_id;
 
     setIsCreatingAsset(true);
@@ -789,16 +790,16 @@ export default function ImageUpload({
                       </button>
 
                       {onRemoveAsset && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveCurrentImage();
-                        }}
-                        className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-none hover:text-white cursor-pointer"
-                      >
-                        Remove
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveCurrentImage();
+                          }}
+                          className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-none hover:text-white cursor-pointer"
+                        >
+                          Remove
+                        </button>
                       )}
                     </div>
                   </div>
@@ -1284,7 +1285,7 @@ export default function ImageUpload({
                           </p>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           {assets
                             .filter((asset) => asset.asset_type === "image")
                             .map((asset, index) => {
@@ -1301,13 +1302,13 @@ export default function ImageUpload({
                               return (
                                 <div
                                   key={asset.id || asset.asset_id || index}
-                                  className={`group relative rounded-lg p-2 transition-all ${
+                                  className={`group relative rounded-sm p-2 transition-all ${
                                     isSelected
-                                      ? "bg-primary/10"
-                                      : "hover:bg-gray-50"
+                                      ? "bg-[#7367F0]"
+                                      : "hover:bg-primary-100"
                                   } ${
                                     isCreatingAsset
-                                      ? "cursor-not-allowed opacity-50"
+                                      ? "cursor-not-allowed"
                                       : "cursor-pointer"
                                   }`}
                                   onClick={() => {
@@ -1315,7 +1316,7 @@ export default function ImageUpload({
                                       handleSelectAsset(asset);
                                   }}
                                 >
-                                  <div className="relative mb-2 aspect-video overflow-hidden  bg-gray-100">
+                                  <div className="relative mb-2 aspect-square overflow-hidden  bg-gray-100">
                                     {typeof image_url === "string" &&
                                     image_url.startsWith("http") ? (
                                       <img
@@ -1328,20 +1329,11 @@ export default function ImageUpload({
                                         {assetName}
                                       </div>
                                     )}
-                                    {isCreatingAsset ? (
-                                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                        <Loader2 className="h-6 w-6 animate-spin text-white" />
-                                      </div>
-                                    ) : (
-                                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/10">
-                                        <div className="opacity-0 transition-opacity group-hover:opacity-100">
-                                          <Check className="h-6 w-6 text-white drop-shadow-lg" />
-                                        </div>
-                                      </div>
-                                    )}
                                   </div>
                                   <div className="space-y-0.5 px-0.5">
-                                    <p className="truncate text-xs font-bold text-gray-900">
+                                    <p
+                                      className={`truncate text-xs font-medium ${isSelected ? "text-white" : "text-gray-800"}`}
+                                    >
                                       {assetName}
                                     </p>
                                     <p className="text-[10px] font-medium text-gray-500">
