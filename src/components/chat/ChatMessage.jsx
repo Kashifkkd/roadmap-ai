@@ -33,7 +33,7 @@ const ChatMessage = ({ role, text, animate = false, onTypingComplete }) => {
             : " text-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm sm:text-xs text-left ",
         )}
       >
-        <div className="text-sm leading-relaxed whitespace-pre-wrap">
+        <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
           {!isUser && animate ? (
             <TypingText
               text={text}

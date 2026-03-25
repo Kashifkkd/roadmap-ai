@@ -141,8 +141,11 @@ export default function WelcomePage() {
         setIsLoading(false);
       }
 
-      // Navigate to dashboard when comet_created is true from session
-      if (receivedSessionData?.comet_created === true) {
+      // Navigate to dashboard when comet_creation_data is populated
+      const hasCometData =
+        receivedSessionData?.comet_creation_data &&
+        Object.keys(receivedSessionData.comet_creation_data).length > 0;
+      if (hasCometData) {
         setCometCreated(true);
         router.push("/dashboard");
       }

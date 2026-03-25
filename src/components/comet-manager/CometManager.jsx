@@ -209,14 +209,15 @@ const EASE_CATEGORIES = ["Engagement", "Aha", "Support", "Execution"];
 
 export default function CometManager({
   sessionData,
-  setSessionData = () => {},
+  setSessionData = () => { },
   setAllMessages,
   isPreviewMode,
   setIsPreviewMode,
   onOutlineChange,
   saveOutlineImmediately,
+  onFlushSave,
   isAskingKyper = false,
-  setIsAskingKyper = () => {},
+  setIsAskingKyper = () => { },
 }) {
   // Use comet manager hook to get actual data
   const {
@@ -275,13 +276,13 @@ export default function CometManager({
   ) => {
     const normalizedUpdates =
       updatesOrName &&
-      typeof updatesOrName === "object" &&
-      !Array.isArray(updatesOrName)
+        typeof updatesOrName === "object" &&
+        !Array.isArray(updatesOrName)
         ? updatesOrName
         : {
-            name: updatesOrName,
-            description: newDescription,
-          };
+          name: updatesOrName,
+          description: newDescription,
+        };
 
     let updatedOutline = null;
     setOutline((prevOutline) => {
@@ -422,8 +423,8 @@ export default function CometManager({
     if (selectedStepId === stepId) {
       setSelectedStep(nextStepId);
     }
-
-    return true;
+    // Flush save immediately so Redis reflects the deletion
+    setTimeout(() => onFlushSave?.(), 0);
   };
 
   const handleDeleteChapter = async (chapterId) => {
@@ -476,8 +477,8 @@ export default function CometManager({
     if (deletedChapterHasSelectedStep) {
       setSelectedStep(nextSelectedStepId);
     }
-
-    return true;
+    // Flush save immediately so Redis reflects the deletion
+    setTimeout(() => onFlushSave?.(), 0);
   };
 
   // Extract session_id from sessionData or temp
@@ -527,7 +528,7 @@ export default function CometManager({
         GENERATING_UIDS_KEY,
         JSON.stringify([...generatingStepUids]),
       );
-    } catch {}
+    } catch { }
   }, [generatingStepUids]);
 
   useEffect(() => {
@@ -554,7 +555,7 @@ export default function CometManager({
       if (localStorage.getItem(key) === "true") {
         setHasClickedGenerateRemaining(true);
       }
-    } catch {}
+    } catch { }
   }, [sessionId]);
 
   useEffect(() => {
@@ -566,7 +567,7 @@ export default function CometManager({
         setIsCometSettingsOpen(true);
         localStorage.removeItem("openCometSettingsFromAllComets");
       }
-    } catch {}
+    } catch { }
   }, [setIsCometSettingsOpen]);
   useEffect(() => {
     const outline = sessionData?.response_outline;
@@ -628,7 +629,7 @@ export default function CometManager({
         if (isAskingKyperRef.current && hasPathUpdate) {
           setIsAskingKyper(false);
         }
-      } catch {}
+      } catch { }
     },
     (err) => {
       console.error("Subscription error:", err);
@@ -676,7 +677,7 @@ export default function CometManager({
               "sessionData",
               JSON.stringify(JSON.parse(cometJson)),
             );
-          } catch {}
+          } catch { }
         }
       }
 
@@ -688,7 +689,7 @@ export default function CometManager({
             "true",
           );
           setHasClickedGenerateRemaining(true);
-        } catch {}
+        } catch { }
       }
 
       // Get parsed session data
@@ -696,7 +697,7 @@ export default function CometManager({
       try {
         const raw = localStorage.getItem("sessionData");
         if (raw) parsedSessionData = JSON.parse(raw);
-      } catch {}
+      } catch { }
 
       const updatedResponsePath = {
         ...(parsedSessionData?.response_path || {}),
@@ -711,7 +712,7 @@ export default function CometManager({
       setSessionData(updatedSessionData);
       try {
         localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
-      } catch {}
+      } catch { }
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
@@ -826,6 +827,8 @@ export default function CometManager({
 
     reorderScreensList(newScreens);
     setDraggedIndex(null);
+    // Flush save immediately so Redis reflects the reorder
+    setTimeout(() => onFlushSave?.(), 0);
   };
 
   const currentChapter =
@@ -878,8 +881,8 @@ export default function CometManager({
       targetChapter?.order !== undefined
         ? targetChapter.order + 1
         : chapters.findIndex(
-            (ch) => String(ch.id) === String(targetChapterId),
-          ) + 1 || 1;
+          (ch) => String(ch.id) === String(targetChapterId),
+        ) + 1 || 1;
     console.log("chapterNum>>>>>>>>>>>>>>>>>>>>>>>>", chapterNum);
     const stepNum =
       targetChapter?.steps?.findIndex(
@@ -1457,8 +1460,8 @@ export default function CometManager({
     typeof currentChapter?.position === "number"
       ? currentChapter.position
       : chapters.findIndex(
-          (ch) => String(ch.id) === String(selectedScreen?.chapterId),
-        ) + 1 || 1;
+        (ch) => String(ch.id) === String(selectedScreen?.chapterId),
+      ) + 1 || 1;
 
   const stepNumber =
     (currentChapter?.steps?.findIndex(
@@ -1480,8 +1483,14 @@ export default function CometManager({
                 selectedScreen={selectedScreen}
                 onAddScreen={handleAddScreen}
                 chapters={chapters}
-                onReorderChapters={reorderChapters}
-                onReorderSteps={reorderSteps}
+                onReorderChapters={(...args) => {
+                  reorderChapters(...args);
+                  setTimeout(() => onFlushSave?.(), 0);
+                }}
+                onReorderSteps={(...args) => {
+                  reorderSteps(...args);
+                  setTimeout(() => onFlushSave?.(), 0);
+                }}
                 onDeleteChapter={handleDeleteChapter}
                 onEditChapter={handleEditChapter}
                 onEditStep={handleEditStep}
@@ -1526,7 +1535,7 @@ export default function CometManager({
                   setSelectedToolAsset(null);
                   setSelectedRemainingChapter(null);
                 }}
-                onStepClick={(stepId, step) => {}}
+                onStepClick={(stepId, step) => { }}
                 onChapterClick={(chapterId, chapter) => {
                   // Clear material and assets when chapter is clicked
                   setSelectedMaterial(null);
@@ -2039,7 +2048,7 @@ export default function CometManager({
                     >
                       <div className="space-y-4 bg-primary-50 px-2 py-4 rounded">
                         {selectedRemainingChapter.steps &&
-                        selectedRemainingChapter.steps.length > 0 ? (
+                          selectedRemainingChapter.steps.length > 0 ? (
                           selectedRemainingChapter.steps.map(
                             (step, stepIndex) => (
                               <div
@@ -2288,9 +2297,23 @@ export default function CometManager({
                                     onAddScreen={(insertIndex) =>
                                       handleAddScreen(insertIndex)
                                     }
-                                    onDeleteScreen={(screenId) =>
-                                      deleteScreenData(screenId)
-                                    }
+                                    onDeleteScreen={(screenId) => {
+                                      deleteScreenData(screenId);
+                                      // Flush save immediately so Redis reflects the deletion
+                                      setTimeout(() => onFlushSave?.(), 0);
+                                    }}
+                                    sessionId={sessionId}
+                                    onAssetLinked={(screenId, asset) => {
+                                      // Add the linked asset to the screen's assets array
+                                      updateScreenData(screenId, {
+                                        assets: [
+                                          ...(screens.find(s => s.id === screenId)?.assets || []),
+                                          asset,
+                                        ],
+                                        imageStatus: "completed",
+                                      });
+                                      setTimeout(() => onFlushSave?.(), 0);
+                                    }}
                                   />
                                 </div>
                               ))}
@@ -2396,7 +2419,8 @@ export default function CometManager({
                           onClick={handleNextChapter}
                           disabled={
                             sessionData?.is_initial_chapter_created !== true ||
-                            isGeneratingNextChapter
+                            isGeneratingNextChapter ||
+                            !(sessionData?.response_path?.remaining_chapters?.length > 0)
                           }
                         >
                           <span>Create Remaining Chapters</span>
@@ -2507,6 +2531,8 @@ export default function CometManager({
         setSessionData={setSessionData}
         onSuccess={(response) => {
           console.log("Step image uploaded:", response);
+          // Flush save immediately so auto-save doesn't overwrite with stale outline
+          setTimeout(() => onFlushSave?.(), 0);
         }}
         onError={(error) => {
           console.error("Step image upload failed:", error);
@@ -2522,11 +2548,10 @@ export default function CometManager({
         }}
       >
         <DrawerContent
-          className={`${
-            isMaximized
-              ? "w-[95vw]! sm:w-[90vw]! md:w-[75vw]! lg:w-[55vw]! xl:max-w-4xl!"
-              : "w-[95vw]! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
-          } max-w-none! h-screen! bg-primary-50 p-0`}
+          className={`${isMaximized
+            ? "w-[95vw]! sm:w-[90vw]! md:w-[75vw]! lg:w-[55vw]! xl:max-w-4xl!"
+            : "w-[95vw]! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
+            } max-w-none! h-screen! bg-primary-50 p-0`}
         >
           {/* Preview Header */}
           <div className="bg-primary-50 border-b border-gray-200 py-2 px-3 sm:px-4 flex items-center justify-between">
@@ -2556,9 +2581,8 @@ export default function CometManager({
 
           {/* Preview Content */}
           <div
-            className={`flex-1 overflow-hidden border-lg bg-primary-50 ${
-              isMaximized ? "p-0 sm:p-2 md:p-3" : "p-0 sm:p-2 md:p-3"
-            }`}
+            className={`flex-1 overflow-hidden border-lg bg-primary-50 ${isMaximized ? "p-0 sm:p-2 md:p-3" : "p-0 sm:p-2 md:p-3"
+              }`}
           >
             <FromDoerToEnabler
               selectedScreen={selectedScreen}

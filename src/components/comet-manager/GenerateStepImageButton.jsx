@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Loader2, Sparkles, X, CircleCheck, ImageIcon } from "lucide-react";
+import { Loader2, Sparkles, X, CircleCheck, ImageIcon, RefreshCw } from "lucide-react";
 import GradientLoader from "@/components/ui/GradientLoader";
 import {
   generateStepImages,
@@ -9,6 +9,7 @@ import {
   setImageAttributes,
   getStepPrompts,
   getStepStatus,
+  rehydrateStepImages,
 } from "@/api/generateStepImages";
 import { Button } from "@/components/ui/Button";
 import {
@@ -49,6 +50,7 @@ export default function GenerateStepImageButton({
   const [isGenerating, setIsGenerating] = useState(false);
   const [attributesError, setAttributesError] = useState(null);
   const [generateError, setGenerateError] = useState(null);
+  const [isRehydrating, setIsRehydrating] = useState(false);
 
   // Attribute fields
   const [artStyle, setArtStyle] = useState("Editorial Illustration");
@@ -376,20 +378,46 @@ export default function GenerateStepImageButton({
     );
   }, [isEnqueued, stepStatus?.images?.is_complete, sessionData, stepUid]);
 
+  const handleRehydrate = async () => {
+    if (isRehydrating || !sessionId || !stepUid) return;
+    setIsRehydrating(true);
+    try {
+      await rehydrateStepImages({ sessionId, stepUid });
+    } catch (err) {
+      console.error("Rehydrate failed:", err);
+    } finally {
+      setIsRehydrating(false);
+    }
+  };
+
   return (
     <>
       {imagesComplete ? (
-        /* Images Generated state button */
-        <button
-          type="button"
-          disabled
-          className="w-full flex items-center gap-2.5 rounded-full px-4 py-2.5 bg-[#12B76A] sticky bottom-0 cursor-not-allowed disabled:opacity-100"
-        >
-          <CircleCheck className="w-5 h-5 text-white shrink-0" />
-          <span className="text-sm font-semibold text-white">
-            Images Generated
-          </span>
-        </button>
+        /* Images Generated state — row with status + reapply button */
+        <div className="w-full flex items-center gap-2 sticky bottom-0">
+          <button
+            type="button"
+            disabled
+            className="flex-1 flex items-center gap-2.5 rounded-full px-4 py-2.5 bg-[#12B76A] cursor-not-allowed disabled:opacity-100"
+          >
+            <CircleCheck className="w-5 h-5 text-white shrink-0" />
+            <span className="text-sm font-semibold text-white">
+              Images Generated
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={handleRehydrate}
+            disabled={isRehydrating}
+            title="Reapply generated images from cache"
+            className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-2.5 bg-[#574EB6] hover:bg-[#4a3fa0] text-white text-sm font-semibold transition-colors disabled:opacity-60"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRehydrating ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">
+              {isRehydrating ? "Applying..." : "Reapply"}
+            </span>
+          </button>
+        </div>
       ) : isEnqueued ? (
         /* Generating Images state button */
         <button

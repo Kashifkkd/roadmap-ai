@@ -199,6 +199,10 @@ export default function DashboardLayout() {
         (Array.isArray(normalized?.response_outline) &&
           normalized.response_outline.length > 0);
 
+      const hasCometData =
+        normalized?.comet_creation_data &&
+        Object.keys(normalized.comet_creation_data).length > 0;
+
       if (isGeneratingOutline && hasOutline) {
         router.push("/outline-manager");
       }
@@ -367,21 +371,24 @@ export default function DashboardLayout() {
         console.error("Failed to fetch source materials for payload:", e);
       }
 
+      // Clear old outline and chapters for a fresh start
+      const cleanedResponsePath = {
+        ...(parsedSessionData?.response_path || {}),
+        chapters: [],
+        remaining_chapters: [],
+      };
+
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: "outline_creation",
         comet_creation_data: formattedCometData,
-        response_outline: {},
-        response_path: parsedSessionData?.response_path || {},
-        // additional_data: {
-        //   personalization_enabled: formData.personalizationEnabled || false,
-        //   habit_enabled: formData.habitEnabled || false,
-        //   habit_description: formData.habitText || "",
-        // },
+        response_outline: [],
+        response_path: cleanedResponsePath,
         chatbot_conversation: [...chatbotConversation, { user: messageText }],
         to_modify: parsedSessionData?.to_modify ?? {},
         source_material: sourceMaterialsPayload,
         webpage_url: formData.webpage_url || [],
+        is_initial_chapter_created: false,
         execution_id: executionId,
         retry_count: 0,
         error_history: [],
@@ -393,6 +400,32 @@ export default function DashboardLayout() {
         }),
       });
 
+      // Save cleaned state to Redis BEFORE triggering n8n
+      // so n8n reads the clean state (no old outline/chapters)
+      const cleanedSession = {
+        ...parsedSessionData,
+        response_outline: [],
+        response_path: cleanedResponsePath,
+        is_initial_chapter_created: false,
+        chatbot_conversation: [...chatbotConversation, { user: messageText }],
+      };
+      localStorage.setItem("sessionData", JSON.stringify(cleanedSession));
+      setSessionData(cleanedSession);
+
+      // Flush to Redis first
+      await graphqlClient.autoSaveComet(JSON.stringify({
+        session_id: currentSessionId,
+        input_type: "outline_creation",
+        comet_creation_data: formattedCometData,
+        response_outline: [],
+        response_path: cleanedResponsePath,
+        chatbot_conversation: [...chatbotConversation, { user: messageText }],
+        to_modify: parsedSessionData?.to_modify ?? {},
+        webpage_url: formData.webpage_url || [],
+        is_initial_chapter_created: false,
+      }));
+
+      // Now trigger n8n — Redis has clean state
       const messageResponse =
         await graphqlClient.sendMessage(cometJsonForMessage);
       // console.log("Message response:", messageResponse);

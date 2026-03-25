@@ -142,3 +142,50 @@ export const getStepStatus = async ({
   });
   return response;
 };
+
+/**
+ * GET all unique assets for a session (for asset picker/reuse).
+ */
+export const getSessionAssets = async ({ sessionId }) => {
+  const endpoint =
+    typeof endpoints.getSessionAssets === "function"
+      ? endpoints.getSessionAssets(sessionId)
+      : endpoints.getSessionAssets;
+  const response = await apiService({
+    endpoint,
+    method: "GET",
+  });
+  return response;
+};
+
+/**
+ * POST link an existing asset to a screen.
+ */
+export const linkAssetToScreen = async ({ sessionId, assetId, screenUid }) => {
+  const response = await apiService({
+    endpoint: endpoints.linkAsset,
+    method: "POST",
+    data: {
+      session_id: sessionId,
+      asset_id: assetId,
+      screen_uid: screenUid,
+    },
+  });
+  return response;
+};
+
+/**
+ * POST manually rehydrate step images from Redis into session JSON.
+ * Use when automatic hydration failed and images aren't showing.
+ */
+export const rehydrateStepImages = async ({ sessionId, stepUid }) => {
+  const response = await apiService({
+    endpoint: endpoints.rehydrateStepImages,
+    method: "POST",
+    data: {
+      session_id: sessionId,
+      step_uid: stepUid,
+    },
+  });
+  return response;
+};

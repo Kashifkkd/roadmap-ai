@@ -56,6 +56,9 @@ export const endpoints = {
   getStepPrompts: "api/generative-ai/v2/step-prompts",
   getStepStatus: (sessionId, chapterUid, stepUid) =>
     `api/ai/v2/status/step/${sessionId}/${chapterUid}/${stepUid}`,
+  getSessionAssets: (sessionId) => `api/generative-ai/v2/session-assets?session_id=${sessionId}`,
+  linkAsset: "api/generative-ai/v2/link-asset",
+  rehydrateStepImages: "api/generative-ai/v2/rehydrate-step-images",
   replaceStepImage: (stepId) => `api/comet/step/replace-image/${stepId}`,
     uploadPathImage: (sessionId) => `api/comet/path/upload-image/${sessionId}`,
   //  getImageAttributes: "api/generative-ai/v2/get-image-attributes",

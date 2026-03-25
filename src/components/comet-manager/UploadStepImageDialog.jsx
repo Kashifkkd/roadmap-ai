@@ -263,6 +263,11 @@ export default function UploadStepImageDialog({
 
       if (response?.success && response?.response) {
         setStatus("success");
+        // Update step.image in sessionData + localStorage + backend (same as generate flow)
+        const imageUrl = response.response?.image_url;
+        if (imageUrl) {
+          updateStepImage(imageUrl);
+        }
         if (onSuccess) {
           onSuccess(response.response);
         }

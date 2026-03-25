@@ -76,9 +76,7 @@ export default function ImageUpload({
   const [assets, setAssets] = useState([]);
   const [isLoadingAssets, setIsLoadingAssets] = useState(false);
   const [assetsError, setAssetsError] = useState(null);
-  /** Null when idle; otherwise stable key for the asset row being registered via create API */
-  const [creatingAssetKey, setCreatingAssetKey] = useState(null);
-  const isCreatingAsset = creatingAssetKey != null;
+  const [isCreatingAsset, setIsCreatingAsset] = useState(false);
   const [createAssetError, setCreateAssetError] = useState(null);
   const [selectedImageAsset, setSelectedImageAsset] = useState(null);
 
@@ -450,98 +448,67 @@ export default function ImageUpload({
     }
   };
 
-  const getAssetRowKey = (asset, imageUrl) => {
-    const url = imageUrl ?? asset?.asset_url;
-    if (asset?.id != null && asset.id !== "") return `id:${asset.id}`;
-    if (asset?.asset_id != null && asset.asset_id !== "")
-      return `id:${asset.asset_id}`;
-    if (url) return `url:${url}`;
-    return null;
-  };
-
-  // Handle asset selection
+  // Handle asset selection — link existing asset to this screen
   const handleSelectAsset = async (asset) => {
-    // Use exact API response fields: asset_url, asset_type, id
     const image_url = asset.asset_url;
-    const filename = getFilenameFromUrl(image_url);
     const assetType = asset.asset_type || asset.type || "image";
-    const assetName = asset.name || filename || `Image ${asset.id}`;
+    const assetName = asset.name || getFilenameFromUrl(image_url) || `Image ${asset.id}`;
+    const assetId = asset.id || asset.asset_id;
 
-    setCreatingAssetKey(
-      getAssetRowKey(asset, image_url) ?? `url:${String(image_url)}`,
-    );
+    setIsCreatingAsset(true);
     setCreateAssetError(null);
 
     try {
-      // Create FormData for the API call
-      const formData = new FormData();
-      formData.append("name", assetName);
-      formData.append("url", image_url);
-      formData.append("asset_type", assetType);
-
-      // Append optional UIDs
-      if (sessionId && sessionId !== "") {
-        formData.append("session_id", String(sessionId));
-      }
-      if (chapterUid && chapterUid !== "") {
-        formData.append("chapter_uid", String(chapterUid));
-      }
-      if (stepUid && stepUid !== "") {
-        formData.append("step_uid", String(stepUid));
-      }
-      if (screenUid && screenUid !== "") {
-        formData.append("screen_uid", String(screenUid));
-      }
-
-      // Call the create_asset API
+      // Link the existing asset to this screen instead of creating a duplicate
       const { response, error } = await apiService({
-        endpoint: endpoints.createAsset,
+        endpoint: endpoints.linkAsset,
         method: "POST",
-        data: formData,
-        headers: {
-          "Content-Type": "multipart/form-data",
+        data: {
+          session_id: sessionId,
+          asset_id: assetId,
+          screen_uid: screenUid,
         },
       });
 
       if (error || !response) {
-        throw new Error(response?.error?.message || "Failed to create asset");
+        throw new Error(response?.error?.message || "Failed to link asset");
       }
 
-      // Format asset to match outline structure using API response
+      // Format asset to match outline structure
       const assetToSave = {
         status: "success",
-        ImageUrl: response.url || image_url,
-        url: response.url || image_url, // Also include url for compatibility
-        asset_id: response.id,
-        id: response.id,
-        asset_type: response.asset_type || assetType,
-        alt: response.name || assetName,
-        name: response.name || assetName,
-        source: response.source || "direct_link",
+        ImageUrl: response.asset_url || image_url,
+        url: response.asset_url || image_url,
+        asset_id: assetId,
+        id: assetId,
+        asset_type: assetType,
+        alt: assetName,
+        name: assetName,
+        source: "asset_picker",
       };
 
-      // Add the newly selected/created asset to the local assets array so it appears in the assets list
+      // Add to local assets list if not already present
       const assetForList = {
-        id: response.id,
-        asset_id: response.id,
-        asset_url: response.url || image_url,
-        asset_type: response.asset_type || assetType,
-        name: response.name || assetName,
+        id: assetId,
+        asset_id: assetId,
+        asset_url: image_url,
+        asset_type: assetType,
+        name: assetName,
       };
       setAssets((prev) => {
         const alreadyInList = prev.some(
-          (a) => (a.id || a.asset_id) === response.id,
+          (a) => (a.id || a.asset_id) === assetId,
         );
         return alreadyInList ? prev : [...prev, assetForList];
       });
       setSelectedImageAsset(assetToSave);
     } catch (error) {
-      console.error("Error creating asset:", error);
+      console.error("Error linking asset:", error);
       setCreateAssetError(
-        error.message || "Failed to create asset. Please try again.",
+        error.message || "Failed to link asset. Please try again.",
       );
     } finally {
-      setCreatingAssetKey(null);
+      setIsCreatingAsset(false);
     }
   };
 
@@ -822,16 +789,16 @@ export default function ImageUpload({
                       </button>
 
                       {onRemoveAsset && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveCurrentImage();
-                          }}
-                          className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-none hover:text-white cursor-pointer"
-                        >
-                          Remove
-                        </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveCurrentImage();
+                        }}
+                        className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-none hover:text-white cursor-pointer"
+                      >
+                        Remove
+                      </button>
                       )}
                     </div>
                   </div>
@@ -886,8 +853,8 @@ export default function ImageUpload({
         >
           <div className="absolute inset-0 z-0" />
           <div className="relative z-10 flex h-[min(85vh,720px)] max-h-[85vh] w-full max-w-[95vw] sm:max-w-[700px] flex-col gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-0 shadow-2xl [&>button.absolute]:hidden">
-            <div className="flex shrink-0 items-center justify-between bg-white px-4 py-4 sm:px-6">
-              <h2 className="text-md font-semibold leading-none text-gray-900">
+            <div className="flex shrink-0 items-center justify-between bg-white px-4 py-2 sm:px-6">
+              <h2 className="text-lg font-bold leading-none text-gray-900">
                 Add Image
               </h2>
               <button
@@ -933,8 +900,15 @@ export default function ImageUpload({
                         Add Image
                       </p>
                       {isUploadingImage ? (
-                        <div className="flex min-h-[150px] flex-col items-center justify-center  p-4 transition-all">
-                          <div className="gradient-loader--primary"></div>
+                        <div className="h-full rounded-lg border border-primary p-0.5">
+                          <div className="flex h-full min-h-[240px] sm:min-h-[280px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-6 sm:p-8">
+                            <div className="flex flex-col items-center gap-3">
+                              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                              <span className="text-sm text-gray-600">
+                                Uploading...
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       ) : previewImageUrl ? (
                         <div className="flex flex-col items-center justify-center rounded-lg p-4">
@@ -1063,9 +1037,7 @@ export default function ImageUpload({
                             </p>
 
                             <div className="flex min-h-[150px] flex-col items-center justify-center rounded-xl bg-gray-50/50 p-4 transition-all">
-                              {isGeneratingImage ? (
-                                <div className="gradient-loader gradient-loader--primary"></div>
-                              ) : generateTabPreviewUrl ? (
+                              {generateTabPreviewUrl ? (
                                 <div className="group relative overflow-hidden rounded-lg bg-white p-1 shadow-md">
                                   <img
                                     src={generateTabPreviewUrl}
@@ -1241,13 +1213,12 @@ export default function ImageUpload({
                                   !!aiGenerateError ||
                                   !promptToUse
                                 }
-                                className={`w-full border-primary text-primary hover:bg-primary-100 
-                                  ${isGeneratingImage ? "bg-primary-600 text-white hover:bg-primary-600" : ""}`}
+                                className="w-full border-primary text-primary hover:bg-primary-100"
                               >
                                 {isGeneratingImage ? (
                                   <>
-                                    <Sparkles className="mr-2 h-4 w-4" />
-                                    Generating Image
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Generating...
                                   </>
                                 ) : (
                                   <>
@@ -1321,12 +1292,6 @@ export default function ImageUpload({
                               const assetName =
                                 getFilenameFromUrl(image_url) ||
                                 `Image ${index + 1}`;
-                              const assetRowKey =
-                                getAssetRowKey(asset, image_url) ??
-                                `url:${String(image_url)}`;
-                              const isThisAssetCreating =
-                                creatingAssetKey != null &&
-                                creatingAssetKey === assetRowKey;
                               const isSelected =
                                 image_url === currentImageUrl ||
                                 selectedImageAsset?.asset_id ===
@@ -1342,14 +1307,12 @@ export default function ImageUpload({
                                       : "hover:bg-gray-50"
                                   } ${
                                     isCreatingAsset
-                                      ? isThisAssetCreating
-                                        ? "cursor-wait"
-                                        : "cursor-not-allowed"
+                                      ? "cursor-not-allowed opacity-50"
                                       : "cursor-pointer"
                                   }`}
                                   onClick={() => {
-                                    if (isCreatingAsset) return;
-                                    handleSelectAsset(asset);
+                                    if (!isCreatingAsset)
+                                      handleSelectAsset(asset);
                                   }}
                                 >
                                   <div className="relative mb-2 aspect-video overflow-hidden  bg-gray-100">
@@ -1365,7 +1328,7 @@ export default function ImageUpload({
                                         {assetName}
                                       </div>
                                     )}
-                                    {isThisAssetCreating ? (
+                                    {isCreatingAsset ? (
                                       <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                         <Loader2 className="h-6 w-6 animate-spin text-white" />
                                       </div>

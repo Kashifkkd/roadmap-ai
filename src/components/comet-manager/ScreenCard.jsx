@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Plus,
   GripVertical,
   Expand,
   Trash2,
+  MoreVertical,
+  Pencil,
+  ImageIcon,
 } from "lucide-react";
+import AssetPicker from "./AssetPicker";
 import GradientLoader from "@/components/ui/GradientLoader";
 import {
   Dialog,
@@ -61,10 +65,42 @@ export default function ScreenCard({
   onClick,
   onAddScreen,
   onDeleteScreen,
+  sessionId,
+  onAssetLinked,
 }) {
   console.log(screen, "screen >>>>>>>>>>>>");
   const [showAddButton, setShowAddButton] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
+  const handleToggleMenu = (e) => {
+    e.stopPropagation();
+    setIsMenuOpen((prev) => !prev);
+  };
+
+  const handleEditScreen = (e) => {
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    onClick(screen);
+  };
 
   const handleDeleteScreen = (e) => {
     e.stopPropagation();
@@ -80,9 +116,8 @@ export default function ScreenCard({
 
   const AddButton = ({ position, insertIndex }) => (
     <div
-      className={`absolute ${
-        position === "left" ? "-left-4" : "-right-4"
-      } top-1/4 transform -translate-y-1/2 z-10`}
+      className={`absolute ${position === "left" ? "-left-4" : "-right-4"
+        } top-1/4 transform -translate-y-1/2 z-10`}
     >
       <button
         onClick={(e) => {
@@ -112,10 +147,9 @@ export default function ScreenCard({
           shrink-0 shadow-sm hover:shadow-md cursor-pointer 
           border border-transparent hover:border-primary-600
           transition-all duration-300 ease-in-out
-          ${
-            selectedScreen?.id === screen.id
-              ? "bg-primary-700 hover:bg-primary-600 min-w-35 sm:min-w-37.5 max-w-37.5 sm:max-w-45"
-              : "bg-gray-100 hover:bg-primary-100 min-w-27.5 sm:min-w-37.5 max-w-37.5 sm:max-w-37.5"
+          ${selectedScreen?.id === screen.id
+            ? "bg-primary-700 hover:bg-primary-600 min-w-35 sm:min-w-37.5 max-w-37.5 sm:max-w-45"
+            : "bg-gray-100 hover:bg-primary-100 min-w-27.5 sm:min-w-37.5 max-w-37.5 sm:max-w-37.5"
           }
         `}
       >
@@ -123,33 +157,60 @@ export default function ScreenCard({
           <div className="flex justify-between items-center gap-1 w-full">
             <div className="flex flex-col items-center">
               <div
-                className={`flex items-center justify-between font-medium w-full transition-colors duration-300 ${
-                  selectedScreen?.id === screen.id
+                className={`flex items-center justify-between font-medium w-full transition-colors duration-300 ${selectedScreen?.id === screen.id
                     ? "text-white"
                     : "text-gray-700"
-                }`}
+                  }`}
               >
                 <span>Screen {index + 1}</span>
                 {onDeleteScreen && (
-                  <button
-                    onClick={handleDeleteScreen}
-                    className={`p-0.5 rounded-md transition-colors duration-200 ${
-                      selectedScreen?.id === screen.id
-                        ? "text-white/70 hover:text-white hover:bg-white/10"
-                        : "text-red-500 hover:text-red-600 hover:bg-red-50"
-                    }`}
-                    title="Delete screen"
-                  >
-                    <Trash2 style={{ width: "1em", height: "1em" }} />
-                  </button>
+                  <div className="relative" ref={menuRef}>
+                    <button
+                      onClick={handleToggleMenu}
+                      className={`p-0.5 rounded-md transition-colors duration-200 ${selectedScreen?.id === screen.id
+                          ? "text-white/70 hover:text-white hover:bg-white/10"
+                          : "text-gray-400 hover:text-gray-600 hover:bg-gray-200"
+                        }`}
+                      title="More options"
+                    >
+                      <MoreVertical style={{ width: "1em", height: "1em" }} />
+                    </button>
+                    {isMenuOpen && (
+                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                        <button
+                          onClick={handleEditScreen}
+                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            setIsAssetPickerOpen(true);
+                          }}
+                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <ImageIcon className="w-3.5 h-3.5" />
+                          Browse Images
+                        </button>
+                        <button
+                          onClick={handleDeleteScreen}
+                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
               <div
-                className={`flex text-sm items-start gap-2 font-medium w-full transition-colors duration-300 text-wrap truncate ${
-                  selectedScreen?.id === screen.id
+                className={`flex text-sm items-start gap-2 font-medium w-full transition-colors duration-300 text-wrap truncate ${selectedScreen?.id === screen.id
                     ? "text-white"
                     : "text-gray-700"
-                }`}
+                  }`}
               >
                 {((str) => {
                   const words = str
@@ -160,26 +221,24 @@ export default function ScreenCard({
                     .map((word, i) =>
                       i === 0
                         ? word.charAt(0).toUpperCase() +
-                          word.slice(1).toLowerCase()
+                        word.slice(1).toLowerCase()
                         : word.toLowerCase(),
                     )
                     .join(" ");
                 })(screen.screenContents?.contentType || "Content")}{" "}
               </div>
               <div
-                className={`flex flex-col items-start bg-white p-2 mt-0.5 shrink-0 transition-all duration-300  shadow-sm overflow-hidden${
-                  selectedScreen?.id === screen.id
+                className={`flex flex-col items-start bg-white p-2 mt-0.5 shrink-0 transition-all duration-300  shadow-sm overflow-hidden${selectedScreen?.id === screen.id
                     ? " h-52.5 w-36.25"
                     : " h-42.5 w-33.75" // normal screen size
-                }`}
+                  }`}
               >
                 {/* Title */}
                 <div
-                  className={`flex items-start gap-2 text-sm font-medium w-full transition-colors duration-300 mb-1 text-wrap ${
-                    selectedScreen?.id === screen.id
+                  className={`flex items-start gap-2 text-sm font-medium w-full transition-colors duration-300 mb-1 text-wrap ${selectedScreen?.id === screen.id
                       ? "text-black"
                       : "text-black"
-                  }`}
+                    }`}
                   title={screen.screenContents?.name || screen.title}
                 >
                   {screen.screenContents?.name || screen.title}
@@ -188,9 +247,8 @@ export default function ScreenCard({
                 {/* Thumbnail */}
                 {showImagePreview && (
                   <div
-                    className={`relative w-full mb-2 ${
-                      selectedScreen?.id === screen.id ? "h-25" : "h-22.5"
-                    }`}
+                    className={`relative w-full mb-2 ${selectedScreen?.id === screen.id ? "h-25" : "h-22.5"
+                      }`}
                   >
                     <img
                       src={screen.thumbnail || "/noImage.png"}
@@ -217,18 +275,16 @@ export default function ScreenCard({
                 </div> */}
 
                 <div
-                  className={`w-full text-xs font-medium overflow-hidden text-ellipsis line-clamp-3 transition-colors duration-300 ${
-                    !showImagePreview ? "mt-auto" : ""
-                  } ${
-                    selectedScreen?.id === screen.id
+                  className={`w-full text-xs font-medium overflow-hidden text-ellipsis line-clamp-3 transition-colors duration-300 ${!showImagePreview ? "mt-auto" : ""
+                    } ${selectedScreen?.id === screen.id
                       ? "text-black"
                       : "text-gray-700"
-                  }`}
+                    }`}
                 >
                   {stripHtmlToPlainText(
                     screen.screenContents?.content?.body ||
-                      screen.screenContents?.content?.keyLearning ||
-                      "No content available",
+                    screen.screenContents?.content?.keyLearning ||
+                    "No content available",
                   )}
                 </div>
               </div>
@@ -242,24 +298,21 @@ export default function ScreenCard({
               e.stopPropagation();
               setIsDialogOpen(true);
             }}
-            className={`cursor-pointer hover:scale-110 transition-all duration-300 ${
-              selectedScreen?.id === screen.id ? "text-white" : "text-gray-500"
-            }`}
+            className={`cursor-pointer hover:scale-110 transition-all duration-300 ${selectedScreen?.id === screen.id ? "text-white" : "text-gray-500"
+              }`}
           />
           <div
-            className={`p-1 rounded transition-colors duration-300 ${
-              selectedScreen?.id === screen.id
+            className={`p-1 rounded transition-colors duration-300 ${selectedScreen?.id === screen.id
                 ? "bg-primary-800"
                 : "bg-background"
-            }`}
+              }`}
           >
             <GripVertical
               style={{ width: "1em", height: "1em" }}
-              className={`cursor-grab active:cursor-grabbing transition-colors duration-300 ${
-                selectedScreen?.id === screen.id
+              className={`cursor-grab active:cursor-grabbing transition-colors duration-300 ${selectedScreen?.id === screen.id
                   ? "text-white"
                   : "text-gray-500"
-              }`}
+                }`}
             />
           </div>
         </div>
@@ -277,29 +330,30 @@ export default function ScreenCard({
             <DialogTitle className="text-2xl font-bold">
               Screen {index + 1}
             </DialogTitle>
+            <DialogDescription className="sr-only">Screen details</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 mt-4">
             {/* Heading */}
             {(screen.screenContents?.content?.heading ||
               screen.formData?.heading) && (
-              <div>
-                <h3 className="text-2xl font-semibold mb-3 text-gray-900">
-                  {screen.screenContents?.content?.heading ||
-                    screen.formData?.heading}
-                </h3>
-              </div>
-            )}
+                <div>
+                  <h3 className="text-2xl font-semibold mb-3 text-gray-900">
+                    {screen.screenContents?.content?.heading ||
+                      screen.formData?.heading}
+                  </h3>
+                </div>
+              )}
 
             {/* Body (rich text: bold, italic, etc.) */}
             {(screen.screenContents?.content?.body ||
               screen.formData?.body) && (
-              <div className="text-base text-gray-700 leading-relaxed">
-                {stripHtmlToPlainText(
-                  screen.screenContents?.content?.body || screen.formData?.body,
-                )}
-              </div>
-            )}
+                <div className="text-base text-gray-700 leading-relaxed">
+                  {stripHtmlToPlainText(
+                    screen.screenContents?.content?.body || screen.formData?.body,
+                  )}
+                </div>
+              )}
 
             {/* Assets */}
             {screen.assets && screen.assets.length > 0 && (
@@ -350,6 +404,16 @@ export default function ScreenCard({
           </div>
         </DialogContent>
       </Dialog>
+
+      <AssetPicker
+        sessionId={sessionId}
+        screenUid={screen.uuid || screen.uid}
+        isOpen={isAssetPickerOpen}
+        onClose={() => setIsAssetPickerOpen(false)}
+        onAssetLinked={(asset) => {
+          onAssetLinked?.(screen.id, asset);
+        }}
+      />
     </div>
   );
 }

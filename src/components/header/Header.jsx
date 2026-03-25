@@ -704,14 +704,26 @@ export default function Header() {
     router.push("/comets");
   };
 
-  const isPublishDisabledForInitialChapter = (() => {
+  const [isPublishDisabledForInitialChapter, setIsPublishDisabledForInitialChapter] = useState(true);
+  useEffect(() => {
     try {
       const publishSessionData = session ? JSON.parse(session) : {};
-      return publishSessionData?.is_initial_chapter_created !== true;
+      const flagValue = publishSessionData?.is_initial_chapter_created;
+      if (flagValue === true || flagValue === "true") {
+        setIsPublishDisabledForInitialChapter(false);
+        return;
+      }
+      // Fallback: if chapters already exist in response_path, allow publish
+      const chapters = publishSessionData?.response_path?.chapters;
+      if (Array.isArray(chapters) && chapters.length > 0) {
+        setIsPublishDisabledForInitialChapter(false);
+        return;
+      }
+      setIsPublishDisabledForInitialChapter(true);
     } catch {
-      return true;
+      setIsPublishDisabledForInitialChapter(true);
     }
-  })();
+  }, [session]);
   useEffect(() => {
     const sessionData = JSON.parse(session || "{}");
     try {

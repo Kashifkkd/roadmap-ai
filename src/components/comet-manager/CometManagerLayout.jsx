@@ -222,6 +222,38 @@ export default function CometManagerLayout() {
     },
     [sessionData],
   );
+  // Immediate save — call after structural changes (delete screen/step, reorder)
+  // so Redis is always in sync and no downstream operation reads stale data.
+  const flushSave = async (outlineToSave) => {
+    const target = outlineToSave || outlineRef.current || outline;
+    if (!target || isSavingRef.current) return;
+
+    const sessionId =
+      sessionData?.session_id ||
+      (typeof window !== "undefined" && localStorage.getItem("sessionId")) ||
+      null;
+    if (!sessionId) return;
+
+    try {
+      isSavingRef.current = true;
+      const cometJsonForSave = JSON.stringify({
+        session_id: sessionId,
+        input_type: sessionData?.input_type || "source_material_based_outliner",
+        comet_creation_data: sessionData?.comet_creation_data || {},
+        response_outline: sessionData?.response_outline || {},
+        response_path: target,
+        chatbot_conversation: sessionData?.chatbot_conversation || [],
+        to_modify: sessionData?.to_modify || {},
+        webpage_url: sessionData?.webpage_url || [],
+      });
+      await graphqlClient.autoSaveComet(cometJsonForSave);
+      setPrevOutline(target);
+    } catch (error) {
+      console.error("Error during flush save:", error);
+    } finally {
+      isSavingRef.current = false;
+    }
+  };
 
   useEffect(() => {
     if (autoSaveTimerRef.current) {
@@ -302,6 +334,7 @@ export default function CometManagerLayout() {
             setIsPreviewMode={setIsPreviewMode}
             onOutlineChange={handleOutlineChange}
             saveOutlineImmediately={saveOutlineImmediately}
+            onFlushSave={flushSave}
             isAskingKyper={isAskingKyper}
             setIsAskingKyper={setIsAskingKyper}
           />
