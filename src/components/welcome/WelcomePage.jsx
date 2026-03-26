@@ -31,6 +31,7 @@ export default function WelcomePage() {
   const [isExpanded, setIsExpanded] = useState(false);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const attachWrapperRef = useRef(null);
   const router = useRouter();
 
   const [messages, setMessages] = useState([]);
@@ -589,6 +590,26 @@ export default function WelcomePage() {
     return () => clearTimeout(id);
   }, [isLinkInputVisible]);
 
+  // Close Attach dropdown when user clicks outside the panel.
+  useEffect(() => {
+    if (!isAttachInputVisible) return;
+
+    const handleOutsidePointerDown = (e) => {
+      const wrapper = attachWrapperRef.current;
+      if (!wrapper) return;
+      if (wrapper.contains(e.target)) return;
+      setIsAttachInputVisible(false);
+    };
+
+    document.addEventListener("pointerdown", handleOutsidePointerDown);
+    return () => {
+      document.removeEventListener(
+        "pointerdown",
+        handleOutsidePointerDown,
+      );
+    };
+  }, [isAttachInputVisible]);
+
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
@@ -836,7 +857,7 @@ export default function WelcomePage() {
                     <div className="flex flex-row justify-between items-center gap-2">
                       <div className="flex items-center flex-wrap gap-1">
                         {/* Attach button + panel */}
-                        <div className="relative">
+                        <div className="relative" ref={attachWrapperRef}>
                           <Button
                             variant="ghost"
                             className={`cursor-pointer flex items-center gap-2 ${

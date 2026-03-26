@@ -3,7 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
 
-import { Plus, CircleX, Link2, Trash2, ExternalLink, Loader2 } from "lucide-react";
+import {
+  Plus,
+  CircleX,
+  Link2,
+  Trash2,
+  ExternalLink,
+  Loader2,
+} from "lucide-react";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import Image from "next/image";
@@ -255,7 +262,9 @@ export default function SourceMaterialCard({
         const url = (entry?.url ?? "").trim();
         if (!url) return;
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
-          toast.error(`Invalid URL (must be http or https): ${url.slice(0, 50)}...`);
+          toast.error(
+            `Invalid URL (must be http or https): ${url.slice(0, 50)}...`,
+          );
           return;
         }
 
@@ -290,8 +299,17 @@ export default function SourceMaterialCard({
     if (selectedFiles.length === 0) return;
 
     const allowedExtensions = [
-      "pdf", "doc", "docx", "txt", "pptx",
-      "mp3", "wav", "m4a", "flac", "mp4", "webm",
+      "pdf",
+      "doc",
+      "docx",
+      "txt",
+      "pptx",
+      "mp3",
+      "wav",
+      "m4a",
+      "flac",
+      "mp4",
+      "webm",
     ];
     const invalidFiles = selectedFiles.filter((file) => {
       const ext = file.name.split(".").pop()?.toLowerCase() || "";
@@ -337,7 +355,8 @@ export default function SourceMaterialCard({
     const newFiles = filteredByType.filter(
       (file) =>
         !duplicateFiles.some(
-          (duplicateFile) => getFileKey(duplicateFile.name) === getFileKey(file.name),
+          (duplicateFile) =>
+            getFileKey(duplicateFile.name) === getFileKey(file.name),
         ),
     );
 
@@ -376,10 +395,13 @@ export default function SourceMaterialCard({
         onUploadingChange(true);
         try {
           const linksToUpload = dedupeWebLinks(normalizedUrls).filter(
-            (entry) => (entry?.url ?? "").trim().length > 0 && !entry.isUploaded,
+            (entry) =>
+              (entry?.url ?? "").trim().length > 0 && !entry.isUploaded,
           );
           if (linksToUpload.length > 0 && currentSessionId) {
-            await Promise.all(linksToUpload.map((entry) => uploadWebLink(entry)));
+            await Promise.all(
+              linksToUpload.map((entry) => uploadWebLink(entry)),
+            );
             const uploadedUrls = new Set(
               linksToUpload.map((entry) => entry.url.trim().toLowerCase()),
             );
@@ -395,7 +417,9 @@ export default function SourceMaterialCard({
           }
 
           // 2. Upload files that haven't been uploaded
-          const newFiles = dedupeFiles(files).filter((file) => !file.isUploaded);
+          const newFiles = dedupeFiles(files).filter(
+            (file) => !file.isUploaded,
+          );
           if (newFiles.length > 0 && currentSessionId) {
             await Promise.all(newFiles.map((file) => uploadFile(file)));
             // Mark files as uploaded so they aren't re-uploaded on next call
@@ -451,12 +475,13 @@ export default function SourceMaterialCard({
     }
 
     const updated = normalizedUrls.map((entry, i) =>
-      i === index ? { ...entry, [field]: value } : entry
+      i === index ? { ...entry, [field]: value } : entry,
     );
     setWebpageUrls(updated);
   };
 
-  const handleFileCommentChange = useCallback((fileItem, value) => {
+  const handleFileCommentChange = useCallback(
+    (fileItem, value) => {
       setFiles((prev) =>
         prev.map((item) => {
           if (item === fileItem) {
@@ -524,8 +549,8 @@ export default function SourceMaterialCard({
                 className="flex flex-col gap-2 bg-gray-50 rounded-lg p-2 border border-gray-200"
               >
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary-50 flex-shrink-0">
-                    <Link2 className="w-4 h-4 text-primary-500" />
+                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary-100 flex-shrink-0">
+                    <Link2 className="w-6 h-6 rotate-130 text-primary-600" />
                   </div>
                   <input
                     type="url"
@@ -620,7 +645,7 @@ const FilePreview = ({ file, setFiles, files, onCommentChange }) => {
       <div className="flex flex-col border border-gray-200 bg-white rounded-xl">
         <CardContent className=" flex items-center justify-between p-4  rounded-xl">
           <div className="flex items-center gap-4">
-            <div className="bg-accent text-primary p-2 rounded-full">
+            <div className="bg-primary-100 text-white p-2 rounded-full">
               <Image src="/file.png" alt="File icon" width={24} height={24} />
             </div>
             <div className="flex flex-col">
