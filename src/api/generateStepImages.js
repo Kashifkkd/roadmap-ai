@@ -178,6 +178,21 @@ export const linkAssetToScreen = async ({ sessionId, assetId, screenUid }) => {
  * POST manually rehydrate step images from Redis into session JSON.
  * Use when automatic hydration failed and images aren't showing.
  */
+/**
+ * POST unlink all image assets from a screen (before replacing with a new image).
+ */
+export const unlinkScreenAssets = async ({ sessionId, screenUid }) => {
+  const response = await apiService({
+    endpoint: endpoints.unlinkScreenAssets,
+    method: "POST",
+    data: {
+      session_id: sessionId,
+      screen_uid: screenUid,
+    },
+  });
+  return response;
+};
+
 export const rehydrateStepImages = async ({ sessionId, stepUid }) => {
   const response = await apiService({
     endpoint: endpoints.rehydrateStepImages,
