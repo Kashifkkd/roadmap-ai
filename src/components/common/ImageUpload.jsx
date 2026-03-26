@@ -31,6 +31,8 @@ import {
   getImageAttributes,
   setImageAttributes,
   getSuggestPrompt,
+  unlinkScreenAssets,
+  linkAssetToScreen,
 } from "@/api/generateStepImages";
 import {
   ART_STYLE_KEYS,
@@ -38,7 +40,7 @@ import {
 } from "@/constants/artStyles";
 
 export default function ImageUpload({
-  label = "Upload Image/Icon",
+  label = "Add Image/Icon",
   sessionId = "",
   chapterUid = "",
   stepUid = "",
@@ -452,8 +454,7 @@ export default function ImageUpload({
   const handleSelectAsset = async (asset) => {
     const image_url = asset.asset_url;
     const assetType = asset.asset_type || asset.type || "image";
-    const assetName =
-      asset.name || getFilenameFromUrl(image_url) || `Image ${asset.id}`;
+    const assetName = asset.name || getFilenameFromUrl(image_url) || `Image ${asset.id}`;
     const assetId = asset.id || asset.asset_id;
 
     setIsCreatingAsset(true);
@@ -588,6 +589,10 @@ export default function ImageUpload({
   const handleSaveImage = async () => {
     if (!selectedImageAsset) return;
 
+    const isReplacing = currentImageIndices.length > 0;
+    const newUrl = selectedImageAsset.ImageUrl || selectedImageAsset.url || "";
+
+    // 1) Update outline immediately (no async delay)
     removeExistingImages();
 
     if (selectedImageAsset.source === "ai_generated" && onAIGenerateSuccess) {
@@ -596,11 +601,32 @@ export default function ImageUpload({
       onUploadSuccess(selectedImageAsset);
     }
 
+    // 2) Auto-save to persist outline to Redis before DB ops
     if (onRequestAutoSave) {
       try {
         await onRequestAutoSave();
       } catch (err) {
         console.error("Auto-save after saving image failed:", err);
+      }
+    }
+
+    // 3) DB operations (fire-and-forget after outline is saved)
+    if (sessionId && screenUid) {
+      // Unlink old if replacing with a different image
+      if (isReplacing && newUrl !== currentImageUrl) {
+        unlinkScreenAssets({ sessionId, screenUid }).catch((err) =>
+          console.error("Failed to unlink old screen assets:", err)
+        );
+      }
+      // Link new asset
+      if (selectedImageAsset.asset_id) {
+        linkAssetToScreen({
+          sessionId,
+          assetId: selectedImageAsset.asset_id,
+          screenUid,
+        }).catch((err) =>
+          console.error("Failed to link new asset:", err)
+        );
       }
     }
 
@@ -790,16 +816,16 @@ export default function ImageUpload({
                       </button>
 
                       {onRemoveAsset && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveCurrentImage();
-                          }}
-                          className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-none hover:text-white cursor-pointer"
-                        >
-                          Remove
-                        </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveCurrentImage();
+                        }}
+                        className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-none hover:text-white cursor-pointer"
+                      >
+                        Remove
+                      </button>
                       )}
                     </div>
                   </div>
@@ -1285,7 +1311,7 @@ export default function ImageUpload({
                           </p>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {assets
                             .filter((asset) => asset.asset_type === "image")
                             .map((asset, index) => {
@@ -1316,7 +1342,7 @@ export default function ImageUpload({
                                       handleSelectAsset(asset);
                                   }}
                                 >
-                                  <div className="relative mb-2 aspect-square overflow-hidden  bg-gray-100">
+                                  <div className="relative mb-2 aspect-video overflow-hidden  bg-gray-100">
                                     {typeof image_url === "string" &&
                                     image_url.startsWith("http") ? (
                                       <img
@@ -1327,6 +1353,17 @@ export default function ImageUpload({
                                     ) : (
                                       <div className="flex h-full w-full items-center justify-center break-all p-2 text-center text-[10px] text-gray-500">
                                         {assetName}
+                                      </div>
+                                    )}
+                                    {isCreatingAsset ? (
+                                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                        <Loader2 className="h-6 w-6 animate-spin text-white" />
+                                      </div>
+                                    ) : (
+                                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/10">
+                                        <div className="opacity-0 transition-opacity group-hover:opacity-100">
+                                          <Check className="h-6 w-6 text-white drop-shadow-lg" />
+                                        </div>
                                       </div>
                                     )}
                                   </div>
