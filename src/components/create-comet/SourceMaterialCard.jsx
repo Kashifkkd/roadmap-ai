@@ -3,14 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
 
-import {
-  Plus,
-  CircleX,
-  Link2,
-  Trash2,
-  ExternalLink,
-  Loader2,
-} from "lucide-react";
+import { Plus, Link2, Trash2, CircleX, Loader2 } from "lucide-react";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import Image from "next/image";
@@ -129,6 +122,7 @@ export default function SourceMaterialCard({
 }) {
   const [sessionId, setSessionId] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [linkDraft, setLinkDraft] = useState({ url: "" });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -451,7 +445,17 @@ export default function SourceMaterialCard({
   }, [files, sessionId, uploadFile, uploadWebLink, normalizedUrls]);
 
   const handleAddLink = () => {
-    setWebpageUrls([...normalizedUrls, { url: "", comment: "" }]);
+    const url = linkDraft.url.trim();
+    if (!url) return toast.error("Please enter a URL");
+    if (!/^https?:\/\//i.test(url))
+      return toast.error("URL must start with http:// or https://");
+    if (
+      normalizedUrls.some((e) => getWebLinkKey(e?.url) === getWebLinkKey(url))
+    )
+      return toast.error("This link is already added");
+
+    setWebpageUrls([...normalizedUrls, { url, comment: "" }]);
+    setLinkDraft({ url: "" });
   };
 
   const handleRemoveLink = (index) => {
@@ -461,12 +465,10 @@ export default function SourceMaterialCard({
   const handleLinkChange = (index, field, value) => {
     if (field === "url") {
       const nextKey = getWebLinkKey(value);
-
       if (nextKey) {
         const isDuplicate = normalizedUrls.some(
           (entry, i) => i !== index && getWebLinkKey(entry?.url) === nextKey,
         );
-
         if (isDuplicate) {
           toast.error("This link is already added");
           return;
@@ -542,72 +544,50 @@ export default function SourceMaterialCard({
               </div>
             )}
           </div>
-          <div className="flex flex-col gap-3 bg-white p-2 rounded-lg">
-            {normalizedUrls.map((entry, index) => (
-              <div
-                key={index}
-                className="flex flex-col gap-2 bg-gray-50 rounded-lg p-2 border border-gray-200"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary-100 flex-shrink-0">
-                    <Link2 className="w-6 h-6 rotate-130 text-primary-600" />
-                  </div>
-                  <input
-                    type="url"
-                    placeholder="Paste link here"
-                    value={entry.url}
-                    onChange={(e) =>
-                      handleLinkChange(index, "url", e.target.value)
-                    }
-                    title={entry.url || "Source link URL"}
-                    className="flex-1 bg-white text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none placeholder:text-gray-400 focus:border-primary-400 min-w-0"
-                  />
-                  {entry.url &&
-                    (entry.url.startsWith("http://") ||
-                      entry.url.startsWith("https://")) && (
-                      <a
-                        href={entry.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 text-primary hover:bg-primary-50 rounded-lg transition-colors flex-shrink-0"
-                        title="Open link in new tab"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    )}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveLink(index)}
-                    className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex-shrink-0"
-                    title="Remove link"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Add a comment (optional)"
-                  value={entry.comment}
-                  onChange={(e) =>
-                    handleLinkChange(index, "comment", e.target.value)
-                  }
-                  className="w-full bg-white text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none placeholder:text-gray-400 focus:border-primary-400"
-                />
+          <div className="flex flex-col gap-3 bg-white p-3 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-[#F4F4F5] shrink-0">
+                <Link2 className="w-5 h-5 text-gray-500 rotate-[-45deg]" />
               </div>
-            ))}
-
+              <input
+                type="url"
+                value={linkDraft.url}
+                onChange={(e) =>
+                  setLinkDraft((prev) => ({ ...prev, url: e.target.value }))
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddLink();
+                  }
+                }}
+                className="flex-1 bg-white text-base border border-gray-200 rounded-xl px-4 h-11 outline-none placeholder:text-gray-400 focus:border-primary-400 min-w-0"
+              />
+              <button
+                type="button"
+                onClick={() => setLinkDraft({ url: "" })}
+                className="flex items-center justify-center w-11 h-11 bg-[#EF4444] text-white rounded-xl hover:bg-red-600 transition-colors shrink-0"
+                title="Clear link"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </div>
             <Button
               type="button"
               onClick={handleAddLink}
-              className="w-full border-primary text-white bg-primary"
+              variant="outline"
+              className="w-full h-11 border border-[#7C3AED] text-[#7C3AED] bg-transparent hover:bg-[#7C3AED]/5 rounded-xl text-[15px] font-medium shadow-sm transition-colors"
             >
-              + Add Link
+              <Plus className="w-5 h-5 mr-1" /> Add Link
             </Button>
           </div>
         </div>
       </CardContent>
 
-      {files && files.length > 0 && (
+      {(files?.length > 0 ||
+        normalizedUrls.some(
+          (entry) => (entry?.url ?? "").trim().length > 0,
+        )) && (
         <CardContent className="mt-2 text-sm space-y-2 overflow-auto no-scrollbar">
           {files.map((file, index) => (
             <FilePreview
@@ -618,11 +598,76 @@ export default function SourceMaterialCard({
               key={file.name || index}
             />
           ))}
+          {normalizedUrls.map((entry, index) => {
+            if (!(entry?.url ?? "").trim()) return null;
+            return (
+              <LinkPreview
+                key={`link-${index}-${getWebLinkKey(entry.url)}`}
+                entry={entry}
+                onCommentChange={(value) =>
+                  handleLinkChange(index, "comment", value)
+                }
+                onRemove={() => handleRemoveLink(index)}
+              />
+            );
+          })}
         </CardContent>
       )}
     </Card>
   );
 }
+
+const LinkPreview = ({ entry, onCommentChange, onRemove }) => {
+  const truncateUrl = (url, maxLength = 36) => {
+    if (!url || url.length <= maxLength) return url || "";
+    return url.substring(0, maxLength) + "...";
+  };
+
+  return (
+    <div className="flex flex-col bg-gray-100 rounded-xl p-1">
+      <div className="flex flex-col border border-gray-200 bg-white rounded-xl">
+        <CardContent className="flex items-center justify-between gap-2 p-4 rounded-xl">
+          <div className="flex items-center gap-4 min-w-0 flex-1">
+            <div className="bg-primary-100 p-2 rounded-full shrink-0">
+              <Link2 className="w-5 h-5 text-primary-600" />
+            </div>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-sm font-medium truncate" title={entry.url}>
+                {truncateUrl(entry.url)}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={onRemove}
+              className="p-2 text-gray-500 hover:text-gray-800 cursor-pointer"
+              title="Remove link"
+            >
+              <CircleX className="w-4 h-4" />
+            </button>
+            <div className="shrink-0" aria-hidden="true" title="Saved">
+              <Image
+                src="/Verified Check.svg"
+                alt="Verified"
+                width={24}
+                height={24}
+              />
+            </div>
+          </div>
+        </CardContent>
+        <div className="m-2">
+          <Input
+            placeholder="Add comment..."
+            className="w-full bg-background rounded-lg"
+            value={entry.comment ?? ""}
+            onChange={(e) => onCommentChange?.(e.target.value)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const FilePreview = ({ file, setFiles, files, onCommentChange }) => {
   const formatFileSize = (bytes) => {
