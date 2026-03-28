@@ -308,6 +308,24 @@ export default function GenerateStepImageButton({
     setGenerateError(null);
 
     try {
+      // 0. Auto-save session first so backend has the very latest prompt/content
+      try {
+        const cometJsonForSave = JSON.stringify({
+          session_id: sessionId,
+          input_type: "source_material_based_outliner",
+          comet_creation_data: sessionData?.comet_creation_data || {},
+          response_outline: sessionData?.response_outline || {},
+          response_path: sessionData?.response_path || {},
+          chatbot_conversation: sessionData?.chatbot_conversation || [],
+          to_modify: sessionData?.to_modify || {},
+          webpage_url: sessionData?.webpage_url || [],
+        });
+        const { graphqlClient } = await import("@/lib/graphql-client");
+        await graphqlClient.autoSaveComet(cometJsonForSave);
+      } catch (saveError) {
+        console.warn("Auto-save before generation failed. Proceeding anyway...", saveError);
+      }
+
       // First, set the image attributes
       const setAttributesResponse = await setImageAttributes({
         sessionId,

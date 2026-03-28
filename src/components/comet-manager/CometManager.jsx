@@ -75,6 +75,7 @@ import VideoPreview from "./VideoPreview";
 import CometSettingsDialog from "./CometSettingsDialog";
 import GenerateStepImageButton from "./GenerateStepImageButton";
 import UploadStepImageDialog from "./UploadStepImageDialog";
+import GradientLoader from "@/components/ui/GradientLoader";
 import {
   Drawer,
   DrawerContent,
@@ -2259,9 +2260,20 @@ export default function CometManager({
                                 className="w-full h-full object-cover"
                               />
                             )}
-                            {!selectedScreen?.stepImageUrl && (
-                              <FileImage className="w-5 h-5 text-primary-400" />
-                            )}
+                            {!selectedScreen?.stepImageUrl &&
+                              generatingStepUids.has(
+                                selectedScreen?.stepUid,
+                              ) && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-white/60 rounded-md">
+                                  <GradientLoader size={28} />
+                                </div>
+                              )}
+                            {!selectedScreen?.stepImageUrl &&
+                              !generatingStepUids.has(
+                                selectedScreen?.stepUid,
+                              ) && (
+                                <FileImage className="w-5 h-5 text-primary-400" />
+                              )}
                           </div>
                         </div>
                       </div>

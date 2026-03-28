@@ -151,15 +151,18 @@ export const ListField = ({
           return (
             <div
               key={index}
-              draggable={!!onReorder}
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragEnd={handleDragEnd}
+              // draggable={!!onReorder}
+              // onDragStart={(e) => handleDragStart(e, index)}
+              // onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
               className={`flex gap-2 ${draggedIndex === index ? "opacity-50" : ""
                 }`}
             >
               <div
+                draggable={!!onReorder}
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragEnd={handleDragEnd}
                 className={`${onReorder ? "cursor-move" : "cursor-default"
                   } text-gray-400 h-10 w-10 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center`}
               >
