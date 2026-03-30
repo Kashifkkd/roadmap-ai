@@ -53,8 +53,16 @@ class GraphQLClient {
 
     const result = await response.json();
 
-    if (result.errors) {
-      throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+    if (result.errors?.length) {
+      const firstMessage =
+        result.errors.find((e) => e?.message)?.message ||
+        "Something went wrong. Please try again.";
+      if (typeof window !== "undefined") {
+        import("sonner").then(({ toast }) => {
+          toast.error(firstMessage, { id: "graphql-client-error" });
+        });
+      }
+      throw new Error(firstMessage);
     }
 
     return result.data;
