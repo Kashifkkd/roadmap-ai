@@ -3,6 +3,7 @@
 import React, {
   useState,
   useEffect,
+  useLayoutEffect,
   useRef,
   useMemo,
   useCallback,
@@ -38,6 +39,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import { graphqlClient } from "@/lib/graphql-client";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
@@ -86,15 +88,6 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-
 // Grouped screen types for Add dialog
 const SCREEN_TYPE_GROUPS = [
   {
@@ -221,7 +214,7 @@ const EASE_CATEGORIES = ["Engagement", "Aha", "Support", "Execution"];
 
 export default function CometManager({
   sessionData,
-  setSessionData = () => { },
+  setSessionData = () => {},
   setAllMessages,
   isPreviewMode,
   setIsPreviewMode,
@@ -229,7 +222,7 @@ export default function CometManager({
   saveOutlineImmediately,
   onFlushSave,
   isAskingKyper = false,
-  setIsAskingKyper = () => { },
+  setIsAskingKyper = () => {},
 }) {
   // Use comet manager hook to get actual data
   const {
@@ -288,13 +281,13 @@ export default function CometManager({
   ) => {
     const normalizedUpdates =
       updatesOrName &&
-        typeof updatesOrName === "object" &&
-        !Array.isArray(updatesOrName)
+      typeof updatesOrName === "object" &&
+      !Array.isArray(updatesOrName)
         ? updatesOrName
         : {
-          name: updatesOrName,
-          description: newDescription,
-        };
+            name: updatesOrName,
+            description: newDescription,
+          };
 
     let updatedOutline = null;
     setOutline((prevOutline) => {
@@ -523,6 +516,8 @@ export default function CometManager({
   const [isUploadImageDialogOpen, setIsUploadImageDialogOpen] = useState(false);
   const [screenDeleteConfirmId, setScreenDeleteConfirmId] = useState(null);
   const [deletingScreenId, setDeletingScreenId] = useState(null);
+  const cometManagerAreaRef = useRef(null);
+  const [deleteConfirmPaneBounds, setDeleteConfirmPaneBounds] = useState(null);
 
   const GENERATING_UIDS_KEY = "generating-step-uids";
   const [generatingStepUids, setGeneratingStepUids] = useState(() => {
@@ -767,6 +762,49 @@ export default function CometManager({
     setScreenDeleteConfirmId(screenId);
   }, []);
 
+  useLayoutEffect(() => {
+    if (screenDeleteConfirmId === null) {
+      setDeleteConfirmPaneBounds(null);
+      return;
+    }
+    const updateBounds = () => {
+      if (typeof window === "undefined") return;
+      const el = cometManagerAreaRef.current;
+      if (!el) {
+        setDeleteConfirmPaneBounds({
+          top: 0,
+          left: 0,
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      setDeleteConfirmPaneBounds({
+        top: r.top,
+        left: r.left,
+        width: r.width,
+        height: r.height,
+      });
+    };
+    updateBounds();
+    window.addEventListener("resize", updateBounds);
+    window.addEventListener("scroll", updateBounds, true);
+    return () => {
+      window.removeEventListener("resize", updateBounds);
+      window.removeEventListener("scroll", updateBounds, true);
+    };
+  }, [screenDeleteConfirmId]);
+
+  useEffect(() => {
+    if (screenDeleteConfirmId === null) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setScreenDeleteConfirmId(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [screenDeleteConfirmId]);
+
   const handleConfirmDeleteScreen = useCallback(async () => {
     const id = screenDeleteConfirmId;
     if (id == null) return;
@@ -933,8 +971,8 @@ export default function CometManager({
       targetChapter?.order !== undefined
         ? targetChapter.order + 1
         : chapters.findIndex(
-          (ch) => String(ch.id) === String(targetChapterId),
-        ) + 1 || 1;
+            (ch) => String(ch.id) === String(targetChapterId),
+          ) + 1 || 1;
     console.log("chapterNum>>>>>>>>>>>>>>>>>>>>>>>>", chapterNum);
     const stepNum =
       targetChapter?.steps?.findIndex(
@@ -1512,8 +1550,8 @@ export default function CometManager({
     typeof currentChapter?.position === "number"
       ? currentChapter.position
       : chapters.findIndex(
-        (ch) => String(ch.id) === String(selectedScreen?.chapterId),
-      ) + 1 || 1;
+          (ch) => String(ch.id) === String(selectedScreen?.chapterId),
+        ) + 1 || 1;
 
   const stepNumber =
     (currentChapter?.steps?.findIndex(
@@ -1521,7 +1559,10 @@ export default function CometManager({
     ) ?? -1) + 1 || 1;
 
   return (
-    <div className="flex flex-col w-full bg-background rounded-xl h-full relative">
+    <div
+      ref={cometManagerAreaRef}
+      className="flex flex-col w-full bg-background rounded-xl h-full relative"
+    >
       {/* Loading State */}
       {isLoading ? (
         <div className="flex items-center justify-center h-full">
@@ -2100,7 +2141,7 @@ export default function CometManager({
                     >
                       <div className="space-y-4 bg-primary-50 px-2 py-4 rounded">
                         {selectedRemainingChapter.steps &&
-                          selectedRemainingChapter.steps.length > 0 ? (
+                        selectedRemainingChapter.steps.length > 0 ? (
                           selectedRemainingChapter.steps.map(
                             (step, stepIndex) => (
                               <div
@@ -2485,7 +2526,7 @@ export default function CometManager({
                           onClick={handleNextChapter}
                           disabled={
                             sessionData?.is_initial_chapter_created== false ||
-                            isGeneratingNextChapter 
+                            isGeneratingNextChapter
                           }
                         >
                           <span>Create Remaining Chapters</span>
@@ -2614,9 +2655,9 @@ export default function CometManager({
       >
         <DrawerContent
           className={`${isMaximized
-            ? "w-[95vw]! sm:w-[90vw]! md:w-[75vw]! lg:w-[55vw]! xl:max-w-4xl!"
-            : "w-[95vw]! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
-            } max-w-none! h-screen! bg-primary-50 p-0`}
+              ? "w-[95vw]! sm:w-[90vw]! md:w-[75vw]! lg:w-[55vw]! xl:max-w-4xl!"
+              : "w-[95vw]! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
+          } max-w-none! h-screen! bg-primary-50 p-0`}
         >
           {/* Preview Header */}
           <div className="bg-primary-50 border-b border-gray-200 py-2 px-3 sm:px-4 flex items-center justify-between">
@@ -2647,7 +2688,7 @@ export default function CometManager({
           {/* Preview Content */}
           <div
             className={`flex-1 overflow-hidden border-lg bg-primary-50 ${isMaximized ? "p-0 sm:p-2 md:p-3" : "p-0 sm:p-2 md:p-3"
-              }`}
+            }`}
           >
             <FromDoerToEnabler
               selectedScreen={selectedScreen}
@@ -2657,39 +2698,66 @@ export default function CometManager({
         </DrawerContent>
       </Drawer>
 
-      <Dialog
-        open={screenDeleteConfirmId !== null}
-        onOpenChange={(open) => {
-          if (!open) setScreenDeleteConfirmId(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete this screen?</DialogTitle>
-            <DialogDescription>
-              {screenDeleteConfirmIndex >= 0
-                ? `Screen ${screenDeleteConfirmIndex + 1} will be removed from this step. Wait for the save to finish before leaving.`
-                : "This screen will be removed from this step."}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setScreenDeleteConfirmId(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleConfirmDeleteScreen}
-            >
-              Yes, delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {screenDeleteConfirmId !== null && (
+        <div
+          className="fixed z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4 overflow-hidden pointer-events-auto"
+          style={
+            deleteConfirmPaneBounds
+              ? {
+                  top: deleteConfirmPaneBounds.top,
+                  left: deleteConfirmPaneBounds.left,
+                  width: deleteConfirmPaneBounds.width,
+                  height: deleteConfirmPaneBounds.height,
+                }
+              : undefined
+          }
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-screen-dialog-title"
+          onClick={() => setScreenDeleteConfirmId(null)}
+        >
+          <div className="absolute inset-0 z-0" aria-hidden />
+          <div
+            className="relative z-10 w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3 mb-4">
+              <div className="flex-shrink-0 w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">
+                <Trash2 size={16} className="text-red-500" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <h2
+                  id="delete-screen-dialog-title"
+                  className="text-sm font-semibold leading-tight"
+                >
+                  Delete Step
+                </h2>
+                <p className="text-xs font-medium text-muted-foreground">
+                  This will permanently remove the step and its screens
+                </p>
+              </div>
+            </div>
+            <div className="border-t border-gray-200 mb-2"></div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setScreenDeleteConfirmId(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleConfirmDeleteScreen}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
