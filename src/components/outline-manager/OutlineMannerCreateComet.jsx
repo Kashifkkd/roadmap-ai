@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
 import ReactDOM from "react-dom";
 import { isArrayWithValues } from "@/utils/isArrayWithValues";
 import SectionHeader from "@/components/section-header";
@@ -20,6 +26,7 @@ import {
 import SelectIcon from "@/components/icons/SelectIcon";
 import ChapterTextarea from "./ChapterTextarea";
 import Loader from "@/components/loader2";
+import GradientLoader from "@/components/ui/GradientLoader";
 // import { temp2 } from "../../hooks/temp2";
 
 export default function OutlineMannerCreateComet({
@@ -89,9 +96,15 @@ export default function OutlineMannerCreateComet({
   // Step title editing state
   const [editingStepKey, setEditingStepKey] = useState(null); // "chapterIndex-stepIndex"
   const [stepEditValue, setStepEditValue] = useState("");
+  const [openStepMenuKey, setOpenStepMenuKey] = useState(null); // "chapterIndex-stepIndex"
+  const [savingStepKey, setSavingStepKey] = useState(null); // "chapterIndex-stepIndex"
 
   const selectedChapterNameRef = useRef(null);
   const selectedStepTitleRef = useRef(null);
+  const outlineMannerPaneRef = useRef(null);
+  const [chapterDeleteConfirmIndex, setChapterDeleteConfirmIndex] =
+    useState(null);
+  const [deleteConfirmPaneBounds, setDeleteConfirmPaneBounds] = useState(null);
 
   useEffect(() => {
     if (!isArrayWithValues(chapters)) {
@@ -251,6 +264,11 @@ export default function OutlineMannerCreateComet({
       return;
     }
 
+    const key = `${chapterIndex}-${stepIndex}`;
+    setEditingStepKey(null);
+    setStepEditValue("");
+    setSavingStepKey(key);
+
     const newChapters = [...chapters];
     const newSteps = [...newChapters[chapterIndex].steps];
     newSteps[stepIndex] = {
@@ -263,8 +281,6 @@ export default function OutlineMannerCreateComet({
     };
 
     setChapters(newChapters);
-    setEditingStepKey(null);
-    setStepEditValue("");
 
     if (selectedStep?.title === chapters[chapterIndex].steps[stepIndex].title) {
       setSelectedStep(newSteps[stepIndex]);
@@ -282,6 +298,7 @@ export default function OutlineMannerCreateComet({
     } catch (error) {
       console.error("Error updating localStorage:", error);
     }
+    setTimeout(() => setSavingStepKey(null), 800);
   };
 
   const handleCancelStepEdit = (e) => {
@@ -490,11 +507,9 @@ export default function OutlineMannerCreateComet({
     }
   };
 
-  const handleDeleteChapter = (e, chapterIndex) => {
-    e.stopPropagation();
+  const performChapterDelete = (chapterIndex) => {
     const deletedChapter = chapters[chapterIndex];
 
-    setOpenMenuIndex(null);
     setEditingChapterIndex((currentIndex) => {
       if (currentIndex === null) return null;
       if (currentIndex === chapterIndex) {
@@ -545,6 +560,62 @@ export default function OutlineMannerCreateComet({
     }
   };
 
+  const openChapterDeleteConfirm = (e, chapterIndex) => {
+    e.stopPropagation();
+    setOpenMenuIndex(null);
+    setChapterDeleteConfirmIndex(chapterIndex);
+  };
+
+  useLayoutEffect(() => {
+    if (chapterDeleteConfirmIndex === null) {
+      setDeleteConfirmPaneBounds(null);
+      return;
+    }
+    const updateBounds = () => {
+      if (typeof window === "undefined") return;
+      const el = outlineMannerPaneRef.current;
+      if (!el) {
+        setDeleteConfirmPaneBounds({
+          top: 0,
+          left: 0,
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      setDeleteConfirmPaneBounds({
+        top: r.top,
+        left: r.left,
+        width: r.width,
+        height: r.height,
+      });
+    };
+    updateBounds();
+    window.addEventListener("resize", updateBounds);
+    window.addEventListener("scroll", updateBounds, true);
+    return () => {
+      window.removeEventListener("resize", updateBounds);
+      window.removeEventListener("scroll", updateBounds, true);
+    };
+  }, [chapterDeleteConfirmIndex]);
+
+  useEffect(() => {
+    if (chapterDeleteConfirmIndex === null) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setChapterDeleteConfirmIndex(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [chapterDeleteConfirmIndex]);
+
+  const handleConfirmDeleteChapter = () => {
+    if (chapterDeleteConfirmIndex === null) return;
+    const idx = chapterDeleteConfirmIndex;
+    setChapterDeleteConfirmIndex(null);
+    performChapterDelete(idx);
+  };
+
   useEffect(() => {
     try {
       const sessionData = JSON.parse(
@@ -569,7 +640,10 @@ export default function OutlineMannerCreateComet({
   // }
 
   return (
-    <div className="flex flex-col flex-1 w-full h-full bg-background rounded-xl overflow-hidden ">
+    <div
+      ref={outlineMannerPaneRef}
+      className="flex flex-col flex-1 w-full h-full bg-background rounded-xl overflow-hidden "
+    >
       <div className="w-full p-2 shrink-0">
         <SectionHeader title={text} />
       </div>
@@ -736,22 +810,20 @@ export default function OutlineMannerCreateComet({
                                     }
                                   }}
                                 />
-                                <div className="flex gap-1 justify-end">
+                                <div className="flex gap-2 items-end justify-end">
                                   <button
                                     onClick={(e) =>
                                       handleSaveChapterTitle(e, index)
                                     }
-                                    className="p-1 text-green-600 hover:bg-green-100 rounded flex-shrink-0"
-                                    title="Save"
+                                    className="flex items-center px-2 py-1 text-xs font-medium text-white bg-primary rounded-sm hover:bg-primary-700 transition-colors border border-primary"
                                   >
-                                    ✓
+                                    Save
                                   </button>
                                   <button
                                     onClick={handleCancelChapterEdit}
-                                    className="p-1 text-red-600 hover:bg-red-100 rounded flex-shrink-0"
-                                    title="Cancel"
+                                    className="flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white rounded-sm hover:bg-primary-100 transition-colors border border-gray-300"
                                   >
-                                    ✕
+                                    Cancel
                                   </button>
                                 </div>
                               </div>
@@ -772,10 +844,7 @@ export default function OutlineMannerCreateComet({
                                 >
                                   {chapter?.chapter || "Untitled Chapter"}
                                 </p>
-                                {(selectedChapter?.chapter ===
-                                  chapter?.chapter ||
-                                  expandedChapters[index]) && (
-                                  <div className="relative">
+                                <div className="relative ml-auto shrink-0">
                                     <button
                                       onClick={(e) =>
                                         handleChapterMenuClick(e, index)
@@ -794,6 +863,7 @@ export default function OutlineMannerCreateComet({
                                               setOpenMenuIndex(null)
                                             }
                                           />
+                                          
                                           <div
                                             className="fixed bg-white border border-gray-100 rounded-xl shadow-xl z-[100] min-w-[100px] py-1 overflow-hidden"
                                             style={{
@@ -816,7 +886,10 @@ export default function OutlineMannerCreateComet({
 
                                             <button
                                               onClick={(e) =>
-                                                handleDeleteChapter(e, index)
+                                                openChapterDeleteConfirm(
+                                                  e,
+                                                  index,
+                                                )
                                               }
                                               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                             >
@@ -827,7 +900,6 @@ export default function OutlineMannerCreateComet({
                                         document.body,
                                       )}
                                   </div>
-                                )}
                               </div>
                             )}
                           </div>
@@ -923,24 +995,40 @@ export default function OutlineMannerCreateComet({
                                         <Trash2 className="w-4 h-4" />
                                       </button> */}
 
-                                      <button
-                                        onClick={(e) =>
-                                          handleEditStepClick(
-                                            e,
-                                            index,
-                                            stepIndex,
-                                            step?.title,
-                                          )
-                                        }
-                                        className={`absolute top-10 right-1 p-1 rounded-md transition-colors z-10 opacity-0 group-hover:opacity-100 ${
-                                          selectedStep?.title === step?.title
-                                            ? "hover:bg-white/20 text-white"
-                                            : "hover:bg-gray-200 text-gray-500"
-                                        }`}
-                                        title="Edit Step Title"
-                                      >
-                                        <Pencil className="w-3 h-3" />
-                                      </button>
+                                      <div className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100">
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const key = `${index}-${stepIndex}`;
+                                            setOpenStepMenuKey(openStepMenuKey === key ? null : key);
+                                          }}
+                                          className="p-1 rounded-md hover:bg-gray-200 transition-colors"
+                                          title="More options"
+                                        >
+                                          <MoreHorizontal className="w-4 h-4 text-gray-500" />
+                                        </button>
+                                        {openStepMenuKey === `${index}-${stepIndex}` && (
+                                          <>
+                                            <div
+                                              className="fixed inset-0 z-[99]"
+                                              onClick={(e) => { e.stopPropagation(); setOpenStepMenuKey(null); }}
+                                            />
+                                            <div className="absolute right-0 top-full mt-1 w-28 bg-white border border-gray-200 rounded-lg shadow-lg z-[100] overflow-hidden">
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setOpenStepMenuKey(null);
+                                                  handleEditStepClick(e, index, stepIndex, step?.title);
+                                                }}
+                                                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                              >
+                                                <Pencil className="w-3.5 h-3.5" />
+                                                Edit
+                                              </button>
+                                            </div>
+                                          </>
+                                        )}
+                                      </div>
 
                                       <div
                                         className={`flex justify-center items-center gap-4 h-full shrink-0 ${
@@ -966,7 +1054,17 @@ export default function OutlineMannerCreateComet({
                                           Step {stepIndex + 1}
                                         </div>
                                         <div className="flex-1 min-w-0 overflow-hidden">
-                                          {editingStepKey ===
+                                          {savingStepKey === `${index}-${stepIndex}` ? (
+                                            <div className="flex items-center gap-3 rounded-xl border border-[#D9D6FF] bg-gradient-to-r from-[#F4F2FF] via-white to-[#F8F7FF] px-4 py-3 shadow-sm">
+                                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+                                                <GradientLoader size={20} />
+                                              </span>
+                                              <div className="min-w-0">
+                                                <p className="text-sm font-semibold text-[#352F6E]">Saving step name</p>
+                                                <p className="text-xs text-[#574EB6]">Please wait while we update this step.</p>
+                                              </div>
+                                            </div>
+                                          ) : editingStepKey ===
                                           `${index}-${stepIndex}` ? (
                                             <div
                                               className="flex flex-col gap-1 min-w-0 w-full"
@@ -1007,7 +1105,7 @@ export default function OutlineMannerCreateComet({
                                                   }
                                                 }}
                                               />
-                                              <div className="flex gap-1 justify-end">
+                                              <div className="flex gap-2 items-end justify-end">
                                                 <button
                                                   onClick={(e) =>
                                                     handleSaveStepTitle(
@@ -1016,27 +1114,15 @@ export default function OutlineMannerCreateComet({
                                                       stepIndex,
                                                     )
                                                   }
-                                                  className={`p-1 rounded flex-shrink-0 ${
-                                                    selectedStep?.title ===
-                                                    step?.title
-                                                      ? "text-white hover:bg-white/20"
-                                                      : "text-green-600 hover:bg-green-100"
-                                                  }`}
-                                                  title="Save"
+                                                  className="flex items-center px-2 py-1 text-xs font-medium text-white bg-primary rounded-sm hover:bg-primary-700 transition-colors border border-primary"
                                                 >
-                                                  ✓
+                                                  Save
                                                 </button>
                                                 <button
                                                   onClick={handleCancelStepEdit}
-                                                  className={`p-1 rounded flex-shrink-0 ${
-                                                    selectedStep?.title ===
-                                                    step?.title
-                                                      ? "text-white hover:bg-white/20"
-                                                      : "text-red-600 hover:bg-red-100"
-                                                  }`}
-                                                  title="Cancel"
+                                                  className="flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white rounded-sm hover:bg-primary-100 transition-colors border border-gray-300"
                                                 >
-                                                  ✕
+                                                  Cancel
                                                 </button>
                                               </div>
                                             </div>
@@ -1094,6 +1180,67 @@ export default function OutlineMannerCreateComet({
         // setIsGenerating={setIsGenerating}
         />
       </div>
+
+      {chapterDeleteConfirmIndex !== null && (
+        <div
+          className="fixed z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4 overflow-hidden pointer-events-auto"
+          style={
+            deleteConfirmPaneBounds
+              ? {
+                  top: deleteConfirmPaneBounds.top,
+                  left: deleteConfirmPaneBounds.left,
+                  width: deleteConfirmPaneBounds.width,
+                  height: deleteConfirmPaneBounds.height,
+                }
+              : undefined
+          }
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-chapter-dialog-title"
+          onClick={() => setChapterDeleteConfirmIndex(null)}
+        >
+          <div className="absolute inset-0 z-0" aria-hidden />
+          <div
+            className="relative z-10 w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3 mb-4">
+              <div className="flex-shrink-0 w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">
+                <Trash2 size={16} className="text-red-500" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <h2
+                  id="delete-chapter-dialog-title"
+                  className="text-sm font-semibold leading-tight"
+                >
+                  Delete Chapter
+                </h2>
+                <p className="text-xs font-medium text-muted-foreground">
+                  This will permanently remove the chapter and all its steps
+                </p>
+              </div>
+            </div>
+            <div className="border-t border-gray-200 mb-2" />
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setChapterDeleteConfirmIndex(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleConfirmDeleteChapter}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
