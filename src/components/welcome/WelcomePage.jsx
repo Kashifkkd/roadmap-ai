@@ -14,6 +14,7 @@ import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import { toast } from "sonner";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
+import { tokenManager } from "@/lib/api-client";
 
 const SUGGESTIONS = [
   "Create a go-to microlearning experience for new managers",
@@ -32,6 +33,7 @@ export default function WelcomePage() {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const attachWrapperRef = useRef(null);
+  const linkWrapperRef = useRef(null);
   const router = useRouter();
 
   const [messages, setMessages] = useState([]);
@@ -57,11 +59,48 @@ export default function WelcomePage() {
   const linkCommentRef = useRef(null);
   const lastFocusedLinkInputRef = useRef(null);
 
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const loginButtonRef = useRef(null);
+
+  useEffect(() => {
+    const checkAuth = () => {
+      setIsAuthenticated(tokenManager.isAuthenticated());
+    };
+    checkAuth();
+
+    if (typeof window === "undefined") return;
+    window.addEventListener("auth-changed", checkAuth);
+    return () => window.removeEventListener("auth-changed", checkAuth);
+  }, []);
+
+  const openLoginDialog = (sourceRef) => {
+    if (typeof window === "undefined") return;
+    const buttonRect = (sourceRef?.current || loginButtonRef.current)?.getBoundingClientRect();
+    let buttonPosition = null;
+    if (buttonRect) {
+      const dialogWidth = 350;
+      let left = buttonRect.left + window.scrollX;
+      if (left + dialogWidth > window.innerWidth + window.scrollX) {
+        left = window.innerWidth + window.scrollX - dialogWidth - 16;
+      }
+      if (left < window.scrollX) {
+        left = window.scrollX + 16;
+      }
+      buttonPosition = { top: 70, left, width: buttonRect.width };
+    }
+    window.dispatchEvent(
+      new CustomEvent("open-login-dialog", {
+        detail: { buttonPosition, source: "welcome-page" },
+      }),
+    );
+  };
+
   const handleSuggestionSelect = (suggestion) => {
     setInputText(suggestion);
   };
 
-  // Scroll to bottom when messages change
+  
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
@@ -274,6 +313,11 @@ export default function WelcomePage() {
     )
       return;
 
+    if (!tokenManager.isAuthenticated()) {
+      openLoginDialog();
+      return;
+    }
+
     setIsDisabled(true);
     await handleSubmit(inputText.trim());
     setIsDisabled(false);
@@ -283,6 +327,10 @@ export default function WelcomePage() {
   };
 
   const handleCreateNewCometFromDashboard = () => {
+    if (!tokenManager.isAuthenticated()) {
+      openLoginDialog();
+      return;
+    }
     // Clear existing session data to start fresh
     localStorage.removeItem("sessionId");
     localStorage.removeItem("sessionData");
@@ -290,6 +338,10 @@ export default function WelcomePage() {
   };
 
   const handleCreateNewComet = () => {
+    if (!tokenManager.isAuthenticated()) {
+      openLoginDialog();
+      return;
+    }
     router.push("/dashboard");
   };
 
@@ -524,6 +576,10 @@ export default function WelcomePage() {
   };
 
   const handleToggleAttachInput = () => {
+    if (!tokenManager.isAuthenticated()) {
+      openLoginDialog();
+      return;
+    }
     setIsAttachInputVisible((prev) => {
       const next = !prev;
       if (next) setIsLinkInputVisible(false);
@@ -534,6 +590,10 @@ export default function WelcomePage() {
 
   // Link handlers
   const handleToggleLinkInput = () => {
+    if (!tokenManager.isAuthenticated()) {
+      openLoginDialog();
+      return;
+    }
     setIsLinkInputVisible((prev) => {
       const next = !prev;
       if (next) setIsAttachInputVisible(false);
@@ -610,6 +670,26 @@ export default function WelcomePage() {
     };
   }, [isAttachInputVisible]);
 
+  // Close Link panel when user clicks outside the panel.
+  useEffect(() => {
+    if (!isLinkInputVisible) return;
+
+    const handleOutsidePointerDown = (e) => {
+      const wrapper = linkWrapperRef.current;
+      if (!wrapper) return;
+      if (wrapper.contains(e.target)) return;
+      setIsLinkInputVisible(false);
+    };
+
+    document.addEventListener("pointerdown", handleOutsidePointerDown);
+    return () => {
+      document.removeEventListener(
+        "pointerdown",
+        handleOutsidePointerDown,
+      );
+    };
+  }, [isLinkInputVisible]);
+
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
@@ -628,7 +708,7 @@ export default function WelcomePage() {
               <h2 className="text-3xl font-semibold text-primary-900 font-serif relative">
                 Let's build your next{" "}
                 <span className="relative inline-block">
-                  Comet
+                  Cycle
                   <Image
                     src={Vector}
                     alt="underline"
@@ -1010,7 +1090,7 @@ export default function WelcomePage() {
                         </div>
 
                         {/* Link button */}
-                        <div className="relative">
+                        <div className="relative" ref={linkWrapperRef}>
                           <Button
                             variant="ghost"
                             className={`cursor-pointer flex items-center gap-2 ${
@@ -1147,7 +1227,7 @@ export default function WelcomePage() {
           {!cometCreated ? (
             <div className="flex flex-row items-center text-center justify-between bg-white rounded-xl border border-primary-200 max-w-3xl p-3 mx-auto">
               <h4 className="text-md font-medium text-[#352F6E]">
-                Or, begin with a blank canvas and shape your Comet step by step.
+                Or, begin with a blank canvas and shape your Cycle step by step.
               </h4>
               <Button
                 variant="default"
@@ -1156,7 +1236,7 @@ export default function WelcomePage() {
                 disabled={isDisabled || isGeneratingCometData}
               >
                 <Stars />
-                <span>Create New Comet</span>
+                <span>Create New Cycle</span>
               </Button>
             </div>
           ) : (

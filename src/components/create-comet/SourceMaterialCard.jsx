@@ -112,6 +112,39 @@ function dedupeWebLinks(items = [], defaultUploaded = false) {
   return uniqueLinks;
 }
 
+const SOURCE_ALLOWED_EXTENSIONS = [
+  "pdf",
+  "doc",
+  "docx",
+  "txt",
+  "pptx",
+  "mp3",
+  "wav",
+  "m4a",
+  "flac",
+  "mp4",
+  "webm",
+];
+
+function partitionNewSourceFiles(existingFiles, filteredByType) {
+  const existingFileNames = new Set(existingFiles.map((f) => getFileKey(f.name)));
+  const seenSelectedNames = new Set();
+  const duplicateFiles = filteredByType.filter((file) =>
+    existingFileNames.has(getFileKey(file.name)) ||
+    seenSelectedNames.has(getFileKey(file.name))
+      ? true
+      : (seenSelectedNames.add(getFileKey(file.name)), false),
+  );
+  const newFiles = filteredByType.filter(
+    (file) =>
+      !duplicateFiles.some(
+        (duplicateFile) =>
+          getFileKey(duplicateFile.name) === getFileKey(file.name),
+      ),
+  );
+  return { duplicateFiles, newFiles };
+}
+
 export default function SourceMaterialCard({
   files,
   setFiles,
@@ -123,6 +156,7 @@ export default function SourceMaterialCard({
   const [sessionId, setSessionId] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [linkDraft, setLinkDraft] = useState({ url: "" });
+  const [isDragOver, setIsDragOver] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -288,93 +322,113 @@ export default function SourceMaterialCard({
     [sessionId],
   );
 
-  const handleFileSelect = async (event) => {
-    const selectedFiles = Array.from(event.target.files || []);
-    if (selectedFiles.length === 0) return;
+  const addSourceFiles = useCallback(
+    (incomingFiles) => {
+      const selectedFiles = Array.from(incomingFiles || []);
+      if (selectedFiles.length === 0) return;
 
-    const allowedExtensions = [
-      "pdf",
-      "doc",
-      "docx",
-      "txt",
-      "pptx",
-      "mp3",
-      "wav",
-      "m4a",
-      "flac",
-      "mp4",
-      "webm",
-    ];
-    const invalidFiles = selectedFiles.filter((file) => {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "";
-      return !allowedExtensions.includes(ext);
-    });
+      const invalidFiles = selectedFiles.filter((file) => {
+        const ext = file.name.split(".").pop()?.toLowerCase() || "";
+        return !SOURCE_ALLOWED_EXTENSIONS.includes(ext);
+      });
 
-    if (invalidFiles.length > 0) {
-      const names = invalidFiles.map((f) => f.name).join(", ");
-      toast.error(
-        invalidFiles.length === 1
-          ? `Unsupported file type: ${names}.`
-          : `Some files have unsupported types and were skipped: ${names}.`,
+      if (invalidFiles.length > 0) {
+        const names = invalidFiles.map((f) => f.name).join(", ");
+        toast.error(
+          invalidFiles.length === 1
+            ? `Unsupported file type: ${names}.`
+            : `Some files have unsupported types and were skipped: ${names}.`,
+        );
+      }
+
+      const filteredByType = selectedFiles.filter(
+        (file) => !invalidFiles.includes(file),
       );
-    }
+      if (filteredByType.length === 0) return;
 
-    const filteredByType = selectedFiles.filter(
-      (file) => !invalidFiles.includes(file),
-    );
-    if (filteredByType.length === 0) {
-      event.target.value = "";
-      return;
-    }
+      setFiles((prev) => {
+        const { duplicateFiles, newFiles } = partitionNewSourceFiles(
+          prev,
+          filteredByType,
+        );
 
-    // Check for duplicate file names against already loaded materials
-    const existingFileNames = new Set(files.map((f) => getFileKey(f.name)));
-    const seenSelectedNames = new Set();
-    const duplicateFiles = filteredByType.filter((file) =>
-      existingFileNames.has(getFileKey(file.name)) ||
-      seenSelectedNames.has(getFileKey(file.name))
-        ? true
-        : (seenSelectedNames.add(getFileKey(file.name)), false),
-    );
+        if (duplicateFiles.length > 0) {
+          const duplicateNames = duplicateFiles.map((f) => f.name).join(", ");
+          queueMicrotask(() => {
+            toast.error(
+              duplicateFiles.length === 1
+                ? `"${duplicateNames}" is already uploaded`
+                : `These files are already uploaded: ${duplicateNames}`,
+              { id: "source-material-duplicate-names" },
+            );
+          });
+        }
 
-    if (duplicateFiles.length > 0) {
-      const duplicateNames = duplicateFiles.map((f) => f.name).join(", ");
-      toast.error(
-        duplicateFiles.length === 1
-          ? `"${duplicateNames}" is already uploaded`
-          : `These files are already uploaded: ${duplicateNames}`,
-      );
-    }
+        if (newFiles.length === 0) return prev;
 
-    const newFiles = filteredByType.filter(
-      (file) =>
-        !duplicateFiles.some(
-          (duplicateFile) =>
-            getFileKey(duplicateFile.name) === getFileKey(file.name),
-        ),
-    );
+        // Don't upload immediately — let the user add comments first.
+        // Files will be uploaded when "Create Outline" is clicked (via uploadAllFiles).
+        return dedupeFiles([
+          ...prev,
+          ...newFiles.map((file) => ({
+            name: file.name,
+            size: file.size,
+            isUploaded: false,
+            comment: "",
+            file,
+          })),
+        ]);
+      });
+    },
+    [setFiles],
+  );
 
-    if (newFiles.length === 0) {
-      event.target.value = "";
-      return;
-    }
-
-    // Don't upload immediately — let the user add comments first.
-    // Files will be uploaded when "Create Outline" is clicked (via uploadAllFiles).
-    setFiles((prev) =>
-      dedupeFiles([
-        ...prev,
-        ...newFiles.map((file) => ({
-          name: file.name,
-          size: file.size,
-          isUploaded: false,
-          comment: "",
-          file,
-        })),
-      ]),
-    );
+  const handleFileSelect = (event) => {
+    addSourceFiles(event.target.files);
     event.target.value = "";
   };
+
+  const resetDragState = useCallback(() => {
+    setIsDragOver(false);
+  }, []);
+
+  const handleDragEnter = useCallback((event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (![...event.dataTransfer.types].includes("Files")) return;
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback(
+    (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const next = event.relatedTarget;
+      if (next && event.currentTarget.contains(next)) return;
+      resetDragState();
+    },
+    [resetDragState],
+  );
+
+  const handleDragOver = useCallback((event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if ([...event.dataTransfer.types].includes("Files")) {
+      event.dataTransfer.dropEffect = "copy";
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      resetDragState();
+      const dropped = event.dataTransfer?.files;
+      if (!dropped?.length) return;
+      addSourceFiles(dropped);
+    },
+    [addSourceFiles, resetDragState],
+  );
 
   // Normalize: ensure each entry is { url, comment } (defined before useEffect that uses it)
   const normalizedUrls = Array.isArray(webpageUrls)
@@ -506,7 +560,18 @@ export default function SourceMaterialCard({
 
       <CardContent>
         <div className="flex flex-col w-full border-2 border-gray-200 rounded-xl bg-gray-100 p-2 sm:p-2 gap-2">
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center transition-colors bg-white">
+          <div
+            className={cn(
+              "border-2 border-dashed rounded-lg p-6 text-center transition-colors bg-white",
+              isDragOver
+                ? "border-primary bg-primary/5"
+                : "border-gray-300",
+            )}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
             <input
               type="file"
               multiple
@@ -523,6 +588,9 @@ export default function SourceMaterialCard({
                 <Image src="/upload.svg" alt="Icon" width={42} height={42} />
               </div>
               <span className="text-sm font-medium">Click to upload</span>
+              <span className="text-xs text-muted-foreground">
+                or drag and drop files here
+              </span>
               <Button
                 variant="outline"
                 className={cn(

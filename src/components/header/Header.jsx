@@ -619,37 +619,7 @@ export default function Header() {
         );
       } catch { }
     }
-
-    if (loginButtonRef.current) {
-      const rect = loginButtonRef.current.getBoundingClientRect();
-      const dialogWidth = 350;
-      const dialogHeight = 450;
-      const spacing = 8;
-
-      let top = rect.bottom + window.scrollY + spacing;
-      let left = rect.left + window.scrollX;
-
-      if (left + dialogWidth > window.innerWidth + window.scrollX) {
-        left = window.innerWidth + window.scrollX - dialogWidth - 16;
-      }
-
-      if (top + dialogHeight > window.innerHeight + window.scrollY) {
-        top = rect.top + window.scrollY - dialogHeight - spacing;
-        if (top < window.scrollY) {
-          top = window.scrollY + 16;
-        }
-      }
-
-      if (left < window.scrollX) {
-        left = window.scrollX + 16;
-      }
-
-      setLoginButtonPosition({
-        top,
-        left,
-        width: rect.width,
-      });
-    }
+    setLoginButtonPosition(null);
     setIsLoginDialogOpen(true);
   };
 
@@ -704,24 +674,16 @@ export default function Header() {
     router.push("/comets");
   };
 
-  const [isPublishDisabledForInitialChapter, setIsPublishDisabledForInitialChapter] = useState(true);
+  const [isPublishEnabled, setIsPublishEnabled] = useState(false);
   useEffect(() => {
     try {
       const publishSessionData = session ? JSON.parse(session) : {};
-      const flagValue = publishSessionData?.is_initial_chapter_created;
-      if (flagValue === true || flagValue === "true") {
-        setIsPublishDisabledForInitialChapter(false);
-        return;
-      }
-      // Fallback: if chapters already exist in response_path, allow publish
-      const chapters = publishSessionData?.response_path?.chapters;
-      if (Array.isArray(chapters) && chapters.length > 0) {
-        setIsPublishDisabledForInitialChapter(false);
-        return;
-      }
-      setIsPublishDisabledForInitialChapter(true);
+      const flagValue = publishSessionData?.is_publish_enabled;
+      setIsPublishEnabled(
+        flagValue === true || flagValue === "true"
+      );
     } catch {
-      setIsPublishDisabledForInitialChapter(true);
+      setIsPublishEnabled(false);
     }
   }, [session]);
   useEffect(() => {
@@ -1104,7 +1066,7 @@ export default function Header() {
       </div>
       <button
         onClick={handlePublish}
-        disabled={isPublishing || isPublishDisabledForInitialChapter}
+        disabled={isPublishing || !isPublishEnabled}
         className="px-4 py-2 rounded-md bg-primary hover:bg-primary-dark text-white text-sm font-medium hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isPublishing ? "Publishing..." : "Publish"}
@@ -1128,12 +1090,14 @@ export default function Header() {
                     onClick={handleLogoClick}
                   >
                     <Image
-                      src="/logo.png"
+                      src="/logonew.png"
                       alt="Kyper Logo"
-                      width={112}
-                      height={52}
+                      width={84}
+                      height={24}
                     />
                   </div>
+                  {isAuthenticated && (
+                  <>
                   <button
                     onClick={toggleUserMenu}
                     className="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 md:size-6 bg-gray-100 rounded-full shrink-0 cursor-pointer hover:bg-gray-200 transition-colors"
@@ -1172,115 +1136,121 @@ export default function Header() {
                         </button>
                       </div>
 
-                      <div className=" p-2 py-1   gap-2 flex flex-col">
-                        <button
-                          className={`w-full px-4 py-1 flex items-center justify-start gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "myAccount"
-                              ? "bg-primary text-white"
-                              : "bg-white text-gray-900 hover:bg-primary-100"
-                          }`}
-                          onClick={handleMyAccountClick}
-                        >
-                          <User
-                            className={`w-5 h-5 ${activeButton === "myAccount" ? "text-white" : ""
-                            }`}
-                          />
-                          <span className="text-base">My Account</span>
-                        </button>
-                        <button
-                          className={`pl-4 py-1 w-full flex items-center  gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "settings"
-                              ? "bg-primary text-white"
-                              : "bg-white text-gray-900 hover:bg-primary-100"
-                          }`}
-                          onClick={handleClientSettingsClick}
-                        >
-                          <Settings
-                            className={`w-5 h-5 ${activeButton === "settings" ? "text-white" : ""
-                            }`}
-                          />
-                          <span className="text-base ">Settings</span>
-                        </button>
-                        <div className="relative">
-                          <button
-                            className={`pl-4 py-1 w-full flex items-center gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "theme"
-                                ? "bg-primary text-white"
-                                : "bg-white text-gray-900 hover:bg-primary-100"
-                            }`}
-                            onClick={handleThemeClick}
-                          >
-                            <PaintRollerIcon
-                              className={`w-5 h-5 ${activeButton === "theme" ? "text-white" : ""
+                      {isAuthenticated && (
+                        <>
+                          <div className=" p-2 py-1   gap-2 flex flex-col">
+                            <button
+                              className={`w-full px-4 py-1 flex items-center justify-start gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "myAccount"
+                                  ? "bg-primary text-white"
+                                  : "bg-white text-gray-900 hover:bg-primary-100"
                               }`}
-                            />
-                            <div className="flex items-center gap-2 justify-between w-full">
-                              <span className="text-base ">Theme</span>
-                              <ChevronRight className="w-5 h-5" />
-                            </div>
-                          </button>
-                          {isThemeSubmenuOpen && (
-                            <div
-                              className="absolute left-full top-0 ml-2 w-48 bg-white rounded-sm shadow-lg border border-gray-200 z-50"
-                              onClick={(e) => e.stopPropagation()}
-                              data-user-menu
+                              onClick={handleMyAccountClick}
                             >
-                              <div className="p-2">
-                                <button
-                                  className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${selectedTheme === "light"
-                                      ? "bg-primary text-white"
-                                      : "bg-white text-gray-900 hover:bg-primary-100"
+                              <User
+                                className={`w-5 h-5 ${activeButton === "myAccount" ? "text-white" : ""
+                                }`}
+                              />
+                              <span className="text-base">My Account</span>
+                            </button>
+                            <button
+                              className={`pl-4 py-1 w-full flex items-center  gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "settings"
+                                  ? "bg-primary text-white"
+                                  : "bg-white text-gray-900 hover:bg-primary-100"
+                              }`}
+                              onClick={handleClientSettingsClick}
+                            >
+                              <Settings
+                                className={`w-5 h-5 ${activeButton === "settings" ? "text-white" : ""
+                                }`}
+                              />
+                              <span className="text-base ">Settings</span>
+                            </button>
+                            <div className="relative">
+                              <button
+                                className={`pl-4 py-1 w-full flex items-center gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "theme"
+                                    ? "bg-primary text-white"
+                                    : "bg-white text-gray-900 hover:bg-primary-100"
+                                }`}
+                                onClick={handleThemeClick}
+                              >
+                                <PaintRollerIcon
+                                  className={`w-5 h-5 ${activeButton === "theme" ? "text-white" : ""
                                   }`}
-                                  onClick={() => handleThemeSelect("light")}
+                                />
+                                <div className="flex items-center gap-2 justify-between w-full">
+                                  <span className="text-base ">Theme</span>
+                                  <ChevronRight className="w-5 h-5" />
+                                </div>
+                              </button>
+                              {isThemeSubmenuOpen && (
+                                <div
+                                  className="absolute left-full top-0 ml-2 w-48 bg-white rounded-sm shadow-lg border border-gray-200 z-50"
+                                  onClick={(e) => e.stopPropagation()}
+                                  data-user-menu
                                 >
-                                  Light Theme
-                                </button>
-                                <button
-                                  className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${selectedTheme === "dark"
-                                      ? "bg-primary text-white"
-                                      : "bg-white text-gray-900 hover:bg-primary-100"
-                                  }`}
-                                  onClick={() => handleThemeSelect("dark")}
-                                >
-                                  Dark Theme
-                                </button>
-                                <button
-                                  className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${selectedTheme === "system"
-                                      ? "bg-primary text-white"
-                                      : "bg-white text-gray-900 hover:bg-primary-100"
-                                  }`}
-                                  onClick={() => handleThemeSelect("system")}
-                                >
-                                  System Theme
-                                </button>
-                              </div>
+                                  <div className="p-2">
+                                    <button
+                                      className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${selectedTheme === "light"
+                                          ? "bg-primary text-white"
+                                          : "bg-white text-gray-900 hover:bg-primary-100"
+                                      }`}
+                                      onClick={() => handleThemeSelect("light")}
+                                    >
+                                      Light Theme
+                                    </button>
+                                    <button
+                                      className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${selectedTheme === "dark"
+                                          ? "bg-primary text-white"
+                                          : "bg-white text-gray-900 hover:bg-primary-100"
+                                      }`}
+                                      onClick={() => handleThemeSelect("dark")}
+                                    >
+                                      Dark Theme
+                                    </button>
+                                    <button
+                                      className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${selectedTheme === "system"
+                                          ? "bg-primary text-white"
+                                          : "bg-white text-gray-900 hover:bg-primary-100"
+                                      }`}
+                                      onClick={() => handleThemeSelect("system")}
+                                    >
+                                      System Theme
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </div>
+                          </div>
 
-                      <div className="p-2 border-t border-gray-100 ">
-                        <button
-                          onClick={() =>
-                            handleButtonClick("logout") || handleLogout()
-                          }
-                          className={`px-4 py-1 w-full flex items-center justify-start gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "logout"
-                              ? "bg-primary text-white"
-                              : "bg-white text-gray-900 hover:bg-primary-100"
-                          }`}
-                        >
-                          <Image
-                            src="/Logout.svg"
-                            alt="Logout"
-                            width={20}
-                            height={20}
-                            className={
-                              activeButton === "logout"
-                                ? "brightness-0 invert"
-                                : ""
-                            }
-                          />
-                          <span className="text-base   ">Logout</span>
-                        </button>
-                      </div>
+                          <div className="p-2 border-t border-gray-100 ">
+                            <button
+                              onClick={() =>
+                                handleButtonClick("logout") || handleLogout()
+                              }
+                              className={`px-4 py-1 w-full flex items-center justify-start gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "logout"
+                                  ? "bg-primary text-white"
+                                  : "bg-white text-gray-900 hover:bg-primary-100"
+                              }`}
+                            >
+                              <Image
+                                src="/Logout.svg"
+                                alt="Logout"
+                                width={20}
+                                height={20}
+                                className={
+                                  activeButton === "logout"
+                                    ? "brightness-0 invert"
+                                    : ""
+                                }
+                              />
+                              <span className="text-base   ">Logout</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
+                  )}
+                  </>
                   )}
                 </div>
               </div>
@@ -1330,7 +1300,14 @@ export default function Header() {
                   {navItems.map((item) => (
                     <button
                       key={item.name}
-                      onClick={() => router.push(item.path)}
+                      onClick={() => {
+                        if (!isAuthenticated && item.path !== "/" && item.path !== "/about" && item.path !== "/contact") {
+                          setLoginButtonPosition(null);
+                          setIsLoginDialogOpen(true);
+                          return;
+                        }
+                        router.push(item.path);
+                      }}
                       className={`relative font-medium text-base tracking-wide h-full transition-colors duration-300 group ${pathname === item.path
                           ? "text-gray-700"
                           : "text-gray-700 hover:text-blue-600"
@@ -1560,6 +1537,12 @@ export default function Header() {
                   <button
                     key={item.name}
                     onClick={() => {
+                      if (!isAuthenticated && item.path !== "/" && item.path !== "/about" && item.path !== "/contact") {
+                        setIsMobileMenuOpen(false);
+                        setLoginButtonPosition(null);
+                        setIsLoginDialogOpen(true);
+                        return;
+                      }
                       router.push(item.path);
                       setIsMobileMenuOpen(false);
                     }}

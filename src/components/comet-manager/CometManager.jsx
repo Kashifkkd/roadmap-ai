@@ -61,7 +61,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SCREEN_TYPE_CONSTANTS } from "@/types/comet-manager";
-import { useCometManager } from "@/hooks/useCometManager";
+import {
+  useCometManager,
+  applyScreenDeleteToOutline,
+} from "@/hooks/useCometManager";
 import { useCometSettings } from "@/contexts/CometSettingsContext";
 import CometManagerSidebar from "./CometManagerSidebar";
 import DynamicForm from "./DynamicForm";
@@ -83,6 +86,14 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Grouped screen types for Add dialog
 const SCREEN_TYPE_GROUPS = [
@@ -189,14 +200,14 @@ const SCREEN_TYPE_GROUPS = [
     group: "Email",
     items: [
       {
-        id: "manager_email",
+        id: "managerEmail",
         name: "Manager Email",
         icon: <Mail size={20} />,
         color: "bg-sky-100 border-sky-300",
         description: "Prompt user to add manager email.",
       },
       {
-        id: "accountability_partner_email",
+        id: "accountabilityPartnerEmail",
         name: "Accountability Partner Email",
         icon: <Mail size={20} />,
         color: "bg-amber-100 border-amber-300",
@@ -510,6 +521,8 @@ export default function CometManager({
   const isAskingKyperRef = useRef(false);
   const isGeneratingNextChapterRef = useRef(false);
   const [isUploadImageDialogOpen, setIsUploadImageDialogOpen] = useState(false);
+  const [screenDeleteConfirmId, setScreenDeleteConfirmId] = useState(null);
+  const [deletingScreenId, setDeletingScreenId] = useState(null);
 
   const GENERATING_UIDS_KEY = "generating-step-uids";
   const [generatingStepUids, setGeneratingStepUids] = useState(() => {
@@ -743,6 +756,44 @@ export default function CometManager({
   }, [selectedScreenId, screens]);
   console.log("selectedScreen", selectedScreen);
 
+  const screenDeleteConfirmIndex =
+    screenDeleteConfirmId != null
+      ? screens.findIndex(
+          (s) => String(s.id) === String(screenDeleteConfirmId),
+        )
+      : -1;
+
+  const handleRequestDeleteScreen = useCallback((screenId) => {
+    setScreenDeleteConfirmId(screenId);
+  }, []);
+
+  const handleConfirmDeleteScreen = useCallback(async () => {
+    const id = screenDeleteConfirmId;
+    if (id == null) return;
+    setScreenDeleteConfirmId(null);
+    setDeletingScreenId(id);
+    const nextOutline = applyScreenDeleteToOutline(outline, id);
+    try {
+      if (saveOutlineImmediately) {
+        const ok = await saveOutlineImmediately(nextOutline);
+        if (ok) {
+          deleteScreenData(id);
+        }
+      } else {
+        deleteScreenData(id);
+        await onFlushSave?.();
+      }
+    } finally {
+      setDeletingScreenId(null);
+    }
+  }, [
+    screenDeleteConfirmId,
+    outline,
+    saveOutlineImmediately,
+    deleteScreenData,
+    onFlushSave,
+  ]);
+
   // Select first screen by default when screens are first loaded
   useEffect(() => {
     console.log("screen is not selected");
@@ -924,8 +975,8 @@ export default function CometManager({
       discussion: "social_discussion",
       habits: "habits",
       profile: "profile",
-      manager_email: "manager_email",
-      accountability_partner_email: "accountability_partner_email",
+      managerEmail: "managerEmail",
+      accountabilityPartnerEmail: "accountabilityPartnerEmail",
       path_personalization: "pathPersonalization",
       notifications: "notifications",
     };
@@ -1316,15 +1367,15 @@ export default function CometManager({
         assessment: null,
         order: allScreens.length,
       };
-    } else if (screenType.id === "manager_email") {
+    } else if (screenType.id === "managerEmail") {
       newScreen = {
         id: screenId,
         uuid: screenUuid,
-        screenType: "manager_email",
+        screenType: "managerEmail",
         position: position,
         screenContents: {
           id: screenContentId,
-          contentType: "manager_email",
+          contentType: "managerEmail",
           content: { heading: "", body: "", email: "" },
         },
         assets: [],
@@ -1371,15 +1422,15 @@ export default function CometManager({
         assessment: null,
         order: allScreens.length,
       };
-    } else if (screenType.id === "accountability_partner_email") {
+    } else if (screenType.id === "accountabilityPartnerEmail") {
       newScreen = {
         id: screenId,
         uuid: screenUuid,
-        screenType: "accountability_partner_email",
+        screenType: "accountabilityPartnerEmail",
         position: position,
         screenContents: {
           id: screenContentId,
-          contentType: "accountability_partner_email",
+          contentType: "accountabilityPartnerEmail",
           content: { heading: "", body: "", emails: [""] },
         },
         assets: [],
@@ -2309,11 +2360,14 @@ export default function CometManager({
                                     onAddScreen={(insertIndex) =>
                                       handleAddScreen(insertIndex)
                                     }
-                                    onDeleteScreen={(screenId) => {
-                                      deleteScreenData(screenId);
-                                      // Flush save immediately so Redis reflects the deletion
-                                      setTimeout(() => onFlushSave?.(), 0);
-                                    }}
+                                    onRequestDeleteScreen={
+                                      handleRequestDeleteScreen
+                                    }
+                                    isDeleting={
+                                      deletingScreenId != null &&
+                                      String(deletingScreenId) ===
+                                        String(screen.id)
+                                    }
                                     sessionId={sessionId}
                                     onAssetLinked={(screenId, asset) => {
                                       // Add the linked asset to the screen's assets array
@@ -2430,9 +2484,8 @@ export default function CometManager({
                           className="ml-0 sm:ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50 cursor-pointer w-full sm:w-auto"
                           onClick={handleNextChapter}
                           disabled={
-                            sessionData?.is_initial_chapter_created !== true ||
-                            isGeneratingNextChapter ||
-                            !(sessionData?.response_path?.remaining_chapters?.length > 0)
+                            sessionData?.is_initial_chapter_created== false ||
+                            isGeneratingNextChapter 
                           }
                         >
                           <span>Create Remaining Chapters</span>
@@ -2603,6 +2656,40 @@ export default function CometManager({
           </div>
         </DrawerContent>
       </Drawer>
+
+      <Dialog
+        open={screenDeleteConfirmId !== null}
+        onOpenChange={(open) => {
+          if (!open) setScreenDeleteConfirmId(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete this screen?</DialogTitle>
+            <DialogDescription>
+              {screenDeleteConfirmIndex >= 0
+                ? `Screen ${screenDeleteConfirmIndex + 1} will be removed from this step. Wait for the save to finish before leaving.`
+                : "This screen will be removed from this step."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setScreenDeleteConfirmId(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDeleteScreen}
+            >
+              Yes, delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

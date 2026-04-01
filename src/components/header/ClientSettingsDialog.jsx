@@ -13,6 +13,7 @@ import {
   Trash2,
   Plus,
   ArrowLeft,
+  ChevronDown,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -28,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
@@ -70,6 +72,8 @@ export default function ClientSettingsDialog({
   const [creatorConfirmPassword, setCreatorConfirmPassword] = useState("");
   const [creatorRole, setCreatorRole] = useState("");
   const [creatorClient, setCreatorClient] = useState("");
+  /** Selected client IDs when role is admin (multi-select). */
+  const [creatorAdminClientIds, setCreatorAdminClientIds] = useState([]);
   const [creatorImageFile, setCreatorImageFile] = useState(null);
   const [creatorImagePreview, setCreatorImagePreview] = useState(null);
   const [uploadingCreatorImage, setUploadingCreatorImage] = useState(false);
@@ -239,10 +243,24 @@ export default function ClientSettingsDialog({
       setCreatorEmail(fullCreatorData.email || "");
       setCreatorPassword("");
       setCreatorConfirmPassword("");
-      setCreatorRole(fullCreatorData.role || "");
-      setCreatorClient(
-        fullCreatorData.client_id ? String(fullCreatorData.client_id) : ""
-      );
+      const loadedRole = fullCreatorData.role || "";
+      setCreatorRole(loadedRole);
+      if (loadedRole === "admin") {
+        const acc = fullCreatorData.accessible_client_ids;
+        if (Array.isArray(acc) && acc.length > 0) {
+          setCreatorAdminClientIds(acc.map((id) => String(id)));
+        } else if (fullCreatorData.client_id) {
+          setCreatorAdminClientIds([String(fullCreatorData.client_id)]);
+        } else {
+          setCreatorAdminClientIds([]);
+        }
+        setCreatorClient("");
+      } else {
+        setCreatorClient(
+          fullCreatorData.client_id ? String(fullCreatorData.client_id) : ""
+        );
+        setCreatorAdminClientIds([]);
+      }
       setCreatorImageFile(null);
       setCreatorImagePreview(null);
     } catch (error) {
@@ -252,8 +270,22 @@ export default function ClientSettingsDialog({
       setCreatorFirstName(creator.first_name || "");
       setCreatorLastName(creator.last_name || "");
       setCreatorEmail(creator.email || "");
-      setCreatorRole(creator.role || "");
-      setCreatorClient(creator.client_id ? String(creator.client_id) : "");
+      const fallbackRole = creator.role || "";
+      setCreatorRole(fallbackRole);
+      if (fallbackRole === "admin") {
+        const acc = creator.accessible_client_ids;
+        if (Array.isArray(acc) && acc.length > 0) {
+          setCreatorAdminClientIds(acc.map((id) => String(id)));
+        } else if (creator.client_id) {
+          setCreatorAdminClientIds([String(creator.client_id)]);
+        } else {
+          setCreatorAdminClientIds([]);
+        }
+        setCreatorClient("");
+      } else {
+        setCreatorClient(creator.client_id ? String(creator.client_id) : "");
+        setCreatorAdminClientIds([]);
+      }
       setCreatorImageFile(null);
       setCreatorImagePreview(null);
     }
@@ -268,11 +300,33 @@ export default function ClientSettingsDialog({
     setCreatorConfirmPassword("");
     setCreatorRole("");
     setCreatorClient("");
+    setCreatorAdminClientIds([]);
     setCreatorImageFile(null);
     if (creatorImagePreview) {
       URL.revokeObjectURL(creatorImagePreview);
     }
     setCreatorImagePreview(null);
+  };
+
+  const handleCreatorRoleChange = (value) => {
+    setCreatorRole(value);
+    if (value === "admin") {
+      setCreatorAdminClientIds((prev) => {
+        if (prev.length > 0) return prev;
+        if (creatorClient) return [creatorClient];
+        const sid = selectedClient?.id || selectedClient?.client_id;
+        return sid ? [String(sid)] : [];
+      });
+      setCreatorClient("");
+    } else {
+      setCreatorClient((c) => {
+        if (c) return c;
+        const first = creatorAdminClientIds[0];
+        const sid = selectedClient?.id || selectedClient?.client_id;
+        return first || (sid ? String(sid) : "");
+      });
+      setCreatorAdminClientIds([]);
+    }
   };
 
   const handleSaveCreator = async () => {
@@ -323,14 +377,31 @@ export default function ClientSettingsDialog({
       }
     }
 
-    // Use creatorClient if selected, otherwise fall back to selectedClient
-    const clientId = creatorClient
-      ? Number(creatorClient)
-      : selectedClient?.id || selectedClient?.client_id;
+    const isAdminRole = creatorRole === "admin";
 
-    if (!clientId) {
-      toast.error("Please select a client");
-      return;
+    let clientId;
+    let accessibleClientIds;
+
+    if (isAdminRole) {
+      const ids = creatorAdminClientIds
+        .map((id) => Number(id))
+        .filter((n) => !Number.isNaN(n) && n > 0);
+      if (ids.length === 0) {
+        toast.error("Please select at least one client");
+        return;
+      }
+      clientId = ids[0];
+      accessibleClientIds = ids;
+    } else {
+      clientId = creatorClient
+        ? Number(creatorClient)
+        : selectedClient?.id || selectedClient?.client_id;
+
+      if (!clientId) {
+        toast.error("Please select a client");
+        return;
+      }
+      accessibleClientIds = [clientId];
     }
 
     setSavingCreator(true);
@@ -371,7 +442,7 @@ export default function ClientSettingsDialog({
           enabled: true,
           role: creatorRole || "creator",
           client_id: clientId,
-          accessible_client_ids: [clientId],
+          accessible_client_ids: accessibleClientIds,
         };
 
         if (creatorPassword) {
@@ -398,6 +469,7 @@ export default function ClientSettingsDialog({
           phone: "",
           timezone: "UTC",
           metadata: {},
+          accessible_client_ids: accessibleClientIds,
         };
 
         if (imageUrl) {
@@ -957,13 +1029,14 @@ export default function ClientSettingsDialog({
                                   </Label>
                                   <Select
                                     value={creatorRole}
-                                    onValueChange={setCreatorRole}
+                                    onValueChange={handleCreatorRoleChange}
                                   >
                                     <SelectTrigger className="w-full bg-white border border-gray-300">
                                       <SelectValue placeholder="Select" />
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="admin">Admin</SelectItem>
+                                      <SelectItem value="creator">Creator</SelectItem>
                                       <SelectItem value="superadmin">
                                         SuperAdmin
                                       </SelectItem>
@@ -1051,38 +1124,117 @@ export default function ClientSettingsDialog({
                                 <Label className="text-sm font-medium text-gray-700 mb-2 block">
                                   Client
                                 </Label>
-                                <Select
-                                  value={creatorClient}
-                                  onValueChange={setCreatorClient}
-                                  disabled={clientsListLoading}
-                                >
-                                  <SelectTrigger className="w-full bg-white ">
-                                    <SelectValue
-                                      placeholder={
-                                        clientsListLoading
-                                          ? "Loading clients..."
-                                          : "Select client"
-                                      }
-                                    />
-                                  </SelectTrigger>
-                                  {!clientsListLoading &&
-                                    clientsList.length > 0 && (
-                                      <SelectContent>
-                                        {clientsList.map((client) => (
-                                          <SelectItem
-                                            key={client.id || client.client_id}
-                                            value={String(
-                                              client.id || client.client_id
+                                {creatorRole === "admin" ? (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={clientsListLoading}
+                                        className="w-full justify-between bg-white font-normal border border-gray-300"
+                                      >
+                                        <span className="truncate text-left">
+                                          {clientsListLoading
+                                            ? "Loading clients..."
+                                            : creatorAdminClientIds.length ===
+                                                0
+                                              ? "Select clients"
+                                              : creatorAdminClientIds
+                                                  .map((id) => {
+                                                    const c = clientsList.find(
+                                                      (cl) =>
+                                                        String(
+                                                          cl.id ||
+                                                            cl.client_id
+                                                        ) === id
+                                                    );
+                                                    return (
+                                                      c?.name ||
+                                                      c?.client_name ||
+                                                      id
+                                                    );
+                                                  })
+                                                  .join(", ")}
+                                        </span>
+                                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                      className="max-h-60 overflow-y-auto w-[var(--radix-dropdown-menu-trigger-width)] min-w-[12rem]"
+                                      align="start"
+                                    >
+                                      {clientsList.map((client) => {
+                                        const cid = String(
+                                          client.id || client.client_id
+                                        );
+                                        const label =
+                                          client.name ||
+                                          client.client_name ||
+                                          "Unnamed Client";
+                                        return (
+                                          <DropdownMenuCheckboxItem
+                                            key={cid}
+                                            onSelect={(e) => e.preventDefault()}
+                                            checked={creatorAdminClientIds.includes(
+                                              cid
                                             )}
+                                            onCheckedChange={(checked) => {
+                                              setCreatorAdminClientIds(
+                                                (prev) => {
+                                                  if (checked) {
+                                                    return prev.includes(cid)
+                                                      ? prev
+                                                      : [...prev, cid];
+                                                  }
+                                                  return prev.filter(
+                                                    (x) => x !== cid
+                                                  );
+                                                }
+                                              );
+                                            }}
                                           >
-                                            {client.name ||
-                                              client.client_name ||
-                                              "Unnamed Client"}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    )}
-                                </Select>
+                                            {label}
+                                          </DropdownMenuCheckboxItem>
+                                        );
+                                      })}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                ) : (
+                                  <Select
+                                    value={creatorClient}
+                                    onValueChange={setCreatorClient}
+                                    disabled={clientsListLoading}
+                                  >
+                                    <SelectTrigger className="w-full bg-white ">
+                                      <SelectValue
+                                        placeholder={
+                                          clientsListLoading
+                                            ? "Loading clients..."
+                                            : "Select client"
+                                        }
+                                      />
+                                    </SelectTrigger>
+                                    {!clientsListLoading &&
+                                      clientsList.length > 0 && (
+                                        <SelectContent>
+                                          {clientsList.map((client) => (
+                                            <SelectItem
+                                              key={
+                                                client.id || client.client_id
+                                              }
+                                              value={String(
+                                                client.id || client.client_id
+                                              )}
+                                            >
+                                              {client.name ||
+                                                client.client_name ||
+                                                "Unnamed Client"}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      )}
+                                  </Select>
+                                )}
                               </div>
                             </div>
 

@@ -1139,7 +1139,7 @@ export default function CreateComet({
         className="flex flex-col flex-1 w-full h-full bg-background rounded-xl"
       >
         <div className="w-full px-2 pt-2">
-          <SectionHeader title="Create New Comet" />
+          <SectionHeader title="Create New Cycle" />
         </div>
         <div className="p-1 sm:p-2 w-full h-full overflow-y-auto create-comet-scrollbar">
           <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 bg-primary-50 rounded-xl h-full p-1 sm:p-2">

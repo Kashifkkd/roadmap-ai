@@ -1712,7 +1712,8 @@ export default function FromDoerToEnabler({
             content.body || content.description || content.text || "",
         });
         break;
-      case "manager_email":
+      case "managerEmail":
+      case "managerEmail":
         addSection({
           id: contentType,
           sectionTitle: content.heading || content.title || title,
@@ -1720,7 +1721,7 @@ export default function FromDoerToEnabler({
           secondaryText: content.email ? `Email: ${content.email}` : null,
         });
         break;
-      case "accountability_partner_email": {
+      case "accountabilityPartnerEmail": {
         const emailsList = Array.isArray(content.emails)
           ? content.emails.filter(Boolean)
           : [];
@@ -1793,18 +1794,18 @@ export default function FromDoerToEnabler({
             content={content}
             assets={selectedScreen?.assets || []}
           />
-        ) : contentType === "manager_email" ||
+        ) : contentType === "managerEmail" ||
           contentType === "managerEmail" ||
-          selectedScreen?.screenType === "manager_email" ||
+          selectedScreen?.screenType === "managerEmail" ||
           selectedScreen?.screenType === "managerEmail" ? (
           <ManagerEmailScreenPreview
             deviceView={deviceView}
             content={content}
             assets={selectedScreen?.assets || []}
           />
-        ) : contentType === "accountability_partner_email" ||
+        ) : contentType === "accountabilityPartnerEmail" ||
           contentType === "accountabilityPartnerEmail" ||
-          selectedScreen?.screenType === "accountability_partner_email" ||
+          selectedScreen?.screenType === "accountabilityPartnerEmail" ||
           selectedScreen?.screenType === "accountabilityPartnerEmail" ? (
           <AccountabilityPartnerEmailScreenPreview
             deviceView={deviceView}

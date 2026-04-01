@@ -95,7 +95,7 @@ export default function ChatInput({
             )}
           </Button>
         </div>
-        <Button
+        {/* <Button
           variant="default"
           size="xs"
           className={`absolute p-1 bottom-2 left-2 cursor-pointer flex text-center gap-0 rounded-sm ${
@@ -107,7 +107,7 @@ export default function ChatInput({
         >
           <Paperclip className="w-2 h-2" />
           <span className="text-xs">Attach</span>
-        </Button>
+        </Button> */}
       </div>
     </div>
   );

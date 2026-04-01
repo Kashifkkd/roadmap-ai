@@ -15,6 +15,13 @@ export const registerUser = async (userData, { useAuthToken = false } = {}) => {
     metadata: userData.metadata ?? {},
   };
 
+  if (
+    Array.isArray(userData.accessible_client_ids) &&
+    userData.accessible_client_ids.length > 0
+  ) {
+    payload.accessible_client_ids = userData.accessible_client_ids;
+  }
+
   return await apiService({
     endpoint: endpoints.register,
     method: "POST",

@@ -182,13 +182,13 @@ const getFormValuesFromScreen = (screen) => {
     values.body = content.body || "";
   }
 
-  if (contentType === "manager_email" || contentType === "managerEmail") {
+  if (contentType === "managerEmail" || contentType === "managerEmail") {
     values.heading = content.heading || "";
     values.body = content.body || "";
     values.email = content.email || "";
   }
   if (
-    contentType === "accountability_partner_email" ||
+    contentType === "accountabilityPartnerEmail" ||
     contentType === "accountabilityPartnerEmail"
   ) {
     values.heading = content.heading || "";
@@ -548,7 +548,7 @@ export default function DynamicForm({
                 }
               }
             } else if (
-              contentType === "manager_email" ||
+              contentType === "managerEmail" ||
               contentType === "managerEmail"
             ) {
               if (field === "heading") {
@@ -559,7 +559,7 @@ export default function DynamicForm({
                 currentScreen.screenContents.content.email = value;
               }
             } else if (
-              contentType === "accountability_partner_email" ||
+              contentType === "accountabilityPartnerEmail" ||
               contentType === "accountabilityPartnerEmail"
             ) {
               if (field === "heading") {
@@ -1247,8 +1247,10 @@ export default function DynamicForm({
 
     //Manager Email & Accountability Partner Email
     const isManagerEmail =
-      screenType === "manager_email" ||
-      contentType === "manager_email" ||
+      screenType === "managerEmail" ||
+      contentType === "managerEmail" ||
+      screenType === "managerEmail" ||
+      contentType === "managerEmail" ||
       screenType === "manageremail" ||
       contentType === "manageremail";
     if (isManagerEmail) {
@@ -1267,8 +1269,8 @@ export default function DynamicForm({
       );
     }
     const isAccountabilityPartnerEmail =
-      screenType === "accountability_partner_email" ||
-      contentType === "accountability_partner_email" ||
+      screenType === "accountabilityPartnerEmail" ||
+      contentType === "accountabilityPartnerEmail" ||
       screenType === "accountabilitypartneremail" ||
       contentType === "accountabilitypartneremail";
     if (isAccountabilityPartnerEmail) {

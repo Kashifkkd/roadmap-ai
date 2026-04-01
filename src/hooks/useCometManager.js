@@ -2,6 +2,28 @@
 
 import { useState, useEffect, useMemo } from "react";
 
+/** Deep-cloned outline with the given screen removed; screen positions renumbered. */
+export function applyScreenDeleteToOutline(prevOutline, screenId) {
+  if (!prevOutline || !prevOutline.chapters) return prevOutline;
+
+  const newOutline = JSON.parse(JSON.stringify(prevOutline));
+  const pathChapters = newOutline.chapters || [];
+
+  for (const chapter of pathChapters) {
+    for (const stepItem of chapter.steps || []) {
+      if (stepItem.screens) {
+        stepItem.screens = stepItem.screens.filter(
+          (s) => String(s.id) !== String(screenId),
+        );
+        for (let i = 0; i < stepItem.screens.length; i++) {
+          stepItem.screens[i].position = i + 1;
+        }
+      }
+    }
+  }
+  return newOutline;
+}
+
 export function useCometManager(sessionData = null) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -291,27 +313,9 @@ export function useCometManager(sessionData = null) {
 
   // Delete screen from outline
   const deleteScreen = (screenId) => {
-    setOutline((prevOutline) => {
-      if (!prevOutline || !prevOutline.chapters) return prevOutline;
-
-      const newOutline = JSON.parse(JSON.stringify(prevOutline));
-      const pathChapters = newOutline.chapters || [];
-
-      for (const chapter of pathChapters) {
-        for (const stepItem of chapter.steps || []) {
-          if (stepItem.screens) {
-            stepItem.screens = stepItem.screens.filter(
-              (s) => String(s.id) !== String(screenId),
-            );
-            // Normalize positions to match array order
-            for (let i = 0; i < stepItem.screens.length; i++) {
-              stepItem.screens[i].position = i + 1;
-            }
-          }
-        }
-      }
-      return newOutline;
-    });
+    setOutline((prevOutline) =>
+      applyScreenDeleteToOutline(prevOutline, screenId),
+    );
   };
 
   // Reorder screens in outline

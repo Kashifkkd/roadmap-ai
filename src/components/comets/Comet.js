@@ -92,8 +92,8 @@ const Comet = ({
   return (
     <div
       onClick={handleClick}
-      className="relative flex flex-col w-full max-w-[280px] h-[250px] md:max-w-[290px] md:h-[260px] lg:max-w-[310px] lg:h-[300px] xl:max-w-[350px] 
-      xl:h-[330px] 2xl:max-w-[460px] 2xl:h-[360px] shrink-0 rounded-2xl overflow-hidden group cursor-pointer transition-transform duration-300 ease-in-out"
+      className="relative flex flex-col w-full h-[250px] md:h-[260px] lg:h-[300px] 
+      xl:h-[330px] 2xl:h-[360px] shrink-0 rounded-2xl overflow-hidden group cursor-pointer transition-transform duration-300 ease-in-out"
     >
       {/* Background image with zoom effect */}
       <Image

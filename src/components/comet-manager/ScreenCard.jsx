@@ -1,16 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import {
-  Plus,
-  GripVertical,
-  Expand,
-  Trash2,
-  MoreVertical,
-  Pencil,
-  ImageIcon,
-} from "lucide-react";
-import AssetPicker from "./AssetPicker";
+import React, { useState } from "react";
+import { Plus, GripVertical, Expand, Trash2 } from "lucide-react";
+// Dropdown removed: Edit, Browse Images were here; only delete (trash) is shown on the card.
+// import { MoreVertical, Pencil, ImageIcon } from "lucide-react";
+// import AssetPicker from "./AssetPicker";
 import GradientLoader from "@/components/ui/GradientLoader";
 import {
   Dialog,
@@ -29,6 +23,44 @@ function stripHtmlToPlainText(html) {
     .trim();
 }
 
+/** Plain-text snippet for the card body area — schemas differ by screen type. */
+function getScreenCardContentSnippet(screen) {
+  const content = screen?.screenContents?.content || {};
+  const contentType = screen?.screenContents?.contentType;
+
+  const generic =
+    content.body ||
+    content.keyLearning ||
+    content.key_learning ||
+    "";
+  if (generic) return generic;
+
+  if (contentType === "assessment") {
+    const title = content.title || "";
+    const first = content.questions?.[0];
+    const qRaw =
+      first &&
+      (typeof first === "object"
+        ? first.text || first.question
+        : String(first));
+    return [title, qRaw].filter(Boolean).join(" — ");
+  }
+
+  if (
+    contentType === "social_discussion" ||
+    contentType === "socialDiscussion" ||
+    contentType === "social"
+  ) {
+    return content.question || content.body || content.title || "";
+  }
+
+  if (contentType === "reflection") {
+    return content.prompt || content.body || "";
+  }
+
+  return "";
+}
+
 function shouldShowScreenCardImage(screen) {
   const contentType = screen?.screenContents?.contentType;
   const content = screen?.screenContents?.content || {};
@@ -37,9 +69,9 @@ function shouldShowScreenCardImage(screen) {
     contentType === "content" ||
     contentType === "reflection" ||
     contentType === "habits" ||
-    contentType === "manager_email" ||
     contentType === "managerEmail" ||
-    contentType === "accountability_partner_email" ||
+    contentType === "managerEmail" ||
+    contentType === "accountabilityPartnerEmail" ||
     contentType === "accountabilityPartnerEmail"
   ) {
     return true;
@@ -64,47 +96,16 @@ export default function ScreenCard({
   onDrop,
   onClick,
   onAddScreen,
-  onDeleteScreen,
-  sessionId,
-  onAssetLinked,
+  onRequestDeleteScreen,
+  isDeleting = false,
 }) {
-  console.log(screen, "screen >>>>>>>>>>>>");
   const [showAddButton, setShowAddButton] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
-  const menuRef = useRef(null);
 
-  useEffect(() => {
-    if (!isMenuOpen) return;
-
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isMenuOpen]);
-
-  const handleToggleMenu = (e) => {
+  const handleRequestDelete = (e) => {
     e.stopPropagation();
-    setIsMenuOpen((prev) => !prev);
-  };
-
-  const handleEditScreen = (e) => {
-    e.stopPropagation();
-    setIsMenuOpen(false);
-    onClick(screen);
-  };
-
-  const handleDeleteScreen = (e) => {
-    e.stopPropagation();
-    onDeleteScreen(screen.id);
+    if (isDeleting) return;
+    onRequestDeleteScreen?.(screen.id);
   };
 
   const showImagePreview = shouldShowScreenCardImage(screen);
@@ -163,47 +164,23 @@ export default function ScreenCard({
                   }`}
               >
                 <span>Screen {index + 1}</span>
-                {onDeleteScreen && (
-                  <div className="relative" ref={menuRef}>
-                    <button
-                      onClick={handleToggleMenu}
-                      className={`p-0.5 rounded-md transition-colors duration-200 ${selectedScreen?.id === screen.id
-                          ? "text-white/70 hover:text-white hover:bg-white/10"
-                          : "text-gray-400 hover:text-gray-600 hover:bg-gray-200"
-                        }`}
-                      title="More options"
-                    >
-                      <MoreVertical style={{ width: "1em", height: "1em" }} />
-                    </button>
-                    {isMenuOpen && (
-                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
-                        <button
-                          onClick={handleEditScreen}
-                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsMenuOpen(false);
-                            setIsAssetPickerOpen(true);
-                          }}
-                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <ImageIcon className="w-3.5 h-3.5" />
-                          Browse Images
-                        </button>
-                        <button
-                          onClick={handleDeleteScreen}
-                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          Delete
-                        </button>
-                      </div>
+                {onRequestDeleteScreen && (
+                  <button
+                    type="button"
+                    onClick={handleRequestDelete}
+                    disabled={isDeleting}
+                    className={`p-0.5 rounded-md transition-colors duration-200 shrink-0 inline-flex items-center justify-center min-w-[1.25em] min-h-[1.25em] ${selectedScreen?.id === screen.id
+                        ? "text-white/70 hover:text-white hover:bg-white/10 disabled:opacity-60"
+                        : "text-gray-400 hover:text-red-600 hover:bg-gray-200 disabled:opacity-60"
+                      }`}
+                    title={isDeleting ? "Deleting…" : "Delete screen"}
+                  >
+                    {isDeleting ? (
+                      <GradientLoader size={14} />
+                    ) : (
+                      <Trash2 style={{ width: "1em", height: "1em" }} />
                     )}
-                  </div>
+                  </button>
                 )}
               </div>
               <div
@@ -281,11 +258,7 @@ export default function ScreenCard({
                       : "text-gray-700"
                     }`}
                 >
-                  {stripHtmlToPlainText(
-                    screen.screenContents?.content?.body ||
-                    screen.screenContents?.content?.keyLearning ||
-                    "No content available",
-                  )}
+                  {stripHtmlToPlainText(getScreenCardContentSnippet(screen))}
                 </div>
               </div>
             </div>
@@ -405,6 +378,7 @@ export default function ScreenCard({
         </DialogContent>
       </Dialog>
 
+      {/* AssetPicker was opened from "Browse Images" in the removed dropdown.
       <AssetPicker
         sessionId={sessionId}
         screenUid={screen.uuid || screen.uid}
@@ -414,6 +388,7 @@ export default function ScreenCard({
           onAssetLinked?.(screen.id, asset);
         }}
       />
+      */}
     </div>
   );
 }

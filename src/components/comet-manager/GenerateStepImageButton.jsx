@@ -423,7 +423,7 @@ export default function GenerateStepImageButton({
               Images Generated
             </span>
           </button>
-          <button
+          {/* <button
             type="button"
             onClick={handleRehydrate}
             disabled={isRehydrating}
@@ -434,7 +434,7 @@ export default function GenerateStepImageButton({
             <span className="hidden sm:inline">
               {isRehydrating ? "Applying..." : "Reapply"}
             </span>
-          </button>
+          </button> */}
         </div>
       ) : isEnqueued ? (
         /* Generating Images state button */
