@@ -171,6 +171,13 @@ export function useCometManager(sessionData = null) {
           );
           const thumbnail =
             formData.contentImageIcon ||
+            formData.reflectionImage ||
+            formData.ImageUrl ||
+            formData.image ||
+            formData.media?.url ||
+            (typeof formData.habit_image === "string"
+              ? formData.habit_image
+              : formData.habit_image?.url || formData.habit_image?.ImageUrl) ||
             firstImageAsset?.url ||
             firstImageAsset?.ImageUrl ||
             null;

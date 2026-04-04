@@ -32,7 +32,7 @@ export default function LoaderSteps() {
     },
     {
       src: "/shooting.gif",
-      title: "Finalizing Comet",
+      title: "Finalizing Cycle",
       des: "Assembling everything into your learning path",
     },
   ];

@@ -384,7 +384,7 @@ const StepsDisplay = ({
 
   const handleAddStepSubmit = async () => {
     if (!selectedChapter) {
-      setAddStepError("Select a chapter before adding a step.");
+      setAddStepError("Select a phase before adding a step.");
       return;
     }
 
@@ -435,7 +435,7 @@ const StepsDisplay = ({
       const payloadObject = JSON.stringify({
         session_id: sessionId,
         input_type: "outline_updation",
-        comet_creation_data: snapshot?.comet_creation_data || {},
+        cycle_creation_data: snapshot?.cycle_creation_data || {},
         response_outline: snapshot?.response_outline || {},
         response_path: snapshot?.response_path || {},
         // additional_data: {
@@ -516,7 +516,7 @@ const StepsDisplay = ({
       const payloadObject = JSON.stringify({
         session_id: sessionId,
         input_type: "outline_updation",
-        comet_creation_data: snapshot?.comet_creation_data || {},
+        cycle_creation_data: snapshot?.cycle_creation_data || {},
         response_outline: currentResponseOutline,
         response_path: snapshot?.response_path || {},
         // additional_data: {
@@ -634,10 +634,10 @@ const StepsDisplay = ({
           <Target size={48} />
         </div>
         <h3 className="text-lg font-medium text-gray-600 mb-2">
-          Select a Chapter
+          Select a Phase
         </h3>
         <p className="text-sm text-gray-500">
-          Click on a chapter from the left to view its steps
+          Click on a phase from the left to view its steps
         </p>
       </div>
     );
@@ -788,7 +788,7 @@ const StepsDisplay = ({
                         </div>
                         <div className="flex-1 pr-8">
                           <p className="font-medium text-gray-900 mb-1">
-                            Action
+                            Micro-action
                           </p>
                           {editingField === `${index}-action` ? (
                             <div className="space-y-2">
@@ -1003,7 +1003,7 @@ const StepsDisplay = ({
             ) : (
               <div className="flex flex-col items-center justify-center p-8 text-center">
                 <p className="text-sm text-gray-500">
-                  No steps available for this chapter
+                  No steps available for this phase
                 </p>
               </div>
             )}

@@ -19,7 +19,7 @@ const Loader = ({ inputText, onBack, backLabel = "Back" }) => {
     "Distilling main points",
     "Connecting concept threads",
     "Structuring step logic",
-    "Sequencing chapter flow",
+    "Sequencing phase flow",
     "Drafting path outline",
     "Defining Aha moments",
     "Shaping action items",
@@ -33,7 +33,7 @@ const Loader = ({ inputText, onBack, backLabel = "Back" }) => {
     "Creating learning blueprint",
     "Crafting user journey",
     "Refining content logic",
-    "Building Comet skeleton",
+    "Building Phase skeleton",
     "Generating actionable steps",
     "Strengthening core messaging",
     "Transforming input data",
@@ -73,7 +73,7 @@ const Loader = ({ inputText, onBack, backLabel = "Back" }) => {
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 text-center">
-            Your Comet Is Taking Shape
+            Your Cycle Is Taking Shape
           </h1>
 
           <p className="text-sm sm:text-base text-gray-700 mb-12 text-center max-w-xl">

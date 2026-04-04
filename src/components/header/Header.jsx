@@ -41,7 +41,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import LoginForm from "@/components/auth/LoginForm";
 import MyAccountDialog from "@/components/header/MyAccountDialog";
 import ClientSettingsDialog from "@/components/header/ClientSettingsDialog";
@@ -266,8 +266,8 @@ export default function Header() {
   const [selectedTheme, setSelectedTheme] = useState("system");
   const loginButtonRef = useRef(null);
   const isHome = pathname === "/";
-  const isCometManager = pathname?.startsWith("/comet-manager");
-  const isAllComets = pathname === "/comets";
+  const isCometManager = pathname?.startsWith("/cycle-manager");
+  const isAllComets = pathname === "/cycles";
   const showUserProfile = isHome || isAllComets;
   const [text, setText] = useState("");
   const [session, setSession] = useState(() => {
@@ -313,7 +313,7 @@ export default function Header() {
 
   const navItems = [
     { name: "Dashboard", path: "/" },
-    { name: "All Comets", path: "/comets" },
+    { name: "All Cycles", path: "/cycles" },
     { name: "About Us", path: "/about" },
     { name: "Contact Us", path: "/contact" },
   ];
@@ -577,7 +577,7 @@ export default function Header() {
           : null;
 
       if (!documentId) {
-        toast.error("No document found. Please create or open a comet first.");
+        toast.error("No document found. Please create or open a cycle first.");
         setIsDownloadActive(false);
         return;
       }
@@ -586,7 +586,7 @@ export default function Header() {
         typeof window !== "undefined" ? localStorage.getItem("sessionData") : null;
       const sessionData = session ? JSON.parse(session || "{}") : {};
       const cometTitle =
-        sessionData?.comet_creation_data?.["Basic Information"]?.["Comet Title"];
+        sessionData?.cycle_creation_data?.["Basic Information"]?.["Comet Title"];
 
       const response = await downloadDocument(documentId, cometTitle);
 
@@ -671,7 +671,7 @@ export default function Header() {
       // Ignore storage errors
     }
 
-    router.push("/comets");
+    router.push("/cycles");
   };
 
   const [isPublishEnabled, setIsPublishEnabled] = useState(false);
@@ -690,7 +690,7 @@ export default function Header() {
     const sessionData = JSON.parse(session || "{}");
     try {
       setText(
-        sessionData?.comet_creation_data?.["Basic Information"]?.["Comet Title"]
+        sessionData?.cycle_creation_data?.["Basic Information"]?.["Comet Title"]
       );
     } catch { }
   }, [session]);
@@ -752,7 +752,7 @@ export default function Header() {
           : null;
 
       if (!sessionId) {
-        alert("No comet session found. Please create or open a comet first.");
+        alert("No cycle session found. Please create or open a cycle first.");
         setIsInviting(false);
         return;
       }
@@ -760,21 +760,21 @@ export default function Header() {
       const response = await shareComet(sessionId, inviteEmail);
 
       if (response && response.response && !response.error) {
-        toast.success(`Comet shared with ${inviteEmail}`);
+        toast.success(`Cycle shared with ${inviteEmail}`);
         handleInviteClose();
       } else {
         const errorMessage =
           response?.response?.data?.detail ||
-          "Failed to share comet. Please try again.";
+          "Failed to share cycle. Please try again.";
 
         toast.error(errorMessage);
       }
     } catch (error) {
-      console.error("Failed to share comet:", error);
+      console.error("Failed to share cycle:", error);
       const errorMessage =
         error?.response?.data?.detail ||
         error?.message ||
-        "Failed to share comet. Please try again.";
+        "Failed to share cycle. Please try again.";
       toast.error(errorMessage);
     } finally {
       setIsInviting(false);
@@ -803,7 +803,7 @@ export default function Header() {
           : null;
 
       if (!sessionId) {
-        alert("No comet session found. Please create or open a comet first.");
+        alert("No cycle session found. Please create or open a cycle first.");
         setIsPublishing(false);
         return;
       }
@@ -811,7 +811,7 @@ export default function Header() {
       const response = await publishComet(sessionId);
 
       if (response && response.response && !response.error) {
-        toast.success("Comet published successfully!");
+        toast.success("Cycle published successfully!");
 
         if (isCometManager) {
           setIsCometSettingsOpen(true);
@@ -819,11 +819,11 @@ export default function Header() {
       } else {
         const errorResponse =
           response?.response?.data?.detail ||
-          "Failed to publish comet. Please try again.";
+          "Failed to publish cycle. Please try again.";
         toast.error(errorResponse);
       }
     } catch (error) {
-      console.error("Failed to publish comet:", error);
+      console.error("Failed to publish cycle:", error);
     } finally {
       setIsPublishing(false);
     }
@@ -1066,7 +1066,7 @@ export default function Header() {
       </div>
       <button
         onClick={handlePublish}
-        disabled={isPublishing || !isPublishEnabled}
+        // disabled={isPublishing || !isPublishEnabled}
         className="px-4 py-2 rounded-md bg-primary hover:bg-primary-dark text-white text-sm font-medium hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isPublishing ? "Publishing..." : "Publish"}

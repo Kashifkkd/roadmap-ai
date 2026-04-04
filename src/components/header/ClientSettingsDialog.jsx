@@ -41,7 +41,7 @@ import { getCreatorDetails } from "@/api/User/getCreatorDetails";
 import { getCreatorsByClientId } from "@/api/User/getCreatorsByClientId";
 import { registerUser } from "@/api/register";
 import { uploadProfile } from "@/api/User/uploadProfile";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { useRefreshData, useUpsertClient } from "@/hooks/useQueryData";
 import ClientFormFields from "@/components/common/ClientFormFields";
 import UserManagement from "@/components/common/UserManagement";
@@ -88,6 +88,14 @@ export default function ClientSettingsDialog({
 
   const textIncludesSearch = (text, search) =>
     text && search ? text.toLowerCase().includes(search) : false;
+
+  const getClientLabelById = (clientId) => {
+    const matchedClient = clientsList.find(
+      (client) => String(client.id || client.client_id) === String(clientId)
+    );
+
+    return matchedClient?.name || matchedClient?.client_name || clientId;
+  };
 
   const normalizedCreatorSearch = normalizeSearchTerm(creatorSearchTerm);
   const filteredCreators =
@@ -1123,82 +1131,98 @@ export default function ClientSettingsDialog({
                               <div>
                                 <Label className="text-sm font-medium text-gray-700 mb-2 block">
                                   Client
+                                  {creatorRole === "admin" &&
+                                    ` (${creatorAdminClientIds.length})`}
                                 </Label>
                                 {creatorRole === "admin" ? (
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        disabled={clientsListLoading}
-                                        className="w-full justify-between bg-white font-normal border border-gray-300"
-                                      >
-                                        <span className="truncate text-left">
-                                          {clientsListLoading
-                                            ? "Loading clients..."
-                                            : creatorAdminClientIds.length ===
-                                                0
-                                              ? "Select clients"
-                                              : creatorAdminClientIds
-                                                  .map((id) => {
-                                                    const c = clientsList.find(
-                                                      (cl) =>
-                                                        String(
-                                                          cl.id ||
-                                                            cl.client_id
-                                                        ) === id
-                                                    );
-                                                    return (
-                                                      c?.name ||
-                                                      c?.client_name ||
-                                                      id
-                                                    );
-                                                  })
-                                                  .join(", ")}
-                                        </span>
-                                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                      className="max-h-60 overflow-y-auto w-[var(--radix-dropdown-menu-trigger-width)] min-w-[12rem]"
-                                      align="start"
-                                    >
-                                      {clientsList.map((client) => {
-                                        const cid = String(
-                                          client.id || client.client_id
-                                        );
-                                        const label =
-                                          client.name ||
-                                          client.client_name ||
-                                          "Unnamed Client";
-                                        return (
-                                          <DropdownMenuCheckboxItem
-                                            key={cid}
-                                            onSelect={(e) => e.preventDefault()}
-                                            checked={creatorAdminClientIds.includes(
-                                              cid
-                                            )}
-                                            onCheckedChange={(checked) => {
-                                              setCreatorAdminClientIds(
-                                                (prev) => {
-                                                  if (checked) {
-                                                    return prev.includes(cid)
-                                                      ? prev
-                                                      : [...prev, cid];
-                                                  }
-                                                  return prev.filter(
-                                                    (x) => x !== cid
-                                                  );
-                                                }
-                                              );
-                                            }}
+                                  <div className="space-y-2">
+                                    {creatorAdminClientIds.length > 0 && (
+                                      <div className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto user-list-scrollbar">
+                                        {creatorAdminClientIds.map((clientId) => (
+                                          <span
+                                            key={clientId}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-100 text-xs font-medium text-primary-700 border border-primary-200"
                                           >
-                                            {label}
-                                          </DropdownMenuCheckboxItem>
-                                        );
-                                      })}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
+                                            {getClientLabelById(clientId)}
+                                            <button
+                                              type="button"
+                                              className="text-primary-500 hover:text-primary-800 transition-colors"
+                                              onClick={() =>
+                                                setCreatorAdminClientIds((prev) =>
+                                                  prev.filter(
+                                                    (id) => id !== clientId
+                                                  )
+                                                )
+                                              }
+                                            >
+                                              <X className="w-3.5 h-3.5" />
+                                            </button>
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          disabled={clientsListLoading}
+                                          className="w-full justify-between bg-white font-normal border border-gray-300"
+                                        >
+                                          <span className="truncate text-left">
+                                            {clientsListLoading
+                                              ? "Loading clients..."
+                                              : creatorAdminClientIds.length ===
+                                                  0
+                                                ? "Select clients"
+                                                : `${creatorAdminClientIds.length} client${creatorAdminClientIds.length === 1 ? "" : "s"} selected`}
+                                          </span>
+                                          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent
+                                        className="max-h-60 overflow-y-auto w-[var(--radix-dropdown-menu-trigger-width)] min-w-[12rem]"
+                                        align="start"
+                                      >
+                                        {clientsList.map((client) => {
+                                          const cid = String(
+                                            client.id || client.client_id
+                                          );
+                                          const label =
+                                            client.name ||
+                                            client.client_name ||
+                                            "Unnamed Client";
+                                          return (
+                                            <DropdownMenuCheckboxItem
+                                              key={cid}
+                                              onSelect={(e) =>
+                                                e.preventDefault()
+                                              }
+                                              checked={creatorAdminClientIds.includes(
+                                                cid
+                                              )}
+                                              onCheckedChange={(checked) => {
+                                                setCreatorAdminClientIds(
+                                                  (prev) => {
+                                                    if (checked) {
+                                                      return prev.includes(cid)
+                                                        ? prev
+                                                        : [...prev, cid];
+                                                    }
+                                                    return prev.filter(
+                                                      (x) => x !== cid
+                                                    );
+                                                  }
+                                                );
+                                              }}
+                                            >
+                                              {label}
+                                            </DropdownMenuCheckboxItem>
+                                          );
+                                        })}
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
                                 ) : (
                                   <Select
                                     value={creatorClient}

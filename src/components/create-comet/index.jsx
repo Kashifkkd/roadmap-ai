@@ -16,7 +16,7 @@ import SliderField from "./SliderField";
 import AskKyperPopup from "./AskKyperPopup";
 import { graphqlClient } from "@/lib/graphql-client";
 import { Info, Trash2, Link2, X } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
 function normalizeWebpageUrlEntry(item, defaultUploaded = false) {
@@ -164,18 +164,18 @@ export default function CreateComet({
         return;
       }
 
-      // Update entire form with comet_creation_data when asking Kyper
-      if (sessionData.comet_creation_data) {
+      // Update entire form with cycle_creation_data when asking Kyper
+      if (sessionData.cycle_creation_data) {
         // console.log(
-        //   "Updating entire form with comet_creation_data:",
-        //   sessionData.comet_creation_data
+        //   "Updating entire form with cycle_creation_data:",
+        //   sessionData.cycle_creation_data
         // );
 
-        const basicInfo = sessionData.comet_creation_data["Basic Information"];
+        const basicInfo = sessionData.cycle_creation_data["Basic Information"];
         const audienceObjectives =
-          sessionData.comet_creation_data["Audience & Objectives"];
+          sessionData.cycle_creation_data["Audience & Objectives"];
         const experienceDesign =
-          sessionData.comet_creation_data["Experience Design"];
+          sessionData.cycle_creation_data["Experience Design"];
 
         setAllMessages((prev) => {
           const filteredPrev = prev.filter((msg, index) => {
@@ -189,14 +189,14 @@ export default function CreateComet({
             {
               from: "bot",
               content:
-                basicInfo["Comet Title"] || basicInfo["Client Organization"],
+                basicInfo["Cycle Title"] || basicInfo["Client Organization"],
             },
           ];
         });
 
         if (basicInfo) {
-          if (basicInfo["Comet Title"])
-            setValue("cometTitle", basicInfo["Comet Title"]);
+          if (basicInfo["Cycle Title"])
+            setValue("cometTitle", basicInfo["Cycle Title"]);
           if (basicInfo["Description"])
             setValue("description", basicInfo["Description"]);
           if (basicInfo["Client Organization"])
@@ -317,16 +317,16 @@ export default function CreateComet({
         setWebpageUrls(normalized);
       }
 
-      if (prefillData.comet_creation_data) {
-        const basicInfo = prefillData.comet_creation_data["Basic Information"];
+      if (prefillData.cycle_creation_data) {
+        const basicInfo = prefillData.cycle_creation_data["Basic Information"];
         const audienceObjectives =
-          prefillData.comet_creation_data["Audience & Objectives"];
+          prefillData.cycle_creation_data["Audience & Objectives"];
         const experienceDesign =
-          prefillData.comet_creation_data["Experience Design"];
+          prefillData.cycle_creation_data["Experience Design"];
 
         if (basicInfo) {
-          if (basicInfo["Comet Title"])
-            setValue("cometTitle", basicInfo["Comet Title"]);
+          if (basicInfo["Cycle Title"])
+            setValue("cometTitle", basicInfo["Cycle Title"]);
           if (basicInfo["Description"])
             setValue("description", basicInfo["Description"]);
           if (basicInfo["Client Organization"])
@@ -410,7 +410,7 @@ export default function CreateComet({
             );
         }
 
-        if (prefillData.comet_creation_data["Source Materials"]) {
+        if (prefillData.cycle_creation_data["Source Materials"]) {
         }
       } else {
         if (prefillData.cometTitle)
@@ -729,7 +729,7 @@ export default function CreateComet({
           // Format form data similar to handleFormSubmit
           const formattedCometData = {
             "Basic Information": {
-              "Comet Title": currentFormValues.cometTitle || "",
+              "Cycle Title": currentFormValues.cometTitle || "",
               Description: currentFormValues.description || "",
               "Client Organization": currentFormValues.clientOrg || "",
               "Client Website": currentFormValues.clientWebsite || "",
@@ -815,8 +815,8 @@ export default function CreateComet({
 
           const cometJsonForSave = JSON.stringify({
             session_id: currentSessionIdForSave,
-            input_type: "comet_data_update",
-            comet_creation_data: formattedCometData,
+            input_type: "cycle_data_update",
+            cycle_creation_data: formattedCometData,
             response_outline: parsedSessionData?.response_outline || {},
             response_path: updatedResponsePath, // Use updated response_path with new enabled_attributes
             chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
@@ -825,7 +825,7 @@ export default function CreateComet({
 
           console.log("Auto-save: Calling autoSaveComet with data:", {
             session_id: currentSessionIdForSave,
-            cometTitle: formattedCometData["Basic Information"]["Comet Title"],
+            cometTitle: formattedCometData["Basic Information"]["Cycle Title"],
             description: formattedCometData["Basic Information"]["Description"],
             enabled_attributes_in_payload: updatedResponsePath.enabled_attributes
           });
@@ -839,7 +839,7 @@ export default function CreateComet({
                 savedData = {
                   ...parsedSessionData,
                   ...parsedResponse,
-                  comet_creation_data: formattedCometData,
+                  cycle_creation_data: formattedCometData,
                   chatbot_conversation:
                     parsedResponse.chatbot_conversation ||
                     parsedSessionData?.chatbot_conversation ||
@@ -856,7 +856,7 @@ export default function CreateComet({
               } else {
                 savedData = {
                   ...parsedSessionData,
-                  comet_creation_data: formattedCometData,
+                  cycle_creation_data: formattedCometData,
                 };
                 // Ensure enabled_attributes are updated in saved data
                 if (!savedData.response_path) {
@@ -877,7 +877,7 @@ export default function CreateComet({
               console.error("Error parsing auto-save response:", parseError);
               const updatedSessionData = {
                 ...parsedSessionData,
-                comet_creation_data: formattedCometData,
+                cycle_creation_data: formattedCometData,
                 chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
               };
               // Ensure enabled_attributes are updated even on error
@@ -928,7 +928,7 @@ export default function CreateComet({
 
       const formattedCometData = {
         "Basic Information": {
-          "Comet Title": formValues.cometTitle || "",
+          "Cycle Title": formValues.cometTitle || "",
           Description: formValues.description || "",
           "Client Organization": formValues.clientOrg || "",
           "Client Website": formValues.clientWebsite || "",
@@ -947,7 +947,7 @@ export default function CreateComet({
       };
 
       const fieldLabelMap = {
-        cometTitle: "Comet Title",
+        cometTitle: "Cycle Title",
         description: "Description",
         clientOrg: "Client Organization",
         clientWebsite: "Client Website",
@@ -984,8 +984,8 @@ export default function CreateComet({
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
-        input_type: "comet_data_update",
-        comet_creation_data: formattedCometData,
+        input_type: "cycle_data_update",
+        cycle_creation_data: formattedCometData,
         response_outline: {},
         response_path: {},
         additional_data: additionalData,
@@ -1000,8 +1000,8 @@ export default function CreateComet({
 
       console.log("Final payload:", cometJsonForMessage, {
         session_id: currentSessionId,
-        input_type: "comet_data_update",
-        comet_creation_data: formattedCometData,
+        input_type: "cycle_data_update",
+        cycle_creation_data: formattedCometData,
         response_outline: {},
         response_path: {},
         additional_data: additionalData,
@@ -1152,10 +1152,10 @@ export default function CreateComet({
                 >
                   <CardContent className="space-y-3 pb-4">
                     <div className="space-y-1">
-                      <Label htmlFor="comet-title">Comet Title</Label>
+                      <Label htmlFor="comet-title">Cycle Title</Label>
                       <Input
                         id="comet-title"
-                        placeholder="Enter comet title"
+                        placeholder="Enter Cycle Title"
                         {...register("cometTitle")}
                         onSelect={(e) => handleTextSelection("cometTitle", e)}
                         onBlur={(e) => handleFieldBlur(e)}
@@ -1288,7 +1288,7 @@ export default function CreateComet({
                 <FormCard title="Experience Design">
                   <CardContent className="space-y-4">
                     <MultipleChoiceField
-                      label="What's the focus of this Comet?"
+                      label="What's the focus of this Cycle?"
                       name="cometFocus"
                       options={[
                         {
@@ -1309,7 +1309,7 @@ export default function CreateComet({
                     />
 
                     <SliderField
-                      label="How closely should this Comet follow your source materials?"
+                      label="How closely should this Cycle follow your source materials?"
                       name="sourceMaterialFidelity"
                       options={[
                         { value: "fidelity", label: "Fidelity" },
@@ -1340,7 +1340,7 @@ export default function CreateComet({
 
                     <div className="space-y-1">
                       <Label htmlFor="length-frequency">
-                        How long should this Comet be?
+                        How long should this Cycle be?
                       </Label>
                       <Input
                         id="length-frequency"

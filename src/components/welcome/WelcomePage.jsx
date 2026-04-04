@@ -12,7 +12,7 @@ import Vector from "@/components/images/vector.svg";
 import { graphqlClient } from "@/lib/graphql-client";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 import { tokenManager } from "@/lib/api-client";
 
@@ -100,7 +100,7 @@ export default function WelcomePage() {
     setInputText(suggestion);
   };
 
-  
+
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
@@ -118,7 +118,7 @@ export default function WelcomePage() {
     }
   }, [messages.length, isExpanded]);
 
-  // Note: WebSocket cleanup is now handled by SubscriptionManager
+  // Note: WebSocket cleanup is now handled by SubscriptionManagers
 
   const [cometCreated, setCometCreated] = useState(false);
   const [isGeneratingCometData, setIsGeneratingCometData] = useState(false);
@@ -181,10 +181,10 @@ export default function WelcomePage() {
         setIsLoading(false);
       }
 
-      // Navigate to dashboard when comet_creation_data is populated
+      // Navigate to dashboard when cycle_creation_data is populated
       const hasCometData =
-        receivedSessionData?.comet_creation_data &&
-        Object.keys(receivedSessionData.comet_creation_data).length > 0;
+        receivedSessionData?.cycle_creation_data &&
+        Object.keys(receivedSessionData.cycle_creation_data).length > 0;
       if (hasCometData) {
         setCometCreated(true);
         router.push("/dashboard");
@@ -246,13 +246,16 @@ export default function WelcomePage() {
       const chatbotConversation = [...existingConversation, { user: text }];
 
       const executionId = Math.floor(Math.random() * 10000).toString();
-      const traceId = crypto.randomUUID().replace(/-/g, "");
+      // Generate UUID using crypto.getRandomValues for browser compatibility
+      const traceId = globalThis.crypto.getRandomValues(new Uint8Array(16)).reduce((acc, byte) => {
+        return acc + byte.toString(16).padStart(2, '0');
+      }, '');
       const receivedAt = new Date().toISOString();
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
-        input_type: "comet_data_creation",
-        comet_creation_data: sessionData?.comet_creation_data ?? {},
+        input_type: "cycle_data_creation",
+        cycle_creation_data: sessionData?.cycle_creation_data ?? {},
         response_outline: sessionData?.response_outline ?? {},
         response_path: sessionData?.response_path ?? {},
         // additional_data: sessionData?.additional_data ?? {
@@ -270,9 +273,9 @@ export default function WelcomePage() {
         webpage_url:
           webpageUrls.length > 0
             ? webpageUrls.map((e) => ({
-                webpage_url: e.url,
-                comment: e.comment || "",
-              }))
+              webpage_url: e.url,
+              comment: e.comment || "",
+            }))
             : [],
         execution_id: executionId,
         retry_count: 0,
@@ -387,6 +390,37 @@ export default function WelcomePage() {
         console.error("Error uploading file:", error);
         toast.error(`Failed to upload ${file.name}`);
         return null;
+      }
+    },
+    [],
+  );
+
+  const uploadWebLink = useCallback(
+    async (url, currentSessionId, comment = "") => {
+      try {
+        const formData = new FormData();
+        formData.append("url", url);
+        formData.append("session_id", currentSessionId);
+        if (comment) formData.append("comment", comment);
+
+        const result = await apiService({
+          endpoint: endpoints.uploadSourceMaterialWebLink,
+          method: "POST",
+          data: formData,
+        });
+
+        if (result.error) {
+          console.error("Error uploading web link:", result.error);
+          toast.error("Failed to upload link");
+          return false;
+        }
+
+        console.log("Web link uploaded successfully:", result.response);
+        return true;
+      } catch (error) {
+        console.error("Error uploading web link:", error);
+        toast.error("Failed to upload link");
+        return false;
       }
     },
     [],
@@ -605,7 +639,7 @@ export default function WelcomePage() {
     setTimeout(() => linkInputRef.current?.focus(), 100);
   };
 
-  const handleAddLink = () => {
+  const handleAddLink = async () => {
     const url = linkInputValue.trim();
     if (!url) return;
     // URL validation
@@ -621,10 +655,35 @@ export default function WelcomePage() {
       toast.error("This link has already been added");
       return;
     }
-    setWebpageUrls((prev) => [...prev, { url, comment }]);
-    setLinkInputValue("");
-    setLinkCommentValue("");
-    setIsLinkInputVisible(false);
+
+    let currentSessionId = sessionId;
+    try {
+      if (!currentSessionId) {
+        const sessionResponse = await graphqlClient.createSession();
+        currentSessionId = sessionResponse.createSession.sessionId;
+        setSessionId(currentSessionId);
+        localStorage.setItem("sessionId", currentSessionId);
+        console.log("✅ Session created (from link upload):", currentSessionId);
+      }
+    } catch (error) {
+      console.error("Error creating session for link upload:", error);
+      toast.error("Could not start link upload. Please try again.");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const uploaded = await uploadWebLink(url, currentSessionId, comment);
+      if (!uploaded) return;
+
+      setWebpageUrls((prev) => [...prev, { url, comment }]);
+      setLinkInputValue("");
+      setLinkCommentValue("");
+      setIsLinkInputVisible(false);
+      toast.success("Link Uploaded Successfully");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleRemoveLink = (indexToRemove) => {
@@ -708,11 +767,12 @@ export default function WelcomePage() {
               <h2 className="text-3xl font-semibold text-primary-900 font-serif relative">
                 Let's build your next{" "}
                 <span className="relative inline-block">
-                  Cycle
+                  <span className="relative z-10">Cycles</span>
                   <Image
                     src={Vector}
                     alt="underline"
                     className="absolute left-0 -bottom-2 w-full"
+                    style={{ zIndex: 0 }}
                   />
                 </span>{" "}
                 together...
@@ -736,11 +796,10 @@ export default function WelcomePage() {
           <div className="space-y-4">
             <div className="relative w-full max-w-3xl mx-auto rounded-xl border-primary-200 p-1.5 bg-[#E3E1FC] bg-[linear-gradient(147deg,rgba(227, 225, 252, 1) 0%, rgba(248, 247, 254, 1) 100%)]">
               <div
-                className={`w-full flex flex-col relative transition-all duration-200 rounded-xl bg-white ${
-                  isExpanded || messages.length > 0
+                className={`w-full flex flex-col relative transition-all duration-200 rounded-xl bg-white ${isExpanded || messages.length > 0
                     ? "min-h-[500px] max-h-[600px]"
                     : ""
-                }`}
+                  }`}
               >
                 {/* Chat Messages */}
                 {messages.length > 0 && (
@@ -764,9 +823,8 @@ export default function WelcomePage() {
 
                 {/* Input Area */}
                 <div
-                  className={`relative w-full bg-white rounded-xl border border-primary-300 shadow-sm ${
-                    messages.length > 0 ? "mt-auto" : ""
-                  }`}
+                  className={`relative w-full bg-white rounded-xl border border-primary-300 shadow-sm ${messages.length > 0 ? "mt-auto" : ""
+                    }`}
                 >
                   <div className="relative w-full">
                     {messages.length === 0 && (
@@ -806,11 +864,9 @@ export default function WelcomePage() {
                         cometCreated ||
                         isGeneratingCometData
                       }
-                      className={`w-full ${
-                        messages.length === 0 ? "pl-10" : "pl-3"
-                      } pr-3 ${
-                        messages.length > 0 ? "pt-2.5 pb-2.5" : "pt-3 pb-3"
-                      } text-md shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text overflow-y-auto`}
+                      className={`w-full ${messages.length === 0 ? "pl-10" : "pl-3"
+                        } pr-3 ${messages.length > 0 ? "pt-2.5 pb-2.5" : "pt-3 pb-3"
+                        } text-md shadow-none bg-transparent border-0 placeholder:text-placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none focus:outline-none transition-all duration-200 cursor-text overflow-y-auto`}
                       rows={1}
                       style={{
                         minHeight:
@@ -859,7 +915,7 @@ export default function WelcomePage() {
                                   .replace(/^https?:\/\//, "")
                                   .slice(0, 22)}
                                 {entry.url.replace(/^https?:\/\//, "").length >
-                                22
+                                  22
                                   ? "…"
                                   : ""}
                               </span>
@@ -940,11 +996,10 @@ export default function WelcomePage() {
                         <div className="relative" ref={attachWrapperRef}>
                           <Button
                             variant="ghost"
-                            className={`cursor-pointer flex items-center gap-2 ${
-                              attachedFiles.length > 0 || isAttachInputVisible
+                            className={`cursor-pointer flex items-center gap-2 ${attachedFiles.length > 0 || isAttachInputVisible
                                 ? "text-gray-500"
                                 : "text-gray-500 hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
-                            }`}
+                              }`}
                             onClick={handleToggleAttachInput}
                             disabled={
                               isLoading ||
@@ -1093,11 +1148,10 @@ export default function WelcomePage() {
                         <div className="relative" ref={linkWrapperRef}>
                           <Button
                             variant="ghost"
-                            className={`cursor-pointer flex items-center gap-2 ${
-                              webpageUrls.length > 0 || isLinkInputVisible
+                            className={`cursor-pointer flex items-center gap-2 ${webpageUrls.length > 0 || isLinkInputVisible
                                 ? "text-gray-500"
                                 : "text-gray-500 hover:text-placeholder-gray-700 hover:bg-primary-50 hover:text-primary-600"
-                            }`}
+                              }`}
                             onClick={handleToggleLinkInput}
                             disabled={
                               isLoading || cometCreated || isGeneratingCometData

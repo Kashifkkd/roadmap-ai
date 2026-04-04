@@ -397,7 +397,7 @@ export default function WelcomePage() {
               disabled={isDisabled}
             >
               <Stars />
-              <span>Create New Comet</span>
+              <span>Create New Cycle</span>
             </Button>
           </div>
         </div>

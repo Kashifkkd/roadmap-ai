@@ -82,7 +82,7 @@ const Loader = ({
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 text-center">
-            Your Comet Is Taking Shape
+            Your Cycle Is Taking Shape
           </h1>
 
           <p className="text-sm sm:text-base text-gray-700 mb-12 text-center max-w-xl">

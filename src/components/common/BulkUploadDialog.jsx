@@ -50,7 +50,7 @@ export default function BulkUploadDialog({ open, onClose, onUpload, isUploading 
             "last name",
             "email",
             "client id",
-            "path id",
+            "cycle id",
             "access level",
             "image url",
             "password",

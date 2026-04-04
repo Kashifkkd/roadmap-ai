@@ -68,7 +68,7 @@
 
 import axios from "axios";
 import { endpoints } from "./endpoint";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
 

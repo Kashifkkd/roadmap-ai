@@ -10,7 +10,7 @@ import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 export default function ChatWindow({
   initialInput = null,
   userQuestions = null,
-  inputType = "comet_data_update",
+  inputType = "cycle_data_update",
   onResponseReceived = null,
   allMessages = [],
   welcomeMessage = [],
@@ -109,7 +109,7 @@ export default function ChatWindow({
   //   const isUpdateMode =
   //     inputType === "outline_updation" ||
   //     inputType === "path_updation" ||
-  //     inputType === "comet_data_update";
+  //     inputType === "cycle_data_update";
   //   const hasNewMessages = allMessages.length > initialMessageCountRef.current;
 
   //   const shouldShow = !(isUpdateMode && hasNewMessages);
@@ -129,7 +129,7 @@ export default function ChatWindow({
   //     } else if (inputType === "path_updation") {
   //       pageName = "comet-manager";
   //     } else if (
-  //       inputType === "comet_data_update" ||
+  //       inputType === "cycle_data_update" ||
   //       inputType === "comet_data_creation"
   //     ) {
   //       pageName = "dashboard";
@@ -331,13 +331,14 @@ export default function ChatWindow({
 
       // build complete payload
       const executionId = Math.floor(Math.random() * 10000).toString();
-      const traceId = crypto.randomUUID().replace(/-/g, "");
+      // Generate UUID using crypto.getRandomValues for browser compatibility
+      const traceId = globalThis.crypto.getRandomValues(new Uint8Array(16)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '');
       const receivedAt = new Date().toISOString();
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: inputType,
-        comet_creation_data: sessionData?.comet_creation_data ?? {},
+        cycle_creation_data: sessionData?.cycle_creation_data ?? {},
         response_outline: sessionData?.response_outline ?? {},
         response_path: sessionData?.response_path ?? {},
         additional_data: sessionData?.additional_data ?? {

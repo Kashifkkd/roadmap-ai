@@ -1,0 +1,37 @@
+.comet {
+  
+  max-width: 17.5em; 
+  height: 15.625em; 
+}
+
+/* md: 48em (768px) - 63.9375em (1023px) */
+@media (min-width: 48em) and (max-width: 63.9375em) {
+  .comet {
+    max-width: 18.125em; 
+    height: 16.25em; 
+  }
+}
+
+/* lg: 64em (1024px) - 79.9375em (1279px) */
+@media (min-width: 64em) and (max-width: 79.9375em) {
+  .comet {
+    max-width: 19.375em; 
+    height: 18.75em; 
+  }
+}
+
+/* xl: 80em (1280px) - 95.9375em (1535px) */
+@media (min-width: 80em) and (max-width: 95.9375em) {
+  .comet {
+    max-width: 21.875em; 
+    height: 20.625em; 
+  }
+}
+
+/* 2xl: 96em (1536px) and up */
+@media (min-width: 96em) {
+  .comet {
+    max-width: 28.75em; 
+    height: 20em; 
+  }
+}

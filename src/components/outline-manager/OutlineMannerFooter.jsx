@@ -69,7 +69,7 @@ export default function OutlineMannerFooter() {
       if (isGenerating) {
         const chaptersCount = getChaptersCount(sessionData);
         if (chaptersCount >= 1) {
-          router.push("/comet-manager");
+          router.push("/cycle-manager");
         }
       }
     },
@@ -181,8 +181,8 @@ export default function OutlineMannerFooter() {
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: "initial_chapter_creation",
-        // comet_creation_data: parsedSessionData?.comet_creation_data || {},
-        comet_creation_data: parsedSessionData?.comet_creation_data || {},
+        // cycle_creation_data: parsedSessionData?.cycle_creation_data || {},
+        cycle_creation_data: parsedSessionData?.cycle_creation_data || {},
         // additional_data: {
         //   personalization_enabled:
         //     parsedSessionData?.additional_data?.personalization_enabled ||
@@ -230,7 +230,7 @@ export default function OutlineMannerFooter() {
       <div className="fixed inset-x-0 top-[64px] bottom-0 z-50 bg-primary-50">
         <div className="w-full h-full flex items-center justify-center p-2 overflow-auto">
           <Loader
-            inputText="Comet"
+            inputText="Cycle"
             onBack={handleBackFromLoading}
             backLabel="Back to Outline Manager"
           />
@@ -256,7 +256,7 @@ export default function OutlineMannerFooter() {
               ref={loginButtonRef}
             >
               <Stars />
-              <span>Create Comet</span>
+              <span>Create Cycle</span>
             </Button>
           ) : (
             <Button
@@ -266,7 +266,7 @@ export default function OutlineMannerFooter() {
               ref={loginButtonRef}
             >
               <Stars />
-              <span>Login to Create Comet</span>
+              <span>Login to Create Cycle</span>
             </Button>
           )}
         </div>

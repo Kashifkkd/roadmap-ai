@@ -62,13 +62,13 @@ export default function ChapterTextarea({
 
       // Append to existing conversation instead of overwriting
       const existingConversation = freshSessionData?.chatbot_conversation || [];
-      const newEntry = { user: `add a chapter,  description: ${text}` };
+      const newEntry = { user: `add a phase,  description: ${text}` };
       const chatbotConversation = [...existingConversation, newEntry];
 
       const cometJsonForMessage = JSON.stringify({
         session_id: sessionId,
         input_type: "outline_updation",
-        comet_creation_data: freshSessionData?.comet_creation_data || {},
+        cycle_creation_data: freshSessionData?.cycle_creation_data || {},
         response_outline: freshSessionData?.response_outline || {},
         response_path: freshSessionData?.response_path || {},
         // additional_data: {
@@ -118,12 +118,12 @@ export default function ChapterTextarea({
 
   return (
     <div className="flex flex-col gap-2 p-2 border rounded-md bg-white">
-      <Label className="text-sm">Add Chapter Description</Label>
+      <Label className="text-sm">Add Phase Description</Label>
       <textarea
         className="w-full min-h-28 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Describe the new chapter..."
+        placeholder="Describe the new phase..."
       />
       {error ? <p className="text-red-500 text-xs">{error}</p> : null}
       <div className="flex gap-2 justify-end">
@@ -136,7 +136,7 @@ export default function ChapterTextarea({
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={isSubmitting || isSubmittingChapter}
+          disabled={isSubmitting || isSubmittingChapter || !text.trim()}
         >
           {isSubmitting ? "Submitting..." : "Submit"}
         </Button>

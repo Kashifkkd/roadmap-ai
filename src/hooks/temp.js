@@ -2,7 +2,7 @@ export const temp = [
   {
     session_id: "6fce8c35-3d1d-4a7c-86b5-9aeb9e557067",
     input_type: "path_creation",
-    comet_creation_data: {
+    cycle_creation_data: {
       "Basic Information": {
         "Comet Title": "New Manager Essentials",
         Description:

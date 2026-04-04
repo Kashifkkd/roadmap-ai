@@ -237,7 +237,7 @@ export default function OutlineManagerLayout() {
           const cometJsonForSave = JSON.stringify({
             session_id: currentSessionIdForSave,
             input_type: "outline_updation",
-            comet_creation_data: parsedSessionData?.comet_creation_data || {},
+            cycle_creation_data: parsedSessionData?.cycle_creation_data || {},
             response_outline: currentOutline,
             response_path: parsedSessionData?.response_path || {},
             chatbot_conversation: parsedSessionData?.chatbot_conversation || [],

@@ -2,7 +2,7 @@ export const temp2 = [
   {
     session_id: "823e1e53-a707-4345-b8fe-0dc6b69e4585",
     input_type: "path_creation",
-    comet_creation_data: {
+    cycle_creation_data: {
       "Basic Information": {
         "Comet Title": "iOS App Learning Outline",
         Description:

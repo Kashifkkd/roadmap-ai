@@ -61,9 +61,9 @@ export default function DashboardLayout() {
         }
 
         // Normalize Learning Objectives field name
-        if (normalized.comet_creation_data?.["Audience & Objectives"]) {
+        if (normalized.cycle_creation_data?.["Audience & Objectives"]) {
           const audienceObj =
-            normalized.comet_creation_data["Audience & Objectives"];
+            normalized.cycle_creation_data["Audience & Objectives"];
           // Handle "Learning Objectives" -> "Learning and Behaviour Objectives"
           if (
             audienceObj["Learning Objectives"] &&
@@ -160,9 +160,9 @@ export default function DashboardLayout() {
       }
 
       // Normalize Learning Objectives field name
-      if (normalized.comet_creation_data?.["Audience & Objectives"]) {
+      if (normalized.cycle_creation_data?.["Audience & Objectives"]) {
         const audienceObj =
-          normalized.comet_creation_data["Audience & Objectives"];
+          normalized.cycle_creation_data["Audience & Objectives"];
         // Handle "Learning Objectives" -> "Learning and Behaviour Objectives"
         if (
           audienceObj["Learning Objectives"] &&
@@ -200,8 +200,8 @@ export default function DashboardLayout() {
           normalized.response_outline.length > 0);
 
       const hasCometData =
-        normalized?.comet_creation_data &&
-        Object.keys(normalized.comet_creation_data).length > 0;
+        normalized?.cycle_creation_data &&
+        Object.keys(normalized.cycle_creation_data).length > 0;
 
       if (isGeneratingOutline && hasOutline) {
         router.push("/outline-manager");
@@ -257,7 +257,7 @@ export default function DashboardLayout() {
       }
       const formattedCometData = {
         "Basic Information": {
-          "Comet Title": formData.cometTitle || "",
+          "Cycle Title": formData.cometTitle || "",
           Description: formData.description || "",
         },
         "Audience & Objectives": {
@@ -323,7 +323,10 @@ export default function DashboardLayout() {
       console.log(formData);
 
       const executionId = Math.floor(Math.random() * 10000).toString();
-      const traceId = crypto.randomUUID().replace(/-/g, "");
+      // Generate UUID using crypto.getRandomValues for browser compatibility
+      const traceId = globalThis.crypto.getRandomValues(new Uint8Array(16)).reduce((acc, byte) => {
+        return acc + byte.toString(16).padStart(2, '0');
+      }, '');
       const receivedAt = new Date().toISOString();
 
       // source_material payload
@@ -374,14 +377,14 @@ export default function DashboardLayout() {
       // Clear old outline and chapters for a fresh start
       const cleanedResponsePath = {
         ...(parsedSessionData?.response_path || {}),
-        chapters: [],
+   chapters: [],
         remaining_chapters: [],
       };
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
         input_type: "outline_creation",
-        comet_creation_data: formattedCometData,
+        cycle_creation_data: formattedCometData,
         response_outline: [],
         response_path: cleanedResponsePath,
         chatbot_conversation: [...chatbotConversation, { user: messageText }],
@@ -416,7 +419,7 @@ export default function DashboardLayout() {
       await graphqlClient.autoSaveComet(JSON.stringify({
         session_id: currentSessionId,
         input_type: "outline_creation",
-        comet_creation_data: formattedCometData,
+        cycle_creation_data: formattedCometData,
         response_outline: [],
         response_path: cleanedResponsePath,
         chatbot_conversation: [...chatbotConversation, { user: messageText }],
@@ -479,7 +482,7 @@ export default function DashboardLayout() {
           <div className="lg:block w-full lg:w-[360px] h-full lg:h-full">
             <ChatWindow
               cometManager={false}
-              inputType="comet_data_update"
+              inputType="cycle_data_update"
               pageIdentifier={1}
               initialInput={null}
               userQuestions={null}

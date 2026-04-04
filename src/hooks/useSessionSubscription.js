@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const PERSISTENT_SCREENS = {
   "/dashboard": "dashboard",
   "/outline-manager": "outline-manager",
-  "/comet-manager": "comet-manager",
+  "/cycle-manager": "cycle-manager",
 };
 
 /**

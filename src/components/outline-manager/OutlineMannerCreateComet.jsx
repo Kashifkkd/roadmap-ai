@@ -1,12 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  useMemo,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-} from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import { isArrayWithValues } from "@/utils/isArrayWithValues";
 import SectionHeader from "@/components/section-header";
@@ -15,13 +9,20 @@ import StepsDisplay from "./StepsDisplay";
 import { Label } from "@/components/ui/Label";
 import { Button } from "@/components/ui/Button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Plus,
   GripVertical,
   Zap,
   ChevronDown,
   Trash2,
   MoreHorizontal,
-  Pencil,
 } from "lucide-react";
 import SelectIcon from "@/components/icons/SelectIcon";
 import ChapterTextarea from "./ChapterTextarea";
@@ -62,8 +63,17 @@ export default function OutlineMannerCreateComet({
   useEffect(() => {
     if (isArrayWithValues(sourceOutline)) {
       const mappedChapters = sourceOutline.map((chapter) => ({
-        chapter: chapter?.chapter || "Untitled Chapter",
-        steps: isArrayWithValues(chapter?.steps) ? chapter.steps : [],
+        chapter: chapter?.chapter || chapter?.phase || "Untitled Chapter",
+        steps: isArrayWithValues(chapter?.steps) 
+          ? chapter.steps.map((step) => {
+              // Map micro-action to action, and exclude micro-action field
+              const { "micro-action": microAction, ...restStep } = step;
+              return {
+                ...restStep,
+                action: step.action || microAction || "",
+              };
+            })
+          : [],
       }));
       setChapters(mappedChapters);
     } else {
@@ -96,15 +106,21 @@ export default function OutlineMannerCreateComet({
   // Step title editing state
   const [editingStepKey, setEditingStepKey] = useState(null); // "chapterIndex-stepIndex"
   const [stepEditValue, setStepEditValue] = useState("");
-  const [openStepMenuKey, setOpenStepMenuKey] = useState(null); // "chapterIndex-stepIndex"
-  const [savingStepKey, setSavingStepKey] = useState(null); // "chapterIndex-stepIndex"
+
+  // Step menu state
+  const [openStepMenuKey, setOpenStepMenuKey] = useState(null);
+  const [stepMenuPosition, setStepMenuPosition] = useState({ top: 0, left: 0 });
+  const [deletingStepKey, setDeletingStepKey] = useState(null);
+
+  // Step delete confirmation state
+  const [stepDeleteConfirm, setStepDeleteConfirm] = useState(null); // { chapterIndex, stepIndex, stepTitle }
+
+  // Chapter delete confirmation state
+  const [chapterDeleteConfirmIndex, setChapterDeleteConfirmIndex] = useState(null);
+  const [deletingChapterIndex, setDeletingChapterIndex] = useState(null);
 
   const selectedChapterNameRef = useRef(null);
   const selectedStepTitleRef = useRef(null);
-  const outlineMannerPaneRef = useRef(null);
-  const [chapterDeleteConfirmIndex, setChapterDeleteConfirmIndex] =
-    useState(null);
-  const [deleteConfirmPaneBounds, setDeleteConfirmPaneBounds] = useState(null);
 
   useEffect(() => {
     if (!isArrayWithValues(chapters)) {
@@ -193,11 +209,53 @@ export default function OutlineMannerCreateComet({
     }
   };
 
+  const handleRequestDeleteChapter = (e, index) => {
+    e.stopPropagation();
+    setChapterDeleteConfirmIndex(index);
+    setOpenMenuIndex(null);
+  };
+
+  const handleConfirmDeleteChapter = () => {
+    if (chapterDeleteConfirmIndex === null) return;
+    const index = chapterDeleteConfirmIndex;
+    setDeletingChapterIndex(index);
+    setChapterDeleteConfirmIndex(null);
+    
+    // Simulate delete operation
+    setTimeout(() => {
+      handleDeleteChapter(null, index);
+      setDeletingChapterIndex(null);
+    }, 300);
+  };
+
   const handleEditChapterClick = (e, index, title) => {
     e.stopPropagation();
     setEditingChapterIndex(index);
     setChapterEditValue(title || "");
     setOpenMenuIndex(null);
+  };
+
+  const handleStepMenuClick = (e, chapterIndex, stepIndex) => {
+    e.stopPropagation();
+    const key = `${chapterIndex}-${stepIndex}`;
+    if (openStepMenuKey === key) {
+      setOpenStepMenuKey(null);
+    } else {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setStepMenuPosition({ top: rect.bottom + 4, left: rect.right - 100 });
+      setOpenStepMenuKey(key);
+    }
+  };
+
+  const handleDeleteStepWithLoader = (e, chapterIndex, stepIndex, stepTitle) => {
+    if (e) e.stopPropagation();
+    const key = `${chapterIndex}-${stepIndex}`;
+    setDeletingStepKey(key);
+    setOpenStepMenuKey(null);
+    setTimeout(() => {
+      handleDeleteStep(null, chapterIndex, stepIndex, stepTitle);
+      setDeletingStepKey(null);
+    }, 300);
   };
 
   const handleSaveChapterTitle = (e, index) => {
@@ -264,11 +322,6 @@ export default function OutlineMannerCreateComet({
       return;
     }
 
-    const key = `${chapterIndex}-${stepIndex}`;
-    setEditingStepKey(null);
-    setStepEditValue("");
-    setSavingStepKey(key);
-
     const newChapters = [...chapters];
     const newSteps = [...newChapters[chapterIndex].steps];
     newSteps[stepIndex] = {
@@ -281,6 +334,8 @@ export default function OutlineMannerCreateComet({
     };
 
     setChapters(newChapters);
+    setEditingStepKey(null);
+    setStepEditValue("");
 
     if (selectedStep?.title === chapters[chapterIndex].steps[stepIndex].title) {
       setSelectedStep(newSteps[stepIndex]);
@@ -298,7 +353,6 @@ export default function OutlineMannerCreateComet({
     } catch (error) {
       console.error("Error updating localStorage:", error);
     }
-    setTimeout(() => setSavingStepKey(null), 800);
   };
 
   const handleCancelStepEdit = (e) => {
@@ -474,7 +528,7 @@ export default function OutlineMannerCreateComet({
   };
 
   const handleDeleteStep = (e, chapterIndex, stepIndex, stepTitle) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
 
     // Remove step from local state
     const newChapters = [...chapters];
@@ -507,9 +561,11 @@ export default function OutlineMannerCreateComet({
     }
   };
 
-  const performChapterDelete = (chapterIndex) => {
+  const handleDeleteChapter = (e, chapterIndex) => {
+    if (e) e.stopPropagation();
     const deletedChapter = chapters[chapterIndex];
 
+    setOpenMenuIndex(null);
     setEditingChapterIndex((currentIndex) => {
       if (currentIndex === null) return null;
       if (currentIndex === chapterIndex) {
@@ -560,70 +616,14 @@ export default function OutlineMannerCreateComet({
     }
   };
 
-  const openChapterDeleteConfirm = (e, chapterIndex) => {
-    e.stopPropagation();
-    setOpenMenuIndex(null);
-    setChapterDeleteConfirmIndex(chapterIndex);
-  };
-
-  useLayoutEffect(() => {
-    if (chapterDeleteConfirmIndex === null) {
-      setDeleteConfirmPaneBounds(null);
-      return;
-    }
-    const updateBounds = () => {
-      if (typeof window === "undefined") return;
-      const el = outlineMannerPaneRef.current;
-      if (!el) {
-        setDeleteConfirmPaneBounds({
-          top: 0,
-          left: 0,
-          width: window.innerWidth,
-          height: window.innerHeight,
-        });
-        return;
-      }
-      const r = el.getBoundingClientRect();
-      setDeleteConfirmPaneBounds({
-        top: r.top,
-        left: r.left,
-        width: r.width,
-        height: r.height,
-      });
-    };
-    updateBounds();
-    window.addEventListener("resize", updateBounds);
-    window.addEventListener("scroll", updateBounds, true);
-    return () => {
-      window.removeEventListener("resize", updateBounds);
-      window.removeEventListener("scroll", updateBounds, true);
-    };
-  }, [chapterDeleteConfirmIndex]);
-
-  useEffect(() => {
-    if (chapterDeleteConfirmIndex === null) return;
-    const onKey = (e) => {
-      if (e.key === "Escape") setChapterDeleteConfirmIndex(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [chapterDeleteConfirmIndex]);
-
-  const handleConfirmDeleteChapter = () => {
-    if (chapterDeleteConfirmIndex === null) return;
-    const idx = chapterDeleteConfirmIndex;
-    setChapterDeleteConfirmIndex(null);
-    performChapterDelete(idx);
-  };
-
   useEffect(() => {
     try {
       const sessionData = JSON.parse(
         localStorage.getItem("sessionData") || "{}",
       );
       setText(
-        sessionData?.comet_creation_data?.["Basic Information"]?.[
-          "Comet Title"
+        sessionData?.cycle_creation_data?.["Basic Information"]?.[
+          "Cycle Title"
         ] || "New Manager Essentials",
       );
     } catch {
@@ -640,10 +640,7 @@ export default function OutlineMannerCreateComet({
   // }
 
   return (
-    <div
-      ref={outlineMannerPaneRef}
-      className="flex flex-col flex-1 w-full h-full bg-background rounded-xl overflow-hidden "
-    >
+    <div className="flex flex-col flex-1 w-full h-full bg-background rounded-xl overflow-hidden ">
       <div className="w-full p-2 shrink-0">
         <SectionHeader title={text} />
       </div>
@@ -654,7 +651,7 @@ export default function OutlineMannerCreateComet({
             <div className="flex flex-1 flex-col border-2 p-2 h-full min-h-0 overflow-hidden">
               <div className="p-2 border-b border-gray-300 flex justify-between items-center">
                 <Label className="text-base text-[#7367F0] font-medium">
-                  Chapters
+                  Phases
                 </Label>
                 <Button
                   variant="outline"
@@ -663,7 +660,7 @@ export default function OutlineMannerCreateComet({
                   disabled={isSubmittingChapter}
                 >
                   <Plus size={16} />
-                  Add Chapter
+                  Add Phase
                 </Button>
               </div>
               {showChapterTextarea ? (
@@ -700,7 +697,11 @@ export default function OutlineMannerCreateComet({
                           expandedChapters[index]
                             ? "border-gray-300 bg-primary-100 shadow-sm"
                             : "border-gray-300 bg-white shadow-sm "
-                        } ${draggedChapterIndex === index ? "opacity-50" : ""} group`}
+                        } ${draggedChapterIndex === index ? "opacity-50" : ""} ${
+                          deletingChapterIndex === index
+                            ? "opacity-50 pointer-events-none"
+                            : ""
+                        } group`}
                       >
                         <div
                           onClick={() => handleChapterClick(index, chapter)}
@@ -714,7 +715,7 @@ export default function OutlineMannerCreateComet({
                                 className="cursor-grab active:cursor-grabbing text-gray-500"
                               />
                               <p className="text-[10px] font-medium text-gray-900 px-2">
-                                Chapter {index + 1}
+                                Phase {index + 1}
                               </p>
                             </div>
                             <div className="flex justify-end items-start gap-2 h-full shrink-0">
@@ -810,6 +811,7 @@ export default function OutlineMannerCreateComet({
                                     }
                                   }}
                                 />
+                                <div className="border-t border-gray-300 mt-1 mb-2"></div>
                                 <div className="flex gap-2 items-end justify-end">
                                   <button
                                     onClick={(e) =>
@@ -829,6 +831,25 @@ export default function OutlineMannerCreateComet({
                               </div>
                             ) : (
                               <div className="flex-1 flex items-center gap-2 min-w-0 overflow-hidden">
+                                {deletingChapterIndex === index ? (
+                                  <div
+                                    className="flex items-center gap-3 rounded-xl border border-[#D9D6FF] bg-gradient-to-r from-[#F4F2FF] via-white to-[#F8F7FF] px-3 py-3 shadow-sm w-full"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+                                      <GradientLoader size={20} />
+                                    </span>
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-semibold text-[#352F6E]">
+                                        Deleting phase
+                                      </p>
+                                      <p className="text-xs text-[#574EB6]">
+                                        Please wait while we update this phase.
+                                      </p>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
                                 <p
                                   className={`text-base font-medium line-clamp-2 ${
                                     selectedChapter?.chapter ===
@@ -844,16 +865,17 @@ export default function OutlineMannerCreateComet({
                                 >
                                   {chapter?.chapter || "Untitled Chapter"}
                                 </p>
-                                <div className="relative ml-auto shrink-0">
-                                    <button
-                                      onClick={(e) =>
-                                        handleChapterMenuClick(e, index)
-                                      }
-                                      className="p-1 rounded-md hover:bg-gray-200 transition-colors"
-                                      title="Options"
-                                    >
+                                <div className="relative">
+                                  <button
+                                    onClick={(e) =>
+                                      handleChapterMenuClick(e, index)
+                                    }
+                                    className="p-1 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                    title="Options"
+                                    disabled={deletingChapterIndex !== null}
+                                  >
                                       <MoreHorizontal className="w-4 h-4 text-gray-500" />
-                                    </button>
+                                  </button>
                                     {openMenuIndex === index &&
                                       ReactDOM.createPortal(
                                         <>
@@ -863,7 +885,6 @@ export default function OutlineMannerCreateComet({
                                               setOpenMenuIndex(null)
                                             }
                                           />
-                                          
                                           <div
                                             className="fixed bg-white border border-gray-100 rounded-xl shadow-xl z-[100] min-w-[100px] py-1 overflow-hidden"
                                             style={{
@@ -886,12 +907,9 @@ export default function OutlineMannerCreateComet({
 
                                             <button
                                               onClick={(e) =>
-                                                openChapterDeleteConfirm(
-                                                  e,
-                                                  index,
-                                                )
+                                                handleRequestDeleteChapter(e, index)
                                               }
-                                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                                             >
                                               Delete
                                             </button>
@@ -900,8 +918,10 @@ export default function OutlineMannerCreateComet({
                                         document.body,
                                       )}
                                   </div>
+                                  </>
+                                )}
                               </div>
-                            )}
+                          )}
                           </div>
                           {/* <div className="flex justify-end items-start gap-2 h-full shrink-0">
                             <div
@@ -975,61 +995,6 @@ export default function OutlineMannerCreateComet({
                                         handleStepClick(e, chapter, step, index)
                                       }
                                     >
-                                      {/* Delete Step Button - Top Right */}
-                                      {/* <button
-                                        onClick={(e) =>
-                                          handleDeleteStep(
-                                            e,
-                                            index,
-                                            stepIndex,
-                                            step?.title,
-                                          )
-                                        }
-                                        className={`absolute top-1 right-1 p-1 rounded-md transition-colors z-10 opacity-0 group-hover:opacity-100 ${
-                                          selectedStep?.title === step?.title
-                                            ? "hover:bg-red-500/30 text-white"
-                                            : "hover:bg-red-100 text-red-500"
-                                        }`}
-                                        title="Delete Step"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button> */}
-
-                                      <div className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100">
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            const key = `${index}-${stepIndex}`;
-                                            setOpenStepMenuKey(openStepMenuKey === key ? null : key);
-                                          }}
-                                          className="p-1 rounded-md hover:bg-gray-200 transition-colors"
-                                          title="More options"
-                                        >
-                                          <MoreHorizontal className="w-4 h-4 text-gray-500" />
-                                        </button>
-                                        {openStepMenuKey === `${index}-${stepIndex}` && (
-                                          <>
-                                            <div
-                                              className="fixed inset-0 z-[99]"
-                                              onClick={(e) => { e.stopPropagation(); setOpenStepMenuKey(null); }}
-                                            />
-                                            <div className="absolute right-0 top-full mt-1 w-28 bg-white border border-gray-200 rounded-lg shadow-lg z-[100] overflow-hidden">
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setOpenStepMenuKey(null);
-                                                  handleEditStepClick(e, index, stepIndex, step?.title);
-                                                }}
-                                                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
-                                              >
-                                                <Pencil className="w-3.5 h-3.5" />
-                                                Edit
-                                              </button>
-                                            </div>
-                                          </>
-                                        )}
-                                      </div>
-
                                       <div
                                         className={`flex justify-center items-center gap-4 h-full shrink-0 ${
                                           selectedStep?.title === step?.title
@@ -1054,14 +1019,17 @@ export default function OutlineMannerCreateComet({
                                           Step {stepIndex + 1}
                                         </div>
                                         <div className="flex-1 min-w-0 overflow-hidden">
-                                          {savingStepKey === `${index}-${stepIndex}` ? (
-                                            <div className="flex items-center gap-3 rounded-xl border border-[#D9D6FF] bg-gradient-to-r from-[#F4F2FF] via-white to-[#F8F7FF] px-4 py-3 shadow-sm">
-                                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
-                                                <GradientLoader size={20} />
+                                          {deletingStepKey === `${index}-${stepIndex}` ? (
+                                            <div
+                                              className="flex items-center gap-3 rounded-xl border border-[#D9D6FF] bg-gradient-to-r from-[#F4F2FF] via-white to-[#F8F7FF] px-3 py-2 shadow-sm"
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+                                                <GradientLoader size={16} />
                                               </span>
                                               <div className="min-w-0">
-                                                <p className="text-sm font-semibold text-[#352F6E]">Saving step name</p>
-                                                <p className="text-xs text-[#574EB6]">Please wait while we update this step.</p>
+                                                <p className="text-xs font-semibold text-[#352F6E]">Deleting step</p>
+                                                <p className="text-[11px] text-[#574EB6]">Please wait while we update this step.</p>
                                               </div>
                                             </div>
                                           ) : editingStepKey ===
@@ -1105,6 +1073,7 @@ export default function OutlineMannerCreateComet({
                                                   }
                                                 }}
                                               />
+                                              <div className="border-t border-gray-300 mt-1 mb-2"></div>
                                               <div className="flex gap-2 items-end justify-end">
                                                 <button
                                                   onClick={(e) =>
@@ -1136,6 +1105,55 @@ export default function OutlineMannerCreateComet({
                                           )}
                                         </div>
                                       </div>
+                                      {!deletingStepKey && (
+                                        <div className="absolute top-1 right-1">
+                                          <button
+                                            onClick={(e) => handleStepMenuClick(e, index, stepIndex)}
+                                            className={`p-1 rounded-md transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50 ${
+                                              selectedStep?.title === step?.title
+                                                ? "hover:bg-white/20 text-white"
+                                                : "hover:bg-gray-200 text-gray-500"
+                                            }`}
+                                            title="Options"
+                                          >
+                                            <MoreHorizontal className="w-3 h-3" />
+                                          </button>
+                                          {openStepMenuKey === `${index}-${stepIndex}` &&
+                                            ReactDOM.createPortal(
+                                              <>
+                                                <div
+                                                  className="fixed inset-0 z-[99]"
+                                                  onClick={() => setOpenStepMenuKey(null)}
+                                                />
+                                                <div
+                                                  className="fixed bg-white border border-gray-100 rounded-xl shadow-xl z-[100] min-w-[100px] py-1 overflow-hidden"
+                                                  style={{ top: stepMenuPosition.top, left: stepMenuPosition.left }}
+                                                >
+                                                  <button
+                                                    onClick={(e) => {
+                                                      handleEditStepClick(e, index, stepIndex, step?.title);
+                                                      setOpenStepMenuKey(null);
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                                  >
+                                                    Edit
+                                                  </button>
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setStepDeleteConfirm({ chapterIndex: index, stepIndex, stepTitle: step?.title });
+                                                      setOpenStepMenuKey(null);
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                  >
+                                                    Delete
+                                                  </button>
+                                                </div>
+                                              </>,
+                                              document.body,
+                                            )}
+                                        </div>
+                                      )}
                                     </div>
                                   </React.Fragment>
                                 ))}
@@ -1148,7 +1166,7 @@ export default function OutlineMannerCreateComet({
                 ) : (
                   <div className="flex flex-col items-center justify-center p-8 text-center">
                     <p className="text-sm text-gray-500">
-                      No chapters available
+                      No phases available
                     </p>
                   </div>
                 )}
@@ -1181,66 +1199,80 @@ export default function OutlineMannerCreateComet({
         />
       </div>
 
-      {chapterDeleteConfirmIndex !== null && (
-        <div
-          className="fixed z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4 overflow-hidden pointer-events-auto"
-          style={
-            deleteConfirmPaneBounds
-              ? {
-                  top: deleteConfirmPaneBounds.top,
-                  left: deleteConfirmPaneBounds.left,
-                  width: deleteConfirmPaneBounds.width,
-                  height: deleteConfirmPaneBounds.height,
-                }
-              : undefined
-          }
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-chapter-dialog-title"
-          onClick={() => setChapterDeleteConfirmIndex(null)}
-        >
-          <div className="absolute inset-0 z-0" aria-hidden />
-          <div
-            className="relative z-10 w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start gap-3 mb-4">
-              <div className="flex-shrink-0 w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">
-                <Trash2 size={16} className="text-red-500" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <h2
-                  id="delete-chapter-dialog-title"
-                  className="text-sm font-semibold leading-tight"
-                >
-                  Delete Chapter
-                </h2>
-                <p className="text-xs font-medium text-muted-foreground">
-                  This will permanently remove the chapter and all its steps
-                </p>
-              </div>
-            </div>
-            <div className="border-t border-gray-200 mb-2" />
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setChapterDeleteConfirmIndex(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleConfirmDeleteChapter}
-              >
-                Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Step Delete Confirmation Dialog */}
+      <Dialog
+        open={stepDeleteConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setStepDeleteConfirm(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete this step?</DialogTitle>
+            <DialogDescription>
+              {stepDeleteConfirm
+                ? `Step ${stepDeleteConfirm.stepIndex + 1} (${stepDeleteConfirm.stepTitle || "Untitled Step"}) will be permanently removed. This action cannot be undone.`
+                : "This step will be permanently removed."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStepDeleteConfirm(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                if (!stepDeleteConfirm) return;
+                const { chapterIndex, stepIndex, stepTitle } = stepDeleteConfirm;
+                setStepDeleteConfirm(null);
+                handleDeleteStepWithLoader(null, chapterIndex, stepIndex, stepTitle);
+              }}
+            >
+              Yes, delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Chapter Delete Confirmation Dialog */}
+      <Dialog
+        open={chapterDeleteConfirmIndex !== null}
+        onOpenChange={(open) => {
+          if (!open) setChapterDeleteConfirmIndex(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete this phase?</DialogTitle>
+            <DialogDescription>
+              {chapterDeleteConfirmIndex >= 0
+                ? `Phase ${chapterDeleteConfirmIndex + 1} (${chapters[chapterDeleteConfirmIndex]?.chapter || "Untitled Phase"}) will be permanently removed along with all its steps. This action cannot be undone.`
+                : "This phase will be permanently removed."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setChapterDeleteConfirmIndex(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDeleteChapter}
+            >
+              Yes, delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

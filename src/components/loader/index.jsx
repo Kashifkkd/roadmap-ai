@@ -26,7 +26,7 @@ const ProgressbarLoader = () => {
                   }}
                 />
                 <h3 className="text-xl sm:text-2xl md:text-3xl font-bold font-serif leading-tight sm:leading-6 text-primary-900 text-center px-2">
-                  Creating your Comet
+                  Creating your Cycle
                 </h3>
                 <p className="text-sm sm:text-base font-medium leading-5 sm:leading-6 text-primary-900 text-center px-2 sm:px-4">
                   Our AI agents are working together to build your learning

@@ -1,0 +1,2380 @@
+"use client";
+// s
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
+import {
+  Rocket,
+  File,
+  ChevronDown,
+  Paperclip,
+  FileText,
+  Download,
+  Loader2,
+  FileImage,
+  FileVideo,
+  FileAudio,
+  FileIcon,
+  SquareKanban,
+  Search,
+  Plus,
+  GripVertical,
+  Pencil,
+  Trash2,
+  Check,
+  X,
+  MoreVertical,
+  MoreHorizontal,
+} from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Stack } from "@mui/material";
+import DevicePreview from "./DevicePreview";
+import GenerateStepImageButton from "./GenerateStepImageButton";
+import GradientLoader from "@/components/ui/GradientLoader";
+import { apiService } from "@/api/apiService";
+import { endpoints } from "@/api/endpoint";
+import { getSourceMaterials } from "@/api/getSourceMaterials";
+
+// Asset category buttons
+const ASSET_CATEGORIES = [
+  {
+    id: "image",
+    name: "Images & Graphic",
+    icon: FileImage,
+  },
+  {
+    id: "video",
+    name: "Video and Animation",
+    icon: FileVideo,
+  },
+  {
+    id: "tool",
+    name: "Tools",
+    icon: FileIcon,
+  },
+];
+
+// Filter assets by asset_type
+function filterAssetsByType(assets, assetType) {
+  if (!Array.isArray(assets) || assets.length === 0) return [];
+  return assets.filter((asset) => {
+    const type = asset?.asset_type?.toLowerCase() || "";
+    const wanted = (assetType || "").toLowerCase();
+    if (wanted === "video") {
+      return type === "video" || type === "animation";
+    }
+    return type === wanted;
+  });
+}
+
+export default function CometManagerSidebar({
+  selectedScreen,
+  onAddScreen,
+  chapters = [],
+  onReorderChapters,
+  onReorderSteps,
+  onDeleteChapter,
+  remainingChapters = [],
+  onChapterClick,
+  onRemainingChapterClick,
+  onRemainingStepClick,
+  sessionId,
+  selectedStepId,
+  setSelectedStep: setSelectedStepFromHook,
+  onMaterialSelect,
+  onAssetCategorySelect,
+  onTabChange,
+  externalTab,
+  onEditChapter,
+  onEditStep,
+  onDeleteStep,
+}) {
+  // console.log(selectedScreen, "selectedScreen >>>>>>>>>>>>");
+  // console.log(chapters, "chapters >>>>>>>>>>>><<<<<<<<<<<<<<");
+  // console.log("remainingChapters >>>>>>>>>>>>", remainingChapters, Array.isArray(remainingChapters), typeof remainingChapters);
+  const [tab, setTab] = useState(0);
+
+  // Sync with external tab control
+  useEffect(() => {
+    if (externalTab !== undefined && externalTab !== tab) {
+      setTab(externalTab);
+    }
+  }, [externalTab]);
+  const [selectedChapter, setSelectedChapter] = useState(null);
+  // Use selectedStepId from hook as the source of truth for step selection
+  // This ensures only one step can be selected at a time
+  // No local selectedStep state needed - use selectedStepId directly
+  const [expandedChapters, setExpandedChapters] = useState(new Set());
+  const [expandedSteps, setExpandedSteps] = useState(new Set());
+  const [expandedRemainingChapters, setExpandedRemainingChapters] = useState(
+    new Set(),
+  );
+  const [expandedRemainingSteps, setExpandedRemainingSteps] = useState(
+    new Set(),
+  );
+
+  const [draggedChapterIndex, setDraggedChapterIndex] = useState(null);
+  const [dropTargetChapter, setDropTargetChapter] = useState(null);
+  const [draggedStep, setDraggedStep] = useState(null);
+  const [dropTargetStep, setDropTargetStep] = useState(null);
+
+  // Step editing state
+  const [openStepHeaderMenuId, setOpenStepHeaderMenuId] = useState(null);
+  const [openStepDescriptionMenuId, setOpenStepDescriptionMenuId] =
+    useState(null);
+  const [openChapterMenuId, setOpenChapterMenuId] = useState(null);
+  const [editingChapterId, setEditingChapterId] = useState(null);
+  const [editingStepNameId, setEditingStepNameId] = useState(null);
+  const [editingStepDescriptionId, setEditingStepDescriptionId] =
+    useState(null);
+  const [editChapterName, setEditChapterName] = useState("");
+  const [editStepName, setEditStepName] = useState("");
+  const [editStepDescription, setEditStepDescription] = useState("");
+  const [pendingChapterOperation, setPendingChapterOperation] = useState(null);
+  const [pendingStepOperation, setPendingStepOperation] = useState(null);
+  const chapterEditInputRef = useRef(null);
+  const stepNameEditInputRef = useRef(null);
+  const stepDescriptionEditInputRef = useRef(null);
+  const menuRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpenStepHeaderMenuId(null);
+        setOpenStepDescriptionMenuId(null);
+        setOpenChapterMenuId(null);
+      }
+    };
+    if (
+      openStepHeaderMenuId ||
+      openStepDescriptionMenuId ||
+      openChapterMenuId
+    ) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [openStepHeaderMenuId, openStepDescriptionMenuId, openChapterMenuId]);
+
+  useEffect(() => {
+    if (editingChapterId && chapterEditInputRef.current) {
+      chapterEditInputRef.current.focus();
+      chapterEditInputRef.current.select();
+    }
+  }, [editingChapterId]);
+
+  useEffect(() => {
+    if (editingStepNameId && stepNameEditInputRef.current) {
+      stepNameEditInputRef.current.focus();
+      stepNameEditInputRef.current.select();
+    }
+  }, [editingStepNameId]);
+
+  useEffect(() => {
+    if (editingStepDescriptionId && stepDescriptionEditInputRef.current) {
+      stepDescriptionEditInputRef.current.focus();
+    }
+  }, [editingStepDescriptionId]);
+
+  const runOperationWithLoader = useCallback(
+    async (setPendingOperation, pendingOperation, action, cleanup) => {
+      setPendingOperation(pendingOperation);
+      try {
+        await Promise.resolve(action?.());
+      } finally {
+        cleanup?.();
+        setPendingOperation(null);
+      }
+    },
+    [],
+  );
+
+  const toggleStepMenu = (e, stepId, section = "header") => {
+    e.stopPropagation();
+    setOpenChapterMenuId(null);
+    if (section === "description") {
+      setOpenStepHeaderMenuId(null);
+      setOpenStepDescriptionMenuId((prev) => (prev === stepId ? null : stepId));
+      return;
+    }
+    setOpenStepDescriptionMenuId(null);
+    setOpenChapterMenuId(null);
+    setOpenStepHeaderMenuId((prev) => (prev === stepId ? null : stepId));
+  };
+
+  const toggleChapterMenu = (e, chapterId) => {
+    e.stopPropagation();
+    setOpenStepHeaderMenuId(null);
+    setOpenStepDescriptionMenuId(null);
+    setOpenChapterMenuId((prev) => (prev === chapterId ? null : chapterId));
+  };
+
+  const handleEditStepNameClick = (e, step, stepId) => {
+    e.stopPropagation();
+    setOpenStepHeaderMenuId(null);
+    setEditingStepDescriptionId(null);
+    setEditStepDescription("");
+    setEditingStepNameId(stepId);
+    setEditStepName(step.name || "");
+  };
+
+  const handleSaveStepNameEdit = async (e, chapterId, stepId, stepDescription) => {
+    e.stopPropagation();
+    if (!onEditStep) {
+      setEditingStepNameId(null);
+      setEditStepName("");
+      return;
+    }
+    await runOperationWithLoader(
+      setPendingStepOperation,
+      { stepId, type: "edit-name" },
+      () =>
+        onEditStep(chapterId, stepId, {
+          name: editStepName.trim(),
+          description: stepDescription || "",
+        }),
+      () => {
+        setEditingStepNameId(null);
+        setEditStepName("");
+      },
+    );
+  };
+
+  const handleCancelStepNameEdit = (e) => {
+    e.stopPropagation();
+    setEditingStepNameId(null);
+    setEditStepName("");
+  };
+
+  const handleStepNameEditKeyDown = (e, chapterId, stepId, stepDescription) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      handleSaveStepNameEdit(e, chapterId, stepId, stepDescription);
+    } else if (e.key === "Escape") {
+      handleCancelStepNameEdit(e);
+    }
+  };
+
+  const handleEditStepDescriptionClick = (e, step, stepId) => {
+    e.stopPropagation();
+    setOpenStepDescriptionMenuId(null);
+    setEditingStepNameId(null);
+    setEditStepName("");
+    setEditingStepDescriptionId(stepId);
+    setEditStepDescription(step.description || "");
+  };
+
+  const handleSaveStepDescriptionEdit = async (
+    e,
+    chapterId,
+    stepId,
+    stepName,
+  ) => {
+    e.stopPropagation();
+    if (!onEditStep) {
+      setEditingStepDescriptionId(null);
+      setEditStepDescription("");
+      return;
+    }
+    await runOperationWithLoader(
+      setPendingStepOperation,
+      { stepId, type: "edit-description" },
+      () =>
+        onEditStep(chapterId, stepId, {
+          name: stepName || "",
+          description: editStepDescription.trim(),
+        }),
+      () => {
+        setEditingStepDescriptionId(null);
+        setEditStepDescription("");
+      },
+    );
+  };
+
+  const handleCancelStepDescriptionEdit = (e) => {
+    e.stopPropagation();
+    setEditingStepDescriptionId(null);
+    setEditStepDescription("");
+  };
+
+  const handleStepDescriptionEditKeyDown = (e, chapterId, stepId, stepName) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      handleSaveStepDescriptionEdit(e, chapterId, stepId, stepName);
+    } else if (e.key === "Escape") {
+      handleCancelStepDescriptionEdit(e);
+    }
+  };
+
+  const handleDeleteStepClick = async (e, chapterId, stepId) => {
+    e.stopPropagation();
+    setOpenStepHeaderMenuId(null);
+    setOpenStepDescriptionMenuId(null);
+    if (!onDeleteStep) {
+      return;
+    }
+    await runOperationWithLoader(
+      setPendingStepOperation,
+      { stepId, type: "delete" },
+      () => onDeleteStep(chapterId, stepId),
+    );
+  };
+
+  const handleEditChapterClick = (e, chapterId, chapter) => {
+    e.stopPropagation();
+    setOpenChapterMenuId(null);
+    setEditingChapterId(chapterId);
+    setEditChapterName(chapter.chapter || chapter.name || "");
+  };
+
+  const handleSaveChapterEdit = async (e, chapterId) => {
+    e.stopPropagation();
+    if (!onEditChapter) {
+      setEditingChapterId(null);
+      setEditChapterName("");
+      return;
+    }
+    await runOperationWithLoader(
+      setPendingChapterOperation,
+      { chapterId, type: "edit" },
+      () => onEditChapter(chapterId, editChapterName.trim()),
+      () => {
+        setEditingChapterId(null);
+        setEditChapterName("");
+      },
+    );
+  };
+
+  const handleCancelChapterEdit = (e) => {
+    e.stopPropagation();
+    setEditingChapterId(null);
+    setEditChapterName("");
+  };
+
+  const handleChapterEditKeyDown = (e, chapterId) => {
+    if (e.key === "Enter") {
+      handleSaveChapterEdit(e, chapterId);
+    } else if (e.key === "Escape") {
+      handleCancelChapterEdit(e);
+    }
+  };
+
+  const handleDeleteChapterClick = async (e, chapterId) => {
+    e.stopPropagation();
+    setOpenChapterMenuId(null);
+    if (!onDeleteChapter) {
+      return;
+    }
+    await runOperationWithLoader(
+      setPendingChapterOperation,
+      { chapterId, type: "delete" },
+      () => {
+        setExpandedChapters((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(chapterId);
+          return newSet;
+        });
+
+        if (selectedChapter === chapterId) {
+          setSelectedChapter(null);
+          setExpandedSteps(new Set());
+          if (setSelectedStepFromHook) {
+            setSelectedStepFromHook(null);
+          }
+        }
+
+        return onDeleteChapter(chapterId);
+      },
+    );
+  };
+
+  // Chapter drag handlers - chapter 0 cannot be dragged
+  const handleChapterDragStart = (e, index) => {
+    if (index === 0) {
+      e.preventDefault();
+      return;
+    }
+    e.stopPropagation();
+    setDraggedChapterIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/chapter", index.toString());
+  };
+
+  const handleChapterDragEnd = () => {
+    setDraggedChapterIndex(null);
+    setDropTargetChapter(null);
+  };
+
+  const handleChapterDragOver = (e, index) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Cannot drop on chapter 0
+    if (index === 0) {
+      e.dataTransfer.dropEffect = "none";
+      return;
+    }
+    e.dataTransfer.dropEffect = "move";
+    if (draggedChapterIndex !== null && draggedChapterIndex !== index) {
+      setDropTargetChapter(index);
+    }
+  };
+
+  const handleChapterDragLeave = (e) => {
+    e.stopPropagation();
+    setDropTargetChapter(null);
+  };
+
+  const handleChapterDrop = (e, dropIndex) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Cannot drop on chapter 0
+    if (dropIndex === 0) {
+      setDraggedChapterIndex(null);
+      setDropTargetChapter(null);
+      return;
+    }
+
+    if (draggedChapterIndex === null || draggedChapterIndex === dropIndex) {
+      setDraggedChapterIndex(null);
+      setDropTargetChapter(null);
+      return;
+    }
+
+    // Build new order of chapters
+    const newOrder = chapters.map((_, i) => i);
+    const [draggedIdx] = newOrder.splice(draggedChapterIndex, 1);
+    newOrder.splice(dropIndex, 0, draggedIdx);
+
+    if (onReorderChapters) {
+      onReorderChapters(newOrder);
+    }
+
+    setDraggedChapterIndex(null);
+    setDropTargetChapter(null);
+  };
+
+  const handleStepDragStart = (e, chapterId, stepIndex) => {
+    e.stopPropagation();
+    setDraggedStep({ chapterId, stepIndex });
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/step", `${chapterId}:${stepIndex}`);
+  };
+
+  const handleStepDragEnd = () => {
+    setDraggedStep(null);
+    setDropTargetStep(null);
+  };
+
+  const handleStepDragOver = (e, chapterId, stepIndex) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+
+    if (
+      draggedStep &&
+      draggedStep.chapterId === chapterId &&
+      draggedStep.stepIndex !== stepIndex
+    ) {
+      setDropTargetStep({ chapterId, stepIndex });
+    }
+  };
+
+  const handleStepDragLeave = (e) => {
+    e.stopPropagation();
+    setDropTargetStep(null);
+  };
+
+  const handleStepDrop = (e, chapterId, stepIndex, steps) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (
+      !draggedStep ||
+      draggedStep.chapterId !== chapterId ||
+      draggedStep.stepIndex === stepIndex
+    ) {
+      setDraggedStep(null);
+      setDropTargetStep(null);
+      return;
+    }
+
+    const newOrder = steps.map((_, i) => i);
+    const [draggedIdx] = newOrder.splice(draggedStep.stepIndex, 1);
+    newOrder.splice(stepIndex, 0, draggedIdx);
+
+    if (onReorderSteps) {
+      onReorderSteps(chapterId, newOrder);
+    }
+
+    setDraggedStep(null);
+    setDropTargetStep(null);
+  };
+
+  // Source materials state
+  const [sourceMaterials, setSourceMaterials] = useState([]);
+  const [isLoadingSources, setIsLoadingSources] = useState(false);
+  const [sourcesError, setSourcesError] = useState(null);
+  const [expandedCategories, setExpandedCategories] = useState(new Set());
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedMaterial, setSelectedMaterial] = useState(null);
+  const [assets, setAssets] = useState([]);
+  const [isLoadingAssets, setIsLoadingAssets] = useState(false);
+  const [assetsError, setAssetsError] = useState(null);
+  const [selectedAssetCategory, setSelectedAssetCategory] = useState(null);
+  const [tools, setTools] = useState([]);
+  const [isLoadingTools, setIsLoadingTools] = useState(false);
+  const [toolsError, setToolsError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Store the callback in a ref to avoid infinite loops
+  const onAssetCategorySelectRef = useRef(onAssetCategorySelect);
+  useEffect(() => {
+    onAssetCategorySelectRef.current = onAssetCategorySelect;
+  }, [onAssetCategorySelect]);
+
+  // Filter assets by selected category
+  const filteredAssets = useMemo(() => {
+    if (!selectedAssetCategory) return [];
+    return filterAssetsByType(assets, selectedAssetCategory);
+  }, [assets, selectedAssetCategory]);
+
+  // Filter source materials by search query
+  const filteredSourceMaterials = useMemo(() => {
+    if (!searchQuery.trim()) return sourceMaterials;
+    const query = searchQuery.toLowerCase().trim();
+    return sourceMaterials.filter((material) => {
+      const materialName = material.source_name?.toLowerCase() || "";
+      return materialName.includes(query);
+    });
+  }, [sourceMaterials, searchQuery]);
+
+  useEffect(() => {
+    if (selectedAssetCategory && onAssetCategorySelectRef.current) {
+      const category = ASSET_CATEGORIES.find(
+        (cat) => cat.id === selectedAssetCategory,
+      );
+      if (category) {
+        let assetsForCategory = filteredAssets;
+
+        if (selectedAssetCategory === "tool") {
+          assetsForCategory = (tools || []).map((tool, index) => ({
+            id: tool.id || tool.name || `tool-${index}`,
+            asset_type: "tool",
+            asset_url:
+              tool.url || tool.link || tool.href || tool.tool_url || "",
+            name:
+              tool.name ||
+              tool.displayName ||
+              tool.label ||
+              `Tool ${index + 1}`,
+            description:
+              tool.description ||
+              tool.summary ||
+              tool.type ||
+              tool.category ||
+              "",
+            _tool: tool,
+          }));
+        }
+
+        onAssetCategorySelectRef.current(category, assetsForCategory);
+      }
+    }
+  }, [selectedAssetCategory, filteredAssets, tools]);
+  // Track previous selectedStepId to detect actual changes
+  // Note: selectedStepId is the step UUID (stepUid) to guarantee uniqueness
+  const prevSelectedStepIdRef = useRef(null);
+
+  useEffect(() => {
+    if (!selectedStepId) {
+      return;
+    }
+
+    // Only update expansion state if selectedStepId actually changed
+    // Don't reset when chapters data updates (subscription updates)
+    // selectedStepId is the step UUID, and step.id in chapters is also the UUID
+    const stepIdChanged = prevSelectedStepIdRef.current !== selectedStepId;
+    prevSelectedStepIdRef.current = selectedStepId;
+
+    // Find chapter containing the selected step using UUID
+    // step.id in transformed chapters is the step.uuid from source data
+    const chapterIndex = chapters.findIndex((chapter) =>
+      Array.isArray(chapter.steps)
+        ? chapter.steps.some((step) => step.id === selectedStepId)
+        : false,
+    );
+
+    if (chapterIndex === -1) {
+      return;
+    }
+
+    const chapter = chapters[chapterIndex];
+    const chapterId = chapter.id || `chapter-${chapterIndex}`;
+
+    // Only update selected chapter if step actually changed
+    if (stepIdChanged) {
+      setSelectedChapter(chapterId);
+
+      // Preserve existing expanded chapters, just ensure the selected chapter is expanded
+      setExpandedChapters((prev) => {
+        const newSet = new Set(prev);
+        newSet.add(chapterId); // Add selected chapter if not already expanded
+        return newSet;
+      });
+
+      // Clear previous expanded steps and only expand the newly selected step
+      // This ensures only one step appears selected at a time
+      setExpandedSteps(new Set([selectedStepId]));
+    } else {
+      // Step didn't change, just ensure chapter is set (in case chapters array was recreated)
+      setSelectedChapter((prev) => prev || chapterId);
+    }
+  }, [selectedStepId, chapters]);
+
+  const handleTabChange = (index) => {
+    setTab(index);
+
+    // Clear all Data while changing tabs
+    setSelectedAssetCategory(null);
+    setSearchQuery("");
+
+    if (onMaterialSelect) {
+      onMaterialSelect(null);
+    }
+    if (onAssetCategorySelect) {
+      onAssetCategorySelect(null, []);
+    }
+    if (onTabChange) {
+      onTabChange(index);
+    }
+  };
+
+  //chapter
+  const toggleChapter = (chapterId) => {
+    setExpandedChapters((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(chapterId)) {
+        newSet.delete(chapterId);
+      } else {
+        newSet.add(chapterId);
+      }
+      return newSet;
+    });
+  };
+
+  // Toggle remaining chapter expansion
+  const toggleRemainingChapter = (chapterKey) => {
+    setExpandedRemainingChapters((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(chapterKey)) {
+        newSet.delete(chapterKey);
+      } else {
+        newSet.add(chapterKey);
+      }
+      return newSet;
+    });
+  };
+
+  // Toggle remaining step expansion - only one step can be expanded at a time
+  const toggleRemainingStep = (stepKey) => {
+    setExpandedRemainingSteps((prev) => {
+      // If clicking the same step that's already expanded, close it
+      if (prev.has(stepKey)) {
+        return new Set();
+      }
+      // Otherwise, close all and open only the clicked step
+      return new Set([stepKey]);
+    });
+  };
+
+  //step - only handles expansion/collapse, not selection
+  const toggleStep = (stepId) => {
+    // Don't change selection here - selection is handled by the outer click handler
+    setExpandedSteps((prev) => {
+      const newSet = new Set();
+      // If clicking on the same step that's already expanded, collapse it
+      // Otherwise, expand only the clicked step (close others)
+      if (!prev.has(stepId)) {
+        newSet.add(stepId);
+      }
+      return newSet;
+    });
+  };
+  //category
+  const toggleCategory = (categoryId) => {
+    setExpandedCategories((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+
+  // categories
+  const organizeMaterialsByCategory = (materials) => {
+    const categories = [
+      { id: "training-manuals", name: "Training Manuals", materials: [] },
+      {
+        id: "presentations",
+        name: "Presentations & Slide Decks",
+        materials: [],
+      },
+      { id: "other", name: "Other", materials: [] },
+    ];
+
+    materials.forEach((material) => {
+      if (material.type === "link") {
+        // Web links → Other
+        categories[2].materials.push(material);
+        return;
+      }
+      const extension =
+        material.source_name?.split(".").pop()?.toLowerCase() || "";
+
+      if (extension === "pdf") {
+        // PDFs
+        categories[0].materials.push(material);
+      } else if (["ppt", "pptx", "key"].includes(extension)) {
+        // Presentations
+        categories[1].materials.push(material);
+      } else {
+        categories[2].materials.push(material);
+      }
+    });
+
+    return categories.filter((cat) => cat.materials.length > 0);
+  };
+
+  const fetchSourceMaterialsData = useCallback(async () => {
+    if (!sessionId) {
+      setSourcesError("Session ID is required to fetch source materials");
+      setIsLoadingSources(false);
+      return;
+    }
+
+    setIsLoadingSources(true);
+    setSourcesError(null);
+
+    try {
+      const materials = await getSourceMaterials(sessionId);
+      setSourceMaterials(materials);
+    } catch (error) {
+      console.error("Failed to fetch source materials:", error);
+      setSourcesError(error.message || "Failed to load source materials");
+      setSourceMaterials([]);
+    } finally {
+      setIsLoadingSources(false);
+    }
+  }, [sessionId]);
+  const fetchAssetsData = useCallback(async () => {
+    if (!sessionId) {
+      setAssetsError("Session ID is required to fetch source materials");
+      setIsLoadingAssets(false);
+      return;
+    }
+
+    setIsLoadingAssets(true);
+    setAssetsError(null);
+
+    try {
+      const response = await apiService({
+        endpoint: endpoints.getAssets,
+        method: "GET",
+        params: {
+          session_id: sessionId,
+        },
+      });
+      if (response.error) {
+        throw new Error(response.error?.message || "Failed to fetch assets");
+      }
+
+      if (response.response) {
+        const assetsData = response?.response?.assets || [];
+        const materials = Array.isArray(assetsData) ? assetsData : [];
+        setAssets(materials);
+      } else {
+        setAssets([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch assets:", error);
+      setAssetsError(error.message || "Failed to load assets");
+      setAssets([]);
+    } finally {
+      setIsLoadingAssets(false);
+    }
+  }, [sessionId]);
+
+  const fetchToolsData = useCallback(async () => {
+    if (!sessionId) {
+      setToolsError("Session ID is required to fetch tools");
+      setIsLoadingTools(false);
+      return;
+    }
+
+    setIsLoadingTools(true);
+    setToolsError(null);
+
+    try {
+      const response = await apiService({
+        endpoint: endpoints.getTools,
+        method: "GET",
+        params: {
+          session_id: sessionId,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error?.message || "Failed to fetch tools");
+      }
+
+      if (response.response) {
+        const toolsData =
+          response.response.tools && Array.isArray(response.response.tools)
+            ? response.response.tools
+            : response.response;
+
+        const toolsList = Array.isArray(toolsData) ? toolsData : [];
+        setTools(toolsList);
+      } else {
+        setTools([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch tools:", error);
+      setToolsError(error.message || "Failed to load tools");
+      setTools([]);
+    } finally {
+      setIsLoadingTools(false);
+    }
+  }, [sessionId]);
+
+  // Fetch source materials when Sources tab is selected
+  useEffect(() => {
+    if (tab === 1 && sessionId) {
+      fetchSourceMaterialsData();
+    }
+  }, [tab, sessionId, fetchSourceMaterialsData]);
+  useEffect(() => {
+    if (tab === 2 && sessionId) {
+      fetchAssetsData();
+    }
+  }, [tab, sessionId, fetchAssetsData]);
+
+  useEffect(() => {
+    if (tab === 2 && selectedAssetCategory === "tool" && sessionId) {
+      fetchToolsData();
+    }
+  }, [tab, selectedAssetCategory, sessionId, fetchToolsData]);
+
+  // Format file size helper
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  // Get material file size
+  const getMaterialSize = (material) => {
+    if (material.file_size) return formatFileSize(material.file_size);
+    if (material.size) return formatFileSize(material.size);
+    return null;
+  };
+
+  // Get file type icon
+  const getFileIcon = (fileName) => {
+    if (!fileName) return FileText;
+
+    const extension = fileName.split(".").pop()?.toLowerCase();
+    if (!extension) return FileText;
+
+    // PDF files
+    if (extension === "pdf") return FileIcon;
+
+    // Image files
+    if (
+      ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp"].includes(extension)
+    ) {
+      return FileImage;
+    }
+
+    // Video files
+    if (
+      ["mp4", "avi", "mov", "wmv", "flv", "webm", "mkv"].includes(extension)
+    ) {
+      return FileVideo;
+    }
+
+    // Audio files
+    if (["mp3", "wav", "flac", "aac", "ogg", "m4a"].includes(extension)) {
+      return FileAudio;
+    }
+
+    // Document files
+    if (["doc", "docx", "txt", "rtf"].includes(extension)) {
+      return FileText;
+    }
+
+    return FileText;
+  };
+
+  const buttons = [
+    {
+      onClick: () => handleTabChange(0),
+      children: (
+        <div className="flex items-center gap-1">
+          <SquareKanban size={18} className="rotate-180 rounded-md" />
+          {/* <Image src="/chart.svg" alt="Steps" width={16} height={16} /> */}
+          <span className="text-xs sm:text-sm">Steps</span>
+        </div>
+      ),
+    },
+    {
+      onClick: () => handleTabChange(1),
+      children: (
+        <div className="flex items-center gap-1">
+          <File size={18} />
+          <span className="text-xs sm:text-sm">Sources</span>
+        </div>
+      ),
+    },
+    {
+      onClick: () => handleTabChange(2),
+      children: (
+        <div className="flex items-center gap-1">
+          <Paperclip size={18} />
+          <span className="text-xs sm:text-sm">Assets</span>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="flex flex-col w-full  gap-2 h-full overflow-hidden">
+      {/* Tabs */}
+      <div className="flex justify-between w-full  rounded-xl shrink-0">
+        <Stack
+          direction="row"
+          className="bg-white rounded-xl w-full justify-between"
+        >
+          {buttons.map((button, index) => (
+            <Button
+              size="md"
+              variant="default"
+              key={index}
+              onClick={button.onClick}
+              className={`text-xs sm:text-sm p-2 ${
+                index === tab
+                  ? "bg-primary text-background"
+                  : "bg-background text-gray-400 hover:bg-primary-100 hover:text-primary shadow-none"
+              }`}
+            >
+              {button.children}
+            </Button>
+          ))}
+        </Stack>
+      </div>
+
+      {/* Tab Content */}
+      <div className="flex flex-col gap-2 bg-primary-50 p-2 rounded-xl flex-1 overflow-auto">
+        <div className="flex flex-col gap-2 flex-1">
+          {/* Steps Tab Content */}
+          {tab === 0 && (
+            <>
+              {chapters && chapters.length > 0 ? (
+                chapters.map((chapter, index) => {
+                  const chapterId = chapter.id || `chapter-${index}`;
+                  const chapterKey = `${chapterId}-${index}`;
+                  const stepCount = chapter.steps?.length || 0;
+                  const isSelected = selectedChapter === chapterId;
+                  const isExpanded = expandedChapters.has(chapterId);
+                  const isChapterOperationPending =
+                    pendingChapterOperation?.chapterId === chapterId;
+                  const chapterPendingLabel =
+                    pendingChapterOperation?.type === "delete"
+                      ? "Deleting phase"
+                      : "Saving phase changes";
+                  const isDraggable = index !== 0; // Chapter 0 cannot be dragged
+                  const isDraggedOver =
+                    dropTargetChapter === index &&
+                    draggedChapterIndex !== null &&
+                    index !== 0;
+
+                  return (
+                    <div
+                      key={chapterKey}
+                      className="group flex flex-col transition-all"
+                      onDragOver={(e) => handleChapterDragOver(e, index)}
+                      onDragLeave={(e) => handleChapterDragLeave(e)}
+                      onDrop={(e) => handleChapterDrop(e, index)}
+                    >
+                      {isDraggedOver && (
+                        <div className="h-1.5 bg-primary rounded-full mx-2 my-1 transition-all shadow-sm pointer-events-none" />
+                      )}
+                      <div
+                        draggable={isDraggable}
+                        onDragStart={(e) => handleChapterDragStart(e, index)}
+                        onDragEnd={handleChapterDragEnd}
+                        className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
+                          isExpanded ? "bg-primary-100" : "bg-white"
+                        } ${draggedChapterIndex === index ? "opacity-50" : ""}`}
+                      >
+                        {/* Chapter Header */}
+                        <div
+                          onClick={() => {
+                            if (
+                              editingChapterId === chapterId ||
+                              isChapterOperationPending
+                            ) {
+                              return;
+                            }
+                            setSelectedChapter(chapterId);
+                            toggleChapter(chapterId);
+                            // Clear step selection when clicking chapter
+                            // Use the hook's setSelectedStep which manages selectedStepId
+                            if (setSelectedStepFromHook) {
+                              setSelectedStepFromHook(null);
+                            }
+                            setExpandedSteps(new Set());
+                            if (onChapterClick) {
+                              onChapterClick(chapterId, chapter);
+                            }
+                          }}
+                          className={`flex items-center gap-2 p-3 sm:p-4 transition-all ${
+                            editingChapterId === chapterId ||
+                            isChapterOperationPending
+                              ? "cursor-default"
+                              : "cursor-pointer"
+                          }`}
+                        >
+                          {editingChapterId !== chapterId &&
+                            !isChapterOperationPending && (
+                            <>
+                              {isDraggable ? (
+                                <GripVertical
+                                  size={18}
+                                  className="cursor-grab active:cursor-grabbing text-gray-400 shrink-0"
+                                />
+                              ) : (
+                                <div className="w-[18px] shrink-0" />
+                              )}
+                              <div
+                                className={`rounded-full p-1 ${
+                                  isSelected ? "bg-primary" : "bg-primary-100"
+                                }`}
+                              >
+                                <ChevronDown
+                                  size={16}
+                                  className={`${
+                                    isSelected ? "text-white" : "text-primary"
+                                  } transition-transform ${
+                                    isExpanded ? "rotate-180" : ""
+                                  }`}
+                                />
+                              </div>
+                            </>
+                          )}
+                          <div className="flex flex-col flex-1 min-w-0">
+                            {isChapterOperationPending ? (
+                              <div
+                                className="flex items-center gap-3 rounded-xl border border-[#D9D6FF] bg-gradient-to-r from-[#F4F2FF] via-white to-[#F8F7FF] px-3 py-3 shadow-sm"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+                                  <GradientLoader size={20} />
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-[#352F6E]">
+                                    {chapterPendingLabel}
+                                  </p>
+                                  <p className="text-xs text-[#574EB6]">
+                                    Please wait while we update this phase.
+                                  </p>
+                                </div>
+                              </div>
+                            ) : editingChapterId === chapterId ? (
+                              <div
+                                className="flex flex-col gap-3"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="flex items-center gap-2 justify-between">
+                                  <p className="text-[10px] font-medium text-gray-900">
+                                    Phase {index + 1}
+                                  </p>
+                                  <p
+                                    className={`rounded-lg px-2 bg-primary-100 text-[8px] text-primary-600 ${isExpanded ? "bg-primary-700 text-white" : "bg-primary-100 text-primary-600"}`}
+                                  >
+                                    Ready for Review
+                                  </p>
+                                </div>
+                                <div className="border border-gray-300 rounded-md p-2 bg-white">
+                                  {/* <label className="text-xs font-medium text-gray-600 mb-1 block ">
+                                    Chapter name
+                                  </label> */}
+                                  <textarea
+                                    ref={chapterEditInputRef}
+                                    value={editChapterName}
+                                    onChange={(e) =>
+                                      setEditChapterName(e.target.value)
+                                    }
+                                    onKeyDown={(e) =>
+                                      handleChapterEditKeyDown(e, chapterId)
+                                    }
+                                    className="w-full px-2 py-1.5 text-xs focus:outline-none resize-none overflow-y-auto"
+                                    placeholder="Phase name"
+                                    rows={2}
+                                  />
+                                  <div className="border-t border-gray-300 mt-1 mb-2"></div>
+                                  <div className="flex gap-2 items-end justify-end">
+                                    <button
+                                      onClick={(e) =>
+                                        handleSaveChapterEdit(e, chapterId)
+                                      }
+                                      className="flex items-center px-2 py-1 text-xs font-medium text-white bg-primary rounded-sm hover:bg-primary-700 transition-colors border border-primary"
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      onClick={handleCancelChapterEdit}
+                                      className="flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white rounded-sm hover:bg-primary-100 transition-colors border border-gray-300"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex items-center gap-2 justify-between">
+                                  <p className="text-[10px] font-medium text-gray-900">
+                                    Phase {index}
+                                  </p>
+                                  <p
+                                    className={`rounded-lg px-2 bg-primary-100 text-[8px] text-primary-600 ${isExpanded ? "bg-primary-700 text-white" : "bg-primary-100 text-primary-600"}`}
+                                  >
+                                    Ready for Review
+                                  </p>
+                                </div>
+                                <div className="relative flex flex-row justify-between">
+                                  <p
+                                    className={`text-sm sm:text-sm font-medium ${
+                                      isSelected
+                                        ? "text-gray-900 "
+                                        : "text-primary"
+                                    }`}
+                                  >
+                                    {chapter.chapter ||
+                                      chapter.name ||
+                                      "Untitled Phase"}
+                                  </p>
+                                  <div
+                                    className={`relative flex items-end justify-end ${
+                                      isSelected
+                                        ? "opacity-100"
+                                        : "opacity-0 group-hover:opacity-100"
+                                    }`}
+                                    ref={
+                                      openChapterMenuId === chapterId
+                                        ? menuRef
+                                        : null
+                                    }
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={(e) =>
+                                        toggleChapterMenu(e, chapterId)
+                                      }
+                                      className="rounded-md p-1 transition-colors hover:bg-gray-100"
+                                      title="More options"
+                                      aria-label={`More options for ${chapter.chapter || chapter.name || `Chapter ${index + 1}`}`}
+                                    >
+                                      <MoreHorizontal className="h-4 w-4 text-gray-500" />
+                                    </button>
+                                    {openChapterMenuId === chapterId && (
+                                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                                        <button
+                                          onClick={(e) =>
+                                            handleEditChapterClick(
+                                              e,
+                                              chapterId,
+                                              chapter,
+                                            )
+                                          }
+                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                        >
+                                          <Pencil className="w-3.5 h-3.5" />
+                                          Edit
+                                        </button>
+                                        <button
+                                          onClick={(e) =>
+                                            handleDeleteChapterClick(
+                                              e,
+                                              chapterId,
+                                            )
+                                          }
+                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                          Delete
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Expanded Steps - Inside the same card */}
+                        {!isChapterOperationPending &&
+                          isExpanded &&
+                          chapter.steps &&
+                          chapter.steps.length > 0 && (
+                            <div className="flex flex-col gap-2 px-3 pb-3">
+                              {chapter.steps.map((step, stepIndex) => {
+                                // Create unique step ID that includes chapter index and step index
+                                const stepId =
+                                  step.id || `step-${chapterId}-${stepIndex}`;
+                                // Use selectedStepId directly from hook - ensures only one step is selected
+                                const isStepSelected =
+                                  selectedStepId === stepId;
+                                const isStepExpanded =
+                                  expandedSteps.has(stepId);
+                                const isStepOperationPending =
+                                  pendingStepOperation?.stepId === stepId;
+                                const stepPendingLabel =
+                                  pendingStepOperation?.type === "delete"
+                                    ? "Deleting step"
+                                    : pendingStepOperation?.type === "edit-name"
+                                      ? "Saving step name"
+                                      : "Saving step changes";
+                                const showStepHeaderLoader =
+                                  isStepOperationPending &&
+                                  (!isStepExpanded ||
+                                    pendingStepOperation?.type === "edit-name" ||
+                                    pendingStepOperation?.type === "delete");
+                                const showStepDetailsLoader =
+                                  isStepOperationPending &&
+                                  isStepExpanded &&
+                                  !showStepHeaderLoader;
+                                const isStepDragged =
+                                  draggedStep &&
+                                  draggedStep.chapterId === chapterId &&
+                                  draggedStep.stepIndex === stepIndex;
+                                const isStepDraggedOver =
+                                  dropTargetStep &&
+                                  dropTargetStep.chapterId === chapterId &&
+                                  dropTargetStep.stepIndex === stepIndex;
+                                return (
+                                  <div
+                                    key={stepId}
+                                    className="flex flex-col transition-all"
+                                    onDragOver={(e) =>
+                                      handleStepDragOver(
+                                        e,
+                                        chapterId,
+                                        stepIndex,
+                                      )
+                                    }
+                                    onDragLeave={handleStepDragLeave}
+                                    onDrop={(e) =>
+                                      handleStepDrop(
+                                        e,
+                                        chapterId,
+                                        stepIndex,
+                                        chapter.steps,
+                                      )
+                                    }
+                                  >
+                                    {isStepDraggedOver && (
+                                      <div className="h-1 bg-primary rounded-full mx-2 mb-1 transition-all shadow-sm pointer-events-none" />
+                                    )}
+                                    <div
+                                      draggable={
+                                        !isStepOperationPending &&
+                                        editingStepNameId !== stepId &&
+                                        editingStepDescriptionId !== stepId
+                                      }
+                                      onDragStart={(e) =>
+                                        handleStepDragStart(
+                                          e,
+                                          chapterId,
+                                          stepIndex,
+                                        )
+                                      }
+                                      onDragEnd={handleStepDragEnd}
+                                      className={`group flex flex-col rounded-sm transition-all ${
+                                        isStepExpanded
+                                          ? "bg-primary-700"
+                                          : isStepSelected
+                                            ? "bg-primary-700"
+                                            : "bg-white"
+                                      } ${isStepDragged ? "opacity-50" : ""}`}
+                                    >
+                                      {/* Step Header */}
+                                      <div
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (isStepOperationPending) {
+                                            return;
+                                          }
+                                          // Don't handle click if it's on the chevron (let chevron handler do it)
+                                          if (
+                                            e.target.closest(".step-chevron") ||
+                                            e.target.closest(".step-actions")
+                                          ) {
+                                            return;
+                                          }
+                                          // Select this step (only one can be selected at a time)
+                                          // Use the hook's setSelectedStep which manages selectedStepId
+                                          if (setSelectedStepFromHook) {
+                                            setSelectedStepFromHook(stepId);
+                                          }
+                                        }}
+                                        className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
+                                          isStepSelected || isStepExpanded
+                                            ? "text-white"
+                                            : "hover:bg-gray-200"
+                                        }`}
+                                      >
+                                        <GripVertical
+                                          size={14}
+                                          className={`cursor-grab active:cursor-grabbing shrink-0 ${
+                                            isStepSelected || isStepExpanded
+                                              ? "text-white"
+                                              : "text-gray-400"
+                                          }`}
+                                        />
+                                        <div
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (isStepOperationPending) {
+                                              return;
+                                            }
+                                            // Select the step first, then toggle expansion
+                                            // Use the hook's setSelectedStep which manages selectedStepId
+                                            if (setSelectedStepFromHook) {
+                                              setSelectedStepFromHook(stepId);
+                                            }
+                                            toggleStep(stepId);
+                                          }}
+                                          className={`step-chevron rounded-full p-1 shrink-0 ${
+                                            isStepSelected || isStepExpanded
+                                              ? "bg-white"
+                                              : "bg-primary-100"
+                                          }`}
+                                        >
+                                          <ChevronDown
+                                            size={12}
+                                            className={`transition-transform ${
+                                              isStepExpanded ? "rotate-180" : ""
+                                            } ${
+                                              isStepSelected || isStepExpanded
+                                                ? "text-primary-700"
+                                                : "text-primary"
+                                            }`}
+                                          />
+                                        </div>
+                                        <div className="flex items-start gap-2 py-1 flex-1 min-w-0">
+                                          {showStepHeaderLoader ? (
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-center gap-3 rounded-xl border border-[#D9D6FF] bg-gradient-to-r from-[#F4F2FF] via-white to-[#F8F7FF] px-4 py-3 shadow-sm">
+                                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+                                                  <GradientLoader size={20} />
+                                                </span>
+                                                <div className="min-w-0">
+                                                  <p className="text-sm font-semibold text-[#352F6E]">
+                                                    {stepPendingLabel}
+                                                  </p>
+                                                  <p className="text-xs text-[#574EB6]">
+                                                    Please wait while we update
+                                                    this step.
+                                                  </p>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ) : editingStepNameId === stepId ? (
+                                            <div
+                                              className="flex-1 min-w-0"
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              <div className="border border-gray-300 rounded-md p-2 bg-white">
+                                                <textarea
+                                                  ref={stepNameEditInputRef}
+                                                  value={editStepName}
+                                                  onChange={(e) =>
+                                                    setEditStepName(
+                                                      e.target.value,
+                                                    )
+                                                  }
+                                                  onKeyDown={(e) =>
+                                                    handleStepNameEditKeyDown(
+                                                      e,
+                                                      chapterId,
+                                                      stepId,
+                                                      step.description,
+                                                    )
+                                                  }
+                                                  className="w-full px-2 py-1.5 text-xs focus:outline-none resize-none overflow-y-auto text-gray-900"
+                                                  placeholder="Step name"
+                                                  rows={2}
+                                                />
+                                                <div className="border-t border-gray-300 mt-1 mb-2"></div>
+                                                <div className="flex gap-2 items-end justify-end">
+                                                  <button
+                                                    onClick={(e) =>
+                                                      handleSaveStepNameEdit(
+                                                        e,
+                                                        chapterId,
+                                                        stepId,
+                                                        step.description,
+                                                      )
+                                                    }
+                                                    className="flex items-center px-2 py-1 text-xs font-medium text-white bg-primary rounded-sm hover:bg-primary-700 transition-colors border border-primary"
+                                                  >
+                                                    Save
+                                                  </button>
+                                                  <button
+                                                    onClick={
+                                                      handleCancelStepNameEdit
+                                                    }
+                                                    className="flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white rounded-sm hover:bg-primary-100 transition-colors border border-gray-300"
+                                                  >
+                                                    Cancel
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <>
+                                              <div className="flex flex-col flex-1 min-w-0">
+                                                <p
+                                                  className={`text-xs sm:text-xs  ${
+                                                    isStepSelected ||
+                                                    isStepExpanded
+                                                      ? "text-white"
+                                                      : "text-gray-900"
+                                                  }`}
+                                                >
+                                                  Step {stepIndex + 1}
+                                                </p>
+                                                <p
+                                                  className={`text-xs sm:text-sm font-semibold ${
+                                                    isStepSelected ||
+                                                    isStepExpanded
+                                                      ? "text-white"
+                                                      : "text-gray-900"
+                                                  }`}
+                                                >
+                                                  {step.name ||
+                                                    `Step ${stepIndex + 1}`}
+                                                </p>
+                                              </div>
+                                              <div
+                                                className={`step-actions relative flex items-start justify-end shrink-0 ${
+                                                  isStepSelected ||
+                                                  isStepExpanded
+                                                    ? "opacity-100"
+                                                    : "opacity-0 group-hover:opacity-100"
+                                                }`}
+                                                ref={
+                                                  openStepHeaderMenuId ===
+                                                  stepId
+                                                    ? menuRef
+                                                    : null
+                                                }
+                                              >
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) =>
+                                                    toggleStepMenu(
+                                                      e,
+                                                      stepId,
+                                                      "header",
+                                                    )
+                                                  }
+                                                  className={`rounded-md p-1 transition-colors ${
+                                                    isStepSelected ||
+                                                    isStepExpanded
+                                                      ? "hover:bg-primary-600"
+                                                      : "hover:bg-gray-100"
+                                                  }`}
+                                                  title="More options"
+                                                  aria-label={`More options for ${step.name || `Step ${stepIndex + 1}`}`}
+                                                >
+                                                  <MoreHorizontal
+                                                    className={`h-4 w-4 ${
+                                                      isStepSelected ||
+                                                      isStepExpanded
+                                                        ? "text-white"
+                                                        : "text-gray-500"
+                                                    }`}
+                                                  />
+                                                </button>
+                                                {openStepHeaderMenuId ===
+                                                  stepId && (
+                                                  <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                                                    <button
+                                                      onClick={(e) =>
+                                                        handleEditStepNameClick(
+                                                          e,
+                                                          step,
+                                                          stepId,
+                                                        )
+                                                      }
+                                                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                                    >
+                                                      <Pencil className="w-3.5 h-3.5" />
+                                                      Edit
+                                                    </button>
+                                                    <button
+                                                      onClick={(e) =>
+                                                        handleDeleteStepClick(
+                                                          e,
+                                                          chapterId,
+                                                          stepId,
+                                                        )
+                                                      }
+                                                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                                                    >
+                                                      <Trash2 className="w-3.5 h-3.5" />
+                                                      Delete
+                                                    </button>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Step Details (Expanded) - Inside the same card */}
+                                      {isStepExpanded && (
+                                        <div className="px-2 pb-2">
+                                          <div className="px-3 py-3 bg-white rounded-lg">
+                                            <div className="flex flex-col gap-2">
+                                              {showStepDetailsLoader ? (
+                                                <div className="flex items-center gap-3 rounded-xl border border-[#D9D6FF] bg-gradient-to-r from-[#F4F2FF] via-white to-[#F8F7FF] px-4 py-4 shadow-sm">
+                                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+                                                    <GradientLoader size={22} />
+                                                  </span>
+                                                  <div className="min-w-0">
+                                                    <p className="text-sm font-semibold text-[#352F6E]">
+                                                      {stepPendingLabel}
+                                                    </p>
+                                                    <p className="text-xs text-[#574EB6]">
+                                                      Please wait while we update this step.
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              ) : editingStepDescriptionId ===
+                                                stepId ? (
+                                                /* Inline Edit Form*/
+                                                <div className="flex flex-col gap-2">
+                                                  {/* <h4 className="text-sm font-semibold text-black mb-1">
+                                                    {step.name ||
+                                                      `Step ${stepIndex + 1}`}
+                                                  </h4> */}
+                                                  <div className="border border-gray-300 rounded-md p-2 bg-white">
+                                                    <textarea
+                                                      ref={
+                                                        stepDescriptionEditInputRef
+                                                      }
+                                                      value={
+                                                        editStepDescription
+                                                      }
+                                                      onChange={(e) =>
+                                                        setEditStepDescription(
+                                                          e.target.value,
+                                                        )
+                                                      }
+                                                      onKeyDown={(e) =>
+                                                        handleStepDescriptionEditKeyDown(
+                                                          e,
+                                                          chapterId,
+                                                          stepId,
+                                                          step.name,
+                                                        )
+                                                      }
+                                                      className="w-full px-2 text-xs focus:outline-none resize-none overflow-y-auto"
+                                                      rows={3}
+                                                      placeholder="Step description"
+                                                    />
+                                                    <div className="border-t border-gray-300 mb-2"></div>
+
+                                                    <div className="flex gap-2 items-end justify-end">
+                                                      <button
+                                                        onClick={(e) =>
+                                                          handleSaveStepDescriptionEdit(
+                                                            e,
+                                                            chapterId,
+                                                            stepId,
+                                                            step.name,
+                                                          )
+                                                        }
+                                                        className="flex items-center px-2 py-1 text-xs font-medium text-white bg-primary rounded-sm hover:bg-primary-700 transition-colors border border-primary"
+                                                      >
+                                                        Save
+                                                      </button>
+                                                      <button
+                                                        onClick={
+                                                          handleCancelStepDescriptionEdit
+                                                        }
+                                                        className="flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white rounded-sm hover:bg-primary-100 transition-colors border border-gray-300"
+                                                      >
+                                                        Cancel
+                                                      </button>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              ) : (
+                                                <div className="relative flex items-start justify-between gap-2">
+                                                  <p
+                                                    className={`text-xs leading-relaxed ${
+                                                      step.description
+                                                        ? "text-black"
+                                                        : "text-gray-400"
+                                                    }`}
+                                                  >
+                                                    {step.description ||
+                                                      "Add step description"}
+                                                  </p>
+                                                  <div
+                                                    className="relative flex items-start justify-end shrink-0"
+                                                    ref={
+                                                      openStepDescriptionMenuId ===
+                                                      stepId
+                                                        ? menuRef
+                                                        : null
+                                                    }
+                                                  >
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) =>
+                                                        toggleStepMenu(
+                                                          e,
+                                                          stepId,
+                                                          "description",
+                                                        )
+                                                      }
+                                                      className="rounded-md p-1 transition-colors hover:bg-gray-100"
+                                                      title="More options"
+                                                      aria-label={`Description options for ${step.name || `Step ${stepIndex + 1}`}`}
+                                                    >
+                                                      <MoreHorizontal className="h-4 w-4 text-gray-500" />
+                                                    </button>
+                                                    {openStepDescriptionMenuId ===
+                                                      stepId && (
+                                                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                                                        <button
+                                                          onClick={(e) =>
+                                                            handleEditStepDescriptionClick(
+                                                              e,
+                                                              step,
+                                                              stepId,
+                                                            )
+                                                          }
+                                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                                        >
+                                                          <Pencil className="w-3.5 h-3.5" />
+                                                          Edit
+                                                        </button>
+                                                        {/* <button
+                                                          onClick={(e) =>
+                                                            handleDeleteStepClick(
+                                                              e,
+                                                              chapterId,
+                                                              stepId,
+                                                            )
+                                                          }
+                                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                                                        >
+                                                          <Trash2 className="w-3.5 h-3.5" />
+                                                          Delete
+                                                        </button> */}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                  <p className="text-sm text-gray-500">No phases available</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Complete the outline to see phases here
+                  </p>
+                </div>
+              )}
+
+              {/* line between regular chapters and remaining chapters */}
+              {remainingChapters &&
+                remainingChapters.length > 0 &&
+                chapters &&
+                chapters.length > 0 && (
+                  <div className="h-0.5 bg-gray-300 "></div>
+                )}
+
+              {/* Remaining Chapters Section */}
+              {remainingChapters && remainingChapters.length > 0 && (
+                <>
+                  {remainingChapters.map((remainingChapter, index) => {
+                    const isDeactivated =
+                      remainingChapter.state === "deactivated";
+                    const isGenerating =
+                      remainingChapter.state === "generating";
+                    const isActive = remainingChapter.state === "active";
+                    const chapterIndex =
+                      remainingChapter.chapter_index ?? index;
+                    const chapterKey = `remaining-${chapterIndex}-${index}`;
+                    const isExpanded =
+                      !isDeactivated &&
+                      expandedRemainingChapters.has(chapterKey);
+                    const isSelected = selectedChapter === chapterKey;
+
+                    if (isActive) return null;
+
+                    return (
+                      <div key={chapterKey}>
+                        {index > 0 &&
+                          remainingChapters[index - 1]?.state ===
+                            "generating" &&
+                          isDeactivated && (
+                            // line between generating and deactivated chapters
+                            <div className="h-0.5 bg-gray-300 mb-2"></div>
+                          )}
+                        <div
+                          className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${isExpanded ? "bg-[#D1FADF]" : " bg-white"}`}
+                        >
+                          {/* Chapter Header */}
+                          <div
+                            onClick={() => {
+                              if (isDeactivated) return;
+                              setSelectedChapter(chapterKey);
+                              toggleRemainingChapter(chapterKey);
+                              if (onRemainingChapterClick) {
+                                onRemainingChapterClick(remainingChapter);
+                              }
+                            }}
+                            className={`flex items-center gap-2 p-3 sm:p-4 transition-all cursor-pointer`}
+                          >
+                            <div
+                              className={`rounded-full p-1 ${isGenerating ? "bg-[#A6F4C5]" : "bg-gray-100"}`}
+                            >
+                              <ChevronDown
+                                size={16}
+                                className={`${
+                                  isGenerating
+                                    ? "text-[#12B76A]"
+                                    : "text-gray-800"
+                                } transition-transform ${
+                                  isExpanded ? "rotate-180" : ""
+                                }`}
+                              />
+                            </div>
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <div className="flex items-center gap-2 justify-between">
+                                <p className="text-[10px] font-medium text-gray-900">
+                                  Phase {chapterIndex}
+                                </p>
+                                <p
+                                  className={`rounded-lg px-2  text-[8px]  ${isExpanded ? "bg-green-700 text-white" : ""} ${isGenerating ? "bg-green-100 text-green-600" : "bg-gray-200 text-gray-800"}`}
+                                >
+                                  {isGenerating
+                                    ? "In Progress"
+                                    : "Not Built Yet"}
+                                </p>
+                              </div>
+                              <p
+                                className={`text-sm sm:text-sm font-medium ${isGenerating ? "text-[#12B76A]" : "text-gray-400"} ${isExpanded ? "text-gray-800" : "text-gray"}
+                                  `}
+                              >
+                                {remainingChapter.chapter || "Untitled Phase"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Expanded Steps - Inside the same card */}
+                          {isExpanded &&
+                            remainingChapter.steps &&
+                            remainingChapter.steps.length > 0 && (
+                              <div className="flex flex-col gap-2 px-3 pb-3">
+                                {remainingChapter.steps.map(
+                                  (stepItem, stepIndex) => {
+                                    const stepTitle =
+                                      stepItem.title ||
+                                      `Step ${stepItem.step || stepIndex + 1}`;
+                                    const stepKey = `${chapterKey}-step-${stepIndex}`;
+                                    const isStepExpanded =
+                                      expandedRemainingSteps.has(stepKey);
+
+                                    return (
+                                      <div
+                                        key={stepKey}
+                                        className={`flex flex-col rounded-sm transition-all ${
+                                          isStepExpanded
+                                            ? "bg-[#027A48]"
+                                            : "bg-white"
+                                        }`}
+                                      >
+                                        {/* Step Header */}
+                                        <div
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleRemainingStep(stepKey);
+                                            // Notify parent to scroll to this step in the right panel
+                                            if (onRemainingStepClick) {
+                                              onRemainingStepClick(stepIndex);
+                                            }
+                                          }}
+                                          className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
+                                            isStepExpanded
+                                              ? "text-white"
+                                              : "hover:bg-gray-200"
+                                          }`}
+                                        >
+                                          <div
+                                            className={`rounded-full p-1 shrink-0 ${
+                                              isStepExpanded
+                                                ? "bg-white"
+                                                : "bg-[#A6F4C5]"
+                                            }`}
+                                          >
+                                            <ChevronDown
+                                              size={12}
+                                              className={`transition-transform ${
+                                                isStepExpanded
+                                                  ? "rotate-180"
+                                                  : ""
+                                              } ${
+                                                isStepExpanded
+                                                  ? "text-[#12B76A]"
+                                                  : "text-primary"
+                                              }`}
+                                            />
+                                          </div>
+                                          <div className="flex flex-col py-1 flex-1 min-w-0">
+                                            <p
+                                              className={`text-xs sm:text-xs ${
+                                                isStepExpanded
+                                                  ? "text-white"
+                                                  : "text-gray-900"
+                                              }`}
+                                            >
+                                              Step {stepIndex + 1}
+                                            </p>
+                                            <p
+                                              className={`text-xs sm:text-sm font-semibold ${
+                                                isStepExpanded
+                                                  ? "text-white"
+                                                  : "text-gray-900"
+                                              }`}
+                                            >
+                                              {stepTitle}
+                                            </p>
+                                          </div>
+                                        </div>
+
+                                        {/* Step Details (Expanded) - Inside the same card */}
+                                        {isStepExpanded && (
+                                          <div className="flex flex-col px-3 pb-2 gap-2">
+                                            {stepItem.aha && (
+                                              <div className="px-3 py-3 bg-white rounded-lg ">
+                                                <div className="flex flex-col gap-2">
+                                                  <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                      <img
+                                                        src="/bulb.svg"
+                                                        alt="Aha"
+                                                        width={20}
+                                                        height={20}
+                                                        className="w-5 h-5"
+                                                      />
+                                                      <span className="font-semibold text-sm">
+                                                        Aha
+                                                      </span>
+                                                    </div>
+                                                    <p className="text-sm text-black leading-relaxed">
+                                                      {stepItem.aha}
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {stepItem.action && (
+                                              <div className="px-3 py-3 bg-white rounded-lg ">
+                                                <div className="flex flex-col gap-2">
+                                                  <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                      <img
+                                                        src="/markup.svg"
+                                                        alt="Action"
+                                                        width={20}
+                                                        height={20}
+                                                        className="w-5 h-5"
+                                                      />
+                                                      <span className="font-semibold text-sm">
+                                                        Action
+                                                      </span>
+                                                    </div>
+                                                    <p className="text-sm text-black leading-relaxed">
+                                                      {stepItem.action}
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+                                            {stepItem.tool && (
+                                              <div className="px-3 py-3 bg-white rounded-lg ">
+                                                <div className="flex flex-col gap-2">
+                                                  <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                      <img
+                                                        src="/tool.svg"
+                                                        alt="Tool"
+                                                        width={20}
+                                                        height={20}
+                                                        className="w-5 h-5"
+                                                      />
+                                                      <span className="font-semibold text-sm">
+                                                        Tool
+                                                      </span>
+                                                    </div>
+                                                    <p className="text-sm text-black leading-relaxed">
+                                                      {stepItem.tool}
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+                                            {stepItem.description && (
+                                              <div className="px-3 py-3 bg-white rounded-lg ">
+                                                <div className="flex flex-col gap-2">
+                                                  <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                      {/* <img src="/description.svg" alt="Description" width={20} height={20} className="w-5 h-5" /> */}
+                                                      <span className="font-semibold text-sm">
+                                                        Description
+                                                      </span>
+                                                    </div>
+                                                    <p className="text-sm text-black leading-relaxed">
+                                                      {stepItem.description}
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  },
+                                )}
+                              </div>
+                            )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              {/* Generate Step Image Button at bottom of Steps Tab
+              <div className="mt-auto pt-3 border-t border-gray-200">
+                <GenerateStepImageButton
+                  sessionId={sessionId}
+                  chapterUid={selectedChapter}
+                  stepUid={selectedScreen?.stepUid}
+                  stepImageUrl={selectedScreen?.stepImageUrl}
+                  pathId={0}
+                  onSuccess={(response) => {
+                    console.log("Step image generated:", response);
+                  }}
+                  onError={(error) => {
+                    console.error("Step image generation failed:", error);
+                  }}
+                />
+              </div> */}
+            </>
+          )}
+
+          {/* Sources Tab Content */}
+          {tab === 1 &&
+            (isLoadingSources ? (
+              <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                <Loader2 className="animate-spin h-8 w-8 text-primary mb-2" />
+                <p className="text-sm text-gray-500">
+                  Loading source materials...
+                </p>
+              </div>
+            ) : sourcesError ? (
+              <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                <p className="text-sm text-red-500 mb-2">
+                  Error loading source materials
+                </p>
+                <p className="text-xs text-gray-400 mb-4">{sourcesError}</p>
+                <Button
+                  onClick={fetchSourceMaterialsData}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                >
+                  Try Again
+                </Button>
+              </div>
+            ) : sourceMaterials && sourceMaterials.length > 0 ? (
+              <>
+                {/* Search Bar */}
+                <div
+                  className="flex items-center justify-between px-2 
+              bg-background rounded-md border border-gray-200 
+              hover:border-primary-500"
+                >
+                  <Search
+                    className="w-5 h-5 text-gray-400 ml-2 
+                hover:text-primary-400"
+                  />
+                  <input
+                    type="search"
+                    className="w-full p-1 focus:outline-none 
+                  hover:border-primary-500"
+                    placeholder="Search source materials..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                {/* Categories */}
+                {organizeMaterialsByCategory(filteredSourceMaterials).length >
+                0 ? (
+                  organizeMaterialsByCategory(filteredSourceMaterials).map(
+                    (category, categoryIndex) => {
+                      const categoryId =
+                        category.id || `category-${categoryIndex}`;
+                      const isSelected = selectedCategory === categoryId;
+                      const isExpanded = expandedCategories.has(categoryId);
+
+                      return (
+                        <div
+                          key={categoryId}
+                          className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
+                            isSelected && isExpanded
+                              ? "bg-primary-100"
+                              : "bg-white"
+                          }`}
+                        >
+                          {/* Category Header */}
+                          <div
+                            onClick={() => {
+                              setSelectedCategory(categoryId);
+                              toggleCategory(categoryId);
+                              // Clear material selection when clicking category
+                              setSelectedMaterial(null);
+                            }}
+                            className="flex items-center gap-2 p-3 sm:p-4 cursor-pointer transition-all"
+                          >
+                            <div
+                              className={`rounded-full p-1 ${
+                                isSelected ? "bg-primary" : "bg-primary-100"
+                              }`}
+                            >
+                              <ChevronDown
+                                size={16}
+                                className={`${
+                                  isSelected ? "text-white" : "text-primary"
+                                } transition-transform ${
+                                  isExpanded ? "rotate-180" : ""
+                                }`}
+                              />
+                            </div>
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <p
+                                className={`text-sm sm:text-sm font-medium ${
+                                  isSelected ? "text-gray-900" : "text-gray-900"
+                                }`}
+                              >
+                                {category.name}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Expanded Materials */}
+                          {isExpanded &&
+                            category.materials &&
+                            category.materials.length > 0 && (
+                              <div className="flex flex-col gap-2 px-3 pb-3">
+                                {category.materials.map(
+                                  (material, materialIndex) => {
+                                    const materialId = material.uuid
+                                      ? `${material.uuid}-${categoryId}-${materialIndex}`
+                                      : `material-${categoryId}-${materialIndex}`;
+                                    const isMaterialSelected =
+                                      selectedMaterial === materialId;
+                                    const fileSize = getMaterialSize(material);
+                                    const extension =
+                                      material.source_name
+                                        ?.split(".")
+                                        .pop()
+                                        ?.toLowerCase() || "";
+                                    const isLink = material.type === "link";
+
+                                    return (
+                                      <div
+                                        key={materialId}
+                                        className={`flex flex-col rounded-sm transition-all ${
+                                          isMaterialSelected
+                                            ? "bg-primary-700"
+                                            : "bg-gray-100"
+                                        }`}
+                                      >
+                                        {/* Material Header */}
+                                        <div
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            const newSelectedState =
+                                              isMaterialSelected
+                                                ? null
+                                                : materialId;
+                                            setSelectedMaterial(
+                                              newSelectedState,
+                                            );
+
+                                            if (
+                                              newSelectedState &&
+                                              selectedAssetCategory
+                                            ) {
+                                              setSelectedAssetCategory(null);
+                                            }
+
+                                            if (onMaterialSelect) {
+                                              onMaterialSelect(
+                                                newSelectedState
+                                                  ? material
+                                                  : null,
+                                              );
+                                            }
+                                          }}
+                                          className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
+                                            isMaterialSelected
+                                              ? "text-white"
+                                              : "hover:bg-gray-200"
+                                          }`}
+                                        >
+                                          <div className="flex flex-col py-1 flex-1 min-w-0">
+                                            {/* <p
+                                            className={`text-xs sm:text-xs ${
+                                              isMaterialSelected
+                                                ? "text-white"
+                                                : "text-gray-900"
+                                            }`}
+                                          >
+                                            Document {categoryIndex + 1}.
+                                            {materialIndex + 1}
+                                          </p> */}
+                                            <p
+                                              className={`text-xs sm:text-sm font-semibold truncate ${
+                                                isMaterialSelected
+                                                  ? "text-white"
+                                                  : "text-gray-900"
+                                              }`}
+                                              title={
+                                                isLink
+                                                  ? material.source_path ||
+                                                    material.output_presigned_url ||
+                                                    material.source_name
+                                                  : material.source_name ||
+                                                    `Document ${materialIndex + 1}`
+                                              }
+                                            >
+                                              {isLink
+                                                ? material.source_path ||
+                                                  material.output_presigned_url ||
+                                                  material.source_name ||
+                                                  "Web link"
+                                                : material.source_name ||
+                                                  `Document ${materialIndex + 1}`}
+                                            </p>
+                                            {material.comment && (
+                                              <p
+                                                className={`text-xs mt-0.5 truncate ${
+                                                  isMaterialSelected
+                                                    ? "text-white/90"
+                                                    : "text-gray-500"
+                                                }`}
+                                                title={material.comment}
+                                              >
+                                                {material.comment}
+                                              </p>
+                                            )}
+                                            {!isLink && fileSize && (
+                                              <p
+                                                className={`text-xs mt-0.5 ${
+                                                  isMaterialSelected
+                                                    ? "text-white"
+                                                    : "text-gray-500"
+                                                }`}
+                                              >
+                                                {fileSize}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  },
+                                )}
+                              </div>
+                            )}
+                        </div>
+                      );
+                    },
+                  )
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                    <p className="text-sm text-gray-500">
+                      No source materials found matching "{searchQuery}"
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                <p className="text-sm text-gray-500">
+                  No source materials found
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Upload documents to see them here
+                </p>
+              </div>
+            ))}
+
+          {/* Assets Tab Content */}
+          {tab === 2 && (
+            <div className="flex flex-1 flex-col">
+              {isLoadingAssets ? (
+                <div className="flex flex-1 items-center justify-center gap-2 text-sm text-gray-500">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  Loading assets...
+                </div>
+              ) : assetsError ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center p-4">
+                  <div className="rounded-full bg-red-50 p-3">
+                    <Paperclip size={24} className="text-red-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">
+                      Unable to load assets
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">{assetsError}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={fetchAssetsData}
+                    className="text-xs"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : assets.length === 0 ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-200 p-8 text-center">
+                  <div className="rounded-full bg-primary-50 p-3">
+                    <Paperclip size={24} className="text-primary" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-700">
+                    No assets available yet
+                  </p>
+                  <p className="text-xs text-gray-500 max-w-xs">
+                    Assets you upload or attach will appear here for quick reuse
+                    across your Cycle.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-1 flex-col gap-3">
+                  {/* Search Bar */}
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search assets..."
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-500 placeholder:text-gray-400 cursor-not-allowed"
+                    />
+                  </div>
+
+                  {/* Category Buttons */}
+                  <div className="flex flex-col gap-2">
+                    {ASSET_CATEGORIES.map((category) => {
+                      const isActive = selectedAssetCategory === category.id;
+                      const categoryAssets = filterAssetsByType(
+                        assets,
+                        category.id,
+                      );
+                      const assetCount = categoryAssets.length;
+
+                      return (
+                        <button
+                          key={category.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedAssetCategory(category.id);
+                            // Clear material selection in sidebar when asset category is selected
+                            // This prevents conflicts with the parent component's state
+                            if (selectedMaterial) {
+                              setSelectedMaterial(null);
+                            }
+                          }}
+                          className={`flex flex-col gap-1 rounded-sm border px-4 py-3 text-left transition-all ${
+                            isActive
+                              ? "border-primary bg-primary-600 text-white shadow-md"
+                              : "border-gray-300 bg-white text-gray-700 hover:border-primary/40 hover:bg-primary-100/60"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center p-2 gap-2">
+                              <span className="text-md font-semibold">
+                                {category.name}
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Device Preview */}
+      {/* <div className="shrink-0 p-2 border-t border-gray-200">
+        <div className="bg-gray-50 rounded-lg p-3">
+          <h3 className="text-sm font-medium text-gray-900 mb-2">Preview</h3>
+          <DevicePreview selectedScreen={selectedScreen} />
+        </div>
+      </div> */}
+    </div>
+  );
+}

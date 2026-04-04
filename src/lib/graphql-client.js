@@ -58,7 +58,7 @@ class GraphQLClient {
         result.errors.find((e) => e?.message)?.message ||
         "Something went wrong. Please try again.";
       if (typeof window !== "undefined") {
-        import("sonner").then(({ toast }) => {
+        import("@/components/ui/toast").then(({ toast }) => {
           toast.error(firstMessage, { id: "graphql-client-error" });
         });
       }

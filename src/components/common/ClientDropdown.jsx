@@ -26,7 +26,7 @@ import ClientSettingsDialog from "@/components/header/ClientSettingsDialog";
 import ClientFormFields from "@/components/common/ClientFormFields";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { useRefreshData, useUpsertClient } from "@/hooks/useQueryData";
 import { deleteClient, getClients } from "@/api/client";
 

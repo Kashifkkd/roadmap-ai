@@ -1,8 +1,25 @@
 "use client";
 
-import { Toaster as Sonner } from "sonner";
-import { Check, X, AlertTriangle, Info } from "lucide-react";
+import { Toaster as Sonner, toast as sonnerToast } from "sonner";
+import { X, Info } from "lucide-react";
 import Image from "next/image";
+
+export const toast = Object.assign(
+  (...args) => sonnerToast(...args),
+  sonnerToast,
+  {
+    error: (message, options = {}) =>
+      sonnerToast.error(options.title ?? "Error!", {
+        ...options,
+        description: options.description ?? message,
+      }),
+    warning: (message, options = {}) =>
+      sonnerToast.warning(options.title ?? "Warning!", {
+        ...options,
+        description: options.description ?? message,
+      }),
+  }
+);
 
 const SuccessIcon = () => (
   <div className="w-10 h-10 rounded-full bg-[#ECFDF3] flex items-center justify-center shrink-0">
@@ -11,14 +28,16 @@ const SuccessIcon = () => (
 );
 
 const ErrorIcon = () => (
-  <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center shrink-0">
-    <X className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+  <div className="w-12 h-12 rounded-full bg-[#FDECEC] flex items-center justify-center shrink-0">
+    <div className="w-6 h-6 rounded-full bg-[#F04438] flex items-center justify-center">
+      <X className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+    </div>
   </div>
 );
 
 const WarningIcon = () => (
-  <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center shrink-0">
-    <AlertTriangle className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+  <div className="w-12 h-12 rounded-full bg-[#FCF8E8] flex items-center justify-center shrink-0">
+    <Image src="/warning.svg" alt="Warning" width={24} height={24} />
   </div>
 );
 
@@ -34,15 +53,19 @@ export function Toaster() {
       position="top-right"
       offset={{ top: 80 }}
       gap={8}
+      expand
+      visibleToasts={5}
       toastOptions={{
         duration: 3000,
         unstyled: true,
         classNames: {
           toast:
-            "universal-toast flex items-center gap-3 px-5 py-3 rounded-xl shadow-md border-4 font-medium text-[15px] text-emerald-500",
+            "universal-toast flex items-center gap-3 px-5 py-3 rounded-xl shadow-md border-4 font-medium text-[15px]",
+          title: "font-semibold",
+          description: "text-[#717680]",
           success: "bg-white border-[#12B76A] text-[#027A48]",
-          error: "bg-white border-red-500 text-red-500",
-          warning: "bg-white border-amber-500 text-amber-500",
+          error: "bg-white border-[#F04438] text-[#D92D20]",
+          warning: "bg-white border-[#DEC029] text-[#C2A724]",
           info: "bg-white border-blue-500 text-blue-500",
         },
       }}

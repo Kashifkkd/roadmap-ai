@@ -9,7 +9,7 @@ import { endpoints } from "@/api/endpoint";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 
 function normalizeWebLink(item, defaultUploaded = false) {
   if (typeof item === "string") {
@@ -116,6 +116,8 @@ const SOURCE_ALLOWED_EXTENSIONS = [
   "pdf",
   "doc",
   "docx",
+  "xls",
+  "xlsx",
   "txt",
   "pptx",
   "mp3",
@@ -243,7 +245,7 @@ export default function SourceMaterialCard({
         if (!currentSessionId) {
           console.error("Cannot upload file: no session ID available");
           toast.error("Please wait for session to be created");
-          return;
+          return false;
         }
 
         const rawFile = fileOrItem?.file ?? fileOrItem;
@@ -251,7 +253,7 @@ export default function SourceMaterialCard({
 
         if (!rawFile || !(rawFile instanceof File)) {
           console.error("Upload skipped: no File instance (got)", rawFile);
-          return;
+          return false;
         }
 
         const formData = new FormData();
@@ -268,11 +270,16 @@ export default function SourceMaterialCard({
 
         if (result.error) {
           console.error("Error uploading file:", result.error);
+          toast.error(`Failed to upload file: ${rawFile.name}`);
+          return false;
         } else {
           console.log("File uploaded successfully:", result.response);
+          return true;
         }
       } catch (error) {
         console.error("Error uploading file:", error);
+        toast.error("Failed to upload source material file");
+        return false;
       }
     },
     [sessionId],
@@ -288,12 +295,12 @@ export default function SourceMaterialCard({
             : null);
 
         const url = (entry?.url ?? "").trim();
-        if (!url) return;
+        if (!url) return false;
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
           toast.error(
             `Invalid URL (must be http or https): ${url.slice(0, 50)}...`,
           );
-          return;
+          return false;
         }
 
         const formData = new FormData();
@@ -311,12 +318,15 @@ export default function SourceMaterialCard({
         if (result.error) {
           console.error("Error uploading web link:", result.error);
           toast.error(`Failed to save link: ${url.slice(0, 40)}...`);
+          return false;
         } else {
           console.log("Web link uploaded successfully:", result.response);
+          return true;
         }
       } catch (error) {
         console.error("Error uploading web link:", error);
         toast.error("Failed to save web link");
+        return false;
       }
     },
     [sessionId],
@@ -332,19 +342,26 @@ export default function SourceMaterialCard({
         return !SOURCE_ALLOWED_EXTENSIONS.includes(ext);
       });
 
-      if (invalidFiles.length > 0) {
-        const names = invalidFiles.map((f) => f.name).join(", ");
-        toast.error(
-          invalidFiles.length === 1
-            ? `Unsupported file type: ${names}.`
-            : `Some files have unsupported types and were skipped: ${names}.`,
-        );
-      }
+      const invalidFileMessage =
+        invalidFiles.length === 0
+          ? null
+          : invalidFiles.length === 1
+            ? `Unsupported file type: ${invalidFiles.map((f) => f.name).join(", ")}.`
+            : `Some files have unsupported types and were skipped: ${invalidFiles
+                .map((f) => f.name)
+                .join(", ")}.`;
 
       const filteredByType = selectedFiles.filter(
         (file) => !invalidFiles.includes(file),
       );
-      if (filteredByType.length === 0) return;
+      if (filteredByType.length === 0) {
+        if (invalidFileMessage) {
+          toast.error(invalidFileMessage, {
+            id: "source-material-invalid-types",
+          });
+        }
+        return;
+      }
 
       setFiles((prev) => {
         const { duplicateFiles, newFiles } = partitionNewSourceFiles(
@@ -364,7 +381,33 @@ export default function SourceMaterialCard({
           });
         }
 
-        if (newFiles.length === 0) return prev;
+        if (newFiles.length === 0) {
+          if (invalidFileMessage) {
+            queueMicrotask(() => {
+              toast.error(invalidFileMessage, {
+                id: "source-material-invalid-types",
+              });
+            });
+          }
+          return prev;
+        }
+
+        queueMicrotask(() => {
+          toast.warning(
+            newFiles.length === 1
+              ? "File attached and will be uploaded during outline creation."
+              : "File attached and will be uploaded during outline creation.",
+            { id: "source-material-files-attached" },
+          );
+
+          if (invalidFileMessage) {
+            setTimeout(() => {
+              toast.error(invalidFileMessage, {
+                id: "source-material-invalid-types",
+              });
+            }, 120);
+          }
+        });
 
         // Don't upload immediately — let the user add comments first.
         // Files will be uploaded when "Create Outline" is clicked (via uploadAllFiles).
@@ -446,12 +489,17 @@ export default function SourceMaterialCard({
             (entry) =>
               (entry?.url ?? "").trim().length > 0 && !entry.isUploaded,
           );
+          let uploadedLinkCount = 0;
+          let uploadedFileCount = 0;
           if (linksToUpload.length > 0 && currentSessionId) {
-            await Promise.all(
+            const linkResults = await Promise.all(
               linksToUpload.map((entry) => uploadWebLink(entry)),
             );
+            uploadedLinkCount = linkResults.filter(Boolean).length;
             const uploadedUrls = new Set(
-              linksToUpload.map((entry) => entry.url.trim().toLowerCase()),
+              linksToUpload
+                .filter((_, index) => linkResults[index])
+                .map((entry) => entry.url.trim().toLowerCase()),
             );
             setWebpageUrls((prev) =>
               prev.map((entry) => {
@@ -469,12 +517,17 @@ export default function SourceMaterialCard({
             (file) => !file.isUploaded,
           );
           if (newFiles.length > 0 && currentSessionId) {
-            await Promise.all(newFiles.map((file) => uploadFile(file)));
+            const fileResults = await Promise.all(
+              newFiles.map((file) => uploadFile(file)),
+            );
+            uploadedFileCount = fileResults.filter(Boolean).length;
             // Mark files as uploaded so they aren't re-uploaded on next call
             setFiles((prev) =>
               prev.map((f) =>
                 newFiles.some(
-                  (newFile) => getFileKey(newFile.name) === getFileKey(f.name),
+                  (newFile, index) =>
+                    fileResults[index] &&
+                    getFileKey(newFile.name) === getFileKey(f.name),
                 )
                   ? { ...f, isUploaded: true }
                   : f,
@@ -484,6 +537,23 @@ export default function SourceMaterialCard({
             console.log("No new files or links to upload");
           } else if (!currentSessionId) {
             console.warn("Cannot upload: no session ID");
+          }
+
+          if (uploadedFileCount > 0 || uploadedLinkCount > 0) {
+            const successParts = [];
+            if (uploadedFileCount > 0) {
+              successParts.push(
+                `${uploadedFileCount} file${uploadedFileCount === 1 ? "" : "s"}`,
+              );
+            }
+            if (uploadedLinkCount > 0) {
+              successParts.push(
+                `${uploadedLinkCount} link${uploadedLinkCount === 1 ? "" : "s"}`,
+              );
+            }
+            toast.success(
+              `Source material uploaded: ${successParts.join(" and ")}.`,
+            );
           }
         } finally {
           setIsUploading(false);
@@ -510,6 +580,9 @@ export default function SourceMaterialCard({
 
     setWebpageUrls([...normalizedUrls, { url, comment: "" }]);
     setLinkDraft({ url: "" });
+    toast.warning("Link attached. It will upload when you click Create Outline.", {
+      id: "source-material-link-attached",
+    });
   };
 
   const handleRemoveLink = (index) => {
@@ -575,7 +648,7 @@ export default function SourceMaterialCard({
             <input
               type="file"
               multiple
-              accept=".pdf,.doc,.docx,.txt,.pptx,.mp3,.wav,.m4a,.flac,.mp4,.webm"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.pptx,.mp3,.wav,.m4a,.flac,.mp4,.webm"
               onChange={handleFileSelect}
               className="hidden"
               id="file-upload"

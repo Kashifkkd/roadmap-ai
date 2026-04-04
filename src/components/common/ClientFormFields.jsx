@@ -11,7 +11,7 @@ import { X, Info, MoreHorizontal, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { uploadAssetFileNoSession } from "@/api/uploadAssetFileNoSession";
 import {
   getCohorts,
@@ -963,7 +963,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         <ToggleSwitch
           checked={enableFoozi}
           onChange={setEnableFoozi}
-          label="Enable Foozi"
+          label="Enable Kyper Coach"
         />
         <ToggleSwitch
           checked={enableCohorts}
@@ -1131,7 +1131,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                                   }}
                                   className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md focus:bg-gray-50"
                                 >
-                                  Add Comet
+                                  Add Cycle
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuItem
@@ -1158,8 +1158,8 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-gray-800">
                     {pathsLoading
-                      ? "Loading Comet..."
-                      : `Select Comet for ${
+                      ? "Loading Cycle..."
+                      : `Select Cycle for ${
                           pathDialogCohort?.name ||
                           pathDialogCohort?.cohort_name ||
                           "Cohort"
@@ -1181,17 +1181,17 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                 </div>
 
                 <p className="text-xs text-gray-500">
-                  Select comets for this cohort. Currently selected:{" "}
+                  Select Cycle for this cohort. Currently selected:{" "}
                   {selectedPathIds.size}
                 </p>
 
                 {pathsLoading ? (
                   <div className="py-8 text-center text-gray-500 text-sm">
-                    Loading comets...
+                    Loading cycles...
                   </div>
                 ) : availablePaths.length === 0 ? (
                   <div className="py-8 text-center text-gray-500 text-sm">
-                    No comets available
+                    No cycles available
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-[300px] overflow-y-auto">
@@ -1294,14 +1294,14 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
             {initialValues?.id && (
               <div className="border border-gray border-1 rounded p-3 mt-2">
                 <Label className="text-sm font-medium text-gray-700 block">
-                  All Comets
+                  All Cycles
                 </Label>
                 <div className="mt-2 rounded-md overflow-hidden text-sm text-gray-700">
                   {/* Header */}
                   <div className="grid grid-cols-3 bg-gray-100 font-medium">
-                    <div className="px-4 py-2">Comet Name</div>
-                    <div className="px-4 py-2">Comet Id</div>
-                    <div className="px-4 py-2 text-right">Comet Status</div>
+                    <div className="px-4 py-2">Cycle Name</div>
+                    <div className="px-4 py-2">Cycle Id</div>
+                    <div className="px-4 py-2 text-right">Cycle Status</div>
                   </div>
 
                   {/* Rows */}
@@ -1314,7 +1314,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   ) : commit.length === 0 ? (
                     <div className="grid grid-cols-3 bg-white">
                       <div className="px-4 py-4 text-center text-gray-500 col-span-3">
-                        No comet found
+                        No Cycle found
                       </div>
                     </div>
                   ) : (

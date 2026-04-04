@@ -19,6 +19,7 @@ export const endpoints = {
   registerClientUser: "api/auth/v1/users/create",
   updateClientUser: (userId) => `api/auth/v1/users/1st90/${userId}`,
   deleteClientUser: (userId) => `api/auth/v1/users/1st90/${userId}`,
+  wipeClientUserActions: (userId) => `api/auth/v1/users/1st90/${userId}/wipe`,
   updateCreator: (creatorId) => `api/auth/v1/users/kyper/${creatorId}`,
   uploadProfilePicture: "api/auth/v1/upload-profile-picture",
   updateUser: "api/auth/v1/profile/upsert",

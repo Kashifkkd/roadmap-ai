@@ -31,11 +31,12 @@ import { assignPathUsers } from "@/api/comet/assignPathUsers";
 import { registerClientUser } from "@/api/User/registerClientUser";
 import { updateClientUser } from "@/api/User/updateClientUser";
 import { deleteClientUser } from "@/api/User/deleteClientUser";
+import { wipeClientUserActions } from "@/api/User/wipeClientUserActions";
 import { getCohorts, getUserInfo } from "@/api/cohort/getCohorts";
 import { getCohortPaths, getClientPaths } from "@/api/cohort/getCohortPaths";
 import { updateCohortPaths } from "@/api/cohort/updateCohortPaths";
 import { bulkUploadUsers } from "@/api/bulkUploadUsers";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import BulkUploadDialog from "./BulkUploadDialog";
 
 export default function UserManagement({
@@ -77,6 +78,7 @@ export default function UserManagement({
   ]);
   const [currentCometIndex, setCurrentCometIndex] = useState(0);
   const [savingUser, setSavingUser] = useState(false);
+  const [wipingUserActions, setWipingUserActions] = useState(false);
   const [cohorts, setCohorts] = useState([]);
   const [cohortsLoading, setCohortsLoading] = useState(false);
   const [cohortPaths, setCohortPaths] = useState([]);
@@ -138,7 +140,7 @@ export default function UserManagement({
             sessionData?.session_id || localStorage.getItem("sessionId");
 
           if (!sessionId) {
-            throw new Error("No session ID found for path users");
+            throw new Error("No session ID found for cycle users");
           }
 
           const res = await getPathUsers(sessionId);
@@ -466,7 +468,10 @@ export default function UserManagement({
       const res = await assignPathUsers(sessionId, pathUserEmails);
 
       if (res?.success) {
-        toast.success("Users assigned to this comet");
+        const message = pathUserEmails.length === 1 
+          ? "User assigned to this cycle"
+          : "Users assigned to this cycle";
+        toast.success(message);
 
         // Refresh path users list
         try {
@@ -631,6 +636,47 @@ export default function UserManagement({
     }
   };
 
+  const handleWipeUserActions = async () => {
+    if (!editingUser) {
+      toast.error("User not selected");
+      return;
+    }
+
+    const userId = editingUser.id || editingUser.user_id;
+    if (!userId) {
+      toast.error("User ID not found");
+      return;
+    }
+
+    setWipingUserActions(true);
+    try {
+      const res = await wipeClientUserActions(userId);
+
+      if (res?.success) {
+        toast.success("All user actions wiped successfully");
+        setShowAddUserForm(false);
+        resetUserForm();
+      } else {
+        const errorMessage =
+          res?.response?.detail ||
+          res?.response?.message ||
+          res?.message ||
+          "Failed to wipe user actions";
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("Failed to wipe user actions:", error);
+      const errorMessage =
+        error?.message ||
+        error?.response?.data?.detail ||
+        error?.response?.detail ||
+        "Failed to wipe user actions";
+      toast.error(errorMessage);
+    } finally {
+      setWipingUserActions(false);
+    }
+  };
+
   const handleDeleteUser = async (user) => {
     const userId = user.id || user.user_id;
     if (!userId) {
@@ -745,7 +791,7 @@ export default function UserManagement({
           enabled: true,
         });
         if (res?.status === 200 || res?.success) {
-          toast.success("Cohort comets updated");
+          toast.success("Cohort cycles updated");
           const cohortRes = await getCohortPaths({ cohortId: Number(cohort) });
           const r = cohortRes?.response ?? cohortRes;
           const arr = Array.isArray(r) ? r : Array.isArray(r?.results) ? r.results : Array.isArray(r?.data) ? r.data : [];
@@ -758,13 +804,13 @@ export default function UserManagement({
           setCohortPaths(finalCohortPaths);
         } else {
           const errorMessage =
-            res?.response?.detail || res?.response?.message || res?.detail || res?.message || "Failed to update cohort comets";
+            res?.response?.detail || res?.response?.message || res?.detail || res?.message || "Failed to update cohort cycles";
           toast.error(errorMessage);
         }
       } catch (error) {
         console.error("Failed to update cohort paths:", error);
         const errorMessage =
-          error?.message || error?.response?.data?.detail || error?.response?.detail || "Failed to update cohort comets";
+          error?.message || error?.response?.data?.detail || error?.response?.detail || "Failed to update cohort cycles";
         toast.error(errorMessage);
       } finally {
         setUpdatingCohortPaths(false);
@@ -857,10 +903,10 @@ export default function UserManagement({
                     Email
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-                    Current Comet
+                    Current Cycle
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
-               
+               Actions
                   </th>
                 </tr>
               </thead>
@@ -931,9 +977,9 @@ export default function UserManagement({
                       </td>
                       <td
                         className="px-4 py-3 text-sm text-gray-600 max-w-[200px] truncate"
-                        title={user.path_id || ""}
+                        title={user.paths || ""}
                       >
-                        {user.path_id || "-"}
+                        {user.paths || "-"}
                       </td>
                       <td className="px-4 py-3">
                         {!isPathUsersMode && (
@@ -1132,429 +1178,445 @@ export default function UserManagement({
             </div>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto space-y-6">
-            {/* Back Button */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
-                <ArrowLeft
-                  onClick={() => {
-                    setShowAddUserForm(false);
-                    resetUserForm();
-                  }}
-                  className="w-5 h-5 cursor-pointer"
-                />
-                {editingUser ? "Edit User" : "Add User"}
-              </h2>
-              {/* <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setShowAddUserForm(false);
-                resetUserForm();
-              }}
-              className="text-gray-600 hover:text-gray-900"
-            >
-              <X className="w-5 h-5" />
-            </Button> */}
-            </div>
-
-            {/* Personal Information */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                    First Name
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full bg-white border border-gray-300"
+          <div className="flex-1 min-h-0 flex flex-col">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-6 pr-1">
+              {/* Back Button */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
+                  <ArrowLeft
+                    onClick={() => {
+                      setShowAddUserForm(false);
+                      resetUserForm();
+                    }}
+                    className="w-5 h-5 cursor-pointer"
                   />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                    Last Name
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="w-full bg-white border border-gray-300"
-                  />
-                </div>
+                  {editingUser ? "Edit User" : "Add User"}
+                </h2>
+                {/* <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setShowAddUserForm(false);
+                  resetUserForm();
+                }}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                <X className="w-5 h-5" />
+              </Button> */}
               </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Email
-                  <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-white border border-gray-300"
-                />
-              </div>
-            </div>
 
-            {/* Account Details */}
-            <div className="space-y-4">
-              {!editingUser && (
+              {/* Personal Information */}
+              <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                      Password
+                      First Name
                       <span className="text-red-500">*</span>
                     </Label>
                     <Input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
                       className="w-full bg-white border border-gray-300"
                     />
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                      Confirm Password
+                      Last Name
                       <span className="text-red-500">*</span>
                     </Label>
                     <Input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
                       className="w-full bg-white border border-gray-300"
                     />
                   </div>
                 </div>
-              )}
-
-              {/* Enable SSO Toggle */}
-              <div className="flex items-center justify-between pt-4 mt-2 border-t border-gray-200">
-                <Label className="text-sm font-medium text-gray-700">
-                  Enable SSO
-                </Label>
-                <button
-                  type="button"
-                  onClick={() => setEnableSSO((prev) => !prev)}
-                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${enableSSO ? "bg-primary-700" : "bg-gray-300"
-                    }`}
-                  role="switch"
-                  aria-checked={enableSSO}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${enableSSO ? "translate-x-6" : "translate-x-1"
-                      }`}
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    Email
+                    <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-white border border-gray-300"
                   />
-                </button>
+                </div>
               </div>
 
-              {/* Manager Email Address */}
-              <div className="pt-4 space-y-3">
-                <Label className="text-sm font-medium text-gray-700">
-                  Manager Email Address
-                </Label>
-                <Input
-                  type="email"
-                  value={managerEmail}
-                  onChange={(e) => setManagerEmail(e.target.value)}
-                  className="w-full bg-white border border-gray-300"
-                />
-              </div>
-
-              {/* Accountability Partner Email Addresses */}
-              <div className="pt-4 space-y-3">
-                <Label className="text-sm font-medium text-gray-700">
-                  Accountability Partner Email Addresses
-                </Label>
-                <div className="space-y-2">
-                  {accountabilityEmails.map((item) => (
-                    <div key={item.id} className="flex items-center gap-2">
+              {/* Account Details */}
+              <div className="space-y-4">
+                {!editingUser && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Password
+                        <span className="text-red-500">*</span>
+                      </Label>
                       <Input
-                        type="email"
-                        value={item.value}
-                        onChange={(e) =>
-                          setAccountabilityEmails((prev) =>
-                            prev.map((row) =>
-                              row.id === item.id
-                                ? { ...row, value: e.target.value }
-                                : row,
-                            ),
-                          )
-                        }
-                        className="flex-1 bg-white border border-gray-300"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full bg-white border border-gray-300"
                       />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Confirm Password
+                        <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full bg-white border border-gray-300"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Enable SSO Toggle */}
+                <div className="flex items-center justify-between pt-4 mt-2 border-t border-gray-200">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Enable SSO
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={() => setEnableSSO((prev) => !prev)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${enableSSO ? "bg-primary-700" : "bg-gray-300"
+                      }`}
+                    role="switch"
+                    aria-checked={enableSSO}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${enableSSO ? "translate-x-6" : "translate-x-1"
+                        }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Manager Email Address */}
+                <div className="pt-4 space-y-3">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Manager Email Address
+                  </Label>
+                  <Input
+                    type="email"
+                    value={managerEmail}
+                    onChange={(e) => setManagerEmail(e.target.value)}
+                    className="w-full bg-white border border-gray-300"
+                  />
+                </div>
+
+                {/* Accountability Partner Email Addresses */}
+                <div className="pt-4 space-y-3">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Accountability Partner Email Addresses
+                  </Label>
+                  <div className="space-y-2">
+                    {accountabilityEmails.map((item) => (
+                      <div key={item.id} className="flex items-center gap-2">
+                        <Input
+                          type="email"
+                          value={item.value}
+                          onChange={(e) =>
+                            setAccountabilityEmails((prev) =>
+                              prev.map((row) =>
+                                row.id === item.id
+                                  ? { ...row, value: e.target.value }
+                                  : row,
+                              ),
+                            )
+                          }
+                          className="flex-1 bg-white border border-gray-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setAccountabilityEmails((prev) =>
+                              prev.filter((row) => row.id !== item.id),
+                            )
+                          }
+                          className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0"
+                        >
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const nextId =
+                        accountabilityEmails.length > 0
+                          ? Math.max(...accountabilityEmails.map((m) => m.id)) + 1
+                          : 1;
+                      setAccountabilityEmails((prev) => [
+                        ...prev,
+                        { id: nextId, value: "" },
+                      ]);
+                    }}
+                    className="w-full border-purple-300 text-primary-700 hover:bg-purple-50 flex items-center justify-center gap-1 py-2 text-sm font-medium"
+                  >
+                    + Add Email
+                  </Button>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    Cohort
+                  </Label>
+                  <Select
+                    value={cohort}
+                    onValueChange={handleSetCohort}
+                    disabled={cohortsLoading || cohorts.length === 0}
+                  >
+                    <SelectTrigger className="w-full bg-white border border-gray-300">
+                      <SelectValue
+                        placeholder={
+                          cohortsLoading
+                            ? "Loading..."
+                            : cohorts.length === 0
+                              ? "No cohorts available"
+                              : "Select"
+                        }
+                      />
+                    </SelectTrigger>
+                    {!cohortsLoading && cohorts.length > 0 && (
+                      <SelectContent>
+                        {cohorts.map((cohortItem) => {
+                          const value = cohortItem.id;
+                          const label = cohortItem.name;
+                          return (
+                            <SelectItem key={value} value={String(value)}>
+                              {label}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    )}
+                  </Select>
+                </div>
+              </div>
+
+              <div ref={dropdownRef}>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Cycles Available
+                </Label>
+
+                <div className="relative">
+                  {/* Trigger */}
+                  <button
+                    type="button"
+                    onClick={() => setOpenAllPath(!openAllPath)}
+                    className=" w-full flex justify-between items-center
+                          px-3 py-2 bg-white
+                          border border-gray-300 rounded-md
+                          text-sm text-gray-700
+                          outline-none
+                          focus:outline-none
+                          focus:ring-0
+                          focus:border-gray-300
+                          focus-visible:ring-0"
+                  >
+                    <span className="truncate">
+                      {cometsAvailableTickedIds.size > 0
+                        ? `${cometsAvailableTickedIds.size} selected`
+                        : "All Available Comets"}
+                    </span>
+                    <span className="text-gray-400">⌄</span>
+                  </button>
+
+                  {/* Dropdown */}
+                  {openAllPath && (
+                    <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-md max-h-56 overflow-auto">
+                      {allPaths?.length === 0 && (
+                        <div className="px-4 py-2 text-sm text-gray-400">
+                          No Cycles available
+                        </div>
+                      )}
+
+                      {allPaths?.map((item, index) => {
+                        const checked = cometsAvailableTickedIds.has(Number(item.id));
+
+                        return (
+                          <label
+                            key={item.id ?? index}
+                            className="flex items-center gap-2 px-4 py-2 text-sm cursor-pointer hover:bg-gray-100"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => handleAllPathChange(item)}
+                              disabled={updatingCohortPaths}
+                              className="accent-blue-600"
+                            />
+                            <span className="text-gray-700">{item.name ?? `Path ${item.id}`}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Current Comet Assignment */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-2 block">
+                  Assigned Cycles
+                </h3>
+                <div className="space-y-3">
+                  {cometAssignments.map((assignment, index) => (
+                    <div key={assignment.id} className="flex items-center gap-3">
+                      {/* Numbered Label */}
                       <button
                         type="button"
-                        onClick={() =>
-                          setAccountabilityEmails((prev) =>
-                            prev.filter((row) => row.id !== item.id),
-                          )
-                        }
+                        className="w-9 h-9 rounded-lg bg-gray-200 text-gray-600 font-medium text-sm flex items-center justify-center shrink-0"
+                      >
+                        {index + 1}
+                      </button>
+
+                      {/* Current Comet Selector */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCurrentCometIndex(index);
+                          setCometAssignments((prev) =>
+                            prev.map((item, idx) => ({
+                              ...item,
+                              isCurrent: idx === index,
+                            })),
+                          );
+                        }}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${assignment.isCurrent
+                          ? "bg-green-50 border-green-500"
+                          : "bg-gray-50 border-gray-300"
+                          }`}
+                      >
+                        <div
+                          className={`w-4 h-4 rounded-full ${assignment.isCurrent
+                            ? "bg-green-500"
+                            : "bg-white border-2 border-gray-400"
+                            }`}
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                          Current Cycle
+                        </span>
+                        
+                      </button>
+
+                      {/* Comet Type Dropdown */}
+                      <Select
+                        value={assignment.cometType}
+                        onValueChange={(value) => {
+                          setCometAssignments((prev) =>
+                            prev.map((item) =>
+                              item.id === assignment.id
+                                ? { ...item, cometType: value }
+                                : item,
+                            ),
+                          );
+                        }}
+                      // disabled={
+                      //   cohortPathsLoading || !cohort || cohortPaths.length === 0
+                      // }
+                      >
+                        <SelectTrigger className="flex-1 bg-white border border-gray-300">
+                          <SelectValue
+                            placeholder={
+                              cohortPaths.filter(
+                                (path) =>
+                                  !cometAssignments.some(
+                                    (item, i) =>
+                                      i !== index && String(item.cometType) === String(path.id),
+                                  ),
+                              ).length === 0
+                                ? "No cycle available"
+                                : "Select"
+                            }
+                          />
+                        </SelectTrigger>
+                        {!cohortPathsLoading && cohortPaths.length > 0 && (
+                          <SelectContent side="bottom" className="max-h-[150px]">
+                            {cohortPaths
+                              .filter(
+                                (path) =>
+                                  !cometAssignments.some(
+                                    (item, i) =>
+                                      i !== index && String(item.cometType) === String(path.id),
+                                  ),
+                              )
+                              .map((path) => (
+                                <SelectItem key={path.id} value={String(path.id)}>
+                                  {path.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        )}
+                      </Select>
+
+                      {/* Delete Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (cometAssignments.length > 1) {
+                            setCometAssignments((prev) =>
+                              prev.filter((item) => item.id !== assignment.id),
+                            );
+                          } else {
+                            setCometAssignments([
+                              { id: 1, isCurrent: false, cometType: "" },
+                            ]);
+                          }
+                        }}
                         className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0"
+                      // disabled={cometAssignments.length === 1}
                       >
                         <Trash2 className="w-4 h-4 text-white" />
                       </button>
                     </div>
                   ))}
                 </div>
+
+                {/* Assign Comet Button */}
                 <Button
                   type="button"
-                  variant="outline"
                   onClick={() => {
-                    const nextId =
-                      accountabilityEmails.length > 0
-                        ? Math.max(...accountabilityEmails.map((m) => m.id)) + 1
-                        : 1;
-                    setAccountabilityEmails((prev) => [
+                    const newId =
+                      Math.max(...cometAssignments.map((a) => a.id)) + 1;
+                    setCometAssignments((prev) => [
                       ...prev,
-                      { id: nextId, value: "" },
+                      { id: newId, isCurrent: false, cometType: "" },
                     ]);
                   }}
-                  className="w-full border-purple-300 text-primary-700 hover:bg-purple-50 flex items-center justify-center gap-1 py-2 text-sm font-medium"
+                  variant="outline"
+                  className="w-full border-purple-300 text-primary-700 hover:bg-purple-50 flex items-center justify-center gap-2 py-2"
                 >
-                  + Add Email
+                  <Plus className="w-4 h-4 text-blue-500" />
+                  Assign Cycles
                 </Button>
               </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Cohort
-                </Label>
-                <Select
-                  value={cohort}
-                  onValueChange={handleSetCohort}
-                  disabled={cohortsLoading || cohorts.length === 0}
-                >
-                  <SelectTrigger className="w-full bg-white border border-gray-300">
-                    <SelectValue
-                      placeholder={
-                        cohortsLoading
-                          ? "Loading..."
-                          : cohorts.length === 0
-                            ? "No cohorts available"
-                            : "Select"
-                      }
-                    />
-                  </SelectTrigger>
-                  {!cohortsLoading && cohorts.length > 0 && (
-                    <SelectContent>
-                      {cohorts.map((cohortItem) => {
-                        const value = cohortItem.id;
-                        const label = cohortItem.name;
-                        return (
-                          <SelectItem key={value} value={String(value)}>
-                            {label}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  )}
-                </Select>
-              </div>
             </div>
 
-            <div ref={dropdownRef}>
-              <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                Comets Available
-              </Label>
-
-              <div className="relative">
-                {/* Trigger */}
-                <button
+            <div
+              className={`flex pt-4 mt-4 border-t border-gray-200 shrink-0 ${editingUser ? "justify-between" : "justify-end"}`}
+            >
+              {editingUser && (
+                <Button
                   type="button"
-                  onClick={() => setOpenAllPath(!openAllPath)}
-                  className=" w-full flex justify-between items-center
-                        px-3 py-2 bg-white
-                        border border-gray-300 rounded-md
-                        text-sm text-gray-700
-                        outline-none
-                        focus:outline-none
-                        focus:ring-0
-                        focus:border-gray-300
-                        focus-visible:ring-0"
+                  onClick={handleWipeUserActions}
+                  disabled={wipingUserActions || savingUser}
+                  className="bg-white border border-[#645AD1] text-[#645AD1] hover:bg-gray-100 active:bg-[#645AD1] active:text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <span className="truncate">
-                    {cometsAvailableTickedIds.size > 0
-                      ? `${cometsAvailableTickedIds.size} selected`
-                      : "All Available Comets"}
-                  </span>
-                  <span className="text-gray-400">⌄</span>
-                </button>
-
-                {/* Dropdown */}
-                {openAllPath && (
-                  <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-md max-h-56 overflow-auto">
-                    {allPaths?.length === 0 && (
-                      <div className="px-4 py-2 text-sm text-gray-400">
-                        No comets available
-                      </div>
-                    )}
-
-                    {allPaths?.map((item, index) => {
-                      const checked = cometsAvailableTickedIds.has(Number(item.id));
-
-                      return (
-                        <label
-                          key={item.id ?? index}
-                          className="flex items-center gap-2 px-4 py-2 text-sm cursor-pointer hover:bg-gray-100"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => handleAllPathChange(item)}
-                            disabled={updatingCohortPaths}
-                            className="accent-blue-600"
-                          />
-                          <span className="text-gray-700">{item.name ?? `Path ${item.id}`}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Current Comet Assignment */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2 block">
-                Assigned Comets
-              </h3>
-              <div className="space-y-3">
-                {cometAssignments.map((assignment, index) => (
-                  <div key={assignment.id} className="flex items-center gap-3">
-                    {/* Numbered Label */}
-                    <button
-                      type="button"
-                      className="w-9 h-9 rounded-lg bg-gray-200 text-gray-600 font-medium text-sm flex items-center justify-center shrink-0"
-                    >
-                      {index + 1}
-                    </button>
-
-                    {/* Current Comet Selector */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCurrentCometIndex(index);
-                        setCometAssignments((prev) =>
-                          prev.map((item, idx) => ({
-                            ...item,
-                            isCurrent: idx === index,
-                          })),
-                        );
-                      }}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${assignment.isCurrent
-                        ? "bg-green-50 border-green-500"
-                        : "bg-gray-50 border-gray-300"
-                        }`}
-                    >
-                      <div
-                        className={`w-4 h-4 rounded-full ${assignment.isCurrent
-                          ? "bg-green-500"
-                          : "bg-white border-2 border-gray-400"
-                          }`}
-                      />
-                      <span className="text-sm font-medium text-gray-700">
-                        Current Comet
-                      </span>
-                    </button>
-
-                    {/* Comet Type Dropdown */}
-                    <Select
-                      value={assignment.cometType}
-                      onValueChange={(value) => {
-                        setCometAssignments((prev) =>
-                          prev.map((item) =>
-                            item.id === assignment.id
-                              ? { ...item, cometType: value }
-                              : item,
-                          ),
-                        );
-                      }}
-                    // disabled={
-                    //   cohortPathsLoading || !cohort || cohortPaths.length === 0
-                    // }
-                    >
-                      <SelectTrigger className="flex-1 bg-white border border-gray-300">
-                        <SelectValue
-                          placeholder={
-                            cohortPaths.filter(
-                              (path) =>
-                                !cometAssignments.some(
-                                  (item, i) =>
-                                    i !== index && String(item.cometType) === String(path.id),
-                                ),
-                            ).length === 0
-                              ? "No paths available"
-                              : "Select"
-                          }
-                        />
-                      </SelectTrigger>
-                      {!cohortPathsLoading && cohortPaths.length > 0 && (
-                        <SelectContent side="bottom" className="max-h-[150px]">
-                          {cohortPaths
-                            .filter(
-                              (path) =>
-                                !cometAssignments.some(
-                                  (item, i) =>
-                                    i !== index && String(item.cometType) === String(path.id),
-                                ),
-                            )
-                            .map((path) => (
-                              <SelectItem key={path.id} value={String(path.id)}>
-                                {path.name}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      )}
-                    </Select>
-
-                    {/* Delete Button */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (cometAssignments.length > 1) {
-                          setCometAssignments((prev) =>
-                            prev.filter((item) => item.id !== assignment.id),
-                          );
-                        } else {
-                          setCometAssignments([
-                            { id: 1, isCurrent: false, cometType: "" },
-                          ]);
-                        }
-                      }}
-                      className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0"
-                    // disabled={cometAssignments.length === 1}
-                    >
-                      <Trash2 className="w-4 h-4 text-white" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Assign Comet Button */}
-              <Button
-                type="button"
-                onClick={() => {
-                  const newId =
-                    Math.max(...cometAssignments.map((a) => a.id)) + 1;
-                  setCometAssignments((prev) => [
-                    ...prev,
-                    { id: newId, isCurrent: false, cometType: "" },
-                  ]);
-                }}
-                variant="outline"
-                className="w-full border-purple-300 text-primary-700 hover:bg-purple-50 flex items-center justify-center gap-2 py-2"
-              >
-                <Plus className="w-4 h-4 text-blue-500" />
-                Assign Comet
-              </Button>
-            </div>
-
-            {/* Save User Button */}
-            <div className="flex justify-end pt-4">
+                  {wipingUserActions
+                    ? "Wiping User Micor-actions..."
+                    : "Wipe All User's Micro-actions"}
+                </Button>
+              )}
               <Button
                 type="button"
                 onClick={handleSaveUser}
-                disabled={savingUser}
+                disabled={savingUser || wipingUserActions}
                 className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {savingUser
