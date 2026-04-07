@@ -292,7 +292,6 @@ export default function DashboardLayout() {
       } catch {}
 
       const chatbotConversation = parsedSessionData?.chatbot_conversation || [];
-      const messageText = formData.cometTitle || "Generate outline";
 
       // Initialize enabled_attributes object
       const enabled_attributes = {
@@ -387,7 +386,7 @@ export default function DashboardLayout() {
         cycle_creation_data: formattedCometData,
         response_outline: [],
         response_path: cleanedResponsePath,
-        chatbot_conversation: [...chatbotConversation, { user: messageText }],
+        chatbot_conversation: chatbotConversation,
         to_modify: parsedSessionData?.to_modify ?? {},
         source_material: sourceMaterialsPayload,
         webpage_url: formData.webpage_url || [],
@@ -410,7 +409,7 @@ export default function DashboardLayout() {
         response_outline: [],
         response_path: cleanedResponsePath,
         is_initial_chapter_created: false,
-        chatbot_conversation: [...chatbotConversation, { user: messageText }],
+        chatbot_conversation: chatbotConversation,
       };
       localStorage.setItem("sessionData", JSON.stringify(cleanedSession));
       setSessionData(cleanedSession);
@@ -422,7 +421,7 @@ export default function DashboardLayout() {
         cycle_creation_data: formattedCometData,
         response_outline: [],
         response_path: cleanedResponsePath,
-        chatbot_conversation: [...chatbotConversation, { user: messageText }],
+        chatbot_conversation: chatbotConversation,
         to_modify: parsedSessionData?.to_modify ?? {},
         webpage_url: formData.webpage_url || [],
         is_initial_chapter_created: false,

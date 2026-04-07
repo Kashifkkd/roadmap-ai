@@ -36,7 +36,7 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
     if (password.length < 6)
       return {
         field: "password",
-        message: "Password must be at least 6 characters..",
+        message: "Password must be at least 6 characters",
       };
 
     return null;

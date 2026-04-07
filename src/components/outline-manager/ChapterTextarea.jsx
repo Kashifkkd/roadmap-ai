@@ -70,7 +70,11 @@ export default function ChapterTextarea({
         input_type: "outline_updation",
         cycle_creation_data: freshSessionData?.cycle_creation_data || {},
         response_outline: freshSessionData?.response_outline || {},
-        response_path: freshSessionData?.response_path || {},
+        response_path: {
+          ...(freshSessionData?.response_path || {}),
+          chapters: [],
+          remaining_chapters: [],
+        },
         // additional_data: {
         //   personalization_enabled: sessionData?.additional_data?.personalization_enabled || false,
         //   habit_enabled: sessionData?.additional_data?.habit_enabled || false,
@@ -80,6 +84,32 @@ export default function ChapterTextarea({
         to_modify: {},
         webpage_url: freshSessionData?.webpage_url || [],
       });
+
+      try {
+        const clearedSnapshot = {
+          ...(freshSessionData || {}),
+          response_path: {
+            ...(freshSessionData?.response_path || {}),
+            chapters: [],
+            remaining_chapters: [],
+          },
+        };
+        localStorage.setItem("sessionData", JSON.stringify(clearedSnapshot));
+        await graphqlClient.autoSaveComet(
+          JSON.stringify({
+            session_id: sessionId,
+            input_type: "outline_updation",
+            cycle_creation_data: freshSessionData?.cycle_creation_data || {},
+            response_outline: freshSessionData?.response_outline || {},
+            response_path: clearedSnapshot.response_path,
+            chatbot_conversation: freshSessionData?.chatbot_conversation || [],
+            to_modify: freshSessionData?.to_modify || {},
+            webpage_url: freshSessionData?.webpage_url || [],
+          }),
+        );
+      } catch (e) {
+        console.error("Outline pre-clear autosave failed:", e);
+      }
       /*
         const conversationMessage = `{ 'chapter': '${chapter 3}', 'value': '${currentFieldValue}', 'instruction': '${query}' }`;
          const conversationMessage = `{ 'field': '${fieldLabel}', 'value': '${currentFieldValue}', 'instruction': '${query}' }`;

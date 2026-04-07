@@ -3,11 +3,19 @@ import { createClient } from "graphql-ws";
 class WebSocketGraphQLClient {
   constructor() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
-    // Convert HTTP/HTTPS URL to WebSocket URL
+    // Convert HTTP/HTTPS URL to WebSocket URLs
     const wsUrl = apiUrl.replace(/^https:\/\//, "wss://").replace(/^http:\/\//, "ws://");
     this.wsUrl = `${wsUrl}/graphql`;
     this.client = null;
     this.subscriptions = new Map();
+
+    // Reset the WS client whenever auth changes so the next subscription
+    // gets a fresh connection with the up-to-date token.
+    if (typeof window !== "undefined") {
+      window.addEventListener("auth-changed", () => {
+        this.resetClient();
+      });
+    }
   }
 
   getToken() {
@@ -31,16 +39,16 @@ class WebSocketGraphQLClient {
       return this.client;
     }
 
-    const token = this.getToken();
-    // if (!token) {
-    //   throw new Error("No authentication token found");
-    // }
-
+    // connectionParams as a function so graphql-ws reads the token fresh
+    // on every new WebSocket connection (including reconnects after token refresh).
     this.client = createClient({
       url: this.wsUrl,
-      connectionParams: {
-        Authorization: `Bearer ${token}`,
+      connectionParams: () => {
+        const token = this.getToken();
+        return { Authorization: `Bearer ${token}` };
       },
+      shouldRetry: () => true,
+      retryAttempts: Infinity,
       on: {
         connected: () => {
           console.log("WebSocket GraphQL client connected");
@@ -55,6 +63,24 @@ class WebSocketGraphQLClient {
     });
 
     return this.client;
+  }
+
+  /**
+   * Dispose the current WS client and clear all tracked subscriptions so that
+   * the next call to initializeClient() creates a fresh connection with the
+   * current token. Called on auth-changed (login / logout / token refresh).
+   */
+  resetClient() {
+    console.log("WebSocket GraphQL client: resetting due to auth change");
+    this.subscriptions.clear();
+    if (this.client) {
+      try {
+        this.client.dispose();
+      } catch (err) {
+        console.warn("WebSocket GraphQL client: error during dispose:", err);
+      }
+      this.client = null;
+    }
   }
 
   subscribeToSessionUpdates(sessionId, onUpdate, onError) {

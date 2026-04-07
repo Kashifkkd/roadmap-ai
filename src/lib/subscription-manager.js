@@ -4,6 +4,15 @@ class SubscriptionManager {
   constructor() {
     // Map: sessionId -> { unsubscribe, callbacks, screenRefs }
     this.activeSubscriptions = new Map();
+
+    // When auth changes (login / logout / token refresh) the WebSocket client
+    // is reset, so every active subscription is dead. Clear our map so the
+    // next subscribe() call creates a fresh subscription over the new connection.
+    if (typeof window !== "undefined") {
+      window.addEventListener("auth-changed", () => {
+        this.cleanup();
+      });
+    }
   }
 
   /**

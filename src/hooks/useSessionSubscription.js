@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { subscriptionManager } from "@/lib/subscription-manager";
 import { usePathname } from "next/navigation";
 
@@ -12,7 +12,7 @@ const PERSISTENT_SCREENS = {
 /**
  * Hook to subscribe to session updates
  * Automatically handles persistent vs temporary subscriptions based on current route
- * 
+ *
  * @param {string} sessionId - The session ID to subscribe to
  * @param {Function} onUpdate - Callback when session data updates
  * @param {Function} onError - Callback when subscription errors
@@ -30,10 +30,26 @@ export function useSessionSubscription(
   const callbacksRef = useRef({ onUpdate, onError });
   const cleanupRef = useRef(null);
 
+  // Incremented on every auth-changed event so the subscription useEffect
+  // re-runs and creates a fresh subscription over the new WS connection.
+  const [authVersion, setAuthVersion] = useState(0);
+
   // Keep callbacks ref updated so they're always current
   useEffect(() => {
     callbacksRef.current = { onUpdate, onError };
   }, [onUpdate, onError]);
+
+  // Track auth changes so we can force re-subscription with the new token.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleAuthChanged = () => {
+      setAuthVersion((v) => v + 1);
+    };
+
+    window.addEventListener("auth-changed", handleAuthChanged);
+    return () => window.removeEventListener("auth-changed", handleAuthChanged);
+  }, []);
 
   useEffect(() => {
     if (!sessionId) {
@@ -70,14 +86,16 @@ export function useSessionSubscription(
       }
     );
 
-    // Cleanup on unmount or when sessionId/pathname changes
+    // Cleanup on unmount or when sessionId/pathname/authVersion changes
     return () => {
       if (cleanupRef.current) {
         cleanupRef.current();
         cleanupRef.current = null;
       }
     };
-  }, [sessionId, pathname, options.forcePersistent, options.forceTemporary]);
+    // authVersion is intentionally included: when auth changes, the WS client
+    // and subscription manager are both reset, so we must re-subscribe here.
+  }, [sessionId, pathname, options.forcePersistent, options.forceTemporary, authVersion]);
 
   // Cleanup on unmount
   useEffect(() => {

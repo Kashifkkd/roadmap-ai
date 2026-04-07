@@ -55,6 +55,9 @@ const StepsDisplay = ({
   const handledUpdateRef = useRef(false);
   const isSubmittingStepRef = useRef(false);
   const isAskingKyperRef = useRef(false);
+  const awaitingMutationRef = useRef(false);
+  const baselineChapterStepsRef = useRef("");
+  const baselineConversationLengthRef = useRef(0);
 
   // Track submission states in refs for use in subscription callback
   useEffect(() => {
@@ -92,7 +95,23 @@ const StepsDisplay = ({
         return;
       }
 
+      if (awaitingMutationRef.current) {
+        const incomingStepsSignature = JSON.stringify(updatedChapter?.steps || []);
+        const stepsChanged = incomingStepsSignature !== baselineChapterStepsRef.current;
+        const incomingConversationLength = Array.isArray(
+          sessionPayload?.chatbot_conversation,
+        )
+          ? sessionPayload.chatbot_conversation.length
+          : 0;
+        const conversationAdvanced =
+          incomingConversationLength > baselineConversationLengthRef.current;
+        if (!stepsChanged && !conversationAdvanced) {
+          return;
+        }
+      }
+
       handledUpdateRef.current = true;
+      awaitingMutationRef.current = false;
 
       // Handle step addition
       if (isSubmittingStepRef.current) {
@@ -120,6 +139,7 @@ const StepsDisplay = ({
       if (isAskingKyperRef.current) {
         setIsAskingKyper(false);
       }
+      awaitingMutationRef.current = false;
       handledUpdateRef.current = false;
     },
     { forceTemporary: true },
@@ -411,6 +431,13 @@ const StepsDisplay = ({
         : null;
 
       handledUpdateRef.current = false;
+      awaitingMutationRef.current = true;
+      baselineChapterStepsRef.current = JSON.stringify(chapterSteps || []);
+      baselineConversationLengthRef.current = Array.isArray(
+        snapshot?.chatbot_conversation,
+      )
+        ? snapshot.chatbot_conversation.length
+        : 0;
 
       const baseInstruction = stepPrompt.trim();
       const supplementalNotes =
@@ -437,7 +464,11 @@ const StepsDisplay = ({
         input_type: "outline_updation",
         cycle_creation_data: snapshot?.cycle_creation_data || {},
         response_outline: snapshot?.response_outline || {},
-        response_path: snapshot?.response_path || {},
+        response_path: {
+          ...(snapshot?.response_path || {}),
+          chapters: [],
+          remaining_chapters: [],
+        },
         // additional_data: {
         //   personalization_enabled:
         //     snapshot?.additional_data?.personalization_enabled || false,
@@ -448,6 +479,34 @@ const StepsDisplay = ({
         to_modify: {},
         webpage_url: snapshot?.webpage_url || [],
       });
+
+      try {
+        const clearedSnapshot = {
+          ...(snapshot || {}),
+          response_path: {
+            ...(snapshot?.response_path || {}),
+            chapters: [],
+            remaining_chapters: [],
+          },
+        };
+        if (typeof window !== "undefined") {
+          localStorage.setItem("sessionData", JSON.stringify(clearedSnapshot));
+        }
+        await graphqlClient.autoSaveComet(
+          JSON.stringify({
+            session_id: sessionId,
+            input_type: "outline_updation",
+            cycle_creation_data: snapshot?.cycle_creation_data || {},
+            response_outline: snapshot?.response_outline || {},
+            response_path: clearedSnapshot.response_path,
+            chatbot_conversation: snapshot?.chatbot_conversation || [],
+            to_modify: snapshot?.to_modify || {},
+            webpage_url: snapshot?.webpage_url || [],
+          }),
+        );
+      } catch (e) {
+        console.error("Outline pre-clear autosave failed:", e);
+      }
 
       const messageResponse = await graphqlClient.sendMessage(payloadObject);
 
@@ -461,6 +520,7 @@ const StepsDisplay = ({
       console.error("Error adding step:", error);
       setAddStepError(error?.message || "Unable to add step right now.");
       setIsSubmittingStep(false);
+      awaitingMutationRef.current = false;
     }
   };
 
@@ -482,6 +542,13 @@ const StepsDisplay = ({
       targetChapterIndexRef.current = Number.isFinite(numericChapter)
         ? numericChapter - 1
         : null;
+      awaitingMutationRef.current = true;
+      baselineChapterStepsRef.current = JSON.stringify(chapterSteps || []);
+      baselineConversationLengthRef.current = Array.isArray(
+        snapshot?.chatbot_conversation,
+      )
+        ? snapshot.chatbot_conversation.length
+        : 0;
 
       setAllMessages((prev) => [
         ...prev,
@@ -518,7 +585,11 @@ const StepsDisplay = ({
         input_type: "outline_updation",
         cycle_creation_data: snapshot?.cycle_creation_data || {},
         response_outline: currentResponseOutline,
-        response_path: snapshot?.response_path || {},
+        response_path: {
+          ...(snapshot?.response_path || {}),
+          chapters: [],
+          remaining_chapters: [],
+        },
         // additional_data: {
         //   personalization_enabled:
         //     snapshot?.additional_data?.personalization_enabled || false,
@@ -530,6 +601,34 @@ const StepsDisplay = ({
         webpage_url: snapshot?.webpage_url || [],
       });
       console.log(">>>>>>>payloadObject>>>>>>>>>>", payloadObject);
+
+      try {
+        const clearedSnapshot = {
+          ...(snapshot || {}),
+          response_path: {
+            ...(snapshot?.response_path || {}),
+            chapters: [],
+            remaining_chapters: [],
+          },
+        };
+        if (typeof window !== "undefined") {
+          localStorage.setItem("sessionData", JSON.stringify(clearedSnapshot));
+        }
+        await graphqlClient.autoSaveComet(
+          JSON.stringify({
+            session_id: sessionId,
+            input_type: "outline_updation",
+            cycle_creation_data: snapshot?.cycle_creation_data || {},
+            response_outline: currentResponseOutline,
+            response_path: clearedSnapshot.response_path,
+            chatbot_conversation: snapshot?.chatbot_conversation || [],
+            to_modify: {},
+            webpage_url: snapshot?.webpage_url || [],
+          }),
+        );
+      } catch (e) {
+        console.error("Outline pre-clear autosave failed:", e);
+      }
 
       const messageResponse = await graphqlClient.sendMessage(payloadObject);
       setAllMessages((prev) => [
@@ -554,6 +653,7 @@ const StepsDisplay = ({
         { from: "bot", content: "Error: Unable to get response from Kyper" },
       ]);
       setIsAskingKyper(false);
+      awaitingMutationRef.current = false;
     }
   };
 

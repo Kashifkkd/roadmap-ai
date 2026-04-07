@@ -1090,12 +1090,26 @@ const LinearPollScreenPreview = ({ deviceView, content }) => {
   );
 };
 
-const ActionScreenPreview = ({ deviceView, content }) => {
+const ActionScreenPreview = ({ deviceView, content, assets = [] }) => {
   const title = content?.title || "";
   const text = content?.text || content?.question || "";
   const toolLink = content?.toolLink || content?.tool || "";
   const reflectionPrompt = content?.reflectionPrompt || "";
-  const image_url = content?.media?.url || FALLBACK_IMAGE_URL;
+  const assetImageUrl =
+    (Array.isArray(assets)
+      ? assets.find(
+          (asset) =>
+            typeof asset?.ImageUrl === "string" ||
+            typeof asset?.image_url === "string" ||
+            typeof asset?.url === "string",
+        )
+      : null) || null;
+  const image_url =
+    assetImageUrl?.ImageUrl ||
+    assetImageUrl?.image_url ||
+    assetImageUrl?.url ||
+    content?.media?.url ||
+    FALLBACK_IMAGE_URL;
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
@@ -1137,6 +1151,18 @@ const ActionScreenPreview = ({ deviceView, content }) => {
 
         {/* Content Section */}
         <div className={`${paddingClass} flex-1 flex flex-col space-y-6`}>
+          {image_url ? (
+            <div className="relative w-full max-w-md aspect-video rounded-lg overflow-hidden bg-gray-100">
+              <Image
+                src={image_url}
+                alt={title || "Action image"}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+          ) : null}
+
           {/* Title */}
           <h2
             className={`font-bold text-gray-900 ${titleSizeClass} leading-tight`}
@@ -1781,7 +1807,11 @@ export default function FromDoerToEnabler({
         ) : contentType === "linear" ? (
           <LinearPollScreenPreview deviceView={deviceView} content={content} />
         ) : contentType === "action" || contentType === "actions" ? (
-          <ActionScreenPreview deviceView={deviceView} content={content} />
+          <ActionScreenPreview
+            deviceView={deviceView}
+            content={content}
+            assets={selectedScreen?.assets || []}
+          />
         ) : contentType === "socialDiscussion" ? (
           <SocialDiscussionScreenPreview
             deviceView={deviceView}

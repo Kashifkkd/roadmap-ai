@@ -558,8 +558,6 @@ export default function CometManager({
   const [showNextChapter, setShowNextChapter] = useState(true);
   const [hasClickedGenerateRemaining, setHasClickedGenerateRemaining] =
     useState(false);
-  // Bump when session updates (subscription) so DynamicForm remounts and shows fresh data
-  const [sessionUpdateKey, setSessionUpdateKey] = useState(0);
 
   // Persist: once user clicks "Generate Remaining Chapters", never show again (even after reload/close)
   useEffect(() => {
@@ -611,21 +609,6 @@ export default function CometManager({
       setShowNextChapter(false);
     } else {
       setShowNextChapter(true);
-    }
-  }, [sessionData]);
-
-  // Bump sessionUpdateKey when sessionData changes (subscription or chat response)
-  // so DynamicForm remounts and shows fresh data. Skip initial load.
-  const prevSessionDataRef = useRef(undefined);
-  useEffect(() => {
-    if (sessionData == null) return;
-    if (prevSessionDataRef.current === undefined) {
-      prevSessionDataRef.current = sessionData;
-      return;
-    }
-    if (prevSessionDataRef.current !== sessionData) {
-      prevSessionDataRef.current = sessionData;
-      setSessionUpdateKey((k) => k + 1);
     }
   }, [sessionData]);
 
@@ -752,7 +735,12 @@ export default function CometManager({
   // Derive selectedScreen from screens array using selectedScreenId - always has latest data
   const selectedScreen = useMemo(() => {
     if (!selectedScreenId || !screens || screens.length === 0) return null;
-    return screens.find((screen) => screen.id === selectedScreenId) || null;
+    return (
+      screens.find(
+        (screen) =>
+          String(screen?.id ?? screen?.uuid ?? "") === String(selectedScreenId),
+      ) || null
+    );
   }, [selectedScreenId, screens]);
   console.log("selectedScreen", selectedScreen);
 
@@ -806,8 +794,9 @@ export default function CometManager({
     if (!selectedScreenId) {
       console.log("no screen is selected, selecting the first one");
       const firstScreen = screens[0];
-      if (firstScreen && firstScreen.id) {
-        setSelectedScreenId(firstScreen.id);
+      const firstScreenId = firstScreen?.id ?? firstScreen?.uuid;
+      if (firstScreenId) {
+        setSelectedScreenId(firstScreenId);
       }
       return;
     }
@@ -815,12 +804,14 @@ export default function CometManager({
 
     // If selected screen is no longer in the screens array, select the first one
     const selectedScreenExists = screens.some(
-      (screen) => screen.id === selectedScreenId,
+      (screen) =>
+        String(screen?.id ?? screen?.uuid ?? "") === String(selectedScreenId),
     );
     if (!selectedScreenExists) {
       const firstScreen = screens[0];
-      if (firstScreen && firstScreen.id) {
-        setSelectedScreenId(firstScreen.id);
+      const firstScreenId = firstScreen?.id ?? firstScreen?.uuid;
+      if (firstScreenId) {
+        setSelectedScreenId(firstScreenId);
       }
     }
   }, [screens, selectedScreenId]);
@@ -835,7 +826,8 @@ export default function CometManager({
     }
 
     const screenIndex = screens.findIndex(
-      (screen) => screen.id === selectedScreenId,
+      (screen) =>
+        String(screen?.id ?? screen?.uuid ?? "") === String(selectedScreenId),
     );
     if (screenIndex >= 0 && currentScreen !== screenIndex) {
       setCurrentScreen(screenIndex);
@@ -898,8 +890,12 @@ export default function CometManager({
     setSelectedToolAsset(null);
     setSelectedRemainingChapter(null);
     setActiveTab(0);
-    setSelectedScreenId(screen.id);
-    const screenIndex = screens.findIndex((s) => s.id === screen.id);
+    const clickedScreenId = screen?.id ?? screen?.uuid ?? null;
+    setSelectedScreenId(clickedScreenId);
+    const screenIndex = screens.findIndex(
+      (s) =>
+        String(s?.id ?? s?.uuid ?? "") === String(clickedScreenId ?? ""),
+    );
     setCurrentScreen(screenIndex);
   };
 
@@ -1480,7 +1476,7 @@ export default function CometManager({
 
     setShowAddPopup(false);
     setAddAtIndex(null);
-    setSelectedScreenId(newScreen.id);
+    setSelectedScreenId(newScreen?.id ?? newScreen?.uuid ?? null);
     setCurrentScreen(addAtIndex !== null ? addAtIndex : screens.length);
     console.log(
       "newScreen set selected screen id>>>>>>>>>>>>>>>>>>>>>>>>",
@@ -1497,13 +1493,17 @@ export default function CometManager({
       const newIndex = currentScreen - 1;
       setCurrentScreen(newIndex);
       if (screens[newIndex]) {
-        setSelectedScreenId(screens[newIndex].id);
+        setSelectedScreenId(
+          screens[newIndex]?.id ?? screens[newIndex]?.uuid ?? null,
+        );
       }
     } else if (direction === "next" && currentScreen < screens.length - 1) {
       const newIndex = currentScreen + 1;
       setCurrentScreen(newIndex);
       if (screens[newIndex]) {
-        setSelectedScreenId(screens[newIndex].id);
+        setSelectedScreenId(
+          screens[newIndex]?.id ?? screens[newIndex]?.uuid ?? null,
+        );
       }
     }
   };
@@ -2420,7 +2420,7 @@ export default function CometManager({
                       {selectedScreen && (
                         <div className="shrink-0">
                           <DynamicForm
-                            key={`${selectedScreen.id}-${sessionUpdateKey}`}
+                            key={`${selectedScreen?.id ?? selectedScreen?.uuid ?? "screen"}`}
                             screen={selectedScreen}
                             sessionData={sessionData}
                             setAllMessages={setAllMessages}
@@ -2663,31 +2663,51 @@ export default function CometManager({
           if (!open) setScreenDeleteConfirmId(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete this screen?</DialogTitle>
-            <DialogDescription>
-              {screenDeleteConfirmIndex >= 0
-                ? `Screen ${screenDeleteConfirmIndex + 1} will be removed from this step. Wait for the save to finish before leaving.`
-                : "This screen will be removed from this step."}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
+        <DialogContent
+          customPosition
+          overlayClassName="top-[4.5rem] lg:left-[calc(18em+1rem)] xl:left-[calc(20em+1rem)]"
+          className="left-1/2 top-[calc(50%+2.25rem)] w-[calc(100vw-2rem)] max-w-[408px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-gray-200 p-0 shadow-xl lg:left-[calc(50%+9.5rem)] xl:left-[calc(50%+10.5rem)] [&>button]:hidden"
+        >
+          <div className="px-5 py-4">
+            <DialogHeader className="flex-row items-start gap-3 space-y-0 text-left">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FEF3F2]">
+                <img
+                  src="/bins.svg"
+                  alt="Delete"
+                  className="h-[18px] w-[18px]"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <DialogTitle className="text-[15px] font-semibold leading-6 text-[#181D27]">
+                  Delete Screen
+                </DialogTitle>
+                <DialogDescription className="text-sm leading-5 text-[#181D27]">
+                  {screenDeleteConfirmIndex >= 0
+                    ? `This will permanently remove screen ${screenDeleteConfirmIndex + 1} from this step. Wait for the save to finish before leaving.`
+                    : "This will permanently remove this screen from this step."}
+                </DialogDescription>
+              </div>
+            </DialogHeader>
+          </div>
+          <div className="border-t border-gray-200 px-5 py-3.5">
+            <DialogFooter className="flex-row justify-end gap-3 space-x-0">
             <Button
               type="button"
               variant="outline"
+              className="h-9 min-w-[92px] rounded-lg border-primary text-primary hover:bg-primary-50 active:bg-primary-100"
               onClick={() => setScreenDeleteConfirmId(null)}
             >
               Cancel
             </Button>
             <Button
               type="button"
-              variant="destructive"
+              className="h-9 min-w-[92px] rounded-lg"
               onClick={handleConfirmDeleteScreen}
             >
-              Yes, delete
+              Delete
             </Button>
-          </DialogFooter>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

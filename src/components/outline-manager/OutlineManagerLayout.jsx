@@ -20,10 +20,18 @@ export default function OutlineManagerLayout() {
   const isSavingRef = useRef(false);
   const prevOutlineRef = useRef(null);
   const isSubmittingChapterRef = useRef(false);
+  const chapterSubmitBaselineOutlineRef = useRef(null);
 
   useEffect(() => {
     isSubmittingChapterRef.current = isSubmittingChapter;
-  }, [isSubmittingChapter]);
+    if (isSubmittingChapter) {
+      chapterSubmitBaselineOutlineRef.current = JSON.stringify(
+        sessionData?.response_outline || [],
+      );
+    } else {
+      chapterSubmitBaselineOutlineRef.current = null;
+    }
+  }, [isSubmittingChapter, sessionData?.response_outline]);
 
   useEffect(() => {
     // Access localStorage only on the client
@@ -87,7 +95,12 @@ export default function OutlineManagerLayout() {
         // Also update prefillData so child components receive the updates
         setPrefillData(updatedData);
         if (isSubmittingChapterRef.current) {
-          setIsSubmittingChapter(false);
+          const baselineOutline = chapterSubmitBaselineOutlineRef.current;
+          const incomingOutline = JSON.stringify(updatedData?.response_outline || []);
+          if (!baselineOutline || incomingOutline !== baselineOutline) {
+            setIsSubmittingChapter(false);
+            chapterSubmitBaselineOutlineRef.current = null;
+          }
         }
       } catch (error) {
         console.error("Error updating session data:", error);
@@ -239,7 +252,11 @@ export default function OutlineManagerLayout() {
             input_type: "outline_updation",
             cycle_creation_data: parsedSessionData?.cycle_creation_data || {},
             response_outline: currentOutline,
-            response_path: parsedSessionData?.response_path || {},
+            response_path: {
+              ...(parsedSessionData?.response_path || {}),
+              chapters: [],
+              remaining_chapters: [],
+            },
             chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
             to_modify: parsedSessionData?.to_modify || {},
           });

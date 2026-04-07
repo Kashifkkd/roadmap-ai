@@ -998,6 +998,16 @@ export default function DynamicForm({
                 assets: newAssets,
                 imageStatus: "ready",
               };
+
+              if (replacesScreenImages) {
+                const nextScreen = stepItem.screens[screenIndex];
+                if (!nextScreen.screenContents) nextScreen.screenContents = {};
+                if (!nextScreen.screenContents.content)
+                  nextScreen.screenContents.content = {};
+                if (!nextScreen.screenContents.content.media)
+                  nextScreen.screenContents.content.media = {};
+                nextScreen.screenContents.content.media.type = "image";
+              }
               return newOutline;
             }
           }

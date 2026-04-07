@@ -1206,26 +1206,45 @@ export default function OutlineMannerCreateComet({
           if (!open) setStepDeleteConfirm(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete this step?</DialogTitle>
-            <DialogDescription>
-              {stepDeleteConfirm
-                ? `Step ${stepDeleteConfirm.stepIndex + 1} (${stepDeleteConfirm.stepTitle || "Untitled Step"}) will be permanently removed. This action cannot be undone.`
-                : "This step will be permanently removed."}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
+        <DialogContent
+          customPosition
+          overlayClassName="top-[4.5rem] lg:left-[calc(360px+1rem)]"
+          className="left-1/2 top-[calc(50%+2.25rem)] w-[calc(100vw-2rem)] max-w-[408px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-gray-200 p-0 shadow-xl lg:left-[calc(50%+11.5rem)] [&>button]:hidden"
+        >
+          <div className="px-5 py-4">
+            <DialogHeader className="flex-row items-start gap-3 space-y-0 text-left">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FEF3F2]">
+                <img
+                  src="/bins.svg"
+                  alt="Delete"
+                  className="h-[18px] w-[18px]"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <DialogTitle className="text-[15px] font-semibold leading-6 text-[#181D27]">
+                  Delete Step
+                </DialogTitle>
+                <DialogDescription className="text-sm leading-5 text-[#181D27]">
+                  {stepDeleteConfirm
+                    ? `Step ${stepDeleteConfirm.stepIndex + 1} (${stepDeleteConfirm.stepTitle || "Untitled Step"}) will be permanently removed. This action cannot be undone.`
+                    : "This step will be permanently removed."}
+                </DialogDescription>
+              </div>
+            </DialogHeader>
+          </div>
+          <div className="border-t border-gray-200 px-5 py-3.5">
+            <DialogFooter className="flex-row justify-end gap-3 space-x-0">
             <Button
               type="button"
               variant="outline"
+              className="h-9 min-w-[92px] rounded-lg border-primary text-primary hover:bg-primary-50 active:bg-primary-100"
               onClick={() => setStepDeleteConfirm(null)}
             >
               Cancel
             </Button>
             <Button
               type="button"
-              variant="destructive"
+              className="h-9 min-w-[92px] rounded-lg"
               onClick={() => {
                 if (!stepDeleteConfirm) return;
                 const { chapterIndex, stepIndex, stepTitle } = stepDeleteConfirm;
@@ -1233,9 +1252,10 @@ export default function OutlineMannerCreateComet({
                 handleDeleteStepWithLoader(null, chapterIndex, stepIndex, stepTitle);
               }}
             >
-              Yes, delete
+              Delete
             </Button>
-          </DialogFooter>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1246,31 +1266,51 @@ export default function OutlineMannerCreateComet({
           if (!open) setChapterDeleteConfirmIndex(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete this phase?</DialogTitle>
-            <DialogDescription>
-              {chapterDeleteConfirmIndex >= 0
-                ? `Phase ${chapterDeleteConfirmIndex + 1} (${chapters[chapterDeleteConfirmIndex]?.chapter || "Untitled Phase"}) will be permanently removed along with all its steps. This action cannot be undone.`
-                : "This phase will be permanently removed."}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
+        <DialogContent
+          customPosition
+          overlayClassName="top-[4.5rem] lg:left-[calc(360px+1rem)]"
+          className="left-1/2 top-[calc(50%+2.25rem)] w-[calc(100vw-2rem)] max-w-[408px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-gray-200 p-0 shadow-xl lg:left-[calc(50%+11.5rem)] [&>button]:hidden"
+        >
+          <div className="px-5 py-4">
+            <DialogHeader className="flex-row items-start gap-3 space-y-0 text-left">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FEF3F2]">
+                <img
+                  src="/bins.svg"
+                  alt="Delete"
+                  className="h-[18px] w-[18px]"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <DialogTitle className="text-[15px] font-semibold leading-6 text-[#181D27]">
+                  Delete Phase
+                </DialogTitle>
+                <DialogDescription className="text-sm leading-5 text-[#181D27]">
+                  {chapterDeleteConfirmIndex >= 0
+                    ? `Phase ${chapterDeleteConfirmIndex + 1} (${chapters[chapterDeleteConfirmIndex]?.chapter || "Untitled Phase"}) will be permanently removed along with all its steps. This action cannot be undone.`
+                    : "This phase will be permanently removed."}
+                </DialogDescription>
+              </div>
+            </DialogHeader>
+          </div>
+          <div className="border-t border-gray-200 px-5 py-3.5">
+            <DialogFooter className="flex-row justify-end gap-3 space-x-0">
             <Button
               type="button"
               variant="outline"
+              className="h-9 min-w-[92px] rounded-lg border-primary text-primary hover:bg-primary-50 active:bg-primary-100"
               onClick={() => setChapterDeleteConfirmIndex(null)}
             >
               Cancel
             </Button>
             <Button
               type="button"
-              variant="destructive"
+              className="h-9 min-w-[92px] rounded-lg"
               onClick={handleConfirmDeleteChapter}
             >
-              Yes, delete
+              Delete
             </Button>
-          </DialogFooter>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

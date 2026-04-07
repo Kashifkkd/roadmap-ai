@@ -393,10 +393,10 @@ export default function SourceMaterialCard({
         }
 
         queueMicrotask(() => {
-          toast.warning(
+          toast.success(
             newFiles.length === 1
-              ? "File attached and will be uploaded during outline creation."
-              : "File attached and will be uploaded during outline creation.",
+              ? "Files attached and will be uploaded during outline creation."
+              : "Files attached and will be uploaded during outline creation.",
             { id: "source-material-files-attached" },
           );
 
@@ -580,7 +580,7 @@ export default function SourceMaterialCard({
 
     setWebpageUrls([...normalizedUrls, { url, comment: "" }]);
     setLinkDraft({ url: "" });
-    toast.warning("Link attached. It will upload when you click Create Outline.", {
+    toast.success("Link attached. It will upload when you click Create Outline.", {
       id: "source-material-link-attached",
     });
   };

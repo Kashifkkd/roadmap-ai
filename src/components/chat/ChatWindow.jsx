@@ -26,6 +26,8 @@ export default function ChatWindow({
   const previousSessionIdRef = useRef(null);
   const welcomeAnimationCheckedRef = useRef(false);
   const welcomeAnimationStateRef = useRef(false);
+  const awaitingConversationRef = useRef(false);
+  const minConversationLengthRef = useRef(0);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
@@ -328,6 +330,17 @@ export default function ChatWindow({
 
       const chatbotConversation = [...existingConversation, ...newEntries];
       console.log("chatbotConversation>>>>>>>>>>", chatbotConversation);
+      awaitingConversationRef.current = true;
+      minConversationLengthRef.current = chatbotConversation.length;
+
+      const currentResponsePath =
+        inputType === "outline_updation"
+          ? {
+              ...(sessionData?.response_path ?? {}),
+              chapters: [],
+              remaining_chapters: [],
+            }
+          : sessionData?.response_path ?? {};
 
       // build complete payload
       const executionId = Math.floor(Math.random() * 10000).toString();
@@ -340,7 +353,7 @@ export default function ChatWindow({
         input_type: inputType,
         cycle_creation_data: sessionData?.cycle_creation_data ?? {},
         response_outline: sessionData?.response_outline ?? {},
-        response_path: sessionData?.response_path ?? {},
+        response_path: currentResponsePath,
         additional_data: sessionData?.additional_data ?? {
           personalization_enabled: false,
           habit_enabled: false,
@@ -361,6 +374,30 @@ export default function ChatWindow({
         }),
       });
 
+      if (inputType === "outline_updation") {
+        try {
+          const clearedSessionSnapshot = {
+            ...(sessionData || {}),
+            response_path: currentResponsePath,
+          };
+          localStorage.setItem("sessionData", JSON.stringify(clearedSessionSnapshot));
+          await graphqlClient.autoSaveComet(
+            JSON.stringify({
+              session_id: currentSessionId,
+              input_type: "outline_updation",
+              cycle_creation_data: sessionData?.cycle_creation_data ?? {},
+              response_outline: sessionData?.response_outline ?? {},
+              response_path: currentResponsePath,
+              chatbot_conversation: sessionData?.chatbot_conversation ?? [],
+              to_modify: sessionData?.to_modify ?? {},
+              webpage_url: sessionData?.webpage_url ?? [],
+            }),
+          );
+        } catch (e) {
+          console.error("Outline pre-clear autosave failed:", e);
+        }
+      }
+
       await graphqlClient.sendMessage(cometJsonForMessage);
 
       setAllMessages((prev) => [...prev, { from: "user", content: text }]);
@@ -370,6 +407,7 @@ export default function ChatWindow({
       console.error("Error creating session or sending message:", error);
       setError(error.message);
       setIsLoading(false);
+      awaitingConversationRef.current = false;
     }
   };
 
@@ -406,6 +444,9 @@ export default function ChatWindow({
 
       if (sessionData.chatbot_conversation) {
         const conversation = sessionData.chatbot_conversation;
+        const conversationLength = Array.isArray(conversation)
+          ? conversation.length
+          : 0;
         const allMessages = [];
 
         conversation.forEach((entry) => {
@@ -434,7 +475,13 @@ export default function ChatWindow({
         if (allMessages.length > 0) {
           setAllMessages(allMessages);
         }
-        setIsLoading(false);
+        if (
+          !awaitingConversationRef.current ||
+          conversationLength >= minConversationLengthRef.current
+        ) {
+          setIsLoading(false);
+          awaitingConversationRef.current = false;
+        }
       }
 
       // Notify parent component if needed
