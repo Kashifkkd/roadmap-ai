@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 
 // Persistent screens that should keep subscriptions alive
 const PERSISTENT_SCREENS = {
-  "/dashboard": "dashboard",
+  "/configure-cycle": "dashboard",
   "/outline-manager": "outline-manager",
   "/cycle-manager": "cycle-manager",
 };

@@ -187,7 +187,7 @@ export default function WelcomePage() {
         Object.keys(receivedSessionData.cycle_creation_data).length > 0;
       if (hasCometData) {
         setCometCreated(true);
-        router.push("/dashboard");
+        router.push("/configure-cycle");
       }
     },
     (error) => {
@@ -337,7 +337,7 @@ export default function WelcomePage() {
     // Clear existing session data to start fresh
     localStorage.removeItem("sessionId");
     localStorage.removeItem("sessionData");
-    router.push("/dashboard");
+    router.push("/configure-cycle");
   };
 
   const handleCreateNewComet = () => {
@@ -345,7 +345,7 @@ export default function WelcomePage() {
       openLoginDialog();
       return;
     }
-    router.push("/dashboard");
+    router.push("/configure-cycle");
   };
 
   const handleKeyPress = (e) => {

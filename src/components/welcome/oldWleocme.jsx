@@ -145,7 +145,7 @@ export default function WelcomePage() {
 
       setTimeout(() => {
         router.push(
-          `/dashboard?initialInput=${initialInputParam}&userQuestions=${userQuestionsParam}`
+          `/configure-cycle?initialInput=${initialInputParam}&userQuestions=${userQuestionsParam}`
         );
       }, 4000);
       return;
@@ -169,7 +169,7 @@ export default function WelcomePage() {
   };
 
   const handleCreateNewComet = () => {
-    router.push("/dashboard");
+    router.push("/configure-cycle");
   };
 
   const handleKeyPress = (e) => {

@@ -444,7 +444,7 @@ export default function DashboardLayout() {
   };
 
   const handleBackFromLoading = () => {
-    router.push("/dashboard");
+    router.push("/configure-cycle");
     setIsGeneratingOutline(false);
   };
 

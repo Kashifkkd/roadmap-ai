@@ -214,7 +214,7 @@ export default function OutlineMannerFooter() {
 
   const handleBackClick = () => {
     try {
-      router?.push("/dashboard");
+      router?.push("/configure-cycle");
     } catch (error) {
       console.error("Error navigating back:", error);
     }

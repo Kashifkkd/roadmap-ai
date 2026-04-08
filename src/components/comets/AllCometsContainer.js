@@ -63,7 +63,7 @@ export default function AllCometsContainer({ cometSessions }) {
       } else if (sessionData.response_outline.length > 0) {
         router.push("/outline-manager");
       } else {
-        router.push("/dashboard");
+        router.push("/configure-cycle");
       }
       console.log("Session details:", result);
     } catch (err) {

@@ -45,7 +45,7 @@ export default function CometFilter({
     // Clear any session data if needed
     localStorage.removeItem("sessionData");
     localStorage.removeItem("sessionId");
-    router.push("/dashboard");
+    router.push("/configure-cycle");
   };
 
   return (
