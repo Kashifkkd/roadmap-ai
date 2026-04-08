@@ -31,6 +31,14 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Stack } from "@mui/material";
 import DevicePreview from "./DevicePreview";
 import GenerateStepImageButton from "./GenerateStepImageButton";
@@ -136,6 +144,8 @@ export default function CometManagerSidebar({
   const [editStepDescription, setEditStepDescription] = useState("");
   const [pendingChapterOperation, setPendingChapterOperation] = useState(null);
   const [pendingStepOperation, setPendingStepOperation] = useState(null);
+  const [stepDeletePending, setStepDeletePending] = useState(null); // { chapterId, stepId }
+  const [chapterDeletePending, setChapterDeletePending] = useState(null); // { chapterId }
   const chapterEditInputRef = useRef(null);
   const stepNameEditInputRef = useRef(null);
   const stepDescriptionEditInputRef = useRef(null);
@@ -308,13 +318,20 @@ export default function CometManagerSidebar({
     }
   };
 
-  const handleDeleteStepClick = async (e, chapterId, stepId) => {
+  const handleDeleteStepClick = (e, chapterId, stepId) => {
     e.stopPropagation();
     setOpenStepHeaderMenuId(null);
     setOpenStepDescriptionMenuId(null);
     if (!onDeleteStep) {
       return;
     }
+    setStepDeletePending({ chapterId, stepId });
+  };
+
+  const handleConfirmDeleteStep = async () => {
+    if (!stepDeletePending) return;
+    const { chapterId, stepId } = stepDeletePending;
+    setStepDeletePending(null);
     await runOperationWithLoader(
       setPendingStepOperation,
       { stepId, type: "delete" },
@@ -361,12 +378,19 @@ export default function CometManagerSidebar({
     }
   };
 
-  const handleDeleteChapterClick = async (e, chapterId) => {
+  const handleDeleteChapterClick = (e, chapterId) => {
     e.stopPropagation();
     setOpenChapterMenuId(null);
     if (!onDeleteChapter) {
       return;
     }
+    setChapterDeletePending({ chapterId });
+  };
+
+  const handleConfirmDeleteChapter = async () => {
+    if (!chapterDeletePending) return;
+    const { chapterId } = chapterDeletePending;
+    setChapterDeletePending(null);
     await runOperationWithLoader(
       setPendingChapterOperation,
       { chapterId, type: "delete" },
@@ -2375,6 +2399,118 @@ export default function CometManagerSidebar({
           <DevicePreview selectedScreen={selectedScreen} />
         </div>
       </div> */}
+
+      {/* Phase Delete Confirmation Dialog */}
+      <Dialog
+        open={chapterDeletePending !== null}
+        onOpenChange={(open) => {
+          if (!open) setChapterDeletePending(null);
+        }}
+      >
+        <DialogContent
+          customPosition
+          overlayClassName="top-[4.5rem] lg:left-[calc(18em+1rem)] xl:left-[calc(20em+1rem)]"
+          className="left-1/2 top-[calc(50%+2.25rem)] w-[calc(100vw-2rem)] max-w-[408px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-gray-200 p-0 shadow-xl lg:left-[calc(50%+9.5rem)] xl:left-[calc(50%+10.5rem)] [&>button]:hidden"
+        >
+          <div className="px-5 py-4">
+            <DialogHeader className="flex-row items-start gap-3 space-y-0 text-left">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FEF3F2]">
+                <img
+                  src="/bins.svg"
+                  alt="Delete"
+                  className="h-[18px] w-[18px]"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <DialogTitle className="text-[15px] font-semibold leading-6 text-[#181D27]">
+                  Delete Phase
+                </DialogTitle>
+                <DialogDescription className="text-sm leading-5 text-[#181D27]">
+                  <span className="block">
+                    This action will permanently remove this phase from the cycle.
+                  </span>
+                  <span className="mt-1.5 block">Do you want to proceed?</span>
+                </DialogDescription>
+              </div>
+            </DialogHeader>
+          </div>
+          <div className="border-t border-gray-200 px-5 py-3.5">
+            <DialogFooter className="flex-row justify-end gap-3 space-x-0">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 min-w-[92px] rounded-lg border-primary text-primary hover:bg-primary-50 active:bg-primary-100"
+                onClick={() => setChapterDeletePending(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="h-9 min-w-[92px] rounded-lg"
+                onClick={handleConfirmDeleteChapter}
+              >
+                Delete
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Step Delete Confirmation Dialog */}
+      <Dialog
+        open={stepDeletePending !== null}
+        onOpenChange={(open) => {
+          if (!open) setStepDeletePending(null);
+        }}
+      >
+        <DialogContent
+          customPosition
+          overlayClassName="top-[4.5rem] lg:left-[calc(18em+1rem)] xl:left-[calc(20em+1rem)]"
+          className="left-1/2 top-[calc(50%+2.25rem)] w-[calc(100vw-2rem)] max-w-[408px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-gray-200 p-0 shadow-xl lg:left-[calc(50%+9.5rem)] xl:left-[calc(50%+10.5rem)] [&>button]:hidden"
+        >
+          <div className="px-5 py-4">
+            <DialogHeader className="flex-row items-start gap-3 space-y-0 text-left">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FEF3F2]">
+                <img
+                  src="/bins.svg"
+                  alt="Delete"
+                  className="h-[18px] w-[18px]"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <DialogTitle className="text-[15px] font-semibold leading-6 text-[#181D27]">
+                  Delete Step
+                </DialogTitle>
+                <DialogDescription className="text-sm leading-5 text-[#181D27]">
+                  <span className="block">
+                    This action will permanently remove this step from the cycle.
+                  </span>
+                  <span className="mt-1.5 block">Do you want to proceed?</span>
+                </DialogDescription>
+              </div>
+            </DialogHeader>
+          </div>
+          <div className="border-t border-gray-200 px-5 py-3.5">
+            <DialogFooter className="flex-row justify-end gap-3 space-x-0">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 min-w-[92px] rounded-lg border-primary text-primary hover:bg-primary-50 active:bg-primary-100"
+                onClick={() => setStepDeletePending(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="h-9 min-w-[92px] rounded-lg"
+                onClick={handleConfirmDeleteStep}
+              >
+                Delete
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -580,8 +580,9 @@ export default function SourceMaterialCard({
 
     setWebpageUrls([...normalizedUrls, { url, comment: "" }]);
     setLinkDraft({ url: "" });
-    toast.success("Link attached. It will upload when you click Create Outline.", {
+    toast.success("Success", {
       id: "source-material-link-attached",
+      description: "Link attached successfully."
     });
   };
 

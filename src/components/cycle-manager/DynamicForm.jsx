@@ -167,8 +167,15 @@ const getFormValuesFromScreen = (screen) => {
   }
 
   if (contentType === "notifications") {
-    values.title = content.heading || "";
-    values.message = content.body || content.message || "";
+    // Backend / path updation may use heading+body or notifications* keys (see FromDoerToEnabler)
+    values.title =
+      content.heading || content.notificationsTitle || content.title || "";
+    values.message =
+      content.body ||
+      content.message ||
+      content.notificationsMessage ||
+      content.description ||
+      "";
     values.mediaType = content.media?.type || "none";
     values.mediaUrl =
       content.media?.url ||
@@ -230,6 +237,7 @@ export default function DynamicForm({
   onClose,
   chapterNumber,
   stepNumber,
+  screenNumber: screenNumberFromParent,
   isAskingKyper = false,
   setIsAskingKyper = () => {},
   onRequestAutoSave,
@@ -244,6 +252,15 @@ export default function DynamicForm({
     // });
     return values;
   }, [screen]);
+
+  const screenNumber = useMemo(() => {
+    if (typeof screenNumberFromParent === "number" && screenNumberFromParent >= 0) {
+      return screenNumberFromParent;
+    }
+    if (typeof screen?.order === "number") return screen.order;
+    if (typeof screen?.position === "number") return screen.position;
+    return 0;
+  }, [screenNumberFromParent, screen]);
 
   const [focusedField, setFocusedField] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
@@ -870,13 +887,6 @@ export default function DynamicForm({
       const mappedField =
         fieldNameMap[askContext.fieldName] || askContext.fieldName;
 
-      const screenNumber =
-        typeof screen?.position === "number"
-          ? screen.position
-          : typeof screen?.order === "number"
-            ? screen.order + 1
-            : 1;
-
       const conversationMessage = `{ 'path': 'chapter-${chapterNumber}-step-${stepNumber}-screen-${screenNumber}', 'field': '${mappedField}', 'value': '${askContext.selectedText}', 'instruction': '${query}' }`;
       console.log("conversationMessage>>", conversationMessage);
 
@@ -1081,6 +1091,9 @@ export default function DynamicForm({
       stepUuid,
       screenUuid,
       onRequestAutoSave,
+      chapterNumber,
+      stepNumber,
+      screenNumber,
     };
 
     //1-Content

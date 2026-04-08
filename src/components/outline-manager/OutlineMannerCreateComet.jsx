@@ -1225,9 +1225,10 @@ export default function OutlineMannerCreateComet({
                   Delete Step
                 </DialogTitle>
                 <DialogDescription className="text-sm leading-5 text-[#181D27]">
-                  {stepDeleteConfirm
-                    ? `Step ${stepDeleteConfirm.stepIndex + 1} (${stepDeleteConfirm.stepTitle || "Untitled Step"}) will be permanently removed. This action cannot be undone.`
-                    : "This step will be permanently removed."}
+                  <span className="block">
+                    This action will permanently remove this step from the cycle.
+                  </span>
+                  <span className="mt-1.5 block">Do you want to proceed?</span>
                 </DialogDescription>
               </div>
             </DialogHeader>
@@ -1285,9 +1286,10 @@ export default function OutlineMannerCreateComet({
                   Delete Phase
                 </DialogTitle>
                 <DialogDescription className="text-sm leading-5 text-[#181D27]">
-                  {chapterDeleteConfirmIndex >= 0
-                    ? `Phase ${chapterDeleteConfirmIndex + 1} (${chapters[chapterDeleteConfirmIndex]?.chapter || "Untitled Phase"}) will be permanently removed along with all its steps. This action cannot be undone.`
-                    : "This phase will be permanently removed."}
+                  <span className="block">
+                    This action will permanently remove this phase from the cycle.
+                  </span>
+                  <span className="mt-1.5 block">Do you want to proceed?</span>
                 </DialogDescription>
               </div>
             </DialogHeader>

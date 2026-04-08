@@ -28,6 +28,7 @@ export default function ChatWindow({
   const welcomeAnimationStateRef = useRef(false);
   const awaitingConversationRef = useRef(false);
   const minConversationLengthRef = useRef(0);
+  const minAgentMessageCountRef = useRef(0);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
@@ -316,6 +317,9 @@ export default function ChatWindow({
 
       // NEW CODE
       const existingConversation = sessionData?.chatbot_conversation || [];
+      const existingAgentMessageCount = existingConversation.filter(
+        (entry) => entry?.agent
+      ).length;
 
       // Build new conversation entries
       const newEntries = [{ user: initialUserInput }];
@@ -332,6 +336,7 @@ export default function ChatWindow({
       console.log("chatbotConversation>>>>>>>>>>", chatbotConversation);
       awaitingConversationRef.current = true;
       minConversationLengthRef.current = chatbotConversation.length;
+      minAgentMessageCountRef.current = existingAgentMessageCount + 1;
 
       const currentResponsePath =
         inputType === "outline_updation"
@@ -447,6 +452,9 @@ export default function ChatWindow({
         const conversationLength = Array.isArray(conversation)
           ? conversation.length
           : 0;
+        const agentMessageCount = Array.isArray(conversation)
+          ? conversation.filter((entry) => entry?.agent).length
+          : 0;
         const allMessages = [];
 
         conversation.forEach((entry) => {
@@ -477,7 +485,8 @@ export default function ChatWindow({
         }
         if (
           !awaitingConversationRef.current ||
-          conversationLength >= minConversationLengthRef.current
+          conversationLength >= minConversationLengthRef.current ||
+          agentMessageCount >= minAgentMessageCountRef.current
         ) {
           setIsLoading(false);
           awaitingConversationRef.current = false;

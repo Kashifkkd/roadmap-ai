@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 
 /** Deep-cloned outline with the given screen removed; screen positions renumbered. */
 export function applyScreenDeleteToOutline(prevOutline, screenId) {
@@ -30,28 +30,35 @@ export function useCometManager(sessionData = null) {
   const [outline, setOutline] = useState(null);
   const [selectedStepId, setSelectedStepId] = useState(null);
 
-  // Initialize and sync outline from sessionData
+  /** Last response_path JSON we applied from sessionData (server snapshot). Do not compare to local outline — that reintroduced stale server data whenever chat or other fields updated. */
+  const lastServerPathJsonRef = useRef(null);
+  const lastSessionIdRef = useRef(null);
+
+  // Initialize and sync outline from sessionData only when response_path from the server actually changes
   useEffect(() => {
-    if (sessionData && sessionData.response_path) {
-      // Always update outline to ensure we get the latest data (including image URLs)
-      // Create a deep copy to ensure React detects the change even if the reference is the same
-      const newOutline = JSON.parse(JSON.stringify(sessionData.response_path));
+    const sessionId = sessionData?.session_id;
 
-      // Only update if the content actually changed (avoid unnecessary re-renders)
-      // Compare stringified versions to detect deep changes
-      setOutline((prevOutline) => {
-        const prevStr = JSON.stringify(prevOutline);
-        const newStr = JSON.stringify(newOutline);
-        return prevStr !== newStr ? newOutline : prevOutline;
-      });
+    if (sessionId !== lastSessionIdRef.current) {
+      lastSessionIdRef.current = sessionId;
+      lastServerPathJsonRef.current = null;
+    }
 
-      // Set initial selected step
-      const pathChapters = sessionData.response_path.chapters || [];
+    if (sessionData?.response_path) {
+      const pathJson = JSON.stringify(sessionData.response_path);
+      if (lastServerPathJsonRef.current === pathJson) {
+        return;
+      }
+      lastServerPathJsonRef.current = pathJson;
+
+      const newOutline = JSON.parse(pathJson);
+      setOutline(newOutline);
+
+      // Set initial selected step when path content from server changes
+      const pathChapters = newOutline.chapters || [];
       const firstStepId = pathChapters?.[0]?.steps?.[0]?.step?.uuid ?? null;
       if (firstStepId) {
         setSelectedStepId((prevSelectedStepId) => {
           if (prevSelectedStepId) {
-            // Check if previous step still exists
             const stepExists = pathChapters.some((chapter) =>
               chapter.steps?.some(
                 (stepItem) => stepItem.step?.uuid === prevSelectedStepId,
@@ -63,10 +70,10 @@ export function useCometManager(sessionData = null) {
         });
       }
     } else if (!sessionData?.response_path) {
-      // Clear outline if sessionData no longer has response_path
+      lastServerPathJsonRef.current = null;
       setOutline(null);
     }
-  }, [sessionData]);
+  }, [sessionData?.response_path, sessionData?.session_id]);
 
   // Derive chapters from outline
   const chapters = useMemo(() => {

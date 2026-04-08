@@ -520,14 +520,37 @@ export const RichTextArea = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When valueFormat is "html", sync editor when value prop changes (e.g. after auto-save)
-  // Use normalized HTML and avoid direct innerHTML to prevent br tag proliferation
+  // When valueFormat is "html", sync editor when value prop changes (e.g. path updation, auto-save).
+  // Path updates often send plain text in `body` (no "<...>" wrapper); previously only HTML was synced, so Quill stayed stale until remount.
   useEffect(() => {
-    if (valueFormat !== "html" || !value || !quillEditorRef.current) return;
+    if (valueFormat !== "html" || !quillEditorRef.current) return;
     const editor = quillEditorRef.current;
-    let html = typeof value === "string" ? value : "";
-    if (html.trim().startsWith("<")) {
-      html = html
+    const raw = typeof value === "string" ? value : "";
+    if (!raw.trim()) return;
+
+    const isHtmlString =
+      raw.trim().length > 0 && raw.trim().startsWith("<");
+    const isDeltaString =
+      raw.trim().length > 0 && raw.trim().startsWith("{");
+
+    if (isDeltaString) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed?.ops && Array.isArray(parsed.ops)) {
+          const next = JSON.stringify(parsed.ops);
+          const cur = JSON.stringify(editor.getContents().ops || []);
+          if (next !== cur) {
+            editor.setContents(parsed);
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
+    if (isHtmlString) {
+      let html = raw
         .replace(/<span style="[^"]*font-size:\s*1\.75em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h1 style="display:inline">$1</h1>')
         .replace(/<span style="[^"]*font-size:\s*1\.35em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h2 style="display:inline">$1</h2>')
         .replace(/<span style="[^"]*font-size:\s*1\.1em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h3 style="display:inline">$1</h3>');
@@ -545,6 +568,14 @@ export const RichTextArea = ({
           editor.root.innerHTML = normalized;
         }
       }
+      return;
+    }
+
+    // Plain text (common for Kyper `body` updates)
+    const plain = raw.replace(/\r\n/g, "\n");
+    const currentText = editor.getText().replace(/\n$/, "");
+    if (currentText !== plain) {
+      editor.setText(plain);
     }
   }, [valueFormat, value]);
 

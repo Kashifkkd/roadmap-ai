@@ -847,7 +847,7 @@ export default function UserManagement({
           <div className="flex-1 overflow-y-auto overflow-x-auto">
             <div className="flex items-center justify-between mb-2">
               <span className="text-lg font-medium text-gray-700">
-                User List
+                Assigned Users
               </span>
 
               <div className="flex items-center gap-1">
@@ -865,10 +865,19 @@ export default function UserManagement({
                     resetUserForm();
                     setShowAddUserForm(true);
                   }}
+                  className="text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer ms-3"
+                >
+                  {isPathUsersMode ? "Assign Users" : "Add User"}
+                </Button>
+
+                <Button
+                  size="md"
+                  variant="outline"
                   className="text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer"
                 >
-                  {isPathUsersMode ? "Assign User" : "Add User"}
+                  Add Cohorts
                 </Button>
+
                 {!isPathUsersMode && (
                   <>
                     <Button
@@ -892,7 +901,7 @@ export default function UserManagement({
             </div>
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-[#E8F4F3]">
+                <tr className="bg-[#E9EAEB]">
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-200">
                     First Name
                   </th>
@@ -966,17 +975,17 @@ export default function UserManagement({
                       key={user.id || index}
                       className="border-b border-gray-100 hover:bg-gray-50"
                     >
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="px-4 py-3 text-sm text-[#181D27]">
                         {user.first_name || user.firstName || "-"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="px-4 py-3 text-[#181D27]">
                         {user.last_name || user.lastName || "-"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="px-4 py-3 text-[#181D27]">
                         {user.email || "-"}
                       </td>
                       <td
-                        className="px-4 py-3 text-sm text-gray-600 max-w-[200px] truncate"
+                        className="px-4 py-3 text-[#181D27] max-w-[200px] truncate"
                         title={user.paths || ""}
                       >
                         {user.paths || "-"}
@@ -1079,29 +1088,49 @@ export default function UserManagement({
             </div>
 
             {/* Search input */}
-            <div className="relative mb-3">
-              <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            <div className="flex gap-2 items-center mb-3">
+              <div className="relative flex-1">
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={pathUserEmailSearch}
+                  onChange={(e) => setPathUserEmailSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 text-sm border-1 border-gray-200 rounded-lg outline-none focus:border-primary-400 transition-colors placeholder:text-gray-400"
                 />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search"
-                value={pathUserEmailSearch}
-                onChange={(e) => setPathUserEmailSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg outline-none focus:border-primary-400 transition-colors placeholder:text-gray-400"
-              />
-            </div>
+              </div>
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAssignPathUsers}
+                disabled={assigningPathUsers || pathUserEmails.length === 0}
+                className="text-primary-700 px-8 py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border border-primary-300 hover:border-primary-400"
+              >Add User</Button>
 
+              {/* <Button
+                  size="md"
+                  variant="outline"
+                  className="text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer border border-primary-300 hover:border-primary-400"
+                >
+                
+              </Button> */}
+
+            </div>
+            
+            
             {/* User list */}
             <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1 user-list-scrollbar">
               {emailOptionsLoading ? (

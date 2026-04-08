@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { Smartphone, Tablet, Monitor, Mail, Users } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Smartphone, Tablet, Monitor, Mail, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import AssetsCarousel from "@/components/common/AssetsCarousel";
+import { Button } from "@/components/ui/Button";
 
 const DEVICE_VIEWS = {
   mobile: "mobile",
@@ -1504,7 +1505,28 @@ const ContentBlock = ({ reverse = false, deviceView, section }) => {
 export default function FromDoerToEnabler({
   selectedScreen,
   isMaximized = false,
+  onNext,
+  onPrev,
+  hasPrev = false,
+  hasNext = false,
+  onPrevStep,
+  onNextStep,
+  hasPrevStep = false,
+  hasNextStep = false,
+  currentStepIndex = -1,
+  totalSteps = 0,
 }) {
+  useEffect(() => {
+  const handleKeyDown = (e) => {
+    if (e.key === "ArrowLeft"  && hasPrev)     onPrev?.();
+    if (e.key === "ArrowRight" && hasNext)     onNext?.();
+    if (e.key === "ArrowUp"    && hasPrevStep) onPrevStep?.();
+    if (e.key === "ArrowDown"  && hasNextStep) onNextStep?.();
+  };
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, [hasPrev, hasNext, onPrev, onNext, hasPrevStep, hasNextStep, onPrevStep, onNextStep]);
+
   const [deviceView, setDeviceView] = useState(DEVICE_VIEWS.mobile);
 
   const screenContents = selectedScreen?.screenContents ?? null;
@@ -1780,7 +1802,7 @@ export default function FromDoerToEnabler({
   // Shared inner preview body (what appears on the "screen")
   const renderPreviewBody = () => (
     <div className="w-full h-full ">
-      <div className="">
+      <div className="h-full">
         {contentType === "content" || contentType === "content_image" ? (
           <ScreenContentTypePreview
             deviceView={deviceView}
@@ -1859,8 +1881,8 @@ export default function FromDoerToEnabler({
 
   const nonMobileWidthClasses =
     deviceView === DEVICE_VIEWS.tablet
-      ? "px-8 max-w-[90%] mx-auto"
-      : "px-12 max-w-full";
+      ? "px-8 w-600 max-w-[600px] mx-auto"
+      : "px-12 w-600 max-w-full mx-auto";
 
   return (
     <div className="flex flex-col h-full rounded-lg w-full">
@@ -1892,7 +1914,7 @@ export default function FromDoerToEnabler({
         }`}
       >
         <div
-          className={`bg-gray-200 flex-1 overflow-y-auto rounded-sm min-h-0 flex flex-col ${
+          className={`bg-gray-200 flex-1 overflow-y-auto rounded-sm min-h-0 flex flex-col relative ${
             isMaximized ? "px-0 py-0 sm:px-2 sm:py-2" : "px-2 py-2"
           }`}
         >
@@ -1928,6 +1950,51 @@ export default function FromDoerToEnabler({
               {renderPreviewBody()}
             </div>
           )}
+
+          {/* screen navigation */}
+          <div className="flex justify-between absolute top-1/2 -translate-y-1/2 start-2 end-2 z-10">
+            <button onClick={onPrev}
+              disabled={!hasPrev}
+              className="p-2 bg-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">
+                <ChevronLeft size={16} />
+              </button>
+            <button onClick={onNext}
+              disabled={!hasNext}
+              className="p-2 bg-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer
+              "
+              >
+                <ChevronRight size={16} />
+              </button>
+          </div>
+
+          {/* Step navigation */}
+          <div className="flex items-center justify-between w-full border-t border-gray-200 pt-1">
+            <Button
+              onClick={onPrevStep}
+              disabled={!hasPrevStep}
+              className="bg-muted text-primary flex items-center justify-center gap-2 hover:text-white disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              <ChevronLeft size={14} />
+              Prev Step
+            </Button>
+
+            {totalSteps > 0 && (
+              <span className="text-xs text-gray-500 tabular-nums">
+                {currentStepIndex >= 0 ? currentStepIndex + 1 : "–"} / {totalSteps}
+              </span>
+            )}
+
+            <Button
+              onClick={onNextStep}
+              disabled={!hasNextStep}
+              className="bg-muted text-primary flex items-center justify-center gap-2 hover:text-white disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              Next Step
+              <ChevronRight size={14} />
+            </Button>
+          </div>
+
+
         </div>
       </div>
     </div>

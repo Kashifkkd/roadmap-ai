@@ -143,6 +143,42 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
     if (!initialValues) return "";
     return initialValues.id || initialValues.client_id;
   };
+ 
+  const [tempColors, setTempColors] = useState(() => ({ ...brandColors }));
+  const [openColorIndex, setOpenColorIndex] = useState(null); // will store color.key
+
+  const tempColorsRef = useRef(tempColors);
+  const openColorIndexRef = useRef(openColorIndex);
+
+  useEffect(() => {
+    tempColorsRef.current = tempColors;
+  }, [tempColors]);
+
+  useEffect(() => {
+    openColorIndexRef.current = openColorIndex;
+  }, [openColorIndex]);
+
+  useEffect(() => {
+    setTempColors({ ...brandColors });
+  }, [brandColors]);
+
+  const saveColor = (key) => {
+    setBrandColors((prev) => ({
+      ...prev,
+      [key]: tempColorsRef.current[key],
+    }));
+    setOpenColorIndex(null);
+    openColorIndexRef.current = null;
+  };
+
+  const cancelColor = (key) => {
+    setTempColors((prev) => ({
+      ...prev,
+      [key]: brandColors[key],
+    }));
+    setOpenColorIndex(null);
+    openColorIndexRef.current = null;
+  };
 
   // Initialize form with initialValues when provided
   useEffect(() => {
@@ -911,7 +947,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         </Label>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
           {colorCodes.map((color) => {
-            const displayColor = brandColors[color.key];
+            const displayColor = tempColors[color.key] ?? brandColors[color.key];
 
             return (
               <div
@@ -928,18 +964,19 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                 <div className="relative w-12 h-8 sm:w-16 sm:h-10 shrink-0 overflow-hidden">
                   <div className="relative w-16 h-10 rounded-sm overflow-hidden">
                     <input
-                      type="color"
-                      value={displayColor}
-                      onChange={(e) => {
-                        setBrandColors((prev) => ({
-                          ...prev,
-                          [color.key]: e.target.value,
-                        }));
-                        setSelectedColorCode(color.key);
-                      }}
-                      className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
-                      onClick={(e) => e.stopPropagation()}
-                    />
+                        type="color"
+                        value={displayColor}
+                        onChange={(e) => {
+                          const newHex = e.target.value.toUpperCase();
+                          setTempColors((prev) => ({ ...prev, [color.key]: newHex }));
+                          setSelectedColorCode(color.key);
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenColorIndex(color.key);
+                        }}
+                        className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                      />
                     <div
                       className="w-full h-full rounded-sm"
                       style={{ backgroundColor: displayColor }}
@@ -954,6 +991,31 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                     {displayColor}
                   </span>
                 </div>
+
+                 {openColorIndex === color.key && (
+                  <div className="flex flex-wrap gap-1 justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        saveColor(color.key);
+                      }}
+                      className="cursor-pointer border border-primary text-primary hover:bg-white h-6 leading-1 px-2 text-xs"
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        cancelColor(color.key);
+                      }}
+                      className="cursor-pointer border border-primary text-primary hover:bg-white h-6 w-6 leading-1 px-0 text-xs"
+                    >
+                      <X size={10} />
+                    </Button>
+                  </div>
+                )}
               </div>
             );
           })}

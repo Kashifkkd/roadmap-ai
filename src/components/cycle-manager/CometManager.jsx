@@ -744,13 +744,6 @@ export default function CometManager({
   }, [selectedScreenId, screens]);
   console.log("selectedScreen", selectedScreen);
 
-  const screenDeleteConfirmIndex =
-    screenDeleteConfirmId != null
-      ? screens.findIndex(
-          (s) => String(s.id) === String(screenDeleteConfirmId),
-        )
-      : -1;
-
   const handleRequestDeleteScreen = useCallback((screenId) => {
     setScreenDeleteConfirmId(screenId);
   }, []);
@@ -879,6 +872,32 @@ export default function CometManager({
     chapters?.find((ch) =>
       ch.steps?.some((step) => String(step.id) === String(selectedStepId)),
     ) || null;
+
+  const allSteps = useMemo(() => {
+  const steps = [];
+  for (const chapter of chapters) {
+    for (const step of chapter.steps || []) {
+      steps.push({ chapterId: chapter.id, stepId: step.id });
+    }
+  }
+  return steps;
+}, [chapters]);
+
+// Use selectedStepId (from useCometManager hook) — NOT selectedScreen.stepId
+const currentStepIndex = useMemo(
+  () => allSteps.findIndex((s) => s.stepId === selectedStepId),
+  [allSteps, selectedStepId],
+);
+
+const handlePrevStep = useCallback(() => {
+  if (currentStepIndex <= 0) return;
+  setSelectedStep(allSteps[currentStepIndex - 1].stepId);
+}, [currentStepIndex, allSteps, setSelectedStep]);
+
+const handleNextStep = useCallback(() => {
+  if (currentStepIndex >= allSteps.length - 1) return;
+  setSelectedStep(allSteps[currentStepIndex + 1].stepId);
+}, [currentStepIndex, allSteps, setSelectedStep]);
 
   const handleScreenClick = (screen) => {
     setSelectedMaterial(null);
@@ -1010,6 +1029,7 @@ export default function CometManager({
         },
         assets: [],
         imageStatus: "pending",
+        toolStatus: "pending",
         chapterId: targetChapterId,
         stepId: targetStepId,
         thumbnail: "",
@@ -1463,6 +1483,21 @@ export default function CometManager({
       };
     }
 
+    // Ensure every newly added screen has stable UUIDs.
+    if (!newScreen.uuid) {
+      newScreen.uuid = globalThis.crypto
+        .getRandomValues(new Uint8Array(16))
+        .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
+    }
+    if (!newScreen.screenContents) {
+      newScreen.screenContents = {};
+    }
+    if (!newScreen.screenContents.uuid) {
+      newScreen.screenContents.uuid = globalThis.crypto
+        .getRandomValues(new Uint8Array(16))
+        .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
+    }
+
     if (addAtIndex !== null) {
       insertScreenAt(newScreen, addAtIndex);
       console.log(
@@ -1508,17 +1543,21 @@ export default function CometManager({
     }
   };
 
-  const chapterNumber =
-    typeof currentChapter?.position === "number"
-      ? currentChapter.position
-      : chapters.findIndex(
-        (ch) => String(ch.id) === String(selectedScreen?.chapterId),
-      ) + 1 || 1;
+  const chapterNumber = (() => {
+    if (typeof currentChapter?.position === "number") return currentChapter.position;
+    const idx = chapters.findIndex(
+      (ch) => String(ch.id) === String(selectedScreen?.chapterId),
+    );
+    return idx >= 0 ? idx : 0;
+  })();
 
-  const stepNumber =
-    (currentChapter?.steps?.findIndex(
-      (step) => String(step.id) === String(selectedScreen?.stepId),
-    ) ?? -1) + 1 || 1;
+  const stepNumber = (() => {
+    const idx =
+      currentChapter?.steps?.findIndex(
+        (step) => String(step.id) === String(selectedScreen?.stepId),
+      ) ?? -1;
+    return idx >= 0 ? idx : 0;
+  })();
 
   return (
     <div className="flex flex-col w-full bg-background rounded-xl h-full relative">
@@ -2428,6 +2467,7 @@ export default function CometManager({
                             onClose={() => setSelectedScreenId(null)}
                             chapterNumber={chapterNumber}
                             stepNumber={stepNumber}
+                            screenNumber={currentScreen}
                             isAskingKyper={isAskingKyper}
                             setIsAskingKyper={setIsAskingKyper}
                             onRequestAutoSave={requestAutoSaveAfterOutlineCommit}
@@ -2652,6 +2692,18 @@ export default function CometManager({
             <FromDoerToEnabler
               selectedScreen={selectedScreen}
               isMaximized={isMaximized}
+              hasPrev={currentScreen > 0}
+              hasNext={currentScreen < screens.length - 1}
+              onPrev={() => navigateScreen("prev")}
+              onNext={() => navigateScreen("next")}
+
+             // step navigation
+              hasPrevStep={currentStepIndex > 0}
+              hasNextStep={currentStepIndex < allSteps.length - 1}
+              onPrevStep={handlePrevStep}
+              onNextStep={handleNextStep}
+              currentStepIndex={currentStepIndex}
+              totalSteps={allSteps.length}
             />
           </div>
         </DrawerContent>
@@ -2682,9 +2734,10 @@ export default function CometManager({
                   Delete Screen
                 </DialogTitle>
                 <DialogDescription className="text-sm leading-5 text-[#181D27]">
-                  {screenDeleteConfirmIndex >= 0
-                    ? `This will permanently remove screen ${screenDeleteConfirmIndex + 1} from this step. Wait for the save to finish before leaving.`
-                    : "This will permanently remove this screen from this step."}
+                  <span className="block">
+                    This action will permanently remove this screen from the cycle.
+                  </span>
+                  <span className="mt-1.5 block">Do you want to proceed?</span>
                 </DialogDescription>
               </div>
             </DialogHeader>

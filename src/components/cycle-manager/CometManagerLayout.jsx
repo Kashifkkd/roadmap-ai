@@ -22,6 +22,8 @@ export default function CometManagerLayout() {
   const savePromiseRef = useRef(Promise.resolve());
   const outlineRef = useRef(null);
   const initializedSessionIdRef = useRef(null);
+  /** Match useCometManager: only apply response_path when the server snapshot actually changed — not when it differs from outlineRef (local edits are often ahead of sessionData). */
+  const lastServerResponsePathJsonRef = useRef(null);
 
   useEffect(() => {
     const currentSessionId = sessionData?.session_id;
@@ -32,23 +34,21 @@ export default function CometManagerLayout() {
     ) {
       initializedSessionIdRef.current = null;
       setPrevOutline(null);
+      lastServerResponsePathJsonRef.current = null;
     }
 
     if (sessionData?.response_path) {
-      const currentOutline = sessionData.response_path;
-      const outlineChanged =
-        JSON.stringify(currentOutline) !== JSON.stringify(outlineRef.current);
-
-      if (
-        initializedSessionIdRef.current !== currentSessionId ||
-        outlineChanged
-      ) {
-        setOutline(currentOutline);
-
-        setPrevOutline(currentOutline);
-        outlineRef.current = currentOutline;
-        initializedSessionIdRef.current = currentSessionId;
+      const pathJson = JSON.stringify(sessionData.response_path);
+      if (lastServerResponsePathJsonRef.current === pathJson) {
+        return;
       }
+      lastServerResponsePathJsonRef.current = pathJson;
+
+      const currentOutline = sessionData.response_path;
+      setOutline(currentOutline);
+      setPrevOutline(currentOutline);
+      outlineRef.current = currentOutline;
+      initializedSessionIdRef.current = currentSessionId;
     }
   }, [sessionData?.response_path, sessionData?.session_id]);
 

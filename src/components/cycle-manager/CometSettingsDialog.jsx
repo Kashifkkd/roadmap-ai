@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Info,
   Calendar,
@@ -17,6 +17,7 @@ import {
   Eye,
   EyeOff,
   Pencil,
+  X,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/Button";
@@ -157,6 +158,46 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [newColorHex, setNewColorHex] = useState("#000000");
   const [editingColorIndex, setEditingColorIndex] = useState(null);
   const [editingColorHex, setEditingColorHex] = useState("");
+const debounceRef = useRef(null);
+
+const [tempColors, setTempColors] = useState(() =>
+  brandColors.map((c) => ({ ...c }))
+);
+const [openColorIndex, setOpenColorIndex] = useState(null);
+const tempColorsRef = useRef(tempColors);
+const openColorIndexRef = useRef(openColorIndex);
+
+useEffect(() => {
+  tempColorsRef.current = tempColors;
+}, [tempColors]);
+
+useEffect(() => {
+  openColorIndexRef.current = openColorIndex;
+}, [openColorIndex]);
+
+useEffect(() => {
+  setTempColors(brandColors.map((c) => ({ ...c })));
+}, [brandColors]);
+
+const saveColor = (index) => {
+  setBrandColors((prev) => {
+    const updated = [...prev];
+    updated[index] = { ...tempColorsRef.current[index] };
+    return updated;
+  });
+  setOpenColorIndex(null);
+  openColorIndexRef.current = null;
+};
+
+const cancelColor = (index) => {
+  setTempColors((prev) => {
+    const updated = [...prev];
+    updated[index] = { ...brandColors[index] };
+    return updated;
+  });
+  setOpenColorIndex(null);
+  openColorIndexRef.current = null;
+};
 
   useEffect(() => {
     if (!open) return;
@@ -1575,11 +1616,15 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-3 sm:gap-4">
                         {brandColors.map((color, index) => {
+                          
                           const displayColor = (
+                            tempColors[index]?.hex ||
+                            tempColors[index]?.color ||
                             color?.hex ||
                             color?.color ||
                             "#000000"
                           ).toUpperCase();
+
 
                           return (
                             <div
@@ -1589,26 +1634,23 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               {/* Swatch (click opens palette) */}
                               <div className="relative w-12 h-8 sm:w-16 sm:h-10 shrink-0 overflow-hidden">
                                 <div className="relative w-16 h-10 rounded-sm overflow-hidden">
-                                  <input
-                                    type="color"
-                                    value={displayColor}
-                                    onChange={(e) => {
-                                      const newHex = String(
-                                        e.target.value || "",
-                                      ).toUpperCase();
-                                      setBrandColors((prev) => {
-                                        const updated = [...prev];
-                                        updated[index] = {
-                                          ...updated[index],
-                                          hex: newHex,
-                                          color: newHex,
-                                        };
-                                        return updated;
-                                      });
-                                    }}
-                                    className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
+                                   <input
+                                      type="color"
+                                      value={displayColor}
+                                      onChange={(e) => {
+                                        const newHex = String(e.target.value || "").toUpperCase();
+                                        setTempColors((prev) => {
+                                          const updated = [...prev];
+                                          updated[index] = { ...updated[index], hex: newHex, color: newHex };
+                                          return updated;
+                                        });
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenColorIndex(index);
+                                      }}
+                                      className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                                    />
 
                                   <div
                                     className="w-full h-full rounded-sm"
@@ -1622,14 +1664,44 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                                 <span className="text-sm font-medium text-gray-800 truncate">
                                   {color?.name || `Color ${index + 1}`}
                                 </span>
-                                <span className="text-sm font-medium text-gray-800 truncate">
+                                <span className="text-sm font-medium text-gray-800 truncate min-w-[80px]">
                                   {displayColor}
                                 </span>
                               </div>
+                                      
+                          <div className="flex flex-col gap-1 ml-auto items-end h-full">
                               <Info
                                 size={16}
-                                className="text-gray-500 cursor-help ml-auto self-baseline"
+                                className="text-gray-500 cursor-help"
                               />
+                              {openColorIndex === index && (
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="outline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (debounceRef.current) clearTimeout(debounceRef.current);
+                                      saveColor(index);
+                                    }}
+                                    className="cursor-pointer border border-primary text-primary hover:bg-white h-6 leading-4"
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (debounceRef.current) clearTimeout(debounceRef.current);
+                                      cancelColor(index);
+                                    }}
+                                    className="cursor-pointer border border-primary text-primary hover:bg-white h-6 w-6 leading-4 p-0 ps-0"
+                                  >
+                                   <X size={16} /> 
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+
                             </div>
                           );
                         })}
