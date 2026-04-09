@@ -148,7 +148,7 @@ const SCREEN_TYPE_GROUPS = [
         description: "Rearrange responses.",
       },
       {
-        id: "linear_poll",
+        id: "poll",
         name: "Linear Poll",
         icon: <BarChart3 size={20} />,
         color: "bg-green-100 border-green-300",
@@ -983,7 +983,7 @@ const handleNextStep = useCallback(() => {
       content: "content",
       multiple_choice: "mcq",
       force_question: "force_rank",
-      linear_poll: "linear",
+      poll: "linear",
       assessment: "assessment",
       reflection: "reflection",
       action: "action",
@@ -1155,13 +1155,13 @@ const handleNextStep = useCallback(() => {
         assessment: null,
         order: allScreens.length,
       };
-    } else if (screenType.id === "linear_poll") {
+    } else if (screenType.id === "poll") {
       // Linear Poll screen structure
       const linearTitle = "";
       newScreen = {
         id: screenId,
         uuid: screenUuid,
-        screenType: "linear_poll",
+        screenType: "poll",
         position: position,
         screenContents: {
           id: screenContentId,

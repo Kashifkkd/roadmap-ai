@@ -28,6 +28,7 @@ export default function CreateCometFooter({
     setTimeout(() => {
       window.history.back();
     }, 100);
+    router.push("/");
   };
 
   const isLoading = isUpdating;

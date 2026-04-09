@@ -737,6 +737,7 @@ export default function SourceMaterialCard({
               setFiles={setFiles}
               files={files}
               onCommentChange={handleFileCommentChange}
+              onRemove={() => setFiles((prev) => prev.filter((_, i) => i !== index))}
               key={file.name || index}
             />
           ))}
@@ -811,7 +812,7 @@ const LinkPreview = ({ entry, onCommentChange, onRemove }) => {
   );
 };
 
-const FilePreview = ({ file, setFiles, files, onCommentChange }) => {
+const FilePreview = ({ file, setFiles, files, onCommentChange, onRemove }) => {
   const formatFileSize = (bytes) => {
     if (!bytes || bytes === 0) return " ";
     const k = 1024;
@@ -824,8 +825,6 @@ const FilePreview = ({ file, setFiles, files, onCommentChange }) => {
     if (name.length <= maxLength) return name;
     return name.substring(0, maxLength) + "...";
   };
-
-  const isUploaded = file.isUploaded === true;
 
   return (
     <div className="flex flex-col bg-gray-100  rounded-xl p-1">
@@ -845,6 +844,14 @@ const FilePreview = ({ file, setFiles, files, onCommentChange }) => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onRemove}
+              className="p-2 text-gray-500 hover:text-gray-800 cursor-pointer"
+              title="Remove file"
+            >
+              <CircleX className="w-4 h-4" />
+            </button>
             <div
               className="flex-shrink-0"
               aria-hidden="true"
@@ -857,15 +864,6 @@ const FilePreview = ({ file, setFiles, files, onCommentChange }) => {
                 height={24}
               />
             </div>
-
-            {/* {!isUploaded && (
-              <button
-                onClick={() => setFiles(files.filter((f) => f !== file))}
-                className="cursor-pointer hover:text-red-600 transition-colors"
-              >
-                <CircleX className="w-4 h-4 font-bold" />
-              </button>
-            )} */}
           </div>
         </CardContent>
         <div className="m-2">

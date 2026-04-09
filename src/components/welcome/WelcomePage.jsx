@@ -181,7 +181,7 @@ export default function WelcomePage() {
         setIsLoading(false);
       }
 
-      // Navigate to dashboard when cycle_creation_data is populated
+      // Navigate to configure-cycle when cycle_creation_data is populated
       const hasCometData =
         receivedSessionData?.cycle_creation_data &&
         Object.keys(receivedSessionData.cycle_creation_data).length > 0;
@@ -1299,7 +1299,7 @@ export default function WelcomePage() {
                 🎉 Your Comet outline is ready!
               </h4>
               <p className="text-sm text-gray-600">
-                Continue to the dashboard to review and customize your Comet.
+                Continue to configure your cycle to review and customize your Comet.
               </p>
               <Button
                 variant="default"

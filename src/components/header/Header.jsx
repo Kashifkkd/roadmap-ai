@@ -679,9 +679,7 @@ export default function Header() {
     try {
       const publishSessionData = session ? JSON.parse(session) : {};
       const flagValue = publishSessionData?.is_publish_enabled;
-      setIsPublishEnabled(
-        flagValue === true || flagValue === "true"
-      );
+      setIsPublishEnabled(flagValue === true);
     } catch {
       setIsPublishEnabled(false);
     }
@@ -794,6 +792,10 @@ export default function Header() {
   };
 
   const handlePublish = async () => {
+    if (!isPublishEnabled || isPublishing) {
+      return;
+    }
+
     setIsPublishing(true);
 
     try {
@@ -1066,7 +1068,7 @@ export default function Header() {
       </div>
       <button
         onClick={handlePublish}
-        // disabled={isPublishing || !isPublishEnabled}
+        disabled={isPublishing || !isPublishEnabled}
         className="px-4 py-2 rounded-md bg-primary hover:bg-primary-dark text-white text-sm font-medium hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isPublishing ? "Publishing..." : "Publish"}

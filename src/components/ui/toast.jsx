@@ -8,6 +8,11 @@ export const toast = Object.assign(
   (...args) => sonnerToast(...args),
   sonnerToast,
   {
+    success: (message, options = {}) =>
+      sonnerToast.success("Success!", {
+        ...options,
+        description: options.description ?? message,
+      }),
     error: (message, options = {}) =>
       sonnerToast.error(options.title ?? "Error!", {
         ...options,
@@ -23,7 +28,7 @@ export const toast = Object.assign(
 
 const SuccessIcon = () => (
   <div className="w-10 h-10 rounded-full bg-[#ECFDF3] flex items-center justify-center shrink-0">
-    <Image src="/Verified Check.svg" alt="Success" width={24} height={20} />
+    <Image src="/Subtract.svg" alt="Success" width={24} height={20} />
   </div>
 );
 

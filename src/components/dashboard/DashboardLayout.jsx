@@ -455,7 +455,7 @@ export default function DashboardLayout() {
           <Loader
             inputText="outline"
             onBack={handleBackFromLoading}
-            backLabel="Back to Dashboard"
+            backLabel="Back to Configure Cycle"
           />
         </div>
       </div>
