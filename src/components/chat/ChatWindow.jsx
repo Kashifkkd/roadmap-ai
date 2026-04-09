@@ -27,7 +27,7 @@ export default function ChatWindow({
   const welcomeAnimationCheckedRef = useRef(false);
   const welcomeAnimationStateRef = useRef(false);
   const awaitingConversationRef = useRef(false);
-  const minConversationLengthRef = useRef(0);
+
   const minAgentMessageCountRef = useRef(0);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -335,8 +335,7 @@ export default function ChatWindow({
       const chatbotConversation = [...existingConversation, ...newEntries];
       console.log("chatbotConversation>>>>>>>>>>", chatbotConversation);
       awaitingConversationRef.current = true;
-      minConversationLengthRef.current = chatbotConversation.length;
-      minAgentMessageCountRef.current = existingAgentMessageCount + 1;
+minAgentMessageCountRef.current = existingAgentMessageCount + 1;
 
       const currentResponsePath =
         inputType === "outline_updation"
@@ -449,9 +448,6 @@ export default function ChatWindow({
 
       if (sessionData.chatbot_conversation) {
         const conversation = sessionData.chatbot_conversation;
-        const conversationLength = Array.isArray(conversation)
-          ? conversation.length
-          : 0;
         const agentMessageCount = Array.isArray(conversation)
           ? conversation.filter((entry) => entry?.agent).length
           : 0;
@@ -479,23 +475,19 @@ export default function ChatWindow({
         console.log("allMessages with status:", allMessages);
         console.log("conversation:", conversation);
 
-        // Update with all messages
+        const shouldStopLoading =
+          !awaitingConversationRef.current ||
+          agentMessageCount >= minAgentMessageCountRef.current;
+
+        // Update messages and loading state together to prevent intermediate
+        // renders where response is visible but loader is still showing.
         if (allMessages.length > 0) {
           setAllMessages(allMessages);
         }
-        if (
-          !awaitingConversationRef.current ||
-          conversationLength >= minConversationLengthRef.current ||
-          agentMessageCount >= minAgentMessageCountRef.current
-        ) {
+        if (shouldStopLoading) {
           setIsLoading(false);
           awaitingConversationRef.current = false;
         }
-      }
-
-      // Notify parent component if needed
-      if (onResponseReceived) {
-        onResponseReceived(dataToStore);
       }
     },
     (error) => {

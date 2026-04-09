@@ -155,6 +155,35 @@ const Chat = ({
 
   const hasMessages = messages && messages.length > 0;
 
+  // Don't show the loader if there is already a visible bot response after the
+  // last user message. This guards against the race where the parent re-renders
+  // with new messages before ChatWindow's local isLoading=false is committed,
+  // which would briefly show the loader below a completed response.
+  const shouldShowLoader = useMemo(() => {
+    if (!isLoading) return false;
+    if (!hasMessages) return true;
+    // Find the last user message index (scanning from the end)
+    let lastUserIdx = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].from === "user") {
+        lastUserIdx = i;
+        break;
+      }
+    }
+    // If there is any visible bot message after the last user message, the
+    // response has already arrived — suppress the loader.
+    for (let i = lastUserIdx + 1; i < messages.length; i++) {
+      const msg = messages[i];
+      if (
+        msg.from !== "user" &&
+        !(typeof msg.content === "string" && msg.content.includes("Generating Comet data"))
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }, [isLoading, messages]);
+
   // Memoize message so that it do not re render to prevent re-render when input changes
   const renderedMessages = useMemo(() => {
     if (!hasMessages) return null;
@@ -233,13 +262,13 @@ const Chat = ({
         {hasMessages ? (
           <div className="max-w-4xl mx-auto w-full">
             {renderedMessages}
-            {isLoading && <SequentialLoader />}
+            {shouldShowLoader && <SequentialLoader />}
           </div>
         ) : cometManager ? (
           <div className="max-w-4xl mx-auto w-full">
-            {isLoading && <SequentialLoader />}
+            {shouldShowLoader && <SequentialLoader />}
           </div>
-        ) : isLoading ? (
+        ) : shouldShowLoader ? (
           <div className="max-w-4xl mx-auto w-full">
             <SequentialLoader />
           </div>
@@ -257,11 +286,11 @@ const Chat = ({
 
         <div className="max-w-4xl mx-auto w-full">
           <ChatInput
-            disabled={isLoading}
+            disabled={shouldShowLoader}
             value={inputValue}
             onChange={onInputChange}
             onSubmit={onSubmit}
-            isLoading={isLoading}
+            isLoading={shouldShowLoader}
           />
         </div>
       </div>
