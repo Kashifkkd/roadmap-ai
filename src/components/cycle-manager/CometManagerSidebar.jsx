@@ -29,16 +29,25 @@ import {
   X,
   MoreVertical,
   MoreHorizontal,
+  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Stack } from "@mui/material";
 import DevicePreview from "./DevicePreview";
 import GenerateStepImageButton from "./GenerateStepImageButton";
@@ -47,6 +56,7 @@ import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
 import { resolveSourceMaterialLinkUrl } from "@/lib/sourceMaterialLinkUrl";
+import CreatePhaseVariantModal from "@/components/cycle-manager/CreatePhaseVariantModal";
 
 // Asset category buttons
 const ASSET_CATEGORIES = [
@@ -152,6 +162,27 @@ export default function CometManagerSidebar({
   const stepDescriptionEditInputRef = useRef(null);
   const menuRef = useRef(null);
 
+  // Create Phase Variant modal
+  const [createVariantDialogOpen, setCreateVariantDialogOpen] = useState(false);
+  const [createVariantSourceChapter, setCreateVariantSourceChapter] =
+    useState(null);
+  const [createVariantSourceStep, setCreateVariantSourceStep] = useState(null);
+
+  const currentCycleName =
+    selectedScreen?.cycleName ||
+    selectedScreen?.cycle_name ||
+    "New Manager Essentials Training Program";
+
+  const sourcePhaseName =
+    createVariantSourceChapter?.chapter ||
+    createVariantSourceChapter?.name ||
+    "Foundations of People Leadership";
+
+  const sourceStepName =
+    createVariantSourceStep?.name ||
+    createVariantSourceStep?.title ||
+    null;
+
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -224,6 +255,22 @@ export default function CometManagerSidebar({
     setOpenChapterMenuId((prev) => (prev === chapterId ? null : chapterId));
   };
 
+  const handleCreateVariantClick = (e, chapter) => {
+    e.stopPropagation();
+    setOpenChapterMenuId(null);
+    setCreateVariantSourceChapter(chapter);
+    setCreateVariantSourceStep(null);
+    setCreateVariantDialogOpen(true);
+  };
+
+  const handleCreateStepVariantClick = (e, chapter, step) => {
+    e.stopPropagation();
+    setOpenStepHeaderMenuId(null);
+    setCreateVariantSourceChapter(chapter);
+    setCreateVariantSourceStep(step);
+    setCreateVariantDialogOpen(true);
+  };
+
   const handleEditStepNameClick = (e, step, stepId) => {
     e.stopPropagation();
     setOpenStepHeaderMenuId(null);
@@ -233,7 +280,12 @@ export default function CometManagerSidebar({
     setEditStepName(step.name || "");
   };
 
-  const handleSaveStepNameEdit = async (e, chapterId, stepId, stepDescription) => {
+  const handleSaveStepNameEdit = async (
+    e,
+    chapterId,
+    stepId,
+    stepDescription,
+  ) => {
     e.stopPropagation();
     if (!onEditStep) {
       setEditingStepNameId(null);
@@ -1080,31 +1132,31 @@ export default function CometManagerSidebar({
                         >
                           {editingChapterId !== chapterId &&
                             !isChapterOperationPending && (
-                            <>
-                              {isDraggable ? (
-                                <GripVertical
-                                  size={18}
-                                  className="cursor-grab active:cursor-grabbing text-gray-400 shrink-0"
-                                />
-                              ) : (
-                                <div className="w-[18px] shrink-0" />
-                              )}
-                              <div
-                                className={`rounded-full p-1 ${
-                                  isSelected ? "bg-primary" : "bg-primary-100"
-                                }`}
-                              >
-                                <ChevronDown
-                                  size={16}
-                                  className={`${
-                                    isSelected ? "text-white" : "text-primary"
-                                  } transition-transform ${
-                                    isExpanded ? "rotate-180" : ""
+                              <>
+                                {isDraggable ? (
+                                  <GripVertical
+                                    size={18}
+                                    className="cursor-grab active:cursor-grabbing text-gray-400 shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-[18px] shrink-0" />
+                                )}
+                                <div
+                                  className={`rounded-full p-1 ${
+                                    isSelected ? "bg-primary" : "bg-primary-100"
                                   }`}
-                                />
-                              </div>
-                            </>
-                          )}
+                                >
+                                  <ChevronDown
+                                    size={16}
+                                    className={`${
+                                      isSelected ? "text-white" : "text-primary"
+                                    } transition-transform ${
+                                      isExpanded ? "rotate-180" : ""
+                                    }`}
+                                  />
+                                </div>
+                              </>
+                            )}
                           <div className="flex flex-col flex-1 min-w-0">
                             {isChapterOperationPending ? (
                               <div
@@ -1231,10 +1283,19 @@ export default function CometManagerSidebar({
                                               chapter,
                                             )
                                           }
-                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-800 hover:bg-primary-50 transition-colors"
                                         >
-                                          <Pencil className="w-3.5 h-3.5" />
+                                          {/* <Pencil className="w-3.5 h-3.5" /> */}
                                           Edit
+                                        </button>
+                                        <button
+                                          onClick={(e) =>
+                                            handleCreateVariantClick(e, chapter)
+                                          }
+                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-800 hover:bg-primary-50 transition-colors whitespace-nowrap"
+                                        >
+                                          {/* <Plus className="w-3.5 h-3.5" /> */}
+                                          Create Variant
                                         </button>
                                         <button
                                           onClick={(e) =>
@@ -1243,9 +1304,9 @@ export default function CometManagerSidebar({
                                               chapterId,
                                             )
                                           }
-                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-800 hover:bg-primary-50 transition-colors"
                                         >
-                                          <Trash2 className="w-3.5 h-3.5" />
+                                          {/* <Trash2 className="w-3.5 h-3.5" /> */}
                                           Delete
                                         </button>
                                       </div>
@@ -1283,7 +1344,8 @@ export default function CometManagerSidebar({
                                 const showStepHeaderLoader =
                                   isStepOperationPending &&
                                   (!isStepExpanded ||
-                                    pendingStepOperation?.type === "edit-name" ||
+                                    pendingStepOperation?.type ===
+                                      "edit-name" ||
                                     pendingStepOperation?.type === "delete");
                                 const showStepDetailsLoader =
                                   isStepOperationPending &&
@@ -1428,7 +1490,9 @@ export default function CometManagerSidebar({
                                           ) : editingStepNameId === stepId ? (
                                             <div
                                               className="flex-1 min-w-0"
-                                              onClick={(e) => e.stopPropagation()}
+                                              onClick={(e) =>
+                                                e.stopPropagation()
+                                              }
                                             >
                                               <div className="border border-gray-300 rounded-md p-2 bg-white">
                                                 <textarea
@@ -1545,7 +1609,7 @@ export default function CometManagerSidebar({
                                                 </button>
                                                 {openStepHeaderMenuId ===
                                                   stepId && (
-                                                  <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                                                  <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
                                                     <button
                                                       onClick={(e) =>
                                                         handleEditStepNameClick(
@@ -1558,6 +1622,19 @@ export default function CometManagerSidebar({
                                                     >
                                                       <Pencil className="w-3.5 h-3.5" />
                                                       Edit
+                                                    </button>
+                                                    <button
+                                                      onClick={(e) =>
+                                                        handleCreateStepVariantClick(
+                                                          e,
+                                                          chapter,
+                                                          step,
+                                                        )
+                                                      }
+                                                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                                                    >
+                                                      <Copy className="w-3.5 h-3.5" />
+                                                      Create Variant
                                                     </button>
                                                     <button
                                                       onClick={(e) =>
@@ -1595,7 +1672,8 @@ export default function CometManagerSidebar({
                                                       {stepPendingLabel}
                                                     </p>
                                                     <p className="text-xs text-[#574EB6]">
-                                                      Please wait while we update this step.
+                                                      Please wait while we
+                                                      update this step.
                                                     </p>
                                                   </div>
                                                 </div>
@@ -2400,6 +2478,20 @@ export default function CometManagerSidebar({
         </div>
       </div> */}
 
+      <CreatePhaseVariantModal
+        open={createVariantDialogOpen}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setCreateVariantDialogOpen(false);
+            setCreateVariantSourceChapter(null);
+            setCreateVariantSourceStep(null);
+          }
+        }}
+        currentCycleName={currentCycleName}
+        sourcePhaseName={sourcePhaseName}
+        sourceStepName={sourceStepName}
+      />
+
       {/* Phase Delete Confirmation Dialog */}
       <Dialog
         open={chapterDeletePending !== null}
@@ -2427,7 +2519,8 @@ export default function CometManagerSidebar({
                 </DialogTitle>
                 <DialogDescription className="text-sm leading-5 text-[#181D27]">
                   <span className="block">
-                    This action will permanently remove this phase from the cycle.
+                    This action will permanently remove this phase from the
+                    cycle.
                   </span>
                   <span className="mt-1.5 block">Do you want to proceed?</span>
                 </DialogDescription>
@@ -2483,7 +2576,8 @@ export default function CometManagerSidebar({
                 </DialogTitle>
                 <DialogDescription className="text-sm leading-5 text-[#181D27]">
                   <span className="block">
-                    This action will permanently remove this step from the cycle.
+                    This action will permanently remove this step from the
+                    cycle.
                   </span>
                   <span className="mt-1.5 block">Do you want to proceed?</span>
                 </DialogDescription>

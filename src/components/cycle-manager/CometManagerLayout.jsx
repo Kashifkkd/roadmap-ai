@@ -324,7 +324,7 @@ export default function CometManagerLayout() {
           />
         </div>
 
-        <div className="flex-1 min-w-0 h-full overflow-hidden">
+        <div data-comet-pane className="flex-1 min-w-0 h-full overflow-hidden">
           <CometManager
             sessionData={sessionData}
             setSessionData={setSessionData}

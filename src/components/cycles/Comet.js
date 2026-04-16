@@ -1,9 +1,11 @@
 "use client";
 import Image from "next/image";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { MoreHorizontal } from "lucide-react";
 import StatusButton from "./StatusButton";
 import { useCometSettings } from "@/contexts/CometSettingsContext";
 import { toast } from "@/components/ui/toast";
+import CreateCycleVariantModal from "./CreateCycleVariantModal";
 
 const Comet = ({
   title,
@@ -17,7 +19,34 @@ const Comet = ({
 }) => {
   const [disabled, setDisabled] = useState(false);
   const [imgSrc, setImgSrc] = useState(imageURL || "/fallbackImage.png");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
+  const menuRef = useRef(null);
   const { setIsCometSettingsOpen } = useCometSettings();
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isMenuOpen]);
+
+  const handleMoreClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMenuOpen((prev) => !prev);
+  };
+
+  const handleCreateVariantClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    setIsVariantModalOpen(true);
+  };
 
   useEffect(() => {
     setImgSrc(imageURL || "/fallbackImage.png");
@@ -111,7 +140,30 @@ const Comet = ({
       <div className="absolute top-2 bottom-2 left-2 right-2 rounded-lg p-3 bg-white/0 group-hover:bg-white transition-all duration-150 z-30 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
         <div className="flex flex-col w-full h-full justify-between">
           <div className="flex flex-col gap-2">
-            <StatusButton status={status} />
+            <div className="flex items-start justify-between gap-2">
+              <StatusButton status={status} />
+              <div className="relative" ref={menuRef}>
+                <button
+                  type="button"
+                  onClick={handleMoreClick}
+                  className="flex items-center justify-center rounded-md p-1 text-gray-600 hover:bg-gray-100 transition-colors"
+                  aria-label="More options"
+                >
+                  <MoreHorizontal className="h-5 w-5" />
+                </button>
+                {isMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-40 overflow-hidden py-1">
+                    <button
+                      type="button"
+                      onClick={handleCreateVariantClick}
+                      className="w-full px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50 transition-colors text-left whitespace-nowrap"
+                    >
+                      Create Variant
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
             <span className="text-gray-800 font-noto font-semibold text-[18px] leading-[24px] tracking-normal line-clamp-3 min-h-[48px]">
               {title}
             </span>
@@ -218,6 +270,14 @@ const Comet = ({
             </span>
           </div>
         </div>
+      </div>
+
+      <div onClick={(e) => e.stopPropagation()}>
+        <CreateCycleVariantModal
+          open={isVariantModalOpen}
+          onOpenChange={setIsVariantModalOpen}
+          cycleName={title}
+        />
       </div>
     </div>
   );
