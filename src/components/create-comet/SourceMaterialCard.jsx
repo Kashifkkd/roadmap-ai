@@ -3,24 +3,47 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
 
-import { Plus, Link2, Trash2, CircleX, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Link2,
+  Trash2,
+  CircleX,
+  Loader2,
+  AlertTriangle,
+  FileText,
+  Info,
+} from "lucide-react";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { resolveSourceMaterialLinkUrl } from "@/lib/sourceMaterialLinkUrl";
 import { toast } from "@/components/ui/toast";
 
 function normalizeWebLink(item, defaultUploaded = false) {
+  const urlValue = item?.url ?? item?.webpage_url ?? "";
+  const inferredPreviewMeta = inferLinkPreviewMeta(urlValue);
+
   if (typeof item === "string") {
-    return { url: item, comment: "", isUploaded: defaultUploaded };
+    return {
+      url: item,
+      comment: "",
+      isUploaded: defaultUploaded,
+      ...inferLinkPreviewMeta(item),
+    };
   }
 
   return {
-    url: item?.url ?? item?.webpage_url ?? "",
+    url: urlValue,
     comment: item?.comment ?? "",
     isUploaded:
       typeof item?.isUploaded === "boolean" ? item.isUploaded : defaultUploaded,
+    linkType: item?.linkType ?? inferredPreviewMeta.linkType,
+    previewWarning:
+      typeof item?.previewWarning === "string"
+        ? item.previewWarning
+        : inferredPreviewMeta.previewWarning,
   };
 }
 
@@ -30,6 +53,54 @@ function getWebLinkKey(url = "") {
 
 function getFileKey(name = "") {
   return name.trim().toLowerCase();
+}
+
+function inferLinkPreviewMeta(rawUrl = "") {
+  const trimmedUrl = rawUrl.trim();
+  if (!trimmedUrl) {
+    return { linkType: "web", previewWarning: "" };
+  }
+
+  try {
+    const parsedUrl = new URL(trimmedUrl);
+    const lowercasePathAndQuery = `${parsedUrl.pathname}${parsedUrl.search}`.toLowerCase();
+    const pdfDetected =
+      /\.pdf($|[?#])/i.test(lowercasePathAndQuery) ||
+      parsedUrl.searchParams.get("format")?.toLowerCase() === "pdf";
+
+    if (pdfDetected) {
+      return { linkType: "pdf", previewWarning: "" };
+    }
+
+    const hostname = parsedUrl.hostname.toLowerCase();
+    const hash = parsedUrl.hash.toLowerCase();
+    const isHashRouteSpa = hash.startsWith("#/") || hash.startsWith("#!");
+    const isLocalOrPrivateHost =
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0" ||
+      hostname.endsWith(".local");
+
+    if (isLocalOrPrivateHost) {
+      return {
+        linkType: "web",
+        previewWarning:
+          "Preview is unlikely for local/private app URLs. Use a public URL or upload the file directly.",
+      };
+    }
+
+    if (isHashRouteSpa) {
+      return {
+        linkType: "web",
+        previewWarning:
+          "This looks like a SPA hash route. Preview may fail because the content is rendered client-side.",
+      };
+    }
+  } catch {
+    return { linkType: "web", previewWarning: "" };
+  }
+
+  return { linkType: "web", previewWarning: "" };
 }
 
 function normalizeFileItem(item, defaultUploaded = false) {
@@ -128,6 +199,9 @@ const SOURCE_ALLOWED_EXTENSIONS = [
   "webm",
 ];
 
+const SOURCE_FORMATS_HOVER_TEXT =
+  ".pdf, .docx, .pptx, .txt, .md, .mp3, .wav, .m4a, .flac, .mp4, .webm";
+
 function partitionNewSourceFiles(existingFiles, filteredByType) {
   const existingFileNames = new Set(existingFiles.map((f) => getFileKey(f.name)));
   const seenSelectedNames = new Set();
@@ -157,6 +231,7 @@ export default function SourceMaterialCard({
 }) {
   const [sessionId, setSessionId] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCheckingLinkPreview, setIsCheckingLinkPreview] = useState(false);
   const [linkDraft, setLinkDraft] = useState({ url: "" });
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -189,11 +264,7 @@ export default function SourceMaterialCard({
 
         for (const material of materials) {
           if (material.type === "link") {
-            const url =
-              material.source_path ||
-              material.output_presigned_url ||
-              material.source_name ||
-              "";
+            const url = resolveSourceMaterialLinkUrl(material);
             if (url) {
               linkMaterials.push({
                 url: url.trim(),
@@ -331,6 +402,25 @@ export default function SourceMaterialCard({
     },
     [sessionId],
   );
+
+  const checkLinkPreviewability = useCallback(async (url) => {
+    try {
+      const result = await apiService({
+        endpoint: endpoints.checkSourceMaterialLinkPreview,
+        method: "GET",
+        params: { url },
+      });
+
+      if (result.error) {
+        return null;
+      }
+
+      return result.response ?? null;
+    } catch (error) {
+      console.error("Error checking link previewability:", error);
+      return null;
+    }
+  }, []);
 
   const addSourceFiles = useCallback(
     (incomingFiles) => {
@@ -568,7 +658,7 @@ export default function SourceMaterialCard({
     };
   }, [files, sessionId, uploadFile, uploadWebLink, normalizedUrls]);
 
-  const handleAddLink = () => {
+  const handleAddLink = async () => {
     const url = linkDraft.url.trim();
     if (!url) return toast.error("Please enter a URL");
     if (!/^https?:\/\//i.test(url))
@@ -578,9 +668,33 @@ export default function SourceMaterialCard({
     )
       return toast.error("This link is already added");
 
-    setWebpageUrls([...normalizedUrls, { url, comment: "" }]);
+    let previewMeta = inferLinkPreviewMeta(url);
+    if (!previewMeta.previewWarning) {
+      setIsCheckingLinkPreview(true);
+      const previewCheck = await checkLinkPreviewability(url);
+      setIsCheckingLinkPreview(false);
+
+      if (previewCheck?.is_pdf) {
+        previewMeta = { ...previewMeta, linkType: "pdf", previewWarning: "" };
+      } else if (previewCheck?.likely_previewable === false) {
+        previewMeta = {
+          ...previewMeta,
+          previewWarning:
+            "This link is likely not previewable in-app. Please use a different source link if preview is required.",
+        };
+      }
+    }
+
+    setWebpageUrls([...normalizedUrls, { url, comment: "", ...previewMeta }]);
     setLinkDraft({ url: "" });
-    toast.success("Success", {
+
+    if (previewMeta.previewWarning) {
+      toast.warning(previewMeta.previewWarning, {
+        id: `source-material-preview-warning-${getWebLinkKey(url)}`,
+      });
+    }
+
+    toast.success("Link attached. It will upload when you click Create Outline.", {
       id: "source-material-link-attached",
       description: "Link attached successfully."
     });
@@ -605,7 +719,11 @@ export default function SourceMaterialCard({
     }
 
     const updated = normalizedUrls.map((entry, i) =>
-      i === index ? { ...entry, [field]: value } : entry,
+      i === index
+        ? field === "url"
+          ? { ...entry, ...inferLinkPreviewMeta(value), [field]: value }
+          : { ...entry, [field]: value }
+        : entry,
     );
     setWebpageUrls(updated);
   };
@@ -661,9 +779,36 @@ export default function SourceMaterialCard({
               <div className="flex size-[42px] items-center justify-center rounded-md bg-muted text-muted-foreground">
                 <Image src="/upload.svg" alt="Icon" width={42} height={42} />
               </div>
-              <span className="text-sm font-medium">Click to upload</span>
+              <span className="text-sm font-medium">Drag files here or click to upload</span>
               <span className="text-xs text-muted-foreground">
-                or drag and drop files here
+                Image, Document, Video & Audio Formats{" "}
+                <span className="group relative inline-flex items-center align-middle">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="inline-flex cursor-default rounded-sm text-muted-foreground outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    aria-label={`Supported file formats: ${SOURCE_FORMATS_HOVER_TEXT}`}
+                  >
+                    <Info size={14} className="shrink-0" aria-hidden />
+                  </button>
+                  <span
+                    role="tooltip"
+                    className={cn(
+                      "pointer-events-none absolute left-1/2 top-full z-50 mt-1 w-max max-w-[min(280px,calc(100vw-2rem))] -translate-x-1/2 rounded-md bg-popover px-2 py-1.5 text-left text-[11px] leading-snug text-popover-foreground shadow-lg ring-1 ring-black/10 dark:ring-white/15",
+                      "opacity-0 invisible transition-opacity duration-150",
+                      "group-hover:visible group-hover:opacity-100",
+                      "group-focus-within:visible group-focus-within:opacity-100",
+                    )}
+                  >
+                    {SOURCE_FORMATS_HOVER_TEXT}
+                  </span>
+                </span>
+                <br />
+                Max Size: 50MB
               </span>
               <Button
                 variant="outline"
@@ -718,10 +863,23 @@ export default function SourceMaterialCard({
               type="button"
               onClick={handleAddLink}
               variant="outline"
+              disabled={isCheckingLinkPreview}
               className="w-full h-11 border border-[#7C3AED] text-[#7C3AED] bg-transparent hover:bg-[#7C3AED]/5 rounded-xl text-[15px] font-medium shadow-sm transition-colors"
             >
-              <Plus className="w-5 h-5 mr-1" /> Add Link
+              {isCheckingLinkPreview ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-1 animate-spin" /> Checking...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-5 h-5 mr-1" /> Add Link
+                </>
+              )}
             </Button>
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Note: Some websites do not allow in-app preview. If preview is
+              blank, use Open link to view it in a new tab.
+            </p>
           </div>
         </div>
       </CardContent>
@@ -768,16 +926,36 @@ const LinkPreview = ({ entry, onCommentChange, onRemove }) => {
 
   return (
     <div className="flex flex-col bg-gray-100 rounded-xl p-1">
-      <div className="flex flex-col border border-gray-200 bg-white rounded-xl">
+      <div
+        className={cn(
+          "flex flex-col border bg-white rounded-xl",
+          entry.previewWarning
+            ? "border-amber-300 bg-amber-50/40"
+            : "border-gray-200",
+        )}
+      >
         <CardContent className="flex items-center justify-between gap-2 p-4 rounded-xl">
           <div className="flex items-center gap-4 min-w-0 flex-1">
             <div className="bg-primary-100 p-2 rounded-full shrink-0">
-              <Link2 className="w-5 h-5 text-primary-600" />
+              {entry.linkType === "pdf" ? (
+                <FileText className="w-5 h-5 text-primary-600" />
+              ) : (
+                <Link2 className="w-5 h-5 text-primary-600" />
+              )}
             </div>
             <div className="flex flex-col min-w-0 flex-1">
               <span className="text-sm font-medium truncate" title={entry.url}>
                 {truncateUrl(entry.url)}
               </span>
+              {entry.linkType === "pdf" && (
+                <span className="text-xs text-primary-700">PDF link detected</span>
+              )}
+              {entry.previewWarning && (
+                <span className="text-xs text-amber-700 flex items-start gap-1 mt-0.5">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-[1px]" />
+                  <span>{entry.previewWarning}</span>
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">

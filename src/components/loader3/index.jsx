@@ -72,13 +72,13 @@ const Loader = ({
         <div className="flex flex-col items-center justify-center max-w-2xl mx-auto px-4 rounded mt-10">
           {/* Logo */}
           <div className="mb-2">
-            <Image
+            {/* <Image
               src="/logo2.svg"
               alt="Kyper Logo"
               width={70}
               height={70}
               className="rounded-full kyperSpin"
-            />
+            /> */}
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 text-center">

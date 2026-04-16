@@ -9,10 +9,13 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Plus } from "lucide-react";
 
-// Helper to generate unique IDs
-const generateId = (prefix) => {
-  const uuid = globalThis.crypto.getRandomValues(new Uint8Array(16)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '');
-  return `${prefix}_${uuid}`;
+const toNumber = (value) => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
 };
 
 export default function PollMcqForm({
@@ -31,24 +34,41 @@ export default function PollMcqForm({
     onRichTextBlur,
   } = askKyperHandlers;
 
-  // Normalize options to object format
+  // Normalize options to backend schema (camelCase + numeric optionId)
   const normalizeOptions = (options) => {
     if (!Array.isArray(options)) return [];
+    const numericIds = options
+      .map((opt) => toNumber(opt?.optionId ?? opt?.option_id))
+      .filter((id) => id !== null);
+    let nextOptionId = numericIds.length ? Math.max(...numericIds) + 1 : 1;
+
     return options.map((opt, index) => {
       if (typeof opt === "string") {
         return {
-          option_id: generateId("o"),
+          optionId: nextOptionId++,
           text: opt,
-          is_correct: false,
+          isCorrect: false,
         };
       }
+
+      const existingId = toNumber(opt?.optionId ?? opt?.option_id);
       return {
-        option_id: opt.option_id || generateId("o"),
+        optionId: existingId ?? nextOptionId++,
         text: opt.text || opt.label || "",
-        is_correct: opt.is_correct !== undefined ? opt.is_correct : false,
-        answer_counts: opt.answer_counts || 0,
+        isCorrect:
+          opt?.isCorrect !== undefined
+            ? opt.isCorrect
+            : (opt?.is_correct ?? false),
       };
     });
+  };
+
+  const ensureAtLeastOneCorrect = (list) => {
+    if (!Array.isArray(list) || list.length === 0) return [];
+    if (list.some((option) => option?.isCorrect === true)) return list;
+    const updated = [...list];
+    updated[0] = { ...updated[0], isCorrect: true };
+    return updated;
   };
 
   const options = normalizeOptions(formData.options || []);
@@ -58,9 +78,9 @@ export default function PollMcqForm({
     const updatedOptions = [...options];
     if (typeof updatedOptions[index] === "string") {
       updatedOptions[index] = {
-        option_id: generateId("o"),
+        optionId: (Math.max(0, ...options.map((o) => o.optionId || 0)) || 0) + 1,
         text: value,
-        is_correct: false,
+        isCorrect: false,
       };
     } else {
       updatedOptions[index] = {
@@ -68,13 +88,13 @@ export default function PollMcqForm({
         text: value,
       };
     }
-    updateField("options", updatedOptions);
+    updateField("options", ensureAtLeastOneCorrect(updatedOptions));
   };
 
   // Remove an option
   const handleRemoveOption = (index) => {
     const updatedOptions = options.filter((_, i) => i !== index);
-    updateField("options", updatedOptions);
+    updateField("options", ensureAtLeastOneCorrect(updatedOptions));
   };
 
   // Reorder options
@@ -86,7 +106,7 @@ export default function PollMcqForm({
       const draggedOption = updatedOptions[draggedIndex];
       updatedOptions.splice(draggedIndex, 1);
       updatedOptions.splice(dropIndex, 0, draggedOption);
-      updateField("options", updatedOptions);
+      updateField("options", ensureAtLeastOneCorrect(updatedOptions));
     }
   };
 
@@ -95,28 +115,28 @@ export default function PollMcqForm({
     const updatedOptions = [...options];
     if (typeof updatedOptions[index] === "string") {
       updatedOptions[index] = {
-        option_id: generateId("o"),
+        optionId: (Math.max(0, ...options.map((o) => o.optionId || 0)) || 0) + 1,
         text: updatedOptions[index],
-        is_correct: isCorrect,
+        isCorrect: isCorrect,
       };
     } else {
       updatedOptions[index] = {
         ...updatedOptions[index],
-        is_correct: isCorrect,
+        isCorrect: isCorrect,
       };
     }
-    updateField("options", updatedOptions);
+    updateField("options", ensureAtLeastOneCorrect(updatedOptions));
   };
 
   
   const handleAddOption = () => {
     const newOption = {
-      option_id: generateId("o"),
+      optionId: (Math.max(0, ...options.map((o) => o.optionId || 0)) || 0) + 1,
       text: "",
-      is_correct: false,
+      isCorrect: false,
     };
     const updatedOptions = [...options, newOption];
-    updateField("options", updatedOptions);
+    updateField("options", ensureAtLeastOneCorrect(updatedOptions));
   };
 
   return (
@@ -151,13 +171,13 @@ export default function PollMcqForm({
         />
         <TextArea
           label="Key Learning"
-          value={formData.key_learning || ""}
-          onChange={(value) => updateField("key_learning", value)}
+          value={formData.keyLearning || ""}
+          onChange={(value) => updateField("keyLearning", value)}
           placeholder=""
           rows={3}
           inputProps={{
             onSelect: (event) =>
-              onTextFieldSelect?.("mcqKeyLearning", event, formData.key_learning),
+              onTextFieldSelect?.("mcqKeyLearning", event, formData.keyLearning),
             onBlur: onFieldBlur,
           }}
         />

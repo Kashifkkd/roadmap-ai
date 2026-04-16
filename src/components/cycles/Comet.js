@@ -119,7 +119,7 @@ const Comet = ({
               <span className="font-inter font-medium text-sm leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
                 Total Active Users
                 <span className="bg-white py-0.5 px-2 rounded-4xl">
-                  {activeUsers || 10}
+                  {activeUsers || "-"}
                 </span>
               </span>
             </div>
@@ -213,7 +213,7 @@ const Comet = ({
             <span className="font-inter font-medium text-xs leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
               Total Active Users
               <span className="bg-white py-0.5 px-2 rounded-4xl">
-                {activeUsers || 10}
+                {activeUsers || "-"}
               </span>
             </span>
           </div>

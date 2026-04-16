@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { ArrowUp, Paperclip, Search, X, FileText, Link2 } from "lucide-react";
+import { ArrowUp, Paperclip, Search, X, FileText, Link2, Info } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import Stars from "@/components/icons/Stars";
@@ -17,13 +17,17 @@ import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 import { tokenManager } from "@/lib/api-client";
 
 const SUGGESTIONS = [
-  "Create a go-to microlearning experience for new managers",
-  "Get store managers ready for the holiday season",
-  "Boost collaboration and trust within teams",
-  "Help sales leaders reinforce the SKO",
-  "Onboard new employees with essential training",
-  "Add reinforcement & application to a training",
+  "Help my team apply AI tools in their daily work",
+  "Help managers coach, delegate, and follow through",
+  "Get new hires productive in their first 30 days",
+  "Turn new managers into confident team leaders",
+  "Upskill store managers before the next rush season",
+  "Equip sellers to sell the latest product updates",
+  "Reinforce key skills from our training",
 ];
+
+const SOURCE_FORMATS_HOVER_TEXT =
+  ".pdf, .doc, .docx, .txt, .pptx, .mp3, .wav, .m4a, .flac, .mp4, .webm";
 
 export default function WelcomePage() {
   const [inputText, setInputText] = useState("");
@@ -765,9 +769,9 @@ export default function WelcomePage() {
           <div className="text-primary-900">
             <div className="space-y-2 relative">
               <h2 className="text-3xl font-semibold text-primary-900 font-serif relative">
-                Let's build your next{" "}
+                Design a{" "}
                 <span className="relative inline-block">
-                  <span className="relative z-10">Cycles</span>
+                  <span className="relative z-10">Cycle</span>
                   <Image
                     src={Vector}
                     alt="underline"
@@ -775,12 +779,12 @@ export default function WelcomePage() {
                     style={{ zIndex: 0 }}
                   />
                 </span>{" "}
-                together...
+                that drives real behavior change.
               </h2>
 
               <p className="text-md max-w-2xl mx-auto text-primary-900">
-                You can type your idea below, or pick one of the suggestions to
-                get started...
+                Start with your goal—Kyper builds your team&apos;s custom
+                journey, turning intentions into daily action and lasting habits.
               </p>
             </div>
           </div>
@@ -837,7 +841,7 @@ export default function WelcomePage() {
                           ? "Waiting for response..."
                           : messages.length > 0
                             ? "Type your answer here..."
-                            : "I'll guide you step by step - just tell me what you want to create."
+                            : "What do you want people to do differently or get better at?"
                       }
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
@@ -1014,7 +1018,7 @@ export default function WelcomePage() {
                           {/* // attach dialog   */}
                           {isAttachInputVisible && (
                             <div
-                              className="absolute left-0 top-full mt-2 z-50 w-[300px] bg-primary-50 border border-primary-400 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] overflow-hidden"
+                              className="absolute left-0 top-full mt-2 z-50 w-[300px] bg-primary-50 border border-primary-400 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] overflow-visible"
                               onMouseDown={(e) => e.stopPropagation()}
                             >
                               {/* Drop zone area */}
@@ -1112,8 +1116,29 @@ export default function WelcomePage() {
                                       Drag files here or click to upload
                                     </p>
                                     <p className="text-[12px] text-gray-400 mt-1.5">
-                                      Supported formats: PDFs, Videos, Audio,
-                                      Images
+                                      Image, Document, Video & Audio Formats{" "}
+                                      <span className="group relative inline-flex items-center align-middle">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                          }}
+                                          onMouseDown={(e) => e.stopPropagation()}
+                                          className="inline-flex cursor-default rounded-sm text-gray-400 outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                          aria-label={`Supported file formats: ${SOURCE_FORMATS_HOVER_TEXT}`}
+                                        >
+                                          <Info size={14} className="shrink-0" aria-hidden />
+                                        </button>
+                                        <span
+                                          role="tooltip"
+                                          className="pointer-events-none absolute left-1/2 bottom-full z-50 mb-1 w-max max-w-[min(280px,calc(100vw-2rem))] -translate-x-1/2 rounded-md bg-popover px-2 py-1.5 text-left text-[11px] leading-snug text-popover-foreground shadow-lg ring-1 ring-black/10 dark:ring-white/15 opacity-0 invisible transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+                                        >
+                                          {SOURCE_FORMATS_HOVER_TEXT}
+                                        </span>
+                                      </span>
+                                      <br />
+                                      Max Size: 50MB
                                     </p>
                                   </>
                                 )}
@@ -1259,7 +1284,7 @@ export default function WelcomePage() {
             {messages.length === 0 && (
               <div className="w-full max-w-3xl mx-auto">
                 <h3 className="text-primary-900 text-lg font-medium mb-4 text-start">
-                  Here are some suggested prompts to get you started
+                  Jump in with a popular starting point
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {SUGGESTIONS.map((suggestion, index) => (
@@ -1296,7 +1321,7 @@ export default function WelcomePage() {
           ) : (
             <div className="flex flex-col items-center text-center bg-white rounded-xl border border-primary-200 max-w-3xl p-6 mx-auto space-y-4">
               <h4 className="text-lg font-semibold text-[#352F6E]">
-                🎉 Your Comet outline is ready!
+                🎉 Your Cycle outline is ready!
               </h4>
               <p className="text-sm text-gray-600">
                 Continue to configure your cycle to review and customize your Comet.

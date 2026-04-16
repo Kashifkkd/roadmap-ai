@@ -123,6 +123,18 @@ const DUMMY_CLIENTS = [
   },
 ];
 
+/** Cycle Manager header + download: title field renamed from "Comet Title" → "Cycle Title" in settings. */
+function getCycleDisplayTitle(sessionData) {
+  if (!sessionData || typeof sessionData !== "object") return "";
+  const basic = sessionData.cycle_creation_data?.["Basic Information"];
+  return (
+    basic?.["Cycle Title"] ||
+    basic?.["Comet Title"] ||
+    (typeof sessionData.cometTitle === "string" ? sessionData.cometTitle : "") ||
+    ""
+  );
+}
+
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
@@ -585,8 +597,7 @@ export default function Header() {
       const session =
         typeof window !== "undefined" ? localStorage.getItem("sessionData") : null;
       const sessionData = session ? JSON.parse(session || "{}") : {};
-      const cometTitle =
-        sessionData?.cycle_creation_data?.["Basic Information"]?.["Comet Title"];
+      const cometTitle = getCycleDisplayTitle(sessionData);
 
       const response = await downloadDocument(documentId, cometTitle);
 
@@ -674,23 +685,14 @@ export default function Header() {
     router.push("/cycles");
   };
 
-  const [isPublishEnabled, setIsPublishEnabled] = useState(false);
+  // TODO: Re-enable BE publish flag guard once `is_publish_enabled` is consistently provided.
   useEffect(() => {
     try {
-      const publishSessionData = session ? JSON.parse(session) : {};
-      const flagValue = publishSessionData?.is_publish_enabled;
-      setIsPublishEnabled(flagValue === true);
+      const sessionData = JSON.parse(session || "{}");
+      setText(getCycleDisplayTitle(sessionData));
     } catch {
-      setIsPublishEnabled(false);
+      setText("");
     }
-  }, [session]);
-  useEffect(() => {
-    const sessionData = JSON.parse(session || "{}");
-    try {
-      setText(
-        sessionData?.cycle_creation_data?.["Basic Information"]?.["Comet Title"]
-      );
-    } catch { }
   }, [session]);
 
   useEffect(() => {
@@ -792,7 +794,8 @@ export default function Header() {
   };
 
   const handlePublish = async () => {
-    if (!isPublishEnabled || isPublishing) {
+    // Temporarily allow publish without backend flag check.
+    if (isPublishing) {
       return;
     }
 
@@ -1059,6 +1062,7 @@ export default function Header() {
           className="sm:w-5 sm:h-5"
         />
       </button>
+      {/*  */}
 
       {/* <div className="hidden lg:flex">
         <Collaborators />
@@ -1068,7 +1072,7 @@ export default function Header() {
       </div>
       <button
         onClick={handlePublish}
-        disabled={isPublishing || !isPublishEnabled}
+        // disabled={isPublishing || !isPublishEnabled}
         className="px-4 py-2 rounded-md bg-primary hover:bg-primary-dark text-white text-sm font-medium hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isPublishing ? "Publishing..." : "Publish"}
@@ -1324,9 +1328,9 @@ export default function Header() {
             </div>
 
             {isCometManager && (
-              <div className="hidden xl:flex flex-1 items-center min-w-0 px-4">
+              <div className="hidden lg:flex flex-1 items-center min-w-0 px-2 sm:px-4">
                 <span
-                  className="text-[#574EB6] select-none truncate text-2xl font-medium"
+                  className="text-[#574EB6] select-none truncate text-xl sm:text-2xl font-medium"
                   style={{
                     fontFamily: "Noto Serif",
                   }}

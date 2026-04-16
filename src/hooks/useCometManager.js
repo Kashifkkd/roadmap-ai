@@ -181,7 +181,8 @@ export function useCometManager(sessionData = null) {
             formData.reflectionImage ||
             formData.ImageUrl ||
             formData.image ||
-            formData.media?.url ||
+            // Keep disabled for now; uncomment if backend media URL should drive thumbnail again.
+            // formData.media?.url ||
             (typeof formData.habit_image === "string"
               ? formData.habit_image
               : formData.habit_image?.url || formData.habit_image?.ImageUrl) ||

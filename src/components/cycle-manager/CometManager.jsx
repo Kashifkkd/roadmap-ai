@@ -40,6 +40,10 @@ import {
   Sparkles,
 } from "lucide-react";
 import { graphqlClient } from "@/lib/graphql-client";
+import {
+  resolveSourceMaterialLinkUrl,
+  isDirectPdfUrl,
+} from "@/lib/sourceMaterialLinkUrl";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -94,6 +98,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+/** Default `screenContents.content` when a Manager Email screen is added manually. */
+const DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT = {
+  heading: "Bring your manager along",
+  body:
+    "You're embarking on an exciting journey of growth and development. To enhance this experience, involve your manager! Regular updates can help them support your progress.",
+  email: "",
+  media: { type: "image", url: "" },
+};
+
+/** Default `screenContents.content` when an Accountability Partner Email screen is added manually. */
+const DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT = {
+  heading: "Accountability partners",
+  body:
+    "In addition to your manager, trusted friends and colleagues are key to a successful journey to build new habits. Add the email addresses here for anyone you want to act as an accountability partner as you progress along this path. Your accountability partner(s) will receive the same email updates as your manager.",
+  emails: [""],
+  media: { type: "image", url: "" },
+};
+
+/** Default `screenContents.content` when a Notifications screen is added manually. */
+const DEFAULT_NOTIFICATIONS_SCREEN_CONTENT = {
+  heading: "Set your intention",
+  body:
+    "Learning effective management skills is a gateway habit for the professional growth and team success you want to achieve. Building these capabilities will help you lead with confidence, earn your team's trust, and create the kind of work environment where everyone can thrive. When do you want to invest 5-10 minutes to learn each work day?",
+  media: { type: "image", url: "" },
+};
 
 // Grouped screen types for Add dialog
 const SCREEN_TYPE_GROUPS = [
@@ -175,7 +205,7 @@ const SCREEN_TYPE_GROUPS = [
       },
       {
         id: "action",
-        name: "Action",
+        name: "Micro-action",
         icon: <Columns size={20} />,
         color: "bg-indigo-100 border-indigo-300",
         description: "To-do items or practical exercises.",
@@ -744,6 +774,11 @@ export default function CometManager({
   }, [selectedScreenId, screens]);
   console.log("selectedScreen", selectedScreen);
 
+  const selectedLinkUrl = useMemo(() => {
+    if (selectedMaterial?.type !== "link") return "";
+    return resolveSourceMaterialLinkUrl(selectedMaterial);
+  }, [selectedMaterial]);
+
   const handleRequestDeleteScreen = useCallback((screenId) => {
     setScreenDeleteConfirmId(screenId);
   }, []);
@@ -1085,22 +1120,23 @@ const handleNextStep = useCallback(() => {
       };
     } else if (screenType.id === "multiple_choice") {
       // Multiple Choice/Survey screen structure
-      const mcqTitle = "";
+      const mcqTitle = "Quick Check";
       newScreen = {
         id: screenId,
         uuid: screenUuid,
-        screenType: "multiple_choice",
+        screenType: "poll",
         position: position,
         screenContents: {
           id: screenContentId,
           contentType: "mcq",
           content: {
             title: mcqTitle,
-            question: mcqTitle,
-            top_label: "",
-            bottom_label: "",
-            key_learning: "",
-            options: [],
+            question: "Select the best answer.",
+            keyLearning: "Choose the option that best reflects the key takeaway.",
+            options: [
+              { optionId: 1, text: "Option 1", isCorrect: true },
+              { optionId: 2, text: "Option 2", isCorrect: false },
+            ],
           },
         },
         assets: [],
@@ -1111,11 +1147,12 @@ const handleNextStep = useCallback(() => {
         title: mcqTitle,
         formData: {
           mcqTitle: mcqTitle,
-          question: mcqTitle,
-          mcqTopLabel: "",
-          mcqBottomLabel: "",
-          mcqKeyLearning: "",
-          mcqOptions: [],
+          question: "Select the best answer.",
+          mcqKeyLearning: "Choose the option that best reflects the key takeaway.",
+          mcqOptions: [
+            { optionId: 1, text: "Option 1", isCorrect: true },
+            { optionId: 2, text: "Option 2", isCorrect: false },
+          ],
         },
         assessment: null,
         order: allScreens.length,
@@ -1194,7 +1231,7 @@ const handleNextStep = useCallback(() => {
       };
     } else if (screenType.id === "assessment") {
       // Assessment screen structure
-      const assessmentTitle = "";
+      const assessmentTitle = "Self-Assessment Checkpoint";
       newScreen = {
         id: screenId,
         uuid: screenUuid,
@@ -1205,7 +1242,20 @@ const handleNextStep = useCallback(() => {
           contentType: "assessment",
           content: {
             title: assessmentTitle,
-            questions: [],
+            description:
+              "Reflect on the concept and select the most accurate responses.",
+            questions: [
+              {
+                questionId: 1,
+                text: "What is the primary purpose of building consistent habits?",
+                options: [
+                  { optionId: 1, text: "To reduce effort on repeated decisions" },
+                  { optionId: 2, text: "To avoid learning new skills" },
+                  { optionId: 3, text: "To delay important work" },
+                  { optionId: 4, text: "To remove all team collaboration" },
+                ],
+              },
+            ],
           },
         },
         assets: [],
@@ -1213,10 +1263,22 @@ const handleNextStep = useCallback(() => {
         chapterId: targetChapterId,
         stepId: targetStepId,
         thumbnail: "",
-        title: assessmentTitle,
         formData: {
           assessmentTitle: assessmentTitle,
-          assessmentQuestions: [],
+          assessmentDescription:
+            "Reflect on the concept and select the most accurate responses.",
+          assessmentQuestions: [
+            {
+              questionId: 1,
+              text: "What is the primary purpose of building consistent habits?",
+              options: [
+                { optionId: 1, text: "To reduce effort on repeated decisions" },
+                { optionId: 2, text: "To avoid learning new skills" },
+                { optionId: 3, text: "To delay important work" },
+                { optionId: 4, text: "To remove all team collaboration" },
+              ],
+            },
+          ],
         },
         assessment: null,
         order: allScreens.length,
@@ -1392,19 +1454,26 @@ const handleNextStep = useCallback(() => {
         screenContents: {
           id: screenContentId,
           contentType: "managerEmail",
-          content: { heading: "", body: "", email: "" },
+          content: {
+            ...DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT,
+            media: { ...DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT.media },
+          },
         },
         assets: [],
         imageStatus: "pending",
         chapterId: targetChapterId,
         stepId: targetStepId,
         thumbnail: "",
-        title: "",
-        formData: { heading: "", body: "", email: "" },
+        title: DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT.heading,
+        formData: {
+          ...DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT,
+          media: { ...DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT.media },
+        },
         assessment: null,
         order: allScreens.length,
       };
     } else if (screenType.id === "notifications") {
+      const notificationsBody = DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.body;
       newScreen = {
         id: screenId,
         uuid: screenUuid,
@@ -1414,11 +1483,11 @@ const handleNextStep = useCallback(() => {
           id: screenContentId,
           contentType: "notifications",
           content: {
-            heading: "",
-            body: "",
+            heading: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.heading,
+            body: notificationsBody,
+            message: notificationsBody,
             media: {
-              type: "none",
-              url: "",
+              ...DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.media,
             },
           },
           uuid: globalThis.crypto.getRandomValues(new Uint8Array(16)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), ''),
@@ -1428,12 +1497,12 @@ const handleNextStep = useCallback(() => {
         chapterId: targetChapterId,
         stepId: targetStepId,
         thumbnail: "",
-        title: "",
+        title: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.heading,
         formData: {
-          title: "",
-          message: "",
-          mediaType: "none",
-          mediaUrl: "",
+          title: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.heading,
+          message: notificationsBody,
+          mediaType: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.media.type,
+          mediaUrl: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.media.url,
         },
         assessment: null,
         order: allScreens.length,
@@ -1447,15 +1516,27 @@ const handleNextStep = useCallback(() => {
         screenContents: {
           id: screenContentId,
           contentType: "accountabilityPartnerEmail",
-          content: { heading: "", body: "", emails: [""] },
+          content: {
+            ...DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT,
+            emails: [""],
+            media: {
+              ...DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT.media,
+            },
+          },
         },
         assets: [],
         imageStatus: "pending",
         chapterId: targetChapterId,
         stepId: targetStepId,
         thumbnail: "",
-        title: "",
-        formData: { heading: "", body: "", emails: [""] },
+        title: DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT.heading,
+        formData: {
+          ...DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT,
+          emails: [""],
+          media: {
+            ...DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT.media,
+          },
+        },
         assessment: null,
         order: allScreens.length,
       };
@@ -2034,13 +2115,12 @@ const handleNextStep = useCallback(() => {
                     <div className="flex flex-col h-full w-full bg-white rounded-lg overflow-hidden shadow-md">
                       <div className="shrink-0 p-4 border-b border-gray-200 bg-white flex justify-between items-start">
                         <div className="flex-1 min-w-0">
-                          <h2 className="text-lg font-bold text-gray-900 truncate mb-1">
-                            {selectedMaterial.source_name || "Web link"}
+                          <h2
+                            className="text-lg font-bold text-gray-900 break-all mb-1"
+                            title={selectedLinkUrl || undefined}
+                          >
+                            {selectedLinkUrl || "Web link"}
                           </h2>
-                          <p className="text-sm text-gray-600 break-all">
-                            {selectedMaterial.source_path ||
-                              selectedMaterial.output_presigned_url}
-                          </p>
                           {selectedMaterial.comment && (
                             <p className="text-sm text-gray-500 mt-2">
                               {selectedMaterial.comment}
@@ -2049,10 +2129,7 @@ const handleNextStep = useCallback(() => {
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <a
-                            href={
-                              selectedMaterial.output_presigned_url ||
-                              selectedMaterial.source_path
-                            }
+                            href={selectedLinkUrl || "#"}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-600 text-sm font-medium"
@@ -2070,29 +2147,54 @@ const handleNextStep = useCallback(() => {
                         </div>
                       </div>
                       <div className="flex-1 min-h-[200px] overflow-hidden flex flex-col bg-gray-50">
-                        <iframe
-                          src={
-                            selectedMaterial.output_presigned_url ||
-                            selectedMaterial.source_path
-                          }
-                          title={selectedMaterial.source_name || "Link preview"}
-                          className="flex-1 w-full min-h-[300px] border-0 bg-white"
-                          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-                          referrerPolicy="no-referrer"
-                        />
+                        <div className="shrink-0 px-3 py-2 text-xs text-amber-900 bg-amber-50 border-b border-amber-100">
+                          Preview only loads here if the site allows embedding
+                          (many apps, SPAs, and food-ordering sites block it for
+                          security). PDFs open in the viewer below when the file
+                          allows it—otherwise use{" "}
+                          <span className="font-semibold">Open link</span>.
+                        </div>
+                        {isDirectPdfUrl(selectedLinkUrl) ? (
+                          <embed
+                            key={selectedLinkUrl}
+                            src={selectedLinkUrl}
+                            type="application/pdf"
+                            title={selectedLinkUrl || "PDF preview"}
+                            className="flex-1 w-full min-h-[320px] border-0 bg-white"
+                          />
+                        ) : (
+                          <iframe
+                            key={selectedLinkUrl}
+                            src={selectedLinkUrl || undefined}
+                            title={selectedLinkUrl || "Link preview"}
+                            className="flex-1 w-full min-h-[320px] border-0 bg-white"
+                            // No sandbox: sandbox breaks many embeds (incl. PDF
+                            // in iframe) and does not bypass X-Frame-Options anyway.
+                            referrerPolicy="strict-origin-when-cross-origin"
+                          />
+                        )}
                         <div className="shrink-0 px-4 py-2 bg-gray-100 border-t border-gray-200 flex items-center justify-between gap-2 flex-wrap">
-                          <p className="text-xs text-gray-500">
-                            If the preview is blank, the site may block
-                            embedding.
-                          </p>
+                          <div className="flex flex-col gap-1 min-w-0">
+                            <p className="text-xs text-gray-500">
+                              Blank panel = the site refused an embedded frame
+                              (not a Kyper bug). Open in a new tab to view.
+                            </p>
+                            {isDirectPdfUrl(selectedLinkUrl) && (
+                              <a
+                                href={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedLinkUrl)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-primary-600 hover:underline w-fit"
+                              >
+                                PDF still blank? Open in Google Viewer (new tab)
+                              </a>
+                            )}
+                          </div>
                           <a
-                            href={
-                              selectedMaterial.output_presigned_url ||
-                              selectedMaterial.source_path
-                            }
+                            href={selectedLinkUrl || "#"}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-600 text-sm font-medium"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-600 text-sm font-medium shrink-0"
                           >
                             Open link
                           </a>
@@ -2183,13 +2285,13 @@ const handleNextStep = useCallback(() => {
                                     </div>
                                   )}
 
-                                  {/* Action */}
+                                  {/* Micro-action */}
                                   {step.action && (
                                     <div className="flex gap-3 px-3 py-4 bg-white rounded-xl">
                                       <div className="shrink-0 mt-1">
                                         <img
                                           src="/markup.svg"
-                                          alt="Action"
+                                          alt="Micro-action"
                                           width={24}
                                           height={24}
                                           className="w-6 h-6"
@@ -2197,7 +2299,7 @@ const handleNextStep = useCallback(() => {
                                       </div>
                                       <div className="flex-1">
                                         <p className="font-medium text-gray-900 mb-1">
-                                          Action
+                                          Micro-action
                                         </p>
                                         <p className="text-gray-700 text-sm leading-relaxed">
                                           {step.action}

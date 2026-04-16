@@ -83,7 +83,7 @@ export default function OutlineMannerCreateComet({
 
   const [expandedChapters, setExpandedChapters] = useState({});
 
-  const [text, setText] = useState("New Manager Essentials");
+  const [text, setText] = useState("Untitled Cycle");
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [selectedChapterNumber, setSelectedChapterNumber] = useState(null);
   const [selectedStep, setSelectedStep] = useState(null);
@@ -624,10 +624,10 @@ export default function OutlineMannerCreateComet({
       setText(
         sessionData?.cycle_creation_data?.["Basic Information"]?.[
           "Cycle Title"
-        ] || "New Manager Essentials",
+        ] || "Untitled Cycle",
       );
     } catch {
-      setText("New Manager Essentials");
+      setText("Untitled Cycle");
     }
   }, []);
 

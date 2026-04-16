@@ -871,7 +871,7 @@ const StepsDisplay = ({
                       </div>
                     )}
 
-                    {/* Action */}
+                    {/* Micro-action */}
                     {step?.action && (
                       <div
                         className="group flex gap-3 px-3 py-4 bg-white rounded-xl relative"
@@ -881,7 +881,7 @@ const StepsDisplay = ({
                         <div className="shrink-0 mt-1">
                           <Image
                             src="/markup.svg"
-                            alt="Action"
+                            alt="Micro-action"
                             width={24}
                             height={24}
                           />
@@ -928,7 +928,7 @@ const StepsDisplay = ({
                               handleEditStep(index, "action", step.action)
                             }
                             className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                            title="Edit Action"
+                            title="Edit Micro-action"
                           >
                             <Pencil className="w-4 h-4 text-gray-600" />
                           </button>

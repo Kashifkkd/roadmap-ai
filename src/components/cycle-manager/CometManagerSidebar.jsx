@@ -46,6 +46,7 @@ import GradientLoader from "@/components/ui/GradientLoader";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
+import { resolveSourceMaterialLinkUrl } from "@/lib/sourceMaterialLinkUrl";
 
 // Asset category buttons
 const ASSET_CATEGORIES = [
@@ -1953,13 +1954,13 @@ export default function CometManagerSidebar({
                                                     <div className="flex items-center gap-2">
                                                       <img
                                                         src="/markup.svg"
-                                                        alt="Action"
+                                                        alt="Micro-action"
                                                         width={20}
                                                         height={20}
                                                         className="w-5 h-5"
                                                       />
                                                       <span className="font-semibold text-sm">
-                                                        Action
+                                                        Micro-action
                                                       </span>
                                                     </div>
                                                     <p className="text-sm text-black leading-relaxed">
@@ -2224,18 +2225,17 @@ export default function CometManagerSidebar({
                                               }`}
                                               title={
                                                 isLink
-                                                  ? material.source_path ||
-                                                    material.output_presigned_url ||
-                                                    material.source_name
+                                                  ? resolveSourceMaterialLinkUrl(
+                                                      material,
+                                                    )
                                                   : material.source_name ||
                                                     `Document ${materialIndex + 1}`
                                               }
                                             >
                                               {isLink
-                                                ? material.source_path ||
-                                                  material.output_presigned_url ||
-                                                  material.source_name ||
-                                                  "Web link"
+                                                ? resolveSourceMaterialLinkUrl(
+                                                    material,
+                                                  ) || "Web link"
                                                 : material.source_name ||
                                                   `Document ${materialIndex + 1}`}
                                             </p>

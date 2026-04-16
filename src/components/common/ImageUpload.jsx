@@ -1016,9 +1016,9 @@ export default function ImageUpload({
                                 Drag files here or click to upload
                               </p>
                               <p className="mt-1 text-center text-xs text-gray-400">
-                                Supported formats:
+                                Supported formats:JPEG,PNG
                                 <br />
-                                PDFs, Videos, Audio, Images
+                               MAX SIZE: 50MB
                               </p>
                             </>
                           </div>

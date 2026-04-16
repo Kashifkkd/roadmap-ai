@@ -1156,7 +1156,7 @@ const ActionScreenPreview = ({ deviceView, content, assets = [] }) => {
             <div className="relative w-full max-w-md aspect-video rounded-lg overflow-hidden bg-gray-100">
               <Image
                 src={image_url}
-                alt={title || "Action image"}
+                alt={title || "Micro-action image"}
                 fill
                 className="object-cover"
                 unoptimized

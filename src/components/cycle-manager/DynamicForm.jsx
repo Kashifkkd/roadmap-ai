@@ -16,6 +16,7 @@ import ProfileForm from "./forms/ProfileForm";
 import EmailPromptForm from "./forms/EmailPromptForm";
 import AccountabilityPartnerEmailForm from "./forms/AccountabilityPartnerEmailForm";
 import PathPersonalizationForm from "./forms/PathPersonalizationForm";
+import { formatContentTypeLabel } from "./formatContentTypeLabel";
 import AskKyperPopup from "@/components/create-comet/AskKyperPopup";
 import { graphqlClient } from "@/lib/graphql-client";
 
@@ -64,6 +65,15 @@ const extractPlainTextFromDelta = (value) => {
   return value;
 };
 
+const stripHtmlToPlainText = (value) => {
+  if (typeof value !== "string") return value;
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 // Helper to get form values directly from screen content (no local state)
 // Uses actual keys from the structure as defined in temp2.js
 const getFormValuesFromScreen = (screen) => {
@@ -85,10 +95,10 @@ const getFormValuesFromScreen = (screen) => {
 
   if (contentType === "mcq") {
     values.title = content.title || "";
-    values.question = content.question || "";
+    values.question = stripHtmlToPlainText(content.question || "");
     values.top_label = content.top_label || "";
     values.bottom_label = content.bottom_label || "";
-    values.key_learning = content.key_learning || content.keyLearning || "";
+    values.keyLearning = content.keyLearning || content.key_learning || "";
     values.options = content.options || [];
   }
 
@@ -163,6 +173,7 @@ const getFormValuesFromScreen = (screen) => {
 
   if (contentType === "assessment") {
     values.title = content.title || "";
+    values.description = content.description || "";
     values.questions = content.questions || [];
   }
 
@@ -362,15 +373,47 @@ export default function DynamicForm({
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
               else if (field === "question") {
-                currentScreen.screenContents.content.question = value;
+                currentScreen.screenContents.content.question =
+                  stripHtmlToPlainText(value);
               } else if (field === "top_label")
                 currentScreen.screenContents.content.top_label = value;
               else if (field === "bottom_label")
                 currentScreen.screenContents.content.bottom_label = value;
-              else if (field === "key_learning")
-                currentScreen.screenContents.content.key_learning = value;
-              else if (field === "options")
-                currentScreen.screenContents.content.options = value;
+              else if (field === "keyLearning")
+                currentScreen.screenContents.content.keyLearning = value;
+              else if (field === "options") {
+                const rawOptions = Array.isArray(value) ? value : [];
+                const normalizedOptions = rawOptions.map((opt, index) => {
+                  const parsedId =
+                    typeof opt?.optionId === "number"
+                      ? opt.optionId
+                      : Number(opt?.optionId ?? opt?.option_id);
+                  return {
+                    optionId: Number.isFinite(parsedId) ? parsedId : index + 1,
+                    text: opt?.text || "",
+                    isCorrect:
+                      opt?.isCorrect !== undefined
+                        ? opt.isCorrect
+                        : (opt?.is_correct ?? false),
+                  };
+                });
+                if (
+                  normalizedOptions.length > 0 &&
+                  !normalizedOptions.some((opt) => opt.isCorrect === true)
+                ) {
+                  normalizedOptions[0] = {
+                    ...normalizedOptions[0],
+                    isCorrect: true,
+                  };
+                }
+                currentScreen.screenContents.content.options = normalizedOptions;
+              }
+
+              // Keep MCQ content aligned to backend schema (camelCase only).
+              delete currentScreen.screenContents.content.key_learning;
+              currentScreen.screenContents.content.question = stripHtmlToPlainText(
+                currentScreen.screenContents.content.question || "",
+              );
             } else if (contentType === "force_rank") {
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
@@ -429,27 +472,55 @@ export default function DynamicForm({
             } else if (contentType === "assessment") {
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
+              else if (field === "description") {
+                currentScreen.screenContents.content.description = value;
+              }
               else if (field === "questions") {
-                // Extract plain text from delta for nested question.text fields
                 if (Array.isArray(value)) {
-                  currentScreen.screenContents.content.questions = value.map(
-                    (question) => {
-                      if (
-                        question &&
-                        typeof question === "object" &&
-                        question.text
-                      ) {
-                        return {
-                          ...question,
-                          text: question.text,
-                        };
-                      }
-                      return question;
-                    },
-                  );
+                  currentScreen.screenContents.content.questions = value.map((question, qIdx) => {
+                    const rawQuestionId =
+                      typeof question?.questionId === "number"
+                        ? question.questionId
+                        : Number(question?.questionId ?? question?.question_id);
+                    const baseOptions = Array.isArray(question?.options)
+                      ? question.options
+                      : [];
+                    const normalizedOptions = baseOptions.map((option, oIdx) => {
+                      const rawOptionId =
+                        typeof option?.optionId === "number"
+                          ? option.optionId
+                          : Number(option?.optionId ?? option?.option_id);
+                      return {
+                        optionId: Number.isFinite(rawOptionId)
+                          ? rawOptionId
+                          : oIdx + 1,
+                        text: stripHtmlToPlainText(option?.text || ""),
+                      };
+                    });
+                    while (normalizedOptions.length < 4) {
+                      normalizedOptions.push({
+                        optionId: normalizedOptions.length + 1,
+                        text: `Option ${normalizedOptions.length + 1}`,
+                      });
+                    }
+
+                    return {
+                      questionId: Number.isFinite(rawQuestionId)
+                        ? rawQuestionId
+                        : qIdx + 1,
+                      text: stripHtmlToPlainText(question?.text || question?.question || ""),
+                      options: normalizedOptions.slice(0, 5),
+                    };
+                  });
                 } else {
                   currentScreen.screenContents.content.questions = value;
                 }
+              }
+              // Ensure schema stays backend-compatible.
+              delete currentScreen.screenContents.content.question_id;
+              if (!currentScreen.screenContents.content.description) {
+                currentScreen.screenContents.content.description =
+                  "Measure understanding through scenario-based questions.";
               }
             } else if (contentType === "habits") {
               if (field === "title")
@@ -972,10 +1043,11 @@ export default function DynamicForm({
     const isOutlineScreenImageAsset = (asset) =>
       Boolean(asset?.ImageUrl && !asset?.audioUrl && !asset?.videoUrl);
 
-    // Function to update screen assets
+    // Function to update screen asset
     const updateScreenAssets = (assets) => {
+      const screenUuid = screen?.uuid;
       const screenId = screen?.id;
-      if (!screenId) return;
+      if (!screenUuid && !screenId) return;
 
       setOutline((prevOutline) => {
         if (!prevOutline || !prevOutline.chapters) return prevOutline;
@@ -986,7 +1058,7 @@ export default function DynamicForm({
         for (const chapter of pathChapters) {
           for (const stepItem of chapter.steps || []) {
             const screenIndex = stepItem.screens?.findIndex(
-              (s) => s.id === screenId,
+              (s) => (screenUuid && s.uuid === screenUuid) || (!screenUuid && s.id === screenId),
             );
             if (screenIndex !== undefined && screenIndex >= 0) {
               const currentScreen = stepItem.screens[screenIndex];
@@ -1028,8 +1100,9 @@ export default function DynamicForm({
 
     // Function to remove asset(s) from screen. Pass a single index or an array (e.g. all image indices) — arrays are applied in one update, highest index first.
     const removeScreenAsset = (assetIndexOrIndices) => {
+      const screenUuid = screen?.uuid;
       const screenId = screen?.id;
-      if (!screenId) return;
+      if (!screenUuid && !screenId) return;
 
       const rawIndices = Array.isArray(assetIndexOrIndices)
         ? assetIndexOrIndices
@@ -1051,7 +1124,7 @@ export default function DynamicForm({
         for (const chapter of pathChapters) {
           for (const stepItem of chapter.steps || []) {
             const screenIndex = stepItem.screens?.findIndex(
-              (s) => s.id === screenId,
+              (s) => (screenUuid && s.uuid === screenUuid) || (!screenUuid && s.id === screenId),
             );
             if (screenIndex !== undefined && screenIndex >= 0) {
               const currentScreen = stepItem.screens[screenIndex];
@@ -1347,8 +1420,8 @@ export default function DynamicForm({
       <div className="p-2">
         <p className="text-sm text-gray-600">
           No form available for this screen type:{" "}
-          {screen?.screenType || "unknown"} /{" "}
-          {screen?.screenContents?.contentType || "unknown"}
+          {formatContentTypeLabel(screen?.screenType, "unknown")} /{" "}
+          {formatContentTypeLabel(screen?.screenContents?.contentType, "unknown")}
         </p>
       </div>
     );

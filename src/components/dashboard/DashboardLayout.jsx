@@ -10,6 +10,14 @@ import { graphqlClient } from "@/lib/graphql-client";
 import Loader from "../loader3";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
+import { resolveSourceMaterialLinkUrl } from "@/lib/sourceMaterialLinkUrl";
+
+const normalizeUrlForKey = (url = "") =>
+  (url || "").trim().toLowerCase().replace(/\/+$/, "");
+
+const getMaterialUuid = (material) => {
+  return material?.uuid || null;
+};
 
 export default function DashboardLayout() {
   const searchParams = useSearchParams();
@@ -330,6 +338,7 @@ export default function DashboardLayout() {
 
       // source_material payload
       let sourceMaterialsPayload = [];
+      const linkUuidByUrlKey = new Map();
       try {
         const materials = await getSourceMaterials(currentSessionId);
         if (Array.isArray(materials) && materials.length > 0) {
@@ -340,15 +349,22 @@ export default function DashboardLayout() {
             });
           }
 
+          materials.forEach((material) => {
+            if (material?.type !== "link") return;
+            const linkUrl = resolveSourceMaterialLinkUrl(material);
+            const urlKey = normalizeUrlForKey(linkUrl);
+            const uuid = getMaterialUuid(material);
+            if (urlKey && uuid) {
+              linkUuidByUrlKey.set(urlKey, uuid);
+            }
+          });
+
           sourceMaterialsPayload = materials
             .map((material, idx) => {
               const index = idx + 1;
               const title =
                 material.type === "link"
-                  ? material.source_path ||
-                    material.output_presigned_url ||
-                    material.source_name ||
-                    ""
+                  ? resolveSourceMaterialLinkUrl(material)
                   : material.source_name || "";
 
               if (!title) return null;
@@ -365,6 +381,7 @@ export default function DashboardLayout() {
               return {
                 [`source_material_${index}`]: title,
                 comment,
+                [`uid_${index}`]: getMaterialUuid(material),
               };
             })
             .filter(Boolean);
@@ -389,7 +406,15 @@ export default function DashboardLayout() {
         chatbot_conversation: chatbotConversation,
         to_modify: parsedSessionData?.to_modify ?? {},
         source_material: sourceMaterialsPayload,
-        webpage_url: formData.webpage_url || [],
+        webpage_url: (formData.webpage_url || []).map((entry) => {
+          const webpageUrl = (entry?.webpage_url ?? "").trim();
+          const key = normalizeUrlForKey(webpageUrl);
+          return {
+            ...entry,
+            webpage_url: webpageUrl,
+            source_material_uid: key ? (linkUuidByUrlKey.get(key) ?? null) : null,
+          };
+        }),
         is_initial_chapter_created: false,
         execution_id: executionId,
         retry_count: 0,
@@ -423,7 +448,15 @@ export default function DashboardLayout() {
         response_path: cleanedResponsePath,
         chatbot_conversation: chatbotConversation,
         to_modify: parsedSessionData?.to_modify ?? {},
-        webpage_url: formData.webpage_url || [],
+        webpage_url: (formData.webpage_url || []).map((entry) => {
+          const webpageUrl = (entry?.webpage_url ?? "").trim();
+          const key = normalizeUrlForKey(webpageUrl);
+          return {
+            ...entry,
+            webpage_url: webpageUrl,
+            source_material_uid: key ? (linkUuidByUrlKey.get(key) ?? null) : null,
+          };
+        }),
         is_initial_chapter_created: false,
       }));
 

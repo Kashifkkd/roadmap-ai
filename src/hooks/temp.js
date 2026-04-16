@@ -4,7 +4,7 @@ export const temp = [
     input_type: "path_creation",
     cycle_creation_data: {
       "Basic Information": {
-        "Comet Title": "New Manager Essentials",
+        "Comet Title": "Untitled Cycle",
         Description:
           "A bite-sized learning path to help first-time managers ramp up quickly and lead their teams with confidence.",
       },

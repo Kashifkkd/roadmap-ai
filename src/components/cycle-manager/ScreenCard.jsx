@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { formatContentTypeLabel } from "./formatContentTypeLabel";
 
 // Strip all HTML to plain text only (no bold, italic, or line breaks)
 function stripHtmlToPlainText(html) {
@@ -191,20 +192,7 @@ export default function ScreenCard({
                     : "text-gray-700"
                   }`}
               >
-                {((str) => {
-                  const words = str
-                    .replace(/_/g, " ")
-                    .replace(/([a-z])([A-Z])/g, "$1 $2")
-                    .split(" ");
-                  return words
-                    .map((word, i) =>
-                      i === 0
-                        ? word.charAt(0).toUpperCase() +
-                        word.slice(1).toLowerCase()
-                        : word.toLowerCase(),
-                    )
-                    .join(" ");
-                })(screen.screenContents?.contentType || "Content")}{" "}
+                {formatContentTypeLabel(screen.screenContents?.contentType)}{" "}
               </div>
               <div
                 className={`flex flex-col items-start bg-white p-2 mt-0.5 shrink-0 transition-all duration-300  shadow-sm overflow-hidden${selectedScreen?.id === screen.id

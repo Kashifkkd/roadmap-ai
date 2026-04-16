@@ -83,7 +83,7 @@ export default function ActionsForm({
   return (
     <div className="bg-gray-100 rounded-lg p-2">
       <div className="p-2">
-        <SectionHeader title="Action" />
+        <SectionHeader title="Micro-action" />
       </div>
 
       <div className="bg-white rounded-lg p-2">

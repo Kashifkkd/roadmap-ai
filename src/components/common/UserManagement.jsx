@@ -653,7 +653,7 @@ export default function UserManagement({
       const res = await wipeClientUserActions(userId);
 
       if (res?.success) {
-        toast.success("All user actions wiped successfully");
+        toast.success("User's activities are resetted successfully");
         setShowAddUserForm(false);
         resetUserForm();
       } else {
@@ -661,7 +661,7 @@ export default function UserManagement({
           res?.response?.detail ||
           res?.response?.message ||
           res?.message ||
-          "Failed to wipe user actions";
+          "Failed to reset user's activity data";
         toast.error(errorMessage);
       }
     } catch (error) {
@@ -670,7 +670,7 @@ export default function UserManagement({
         error?.message ||
         error?.response?.data?.detail ||
         error?.response?.detail ||
-        "Failed to wipe user actions";
+        "Failed to reset user's activity data";
       toast.error(errorMessage);
     } finally {
       setWipingUserActions(false);
@@ -1638,8 +1638,8 @@ export default function UserManagement({
                   className="bg-white border border-[#645AD1] text-[#645AD1] hover:bg-gray-100 active:bg-[#645AD1] active:text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {wipingUserActions
-                    ? "Wiping User Micor-actions..."
-                    : "Wipe All User's Micro-actions"}
+                    ? "Resetting User's Activity..."
+                    : "Reset User's Activity"}
                 </Button>
               )}
               <Button

@@ -1,14 +1,39 @@
 import React, { useEffect, useState } from "react";
-import { SectionHeader, TextField, RichTextArea } from "./FormFields";
+import { SectionHeader, RichTextArea } from "./FormFields";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 
-// Helper to generate unique IDs
-export const generateId = (prefix) => {
-  return `${prefix}_${new Date().getTime()}`;
+const getNextNumericId = (items, key) => {
+  const maxId = (Array.isArray(items) ? items : [])
+    .map((item) => {
+      const value = item?.[key];
+      if (typeof value === "number" && Number.isFinite(value)) return value;
+      if (typeof value === "string" && value.trim() !== "") {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+      }
+      return 0;
+    })
+    .reduce((max, value) => Math.max(max, value), 0);
+  return maxId + 1;
 };
+
+const stripHtmlToPlainText = (value) => {
+  if (typeof value !== "string") return value;
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const buildDefaultOptions = (count = 4) =>
+  Array.from({ length: count }, (_, index) => ({
+    optionId: index + 1,
+    text: `Option ${index + 1}`,
+  }));
 
 // OptionList component with drag and drop functionality
 const OptionList = ({
@@ -52,7 +77,7 @@ const OptionList = ({
       <div className="space-y-2">
   {options.map((option, optionIndex) => (
     <div
-      key={option?.option_id || option?.optionId || optionIndex}
+      key={option?.optionId || optionIndex}
       draggable
       onDragStart={(e) => {
         handleDragStart(e, optionIndex);
@@ -190,19 +215,15 @@ export default function AssessmentForm({
   // Get questions from formData - it's stored as 'questions' in content
   const questions = formData.questions || [];
   const assessmentTitle = formData.title || "";
+  const assessmentDescription = formData.description || "";
 
-  // If questions array is empty, initialize with one default question with one default option
+  // If questions array is empty, initialize with one valid backend-shaped question.
   useEffect(() => {
     if (!questions || questions.length === 0) {
       const defaultQuestion = {
-        question_id: generateId("q"),
-        text: "",
-        options: [
-          {
-            option_id: generateId("o"),
-            text: "",
-          },
-        ],
+        questionId: 1,
+        text: "Which habit most improves your daily development flow?",
+        options: buildDefaultOptions(4),
       };
       updateField("questions", [defaultQuestion]);
     }
@@ -213,6 +234,10 @@ export default function AssessmentForm({
     updateField("title", value);
   };
 
+  const updateDescription = (value) => {
+    updateField("description", value);
+  };
+
   // Update question text
   const updateQuestionField = (questionIndex, field, value) => {
     if (!addListItem || !updateListItem) return;
@@ -221,33 +246,29 @@ export default function AssessmentForm({
     if (!currentQuestions[questionIndex]) {
       // Create new question if it doesn't exist
       currentQuestions[questionIndex] = {
-        question_id: generateId("q"),
+        questionId: getNextNumericId(currentQuestions, "questionId"),
         text: "",
-        options: [],
+        options: buildDefaultOptions(4),
       };
     }
 
     const updatedQuestion = {
       ...currentQuestions[questionIndex],
-      [field]: value,
+      [field]:
+        field === "text" ? stripHtmlToPlainText(value || "") : value,
     };
 
     currentQuestions[questionIndex] = updatedQuestion;
     updateField("questions", currentQuestions);
   };
 
-  // Add a new question with one default option
+  // Add a new question with backend-compatible defaults.
   const addQuestion = () => {
     if (!addListItem) return;
     const newQuestion = {
-      question_id: generateId("q"),
-      text: "",
-      options: [
-        {
-          option_id: generateId("o"),
-          text: "",
-        },
-      ],
+      questionId: getNextNumericId(questions, "questionId"),
+      text: "Add your assessment question here.",
+      options: buildDefaultOptions(4),
     };
     const updatedQuestions = [...questions, newQuestion];
     updateField("questions", updatedQuestions);
@@ -266,16 +287,16 @@ export default function AssessmentForm({
     const currentQuestions = [...questions];
     if (!currentQuestions[questionIndex]) {
       currentQuestions[questionIndex] = {
-        question_id: generateId("q"),
+        questionId: getNextNumericId(currentQuestions, "questionId"),
         text: "",
-        options: [],
+        options: buildDefaultOptions(4),
       };
     }
 
     const currentOptions = currentQuestions[questionIndex].options || [];
     const newOption = {
-      option_id: generateId("o"),
-      text: "",
+      optionId: getNextNumericId(currentOptions, "optionId"),
+      text: `Option ${currentOptions.length + 1}`,
     };
 
     currentQuestions[questionIndex] = {
@@ -295,7 +316,7 @@ export default function AssessmentForm({
     const currentOptions = [...(currentQuestions[questionIndex].options || [])];
     if (!currentOptions[optionIndex]) {
       currentOptions[optionIndex] = {
-        option_id: generateId("o"),
+        optionId: getNextNumericId(currentOptions, "optionId"),
         text: "",
       };
     }
@@ -321,6 +342,12 @@ export default function AssessmentForm({
 
     const currentOptions = currentQuestions[questionIndex].options || [];
     const updatedOptions = currentOptions.filter((_, index) => index !== optionIndex);
+    while (updatedOptions.length < 4) {
+      updatedOptions.push({
+        optionId: getNextNumericId(updatedOptions, "optionId"),
+        text: `Option ${updatedOptions.length + 1}`,
+      });
+    }
 
     currentQuestions[questionIndex] = {
       ...currentQuestions[questionIndex],
@@ -372,11 +399,23 @@ export default function AssessmentForm({
           onBlur={onFieldBlur}
         />
       </div>
+      <div className="bg-white rounded-lg p-3 align-center mb-2">
+        <Label className="block text-sm font-medium text-primary mb-2">
+          Description
+        </Label>
+        <Input
+          type="text"
+          value={assessmentDescription}
+          onChange={(e) => updateDescription(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          onBlur={onFieldBlur}
+        />
+      </div>
 
       <div className="space-y-6 bg-white rounded-lg mb-2">
         {questions.map((questionData, questionIndex) => (
           <div
-            key={questionData.question_id || questionData.questionId || questionIndex}
+            key={questionData.questionId || questionIndex}
             className=" border-primary rounded-lg p-4 bg-white"
           >
             {/* Question Field with Rich Text Editor */}
