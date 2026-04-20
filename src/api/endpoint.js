@@ -26,6 +26,10 @@ export const endpoints = {
   updateUser: "api/auth/v1/profile/upsert",
   shareComet: (sessionId) => `api/comet/share_comets/${sessionId}`,
   publishComet: (sessionId) => `api/comet/v2/publish_comet/${sessionId}`,
+  chapterVariant: (chapterId) =>
+    `api/comet/v2/chapters/${chapterId}/variant`,
+  stepVariant: (stepId) => `api/comet/v2/steps/${stepId}/variant`,
+  pathVariant: (pathId) => `api/comet/v2/paths/${pathId}/variant`,
   pathUsers: (sessionId) => `api/comet/v2/sessions/${sessionId}/path_users`,
   assignPathUsers: (sessionId) =>
     `api/comet/v2/sessions/${sessionId}/assign_path_users`,

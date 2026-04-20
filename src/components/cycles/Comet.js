@@ -14,6 +14,8 @@ const Comet = ({
   date,
   status,
   session_id,
+  /** Backend path id for POST /paths/{id}/variant */
+  path_id,
   onCometClick,
   updatedBy,
 }) => {
@@ -277,6 +279,11 @@ const Comet = ({
           open={isVariantModalOpen}
           onOpenChange={setIsVariantModalOpen}
           cycleName={title}
+          numericPathId={(() => {
+            if (path_id == null || path_id === "") return null;
+            const n = Number(path_id);
+            return Number.isFinite(n) && n >= 0 ? n : null;
+          })()}
         />
       </div>
     </div>

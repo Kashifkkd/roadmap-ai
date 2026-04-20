@@ -89,6 +89,7 @@ export default function AllCometsContainer({ cometSessions }) {
             date={c.updated_at || "-"}
             status={c.status}
             session_id={c.session_id}
+            path_id={c.path_id ?? c.pathId}
             onCometClick={handleCometClick}
             updatedBy={c.updated_by || c.created_by}
           />

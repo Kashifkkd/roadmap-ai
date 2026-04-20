@@ -24,6 +24,60 @@ export function applyScreenDeleteToOutline(prevOutline, screenId) {
   return newOutline;
 }
 
+/** Integer for POST …/chapters/{id}/variant — from session chapter fields only. */
+function pathChapterIdFromChapter(chapter) {
+  if (!chapter || typeof chapter !== "object") return null;
+  const cid = chapter.chapter_id ?? chapter.chapterId;
+  if (typeof cid === "number" && Number.isFinite(cid) && cid >= 0) {
+    return Math.trunc(cid);
+  }
+  if (typeof cid === "string" && /^\d+$/.test(cid.trim())) {
+    return parseInt(cid.trim(), 10);
+  }
+  if (typeof chapter.id === "string") {
+    const t = chapter.id.trim();
+    const m = /^#chapter_(\d+)$/i.exec(t) || /^chapter_(\d+)$/i.exec(t);
+    if (m) return parseInt(m[1], 10);
+  }
+  if (
+    typeof chapter.position === "number" &&
+    Number.isFinite(chapter.position) &&
+    chapter.position >= 0
+  ) {
+    return Math.trunc(chapter.position);
+  }
+  return null;
+}
+
+/** Integer for POST …/steps/{id}/variant — from session step / stepItem fields. */
+function pathStepIdFromStep(stepItem, step) {
+  const s = step && typeof step === "object" ? step : {};
+  const sid = s.step_id ?? s.stepId;
+  if (typeof sid === "number" && Number.isFinite(sid) && sid >= 0) {
+    return Math.trunc(sid);
+  }
+  if (typeof sid === "string" && /^\d+$/.test(sid.trim())) {
+    return parseInt(sid.trim(), 10);
+  }
+  if (typeof s.id === "string") {
+    const t = s.id.trim();
+    const m =
+      /^#welcome_step_(\d+)$/i.exec(t) ||
+      /^#step_(\d+)$/i.exec(t) ||
+      /^step_(\d+)$/i.exec(t);
+    if (m) return parseInt(m[1], 10);
+  }
+  if (
+    stepItem &&
+    typeof stepItem.position === "number" &&
+    Number.isFinite(stepItem.position) &&
+    stepItem.position >= 0
+  ) {
+    return Math.trunc(stepItem.position);
+  }
+  return null;
+}
+
 export function useCometManager(sessionData = null) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -128,6 +182,7 @@ export function useCometManager(sessionData = null) {
           name: stepTitle,
           description: stepDescription,
           contentTypes: Array.from(contentTypes),
+          numericStepId: pathStepIdFromStep(stepItem, step),
         });
       });
 
@@ -136,6 +191,7 @@ export function useCometManager(sessionData = null) {
         name: chapterName,
         order: chapter.position ? chapter.position - 1 : chapterIndex,
         steps: transformedSteps,
+        numericChapterId: pathChapterIdFromChapter(chapter),
       };
     });
   }, [outline]);

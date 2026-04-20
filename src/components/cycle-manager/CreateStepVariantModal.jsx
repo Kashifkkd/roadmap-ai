@@ -23,35 +23,35 @@ import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import { toast } from "@/components/ui/toast";
 
-function isValidPathChapterId(n) {
+function isValidPathStepId(n) {
   return typeof n === "number" && Number.isFinite(n) && n >= 0;
 }
 
-export default function CreatePhaseVariantModal({
+export default function CreateStepVariantModal({
   open,
   onOpenChange,
-  /** From session (useCometManager pathChapterId); POST …/chapters/{id}/variant */
-  numericChapterId = null,
+  /** From session (useCometManager pathStepId); POST …/steps/{id}/variant */
+  numericStepId = null,
   onSuccess,
   currentCycleName = "",
   sourcePhaseName = "",
+  sourceStepName = "",
 }) {
   const [copyClientValue, setCopyClientValue] = useState("Current Client");
   const [copyCycleValue, setCopyCycleValue] = useState("Current Cycle");
   const [title, setTitle] = useState("");
   const [instructions, setInstructions] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  /** When the session has no integer chapter id, user can paste the DB id for POST …/chapters/{id}/variant. */
-  const [manualChapterIdInput, setManualChapterIdInput] = useState("");
+  const [manualStepIdInput, setManualStepIdInput] = useState("");
 
   useEffect(() => {
     if (!open) return;
-    if (isValidPathChapterId(numericChapterId)) {
-      setManualChapterIdInput(String(Math.trunc(numericChapterId)));
+    if (isValidPathStepId(numericStepId)) {
+      setManualStepIdInput(String(Math.trunc(numericStepId)));
     } else {
-      setManualChapterIdInput("");
+      setManualStepIdInput("");
     }
-  }, [open, numericChapterId]);
+  }, [open, numericStepId]);
 
   const handleClose = () => {
     onOpenChange(false);
@@ -59,24 +59,24 @@ export default function CreatePhaseVariantModal({
     setCopyCycleValue("Current Cycle");
     setTitle("");
     setInstructions("");
-    setManualChapterIdInput("");
+    setManualStepIdInput("");
     setIsSubmitting(false);
   };
 
   const handleSave = async () => {
     setIsSubmitting(true);
     try {
-      let pathId = numericChapterId;
-      if (manualChapterIdInput.trim() !== "") {
-        const manualParsed = parseInt(manualChapterIdInput.trim(), 10);
+      let pathId = numericStepId;
+      if (manualStepIdInput.trim() !== "") {
+        const manualParsed = parseInt(manualStepIdInput.trim(), 10);
         if (Number.isFinite(manualParsed) && manualParsed >= 0) {
           pathId = manualParsed;
         }
       }
-      if (!isValidPathChapterId(pathId)) {
+      if (!isValidPathStepId(pathId)) {
         toast.error("Cannot create variant", {
           description:
-            "No numeric chapter id for this phase. Ensure response_path chapters include chapter_id, #chapter_N, or position—or enter an id below.",
+            "No numeric step id for this step. Ensure response_path includes step_id, #welcome_step_N, or step position—or enter an id below.",
         });
         return;
       }
@@ -89,7 +89,7 @@ export default function CreatePhaseVariantModal({
       if (trimmedInstructions) payload.instructions = trimmedInstructions;
 
       const result = await apiService({
-        endpoint: endpoints.chapterVariant(String(Math.trunc(pathId))),
+        endpoint: endpoints.stepVariant(String(Math.trunc(pathId))),
         method: "POST",
         ...(hasBody
           ? {
@@ -100,7 +100,7 @@ export default function CreatePhaseVariantModal({
       });
 
       if (result.success) {
-        toast.success("Phase variant created", {
+        toast.success("Step variant created", {
           description: "The variant was created successfully.",
         });
         onSuccess?.(result.response);
@@ -142,7 +142,7 @@ export default function CreatePhaseVariantModal({
       >
         <div className="relative px-6 pt-6 ">
           <DialogTitle className="text-[18px] font-semibold leading-6 text-[#181D27]">
-            Create Phase Variant
+            Create Step Variant
           </DialogTitle>
           <div className="absolute right-5 top-5">
             <DialogClose asChild>
@@ -179,61 +179,69 @@ export default function CreatePhaseVariantModal({
                       {sourcePhaseName}
                     </p>
                   </div>
+
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-medium text-gray-600">
+                      Step Name
+                    </p>
+                    <p className="text-sm font-medium text-[#181D27]">
+                      {sourceStepName || "—"}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="space-y-3 mt-4">
                   <div className="space-y-1.5">
                     <Label
-                      htmlFor="phase-variant-numeric-id"
+                      htmlFor="step-variant-numeric-id"
                       className="text-[11px] font-medium text-gray-600"
                     >
-                      Numeric chapter id
+                      Numeric step id
                     </Label>
                     <Input
-                      id="phase-variant-numeric-id"
+                      id="step-variant-numeric-id"
                       inputMode="numeric"
-                      value={manualChapterIdInput}
-                      onChange={(e) => setManualChapterIdInput(e.target.value)}
+                      value={manualStepIdInput}
+                      onChange={(e) => setManualStepIdInput(e.target.value)}
                       placeholder="Override only — usually filled from session"
                       className="h-9 rounded-lg border-gray-200 bg-gray-50 text-sm"
                       disabled={isSubmitting}
                     />
                     <p className="text-[11px] leading-snug text-gray-500">
-                      We take the id from your session when possible (#chapter_0 →
-                      0, or chapter position). Use this field only if you need a
-                      different numeric id for the API.
+                      Parsed from session when possible (#welcome_step_1 → 1, or
+                      step position). Override only if needed for the API.
                     </p>
                   </div>
                   <div className="space-y-1.5">
                     <Label
-                      htmlFor="phase-variant-title"
+                      htmlFor="step-variant-title"
                       className="text-[11px] font-medium text-gray-600"
                     >
                       Variant title{" "}
                       <span className="font-normal text-gray-400">(optional)</span>
                     </Label>
                     <Input
-                      id="phase-variant-title"
+                      id="step-variant-title"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. Week 1: HR Foundations"
+                      placeholder="e.g. Stakeholder Mapping for HR"
                       className="h-9 rounded-lg border-gray-200 bg-gray-50 text-sm"
                       disabled={isSubmitting}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <Label
-                      htmlFor="phase-variant-instructions"
+                      htmlFor="step-variant-instructions"
                       className="text-[11px] font-medium text-gray-600"
                     >
                       Instructions{" "}
                       <span className="font-normal text-gray-400">(optional)</span>
                     </Label>
                     <Textarea
-                      id="phase-variant-instructions"
+                      id="step-variant-instructions"
                       value={instructions}
                       onChange={(e) => setInstructions(e.target.value)}
-                      placeholder="e.g. Reframe scenarios from finance to HR context."
+                      placeholder="e.g. Replace finance stakeholders with HR examples."
                       className="min-h-[88px] rounded-lg border-gray-200 bg-gray-50 text-sm"
                       disabled={isSubmitting}
                     />

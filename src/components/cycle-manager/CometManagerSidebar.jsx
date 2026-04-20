@@ -57,6 +57,7 @@ import { endpoints } from "@/api/endpoint";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
 import { resolveSourceMaterialLinkUrl } from "@/lib/sourceMaterialLinkUrl";
 import CreatePhaseVariantModal from "@/components/cycle-manager/CreatePhaseVariantModal";
+import CreateStepVariantModal from "@/components/cycle-manager/CreateStepVariantModal";
 
 // Asset category buttons
 const ASSET_CATEGORIES = [
@@ -162,8 +163,9 @@ export default function CometManagerSidebar({
   const stepDescriptionEditInputRef = useRef(null);
   const menuRef = useRef(null);
 
-  // Create Phase Variant modal
+  // Create Phase / Step Variant modals — "phase" | "step"
   const [createVariantDialogOpen, setCreateVariantDialogOpen] = useState(false);
+  const [createVariantKind, setCreateVariantKind] = useState(null);
   const [createVariantSourceChapter, setCreateVariantSourceChapter] =
     useState(null);
   const [createVariantSourceStep, setCreateVariantSourceStep] = useState(null);
@@ -260,6 +262,7 @@ export default function CometManagerSidebar({
     setOpenChapterMenuId(null);
     setCreateVariantSourceChapter(chapter);
     setCreateVariantSourceStep(null);
+    setCreateVariantKind("phase");
     setCreateVariantDialogOpen(true);
   };
 
@@ -268,6 +271,7 @@ export default function CometManagerSidebar({
     setOpenStepHeaderMenuId(null);
     setCreateVariantSourceChapter(chapter);
     setCreateVariantSourceStep(step);
+    setCreateVariantKind("step");
     setCreateVariantDialogOpen(true);
   };
 
@@ -2478,19 +2482,39 @@ export default function CometManagerSidebar({
         </div>
       </div> */}
 
-      <CreatePhaseVariantModal
-        open={createVariantDialogOpen}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) {
-            setCreateVariantDialogOpen(false);
-            setCreateVariantSourceChapter(null);
-            setCreateVariantSourceStep(null);
-          }
-        }}
-        currentCycleName={currentCycleName}
-        sourcePhaseName={sourcePhaseName}
-        sourceStepName={sourceStepName}
-      />
+      {createVariantKind === "phase" && (
+        <CreatePhaseVariantModal
+          open={createVariantDialogOpen}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) {
+              setCreateVariantDialogOpen(false);
+              setCreateVariantKind(null);
+              setCreateVariantSourceChapter(null);
+              setCreateVariantSourceStep(null);
+            }
+          }}
+          numericChapterId={createVariantSourceChapter?.numericChapterId ?? null}
+          currentCycleName={currentCycleName}
+          sourcePhaseName={sourcePhaseName}
+        />
+      )}
+      {createVariantKind === "step" && (
+        <CreateStepVariantModal
+          open={createVariantDialogOpen}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) {
+              setCreateVariantDialogOpen(false);
+              setCreateVariantKind(null);
+              setCreateVariantSourceChapter(null);
+              setCreateVariantSourceStep(null);
+            }
+          }}
+          numericStepId={createVariantSourceStep?.numericStepId ?? null}
+          currentCycleName={currentCycleName}
+          sourcePhaseName={sourcePhaseName}
+          sourceStepName={sourceStepName || ""}
+        />
+      )}
 
       {/* Phase Delete Confirmation Dialog */}
       <Dialog
