@@ -5,6 +5,7 @@ import { CircleX, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { Textarea } from "@/components/ui/Textarea";
 import {
   Dialog,
   DialogClose,
@@ -82,7 +83,9 @@ export default function CreatePhaseVariantModal({
 
     const fetchCycles = async () => {
       const currentClientIdRaw =
-        typeof window !== "undefined" ? localStorage.getItem("Client id") : null;
+        typeof window !== "undefined"
+          ? localStorage.getItem("Client id")
+          : null;
       const currentClientId = parseInt((currentClientIdRaw || "").trim(), 10);
       const selectedClientId =
         copyClientValue !== "current"
@@ -124,7 +127,9 @@ export default function CreatePhaseVariantModal({
         const nextCycles = sessions
           .map((item) => ({
             sessionId:
-              typeof item?.session_id === "string" ? item.session_id.trim() : "",
+              typeof item?.session_id === "string"
+                ? item.session_id.trim()
+                : "",
             status:
               typeof item?.status === "string"
                 ? item.status.trim().toLowerCase()
@@ -189,7 +194,9 @@ export default function CreatePhaseVariantModal({
       const trimmedSessionId =
         copyCycleValue !== "current"
           ? copyCycleValue.replace("session:", "").trim()
-          : (typeof sessionId === "string" ? sessionId.trim() : "");
+          : typeof sessionId === "string"
+            ? sessionId.trim()
+            : "";
       const endpoint = endpoints.chapterVariant(String(Math.trunc(pathId)));
       const requestParams = trimmedSessionId
         ? { session_id: trimmedSessionId }
@@ -268,176 +275,167 @@ export default function CreatePhaseVariantModal({
       <DialogContent
         customPosition
         overlayClassName="top-[4.5rem] bg-black/50 backdrop-blur-[2px] lg:left-[calc(18em+1rem)] xl:left-[calc(20em+1rem)]"
-        className="left-1/2 top-[calc(50%+2.25rem)] w-[calc(100vw-2rem)] max-w-[620px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-gray-200 bg-white p-0 shadow-xl lg:left-[calc(50%+9.5rem)] xl:left-[calc(50%+10.5rem)] [&>button]:hidden"
+        className="left-1/2 top-[calc(50%+2.25rem)] w-[calc(100vw-2rem)] max-w-[968px] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-hidden rounded-[24px] border-0 bg-white p-0 pt-4 pb-2 px-2 shadow-xl lg:left-[calc(50%+9.5rem)] xl:left-[calc(50%+10.5rem)] [&>button]:hidden"
       >
-        <div className="relative px-6 pt-6 ">
-          <DialogTitle className="text-[18px] font-semibold leading-6 text-[#181D27]">
+        {/* Header */}
+        <div className="flex h-[47px] items-center justify-between gap-2 px-2">
+          <DialogTitle className="text-left text-[18px] font-semibold leading-7 text-[#181D27]">
             Create Phase Variant
           </DialogTitle>
-          <div className="absolute right-5 top-5">
-            <DialogClose asChild>
-              <button
-                type="button"
-                className=" flex items-center justify-center "
-                aria-label="Close"
-              >
-                <CircleX className="h-4 w-4 text-gray-600" />
-              </button>
-            </DialogClose>
-          </div>
+          <DialogClose asChild>
+            <button
+              type="button"
+              className="flex h-6 w-6 shrink-0 items-center justify-center"
+              aria-label="Close"
+            >
+              <CircleX className="h-5 w-5" strokeWidth={1.5} />
+            </button>
+          </DialogClose>
         </div>
 
-        <div className=" border-gray-200 px-5 py-3.5">
-          <div className="p-2 bg-[#F5F6F8] rounded-2xl">
-            <div className="bg-white rounded-t-2xl px-5 py-4 mb-1">
-              <div className="">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-medium text-gray-600">
-                      Current Cycle Name
-                    </p>
-                    <p className="text-sm font-medium text-[#181D27]">
-                      {currentCycleName}
-                    </p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-medium text-gray-600">
-                      Phase Name
-                    </p>
-                    <p className="text-sm font-medium text-[#181D27]">
-                      {sourcePhaseName}
-                    </p>
-                  </div>
+        {/* Outer gray panel */}
+        <div className="flex flex-col items-stretch gap-[2px] rounded-2xl bg-[#F5F5F5] p-2">
+          {/* Top white section (content) */}
+          <div className="rounded-t-lg bg-white p-2">
+            <div className="flex flex-col gap-4 rounded-t-lg bg-white p-2">
+              {/* Row: Current Cycle Name + Phase Name */}
+              <div className="flex flex-row items-start gap-4">
+                <div className="flex flex-1 flex-col gap-1">
+                  <p className="text-sm font-medium leading-5 text-[#181D27]">
+                    Current Cycle Name
+                  </p>
+                  <p className="text-base font-semibold leading-6 text-[#181D27]">
+                    {currentCycleName || "—"}
+                  </p>
                 </div>
+                <div className="flex flex-1 flex-col gap-1">
+                  <p className="text-sm font-medium leading-5 text-[#181D27]">
+                    Phase Name
+                  </p>
+                  <p className="text-base font-semibold leading-6 text-[#181D27]">
+                    {sourcePhaseName || "—"}
+                  </p>
+                </div>
+              </div>
 
-                <div className="mt-4 space-y-1.5">
+              {/* Inputs card */}
+              <div className="flex flex-col gap-2 rounded-2xl bg-[#F5F5F5] p-4">
+                <div className="flex flex-col gap-2">
                   <Label
                     htmlFor="phase-variant-title"
-                    className="text-[11px] font-medium text-gray-600"
+                    className="text-sm font-medium leading-5 text-[#181D27]"
                   >
-                    New Phase Title{" "}
-                    {/* <span className="font-normal text-gray-400">(optional)</span> */}
+                    New Phase Title
                   </Label>
                   <Input
                     id="phase-variant-title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder=""
-                    className="h-9 rounded-lg border-gray-200 bg-gray-50 text-sm"
+                    className="h-9 min-h-9 rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
                     disabled={isSubmitting}
                   />
                 </div>
-                {/* <div className="space-y-1.5">
+                <div className="flex flex-col gap-2">
                   <Label
                     htmlFor="phase-variant-instructions"
-                    className="text-[11px] font-medium text-gray-600"
+                    className="text-sm font-medium leading-5 text-[#181D27]"
                   >
-                    Instruction{" "}
-                    <span className="font-normal text-gray-400">(optional)</span>
+                    Instruction
                   </Label>
                   <Textarea
                     id="phase-variant-instructions"
                     value={instructions}
                     onChange={(e) => setInstructions(e.target.value)}
-                    placeholder="e.g. Reframe scenarios from finance to HR context."
-                    className="min-h-[120px] rounded-lg border-gray-200 bg-gray-50 text-sm sm:min-h-[132px]"
+                    placeholder=""
+                    className="min-h-[76px] resize-y rounded-lg border border-[#D5D7DA] bg-white px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
                     disabled={isSubmitting}
                   />
-                </div> */}
+                </div>
+              </div>
 
-                <div className="mt-4 space-y-3 rounded-xl bg-[#F3F4F6] p-3">
-                  <p className="text-xs font-semibold text-gray-900">Copy to</p>
-                  <div className="h-px bg-gray-200" aria-hidden />
-
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-medium text-gray-600">
-                        Client
-                      </p>
-                      <Select
-                        value={copyClientValue}
-                        onValueChange={setCopyClientValue}
-                        disabled={isSubmitting}
-                      >
-                        <SelectTrigger className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="current">
-                            Current Client
+              {/* Copy to card */}
+              <div className="flex flex-col gap-2 rounded-2xl bg-[#F5F5F5] p-4">
+                <p className="text-sm font-medium leading-5 text-[#181D27]">
+                  Copy to
+                </p>
+                <div className="h-px w-full bg-[#D5D7DA]" aria-hidden />
+                <div className="flex flex-row items-start gap-2">
+                  <div className="flex flex-1 flex-col gap-2">
+                    <p className="text-sm font-medium leading-5 text-[#181D27]">
+                      Client
+                    </p>
+                    <Select
+                      value={copyClientValue}
+                      onValueChange={setCopyClientValue}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger className="h-9 min-h-9 w-full rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="current">Current Client</SelectItem>
+                        {clients.map((client) => (
+                          <SelectItem
+                            key={client.id}
+                            value={`client:${client.id}`}
+                          >
+                            {client.name || `Client ${client.id}`}
                           </SelectItem>
-                          {clients.map((client) => (
-                            <SelectItem key={client.id} value={`client:${client.id}`}>
-                              {client.name || `Client ${client.id}`}
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex flex-1 flex-col gap-2">
+                    <p className="text-sm font-medium leading-5 text-[#181D27]">
+                      Cycle
+                    </p>
+                    <Select
+                      value={copyCycleValue}
+                      onValueChange={setCopyCycleValue}
+                      disabled={isSubmitting || isLoadingCycles}
+                    >
+                      <SelectTrigger className="h-9 min-h-9 w-full rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="current">Current Cycle</SelectItem>
+                        {cycles
+                          .filter((cycle) => cycle.sessionId !== sessionId)
+                          .map((cycle) => (
+                            <SelectItem
+                              key={cycle.sessionId}
+                              value={`session:${cycle.sessionId}`}
+                            >
+                              {cycle.name}
                             </SelectItem>
                           ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-medium text-gray-600">
-                        Cycle
-                      </p>
-                      <Select
-                        value={copyCycleValue}
-                        onValueChange={setCopyCycleValue}
-                        disabled={isSubmitting || isLoadingCycles}
-                      >
-                        <SelectTrigger className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="current">
-                            Current Cycle
-                          </SelectItem>
-                          {cycles
-                            .filter((cycle) => cycle.sessionId !== sessionId)
-                            .map((cycle) => (
-                              <SelectItem
-                                key={cycle.sessionId}
-                                value={`session:${cycle.sessionId}`}
-                              >
-                                {cycle.name}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="flex justify-end bg-white rounded-b-2xl p-2 gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-9 rounded-lg"
-                onClick={handleClose}
-                type="button"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                className="h-9 rounded-lg min-w-[88px] inline-flex items-center justify-center gap-1.5"
-                onClick={handleSave}
-                type="button"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-                    Saving
-                  </>
-                ) : (
-                  "Save"
-                )}
-              </Button>
-            </div>
+          {/* Bottom white footer */}
+          <div className="flex items-center justify-end rounded-b-lg bg-white p-2">
+            <Button
+              className="inline-flex h-9 min-h-9 items-center justify-center gap-2 rounded-lg bg-[#7367F0] px-4 py-[7.5px] text-sm font-medium leading-5 text-white hover:bg-[#625acc] active:bg-[#574fb3]"
+              onClick={handleSave}
+              type="button"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                  Publishing
+                </>
+              ) : (
+                "Publish"
+              )}
+            </Button>
           </div>
         </div>
       </DialogContent>

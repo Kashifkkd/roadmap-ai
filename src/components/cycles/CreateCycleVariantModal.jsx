@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Loader2, X } from "lucide-react";
+import { CircleX, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { Textarea } from "@/components/ui/Textarea";
 import {
   Dialog,
   DialogClose,
@@ -69,7 +70,9 @@ export default function CreateCycleVariantModal({
     setIsSubmitting(true);
     try {
       const currentClientIdRaw =
-        typeof window !== "undefined" ? localStorage.getItem("Client id") : null;
+        typeof window !== "undefined"
+          ? localStorage.getItem("Client id")
+          : null;
       const currentClientId = parseInt((currentClientIdRaw || "").trim(), 10);
       if (!Number.isFinite(currentClientId) || currentClientId < 0) {
         toast.error("Cannot create variant", {
@@ -92,7 +95,10 @@ export default function CreateCycleVariantModal({
       const targetClientId = crossClient
         ? parseInt(copyClientValue.replace("client:", ""), 10)
         : null;
-      if (crossClient && (!Number.isFinite(targetClientId) || targetClientId < 0)) {
+      if (
+        crossClient &&
+        (!Number.isFinite(targetClientId) || targetClientId < 0)
+      ) {
         toast.error("Cannot create variant", {
           description: "Please select a valid target client.",
         });
@@ -107,7 +113,9 @@ export default function CreateCycleVariantModal({
       if (trimmedInstructions) payload.instructions = trimmedInstructions;
 
       const effectiveClientId =
-        crossClient && targetClientId != null ? targetClientId : currentClientId;
+        crossClient && targetClientId != null
+          ? targetClientId
+          : currentClientId;
 
       const params = {
         count: 1,
@@ -163,105 +171,113 @@ export default function CreateCycleVariantModal({
         if (!isOpen) handleClose();
       }}
     >
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-[520px] gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-0 shadow-xl [&>button]:hidden">
-        <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-6">
-          <DialogTitle className="text-left text-lg font-semibold leading-tight text-[#181D27]">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[728px] gap-4 overflow-hidden rounded-[24px] border-0 bg-white p-0 pt-4 pb-2 px-2 shadow-xl [&>button]:hidden">
+        {/* Header */}
+        <div className="flex h-[47px] items-center justify-between gap-2 px-2">
+          <DialogTitle className="text-left text-[18px] font-semibold leading-7 text-[#181D27]">
             Create Cycle Variant
           </DialogTitle>
           <DialogClose asChild>
             <button
               type="button"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+              className="flex h-6 w-6 shrink-0 items-center justify-center "
               aria-label="Close"
             >
-              <X className="h-4 w-4" strokeWidth={2} />
+              <CircleX className="h-5 w-5" strokeWidth={1.5} />
             </button>
           </DialogClose>
         </div>
 
-        <div className="space-y-4 px-6 pb-2">
-          {/* Cycle details */}
-          <div className="rounded-xl bg-[#F8F9FA] p-4">
-            <div className="space-y-1">
-              <p className="text-[11px] font-medium text-gray-600">Cycle Title</p>
-              <p className="text-base font-semibold leading-snug text-[#181D27]">
-                {cycleName || "—"}
-              </p>
-            </div>
+        {/* Outer gray panel */}
+        <div className="flex flex-col items-stretch gap-[2px] rounded-2xl bg-[#F5F5F5] p-2">
+          {/* Top white section (content) */}
+          <div className="rounded-t-lg bg-white p-2">
+            <div className="flex flex-col gap-2 rounded-t-lg bg-white p-2">
+              {/* Cycle title */}
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-medium leading-5 text-[#181D27]">
+                  Cycle Title
+                </p>
+                <p className="text-base font-semibold leading-6 text-[#181D27]">
+                  {cycleName || "—"}
+                </p>
+              </div>
 
-            <div className="mt-4 space-y-3 rounded-xl bg-[#F3F4F6] p-4">
-              <div className="space-y-1.5">
-                <Label
-                  htmlFor="cycle-variant-title"
-                  className="text-[11px] font-medium text-gray-600"
-                >
-                  New Cycle Title{" "}
-                  {/* <span className="font-normal text-gray-400">(optional)</span> */}
-                </Label>
-                <Input
-                  id="cycle-variant-title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder=""
-                  className="h-10 rounded-[10px] border border-gray-200 bg-white text-sm shadow-sm"
-                  disabled={isSubmitting}
-                />
+              {/* Inputs card */}
+              <div className="flex flex-col gap-2 rounded-2xl bg-[#F5F5F5] p-4">
+                <div className="flex flex-col gap-2">
+                  <Label
+                    htmlFor="cycle-variant-title"
+                    className="text-sm font-medium leading-5 text-[#181D27]"
+                  >
+                    New Cycle Title
+                  </Label>
+                  <Input
+                    id="cycle-variant-title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder=""
+                    className="h-9 min-h-9 rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label
+                    htmlFor="cycle-variant-instructions"
+                    className="text-sm font-medium leading-5 text-[#181D27]"
+                  >
+                    Instruction
+                  </Label>
+                  <Textarea
+                    id="cycle-variant-instructions"
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    placeholder=""
+                    className="min-h-[76px] resize-y rounded-lg border border-[#D5D7DA] bg-white px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+                    disabled={isSubmitting}
+                  />
+                </div>
               </div>
-              {/* Instruction (optional)
-              <div className="space-y-1.5">
-                <Label
-                  htmlFor="cycle-variant-instructions"
-                  className="text-[11px] font-medium text-gray-600"
-                >
-                  Instruction{" "}
-                  <span className="font-normal text-gray-400">(optional)</span>
-                </Label>
-                <Textarea
-                  id="cycle-variant-instructions"
-                  value={instructions}
-                  onChange={(e) => setInstructions(e.target.value)}
-                  placeholder=""
-                  className="min-h-[100px] resize-y rounded-[10px] border border-gray-200 bg-white text-sm shadow-sm"
-                  disabled={isSubmitting}
-                />
+
+              {/* Copy to card */}
+              <div className="flex flex-col gap-2 rounded-2xl bg-[#F5F5F5] p-4">
+                <p className="text-sm font-medium leading-5 text-[#181D27]">
+                  Copy to
+                </p>
+                <div className="h-px w-full bg-[#D5D7DA]" aria-hidden />
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium leading-5 text-[#181D27]">
+                    Client
+                  </p>
+                  <Select
+                    value={copyClientValue}
+                    onValueChange={setCopyClientValue}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger className="h-9 min-h-9 w-full rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="current">Current Client</SelectItem>
+                      {clients.map((client) => (
+                        <SelectItem
+                          key={client.id}
+                          value={`client:${client.id}`}
+                        >
+                          {client.name || `Client ${client.id}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              */}
             </div>
           </div>
 
-          {/* Copy to */}
-          <div className="rounded-xl bg-[#F8F9FA] p-4">
-            <p className="text-xs font-semibold text-[#181D27]">Copy to</p>
-            <div className="my-3 h-px w-full bg-gray-200" aria-hidden />
-
-            <div className="space-y-1">
-              <p className="text-[11px] font-medium text-gray-600">Client</p>
-              <Select
-                value={copyClientValue}
-                onValueChange={setCopyClientValue}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger className="h-10 w-full rounded-[10px] border border-gray-200 bg-white px-3 text-sm text-gray-900 shadow-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="current">Current Client</SelectItem>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={`client:${client.id}`}>
-                      {client.name || `Client ${client.id}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-gray-200 px-6 py-4">
-          <div className="flex justify-end">
+          {/* Bottom white footer */}
+          <div className="flex items-center justify-end rounded-b-lg bg-white p-2">
             <Button
-              size="sm"
-              className="h-10 min-w-[96px] rounded-[10px] px-5 text-sm font-medium inline-flex items-center justify-center gap-1.5"
+              className="inline-flex h-9 min-h-9 items-center justify-center gap-2 rounded-lg bg-[#7367F0] px-4 py-[7.5px] text-sm font-medium leading-5 text-white hover:bg-[#625acc] active:bg-[#574fb3]"
               onClick={handleSave}
               type="button"
               disabled={isSubmitting}
