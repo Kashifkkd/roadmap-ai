@@ -263,6 +263,14 @@ export default function DashboardLayout() {
       if (cometJson) {
         setSessionData(JSON.parse(cometJson));
       }
+
+      // Ensure source materials upload only after session exists.
+      if (typeof window !== "undefined" && window.uploadAllFiles) {
+        console.log("Uploading source materials after session is ready...");
+        await window.uploadAllFiles();
+        console.log("Source material upload complete");
+      }
+
       const formattedCometData = {
         "Basic Information": {
           "Cycle Title": formData.cometTitle || "",

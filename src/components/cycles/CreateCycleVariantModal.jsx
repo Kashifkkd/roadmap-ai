@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { CircleX, Loader2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
 import { Label } from "@/components/ui/Label";
 import {
   Dialog,
@@ -21,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
+import { getClients } from "@/api/client";
 import { toast } from "@/components/ui/toast";
 
 function isValidPathId(n) {
@@ -30,70 +30,73 @@ function isValidPathId(n) {
 export default function CreateCycleVariantModal({
   open,
   onOpenChange,
-  /** From session list (path_id); POST …/paths/{id}/variant */
+  /** From session list: path_id when set, else session row id; POST …/paths/{id}/variant */
   numericPathId = null,
   onSuccess,
   cycleName = "",
 }) {
-  const [copyClientValue, setCopyClientValue] = useState("Current Client");
-  const [copyCycleValue, setCopyCycleValue] = useState("Current Cycle");
+  const [copyClientValue, setCopyClientValue] = useState("current");
+  const [clients, setClients] = useState([]);
   const [title, setTitle] = useState("");
   const [instructions, setInstructions] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [manualPathIdInput, setManualPathIdInput] = useState("");
-  /** Required when copying to another client (cross-client). */
-  const [targetClientIdInput, setTargetClientIdInput] = useState("");
 
   useEffect(() => {
     if (!open) return;
-    if (isValidPathId(numericPathId)) {
-      setManualPathIdInput(String(Math.trunc(numericPathId)));
-    } else {
-      setManualPathIdInput("");
-    }
-  }, [open, numericPathId]);
+
+    const fetchClients = async () => {
+      const res = await getClients({ skip: 0, limit: 500, enabledOnly: true });
+      if (res?.success) {
+        setClients(Array.isArray(res.response) ? res.response : []);
+      } else {
+        toast.error("Unable to load clients");
+      }
+    };
+
+    fetchClients();
+  }, [open]);
 
   const handleClose = () => {
     onOpenChange(false);
-    setCopyClientValue("Current Client");
-    setCopyCycleValue("Current Cycle");
+    setCopyClientValue("current");
+    setClients([]);
     setTitle("");
     setInstructions("");
-    setManualPathIdInput("");
-    setTargetClientIdInput("");
     setIsSubmitting(false);
   };
 
   const handleSave = async () => {
     setIsSubmitting(true);
     try {
-      let pathId = numericPathId;
-      if (manualPathIdInput.trim() !== "") {
-        const manualParsed = parseInt(manualPathIdInput.trim(), 10);
-        if (Number.isFinite(manualParsed) && manualParsed >= 0) {
-          pathId = manualParsed;
-        }
-      }
-      if (!isValidPathId(pathId)) {
+      const currentClientIdRaw =
+        typeof window !== "undefined" ? localStorage.getItem("Client id") : null;
+      const currentClientId = parseInt((currentClientIdRaw || "").trim(), 10);
+      if (!Number.isFinite(currentClientId) || currentClientId < 0) {
         toast.error("Cannot create variant", {
           description:
-            "No numeric path id for this cycle. Enter the path id from your backend (e.g. from session or URL)—or ensure the list provides path_id.",
+            "Missing client id. Please select a client again and retry.",
         });
         return;
       }
 
-      const crossClient = copyClientValue !== "Current Client";
-      let targetClientId = null;
-      if (crossClient) {
-        const parsed = parseInt(targetClientIdInput.trim(), 10);
-        if (!Number.isFinite(parsed) || parsed < 0) {
-          toast.error("Cannot create variant", {
-            description:
-              "Cross-client copy needs a target client id (e.g. 42) in the field below.",
-          });
-          return;
-        }
-        targetClientId = parsed;
+      const pathId = numericPathId;
+      if (!isValidPathId(pathId)) {
+        toast.error("Cannot create variant", {
+          description:
+            "No path id for this session. Ensure the sessions list includes path_id or id.",
+        });
+        return;
+      }
+
+      const crossClient = copyClientValue !== "current";
+      const targetClientId = crossClient
+        ? parseInt(copyClientValue.replace("client:", ""), 10)
+        : null;
+      if (crossClient && (!Number.isFinite(targetClientId) || targetClientId < 0)) {
+        toast.error("Cannot create variant", {
+          description: "Please select a valid target client.",
+        });
+        return;
       }
 
       const trimmedTitle = title.trim();
@@ -103,12 +106,13 @@ export default function CreateCycleVariantModal({
       if (trimmedTitle) payload.title = trimmedTitle;
       if (trimmedInstructions) payload.instructions = trimmedInstructions;
 
+      const effectiveClientId =
+        crossClient && targetClientId != null ? targetClientId : currentClientId;
+
       const params = {
         count: 1,
-        persist_to_redis: Boolean(crossClient),
-        ...(crossClient && targetClientId != null
-          ? { client_id: targetClientId }
-          : {}),
+        persist_to_redis: true,
+        client_id: effectiveClientId,
       };
 
       const result = await apiService({
@@ -152,8 +156,6 @@ export default function CreateCycleVariantModal({
     }
   };
 
-  const showTargetClientField = copyClientValue !== "Current Client";
-
   return (
     <Dialog
       open={open}
@@ -161,197 +163,118 @@ export default function CreateCycleVariantModal({
         if (!isOpen) handleClose();
       }}
     >
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-[620px] overflow-hidden rounded-2xl border border-gray-200 bg-white p-0 shadow-xl [&>button]:hidden">
-        <div className="relative px-6 pt-6 ">
-          <DialogTitle className="text-[18px] font-semibold leading-6 text-[#181D27]">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[520px] gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-0 shadow-xl [&>button]:hidden">
+        <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-6">
+          <DialogTitle className="text-left text-lg font-semibold leading-tight text-[#181D27]">
             Create Cycle Variant
           </DialogTitle>
-          <div className="absolute right-5 top-5">
-            <DialogClose asChild>
-              <button
-                type="button"
-                className=" flex items-center justify-center "
-                aria-label="Close"
+          <DialogClose asChild>
+            <button
+              type="button"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" strokeWidth={2} />
+            </button>
+          </DialogClose>
+        </div>
+
+        <div className="space-y-4 px-6 pb-2">
+          {/* Cycle details */}
+          <div className="rounded-xl bg-[#F8F9FA] p-4">
+            <div className="space-y-1">
+              <p className="text-[11px] font-medium text-gray-600">Cycle Title</p>
+              <p className="text-base font-semibold leading-snug text-[#181D27]">
+                {cycleName || "—"}
+              </p>
+            </div>
+
+            <div className="mt-4 space-y-3 rounded-xl bg-[#F3F4F6] p-4">
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="cycle-variant-title"
+                  className="text-[11px] font-medium text-gray-600"
+                >
+                  New Cycle Title{" "}
+                  {/* <span className="font-normal text-gray-400">(optional)</span> */}
+                </Label>
+                <Input
+                  id="cycle-variant-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder=""
+                  className="h-10 rounded-[10px] border border-gray-200 bg-white text-sm shadow-sm"
+                  disabled={isSubmitting}
+                />
+              </div>
+              {/* Instruction (optional)
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="cycle-variant-instructions"
+                  className="text-[11px] font-medium text-gray-600"
+                >
+                  Instruction{" "}
+                  <span className="font-normal text-gray-400">(optional)</span>
+                </Label>
+                <Textarea
+                  id="cycle-variant-instructions"
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                  placeholder=""
+                  className="min-h-[100px] resize-y rounded-[10px] border border-gray-200 bg-white text-sm shadow-sm"
+                  disabled={isSubmitting}
+                />
+              </div>
+              */}
+            </div>
+          </div>
+
+          {/* Copy to */}
+          <div className="rounded-xl bg-[#F8F9FA] p-4">
+            <p className="text-xs font-semibold text-[#181D27]">Copy to</p>
+            <div className="my-3 h-px w-full bg-gray-200" aria-hidden />
+
+            <div className="space-y-1">
+              <p className="text-[11px] font-medium text-gray-600">Client</p>
+              <Select
+                value={copyClientValue}
+                onValueChange={setCopyClientValue}
+                disabled={isSubmitting}
               >
-                <CircleX className="h-4 w-4 text-gray-600" />
-              </button>
-            </DialogClose>
+                <SelectTrigger className="h-10 w-full rounded-[10px] border border-gray-200 bg-white px-3 text-sm text-gray-900 shadow-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="current">Current Client</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={`client:${client.id}`}>
+                      {client.name || `Client ${client.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
-        <div className=" border-gray-200 px-5 py-3.5">
-          <div className="p-2 bg-[#F5F6F8] rounded-2xl">
-            <div className="bg-white rounded-t-2xl px-5 py-4 mb-1">
-              <div className="">
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-medium text-gray-600">
-                      Cycle name
-                    </p>
-                    <p className="text-sm font-medium text-[#181D27]">
-                      {cycleName}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 mt-4">
-                  <div className="space-y-1.5">
-                    <Label
-                      htmlFor="cycle-variant-numeric-id"
-                      className="text-[11px] font-medium text-gray-600"
-                    >
-                      Numeric path id
-                    </Label>
-                    <Input
-                      id="cycle-variant-numeric-id"
-                      inputMode="numeric"
-                      value={manualPathIdInput}
-                      onChange={(e) => setManualPathIdInput(e.target.value)}
-                      placeholder="From session / API (e.g. 1504)"
-                      className="h-9 rounded-lg border-gray-200 bg-gray-50 text-sm"
-                      disabled={isSubmitting}
-                    />
-                    <p className="text-[11px] leading-snug text-gray-500">
-                      We fill this from the comet list when{" "}
-                      <span className="font-medium">path_id</span> is present.
-                      Otherwise enter the path id for{" "}
-                      <span className="font-mono text-[10px]">POST …/paths/…/variant</span>.
-                    </p>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label
-                      htmlFor="cycle-variant-title"
-                      className="text-[11px] font-medium text-gray-600"
-                    >
-                      Variant title{" "}
-                      <span className="font-normal text-gray-400">(optional)</span>
-                    </Label>
-                    <Input
-                      id="cycle-variant-title"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder='e.g. "HR Business Partners Cycle"'
-                      className="h-9 rounded-lg border-gray-200 bg-gray-50 text-sm"
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label
-                      htmlFor="cycle-variant-instructions"
-                      className="text-[11px] font-medium text-gray-600"
-                    >
-                      Instructions{" "}
-                      <span className="font-normal text-gray-400">(optional)</span>
-                    </Label>
-                    <Textarea
-                      id="cycle-variant-instructions"
-                      value={instructions}
-                      onChange={(e) => setInstructions(e.target.value)}
-                      placeholder="Describe how this variant differs (stored for downstream AI)."
-                      className="min-h-[88px] rounded-lg border-gray-200 bg-gray-50 text-sm"
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2 bg-[#F3F4F6] rounded-xl p-2 mt-4">
-                  <p className="text-xs font-semibold text-gray-900">Copy to</p>
-
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-medium text-gray-600">
-                      Client
-                    </p>
-                    <Select
-                      value={copyClientValue}
-                      onValueChange={setCopyClientValue}
-                      disabled={isSubmitting}
-                    >
-                      <SelectTrigger className="w-full h-9 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Current Client">
-                          Current Client
-                        </SelectItem>
-                        <SelectItem value="Client A">Client A</SelectItem>
-                        <SelectItem value="Client B">Client B</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {showTargetClientField && (
-                    <div className="space-y-1.5">
-                      <Label
-                        htmlFor="cycle-variant-target-client"
-                        className="text-[11px] font-medium text-gray-600"
-                      >
-                        Target client id
-                      </Label>
-                      <Input
-                        id="cycle-variant-target-client"
-                        inputMode="numeric"
-                        value={targetClientIdInput}
-                        onChange={(e) => setTargetClientIdInput(e.target.value)}
-                        placeholder="e.g. 42 (required for cross-client)"
-                        className="h-9 rounded-lg border-gray-200 bg-gray-50 text-sm"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  )}
-
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-medium text-gray-600">
-                      Cycle
-                    </p>
-                    <Select
-                      value={copyCycleValue}
-                      onValueChange={setCopyCycleValue}
-                      disabled={isSubmitting}
-                    >
-                      <SelectTrigger className="w-full h-9 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Current Cycle">
-                          Current Cycle
-                        </SelectItem>
-                        <SelectItem value="Cycle A">Cycle A</SelectItem>
-                        <SelectItem value="Cycle B">Cycle B</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end bg-white rounded-b-2xl p-2 gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-9 rounded-lg"
-                onClick={handleClose}
-                type="button"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                className="h-9 rounded-lg min-w-[88px] inline-flex items-center justify-center gap-1.5"
-                onClick={handleSave}
-                type="button"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-                    Saving
-                  </>
-                ) : (
-                  "Save"
-                )}
-              </Button>
-            </div>
+        <div className="border-t border-gray-200 px-6 py-4">
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              className="h-10 min-w-[96px] rounded-[10px] px-5 text-sm font-medium inline-flex items-center justify-center gap-1.5"
+              onClick={handleSave}
+              type="button"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                  Saving
+                </>
+              ) : (
+                "Save"
+              )}
+            </Button>
           </div>
         </div>
       </DialogContent>

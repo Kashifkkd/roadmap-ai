@@ -58,6 +58,7 @@ import { getSourceMaterials } from "@/api/getSourceMaterials";
 import { resolveSourceMaterialLinkUrl } from "@/lib/sourceMaterialLinkUrl";
 import CreatePhaseVariantModal from "@/components/cycle-manager/CreatePhaseVariantModal";
 import CreateStepVariantModal from "@/components/cycle-manager/CreateStepVariantModal";
+import { toast } from "@/components/ui/toast";
 
 // Asset category buttons
 const ASSET_CATEGORIES = [
@@ -112,8 +113,11 @@ export default function CometManagerSidebar({
   onEditChapter,
   onEditStep,
   onDeleteStep,
+  /** When set, "Cycle Title" from session is shown for variant modals and labels. */
+  cycleCreationData = null,
+  isCyclePublished = false,
 }) {
-  // console.log(selectedScreen, "selectedScreen >>>>>>>>>>>>");
+  console.log(selectedScreen, "selectedScreen >>>>>>>>>>>>");
   // console.log(chapters, "chapters >>>>>>>>>>>><<<<<<<<<<<<<<");
   // console.log("remainingChapters >>>>>>>>>>>>", remainingChapters, Array.isArray(remainingChapters), typeof remainingChapters);
   const [tab, setTab] = useState(0);
@@ -170,15 +174,30 @@ export default function CometManagerSidebar({
     useState(null);
   const [createVariantSourceStep, setCreateVariantSourceStep] = useState(null);
 
+  const cycleTitleFromSession =
+    typeof cycleCreationData?.["Basic Information"]?.["Cycle Title"] ===
+    "string"
+      ? cycleCreationData["Basic Information"]["Cycle Title"].trim()
+      : "";
   const currentCycleName =
+    cycleTitleFromSession ||
     selectedScreen?.cycleName ||
     selectedScreen?.cycle_name ||
-    "New Manager Essentials Training Program";
+    "Untitled Cycle";
 
   const sourcePhaseName =
     createVariantSourceChapter?.chapter ||
     createVariantSourceChapter?.name ||
     "Foundations of People Leadership";
+  const sourceChapterUid =
+    (typeof createVariantSourceChapter?.id === "string" &&
+    createVariantSourceChapter.id.trim()
+      ? createVariantSourceChapter.id.trim()
+      : "") ||
+    createVariantSourceChapter?.uid ||
+    createVariantSourceChapter?.chapter_uid ||
+    createVariantSourceChapter?.chapterUid ||
+    "";
 
   const sourceStepName =
     createVariantSourceStep?.name ||
@@ -260,6 +279,10 @@ export default function CometManagerSidebar({
   const handleCreateVariantClick = (e, chapter) => {
     e.stopPropagation();
     setOpenChapterMenuId(null);
+    if (!isCyclePublished) {
+      toast.error("Please publish cycle first to create variant.");
+      return;
+    }
     setCreateVariantSourceChapter(chapter);
     setCreateVariantSourceStep(null);
     setCreateVariantKind("phase");
@@ -2494,6 +2517,7 @@ export default function CometManagerSidebar({
             }
           }}
           numericChapterId={createVariantSourceChapter?.numericChapterId ?? null}
+          sessionId={sessionId || ""}
           currentCycleName={currentCycleName}
           sourcePhaseName={sourcePhaseName}
         />
@@ -2510,6 +2534,8 @@ export default function CometManagerSidebar({
             }
           }}
           numericStepId={createVariantSourceStep?.numericStepId ?? null}
+          sessionId={sessionId || ""}
+          sourceChapterUid={sourceChapterUid}
           currentCycleName={currentCycleName}
           sourcePhaseName={sourcePhaseName}
           sourceStepName={sourceStepName || ""}

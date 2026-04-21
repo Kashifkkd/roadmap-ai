@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { CircleX, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
 import { Label } from "@/components/ui/Label";
 import {
   Dialog,
@@ -20,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { apiService } from "@/api/apiService";
+import { getClients } from "@/api/client";
 import { endpoints } from "@/api/endpoint";
 import { toast } from "@/components/ui/toast";
 
@@ -32,12 +32,16 @@ export default function CreatePhaseVariantModal({
   onOpenChange,
   /** From session (useCometManager pathChapterId); POST …/chapters/{id}/variant */
   numericChapterId = null,
+  sessionId = "",
   onSuccess,
   currentCycleName = "",
   sourcePhaseName = "",
 }) {
-  const [copyClientValue, setCopyClientValue] = useState("Current Client");
-  const [copyCycleValue, setCopyCycleValue] = useState("Current Cycle");
+  const [copyClientValue, setCopyClientValue] = useState("current");
+  const [clients, setClients] = useState([]);
+  const [copyCycleValue, setCopyCycleValue] = useState("current");
+  const [cycles, setCycles] = useState([]);
+  const [isLoadingCycles, setIsLoadingCycles] = useState(false);
   const [title, setTitle] = useState("");
   const [instructions, setInstructions] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,14 +57,108 @@ export default function CreatePhaseVariantModal({
     }
   }, [open, numericChapterId]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchClients = async () => {
+      const res = await getClients({ skip: 0, limit: 500, enabledOnly: true });
+      if (res?.success) {
+        setClients(Array.isArray(res.response) ? res.response : []);
+      } else {
+        toast.error("Unable to load clients");
+      }
+    };
+
+    fetchClients();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    setCopyCycleValue("current");
+  }, [open, copyClientValue]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchCycles = async () => {
+      const currentClientIdRaw =
+        typeof window !== "undefined" ? localStorage.getItem("Client id") : null;
+      const currentClientId = parseInt((currentClientIdRaw || "").trim(), 10);
+      const selectedClientId =
+        copyClientValue !== "current"
+          ? parseInt(copyClientValue.replace("client:", ""), 10)
+          : null;
+      const clientId =
+        copyClientValue === "current" ? currentClientId : selectedClientId;
+      if (!Number.isFinite(clientId) || clientId < 0) {
+        setCycles([]);
+        return;
+      }
+
+      setIsLoadingCycles(true);
+      setCycles([]);
+      try {
+        const result = await apiService({
+          endpoint: endpoints.fetchList,
+          method: "GET",
+          params: {
+            client_id: clientId,
+            sort_order: "created_at",
+            sort_by: "desc",
+          },
+        });
+        if (!result?.success) {
+          toast.error("Unable to load cycles");
+          setCycles([]);
+          return;
+        }
+
+        const sessions = Array.isArray(result.response)
+          ? result.response
+          : Array.isArray(result.response?.data)
+            ? result.response.data
+            : Array.isArray(result.response?.results)
+              ? result.response.results
+              : [];
+
+        const nextCycles = sessions
+          .map((item) => ({
+            sessionId:
+              typeof item?.session_id === "string" ? item.session_id.trim() : "",
+            status:
+              typeof item?.status === "string"
+                ? item.status.trim().toLowerCase()
+                : "",
+            name:
+              (typeof item?.session_name === "string" &&
+                item.session_name.trim()) ||
+              "Untitled Cycle",
+          }))
+          .filter((item) => item.sessionId && item.status === "published");
+
+        setCycles(nextCycles);
+      } catch {
+        toast.error("Unable to load cycles");
+        setCycles([]);
+      } finally {
+        setIsLoadingCycles(false);
+      }
+    };
+
+    fetchCycles();
+  }, [open, copyClientValue]);
+
   const handleClose = () => {
     onOpenChange(false);
-    setCopyClientValue("Current Client");
-    setCopyCycleValue("Current Cycle");
+    setCopyClientValue("current");
+    setClients([]);
+    setCopyCycleValue("current");
+    setCycles([]);
     setTitle("");
     setInstructions("");
     setManualChapterIdInput("");
     setIsSubmitting(false);
+    setIsLoadingCycles(false);
   };
 
   const handleSave = async () => {
@@ -88,9 +186,41 @@ export default function CreatePhaseVariantModal({
       if (trimmedTitle) payload.title = trimmedTitle;
       if (trimmedInstructions) payload.instructions = trimmedInstructions;
 
-      const result = await apiService({
-        endpoint: endpoints.chapterVariant(String(Math.trunc(pathId))),
+      const trimmedSessionId =
+        copyCycleValue !== "current"
+          ? copyCycleValue.replace("session:", "").trim()
+          : (typeof sessionId === "string" ? sessionId.trim() : "");
+      const endpoint = endpoints.chapterVariant(String(Math.trunc(pathId)));
+      const requestParams = trimmedSessionId
+        ? { session_id: trimmedSessionId }
+        : undefined;
+      if (!trimmedSessionId) {
+        console.warn("[CreatePhaseVariantModal] missing session_id", {
+          sessionId: trimmedSessionId || null,
+        });
+      }
+      const requestDebug = {
+        endpoint,
         method: "POST",
+        params: requestParams ?? null,
+        data: hasBody ? payload : null,
+      };
+      console.log("[CreatePhaseVariantModal] request", requestDebug);
+      if (typeof window !== "undefined") {
+        window.__PHASE_VARIANT_DEBUG__ = {
+          ...requestDebug,
+          at: new Date().toISOString(),
+        };
+      }
+      toast.info?.("Phase variant debug", {
+        description: `params=${JSON.stringify(requestDebug.params ?? {})} data=${JSON.stringify(requestDebug.data ?? {})}`,
+        duration: 6000,
+      });
+
+      const result = await apiService({
+        endpoint,
+        method: "POST",
+        ...(requestParams ? { params: requestParams } : {}),
         ...(hasBody
           ? {
               data: payload,
@@ -161,7 +291,7 @@ export default function CreatePhaseVariantModal({
           <div className="p-2 bg-[#F5F6F8] rounded-2xl">
             <div className="bg-white rounded-t-2xl px-5 py-4 mb-1">
               <div className="">
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium text-gray-600">
                       Current Cycle Name
@@ -181,110 +311,100 @@ export default function CreatePhaseVariantModal({
                   </div>
                 </div>
 
-                <div className="space-y-3 mt-4">
-                  <div className="space-y-1.5">
-                    <Label
-                      htmlFor="phase-variant-numeric-id"
-                      className="text-[11px] font-medium text-gray-600"
-                    >
-                      Numeric chapter id
-                    </Label>
-                    <Input
-                      id="phase-variant-numeric-id"
-                      inputMode="numeric"
-                      value={manualChapterIdInput}
-                      onChange={(e) => setManualChapterIdInput(e.target.value)}
-                      placeholder="Override only — usually filled from session"
-                      className="h-9 rounded-lg border-gray-200 bg-gray-50 text-sm"
-                      disabled={isSubmitting}
-                    />
-                    <p className="text-[11px] leading-snug text-gray-500">
-                      We take the id from your session when possible (#chapter_0 →
-                      0, or chapter position). Use this field only if you need a
-                      different numeric id for the API.
-                    </p>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label
-                      htmlFor="phase-variant-title"
-                      className="text-[11px] font-medium text-gray-600"
-                    >
-                      Variant title{" "}
-                      <span className="font-normal text-gray-400">(optional)</span>
-                    </Label>
-                    <Input
-                      id="phase-variant-title"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. Week 1: HR Foundations"
-                      className="h-9 rounded-lg border-gray-200 bg-gray-50 text-sm"
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label
-                      htmlFor="phase-variant-instructions"
-                      className="text-[11px] font-medium text-gray-600"
-                    >
-                      Instructions{" "}
-                      <span className="font-normal text-gray-400">(optional)</span>
-                    </Label>
-                    <Textarea
-                      id="phase-variant-instructions"
-                      value={instructions}
-                      onChange={(e) => setInstructions(e.target.value)}
-                      placeholder="e.g. Reframe scenarios from finance to HR context."
-                      className="min-h-[88px] rounded-lg border-gray-200 bg-gray-50 text-sm"
-                      disabled={isSubmitting}
-                    />
-                  </div>
+                <div className="mt-4 space-y-1.5">
+                  <Label
+                    htmlFor="phase-variant-title"
+                    className="text-[11px] font-medium text-gray-600"
+                  >
+                    New Phase Title{" "}
+                    {/* <span className="font-normal text-gray-400">(optional)</span> */}
+                  </Label>
+                  <Input
+                    id="phase-variant-title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder=""
+                    className="h-9 rounded-lg border-gray-200 bg-gray-50 text-sm"
+                    disabled={isSubmitting}
+                  />
                 </div>
+                {/* <div className="space-y-1.5">
+                  <Label
+                    htmlFor="phase-variant-instructions"
+                    className="text-[11px] font-medium text-gray-600"
+                  >
+                    Instruction{" "}
+                    <span className="font-normal text-gray-400">(optional)</span>
+                  </Label>
+                  <Textarea
+                    id="phase-variant-instructions"
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    placeholder="e.g. Reframe scenarios from finance to HR context."
+                    className="min-h-[120px] rounded-lg border-gray-200 bg-gray-50 text-sm sm:min-h-[132px]"
+                    disabled={isSubmitting}
+                  />
+                </div> */}
 
-                <div className="space-y-2 bg-[#F3F4F6] rounded-xl p-2 mt-4">
+                <div className="mt-4 space-y-3 rounded-xl bg-[#F3F4F6] p-3">
                   <p className="text-xs font-semibold text-gray-900">Copy to</p>
+                  <div className="h-px bg-gray-200" aria-hidden />
 
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-medium text-gray-600">
-                      Client
-                    </p>
-                    <Select
-                      value={copyClientValue}
-                      onValueChange={setCopyClientValue}
-                      disabled={isSubmitting}
-                    >
-                      <SelectTrigger className="w-full h-9 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Current Client">
-                          Current Client
-                        </SelectItem>
-                        <SelectItem value="Client A">Client A</SelectItem>
-                        <SelectItem value="Client B">Client B</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-medium text-gray-600">
+                        Client
+                      </p>
+                      <Select
+                        value={copyClientValue}
+                        onValueChange={setCopyClientValue}
+                        disabled={isSubmitting}
+                      >
+                        <SelectTrigger className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="current">
+                            Current Client
+                          </SelectItem>
+                          {clients.map((client) => (
+                            <SelectItem key={client.id} value={`client:${client.id}`}>
+                              {client.name || `Client ${client.id}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-medium text-gray-600">
-                      Cycle
-                    </p>
-                    <Select
-                      value={copyCycleValue}
-                      onValueChange={setCopyCycleValue}
-                      disabled={isSubmitting}
-                    >
-                      <SelectTrigger className="w-full h-9 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Current Cycle">
-                          Current Cycle
-                        </SelectItem>
-                        <SelectItem value="Cycle A">Cycle A</SelectItem>
-                        <SelectItem value="Cycle B">Cycle B</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-medium text-gray-600">
+                        Cycle
+                      </p>
+                      <Select
+                        value={copyCycleValue}
+                        onValueChange={setCopyCycleValue}
+                        disabled={isSubmitting || isLoadingCycles}
+                      >
+                        <SelectTrigger className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="current">
+                            Current Cycle
+                          </SelectItem>
+                          {cycles
+                            .filter((cycle) => cycle.sessionId !== sessionId)
+                            .map((cycle) => (
+                              <SelectItem
+                                key={cycle.sessionId}
+                                value={`session:${cycle.sessionId}`}
+                              >
+                                {cycle.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </div>

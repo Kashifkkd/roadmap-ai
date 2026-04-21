@@ -549,12 +549,6 @@ export default function CreateComet({
 
   const handleFormSubmit = async (data) => {
     try {
-      if (typeof window !== "undefined" && window.uploadAllFiles) {
-        console.log("Uploading files before creating outline...");
-        await window.uploadAllFiles();
-        console.log("File upload complete");
-      }
-
       if (onSubmit) {
         const uniqueWebpageUrls = getUniqueWebpageUrlEntries(webpageUrls);
         // Include toggle states and their associated data

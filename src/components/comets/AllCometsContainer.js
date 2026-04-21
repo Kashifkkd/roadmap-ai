@@ -83,12 +83,15 @@ export default function AllCometsContainer({ cometSessions }) {
         {cometSessions.map((c, idx) => (
           <Comet
             key={idx} // unique key for each item
-            title={c.session_name || "New manager Essentials "} // pass title from array
-            activeUsers={c.activeUsers || 10} // use actual data or default
+            title={c.session_name || "Untitled Comet "} // pass title from array
+            activeUsers={c.total_active_users ?? c.activeUsers}
+            wau={c.weekly_active_users ?? c.wau}
+            mau={c.monthly_active_users ?? c.mau}
             imageURL={c.path_image || "/fallbackImage.png"} // use actual image URL from API
             date={c.updated_at || "23 Aug, 2025"}
             status={c.status}
             session_id={c.session_id}
+            path_id={c.path_id ?? c.pathId ?? c.id}
             onCometClick={handleCometClick}
             updatedBy={c.updated_by || c.created_by}
           />

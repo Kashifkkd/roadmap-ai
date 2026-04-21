@@ -554,6 +554,7 @@ export default function CometManager({
   const [screenDeleteConfirmId, setScreenDeleteConfirmId] = useState(null);
   const [deletingScreenId, setDeletingScreenId] = useState(null);
 
+
   const GENERATING_UIDS_KEY = "generating-step-uids";
   const [generatingStepUids, setGeneratingStepUids] = useState(() => {
     if (typeof window === "undefined") return new Set();
@@ -1639,6 +1640,10 @@ const handleNextStep = useCallback(() => {
       ) ?? -1;
     return idx >= 0 ? idx : 0;
   })();
+  const responsePathId = sessionData?.response_path?.id;
+  const isCyclePublished =
+    (typeof responsePathId === "number" && Number.isFinite(responsePathId)) ||
+    (typeof responsePathId === "string" && responsePathId.trim() !== "");
 
   return (
     <div className="flex flex-col w-full bg-background rounded-xl h-full relative">
@@ -1653,6 +1658,8 @@ const handleNextStep = useCallback(() => {
             <div className="bg-background rounded-xl w-full md:w-[280px] lg:w-1/3 xl:w-1/4 h-[280px] md:h-full overflow-hidden shrink-0">
               <CometManagerSidebar
                 selectedScreen={selectedScreen}
+                cycleCreationData={sessionData?.cycle_creation_data}
+                isCyclePublished={isCyclePublished}
                 onAddScreen={handleAddScreen}
                 chapters={chapters}
                 onReorderChapters={(...args) => {

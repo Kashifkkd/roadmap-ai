@@ -84,12 +84,14 @@ export default function AllCometsContainer({ cometSessions }) {
           <Comet
             key={idx} // unique key for each item
             title={c.session_name || "Untitled Cycle "} // pass title from array
-            activeUsers={c.activeUsers || "-"} // use actual data or default
+            activeUsers={c.total_active_users ?? c.activeUsers}
+            wau={c.weekly_active_users ?? c.wau}
+            mau={c.monthly_active_users ?? c.mau}
             imageURL={c.path_image || "/fallbackImage.png"} // use actual image URL from API
             date={c.updated_at || "-"}
             status={c.status}
             session_id={c.session_id}
-            path_id={c.path_id ?? c.pathId}
+            path_id={c.path_id ?? c.pathId ?? c.id}
             onCometClick={handleCometClick}
             updatedBy={c.updated_by || c.created_by}
           />

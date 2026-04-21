@@ -34,17 +34,16 @@ function pathChapterIdFromChapter(chapter) {
   if (typeof cid === "string" && /^\d+$/.test(cid.trim())) {
     return parseInt(cid.trim(), 10);
   }
+  if (typeof chapter.id === "number" && Number.isFinite(chapter.id) && chapter.id >= 0) {
+    return Math.trunc(chapter.id);
+  }
+  if (typeof chapter.id === "string" && /^\d+$/.test(chapter.id.trim())) {
+    return parseInt(chapter.id.trim(), 10);
+  }
   if (typeof chapter.id === "string") {
     const t = chapter.id.trim();
     const m = /^#chapter_(\d+)$/i.exec(t) || /^chapter_(\d+)$/i.exec(t);
     if (m) return parseInt(m[1], 10);
-  }
-  if (
-    typeof chapter.position === "number" &&
-    Number.isFinite(chapter.position) &&
-    chapter.position >= 0
-  ) {
-    return Math.trunc(chapter.position);
   }
   return null;
 }
@@ -59,6 +58,26 @@ function pathStepIdFromStep(stepItem, step) {
   if (typeof sid === "string" && /^\d+$/.test(sid.trim())) {
     return parseInt(sid.trim(), 10);
   }
+  if (typeof s.id === "number" && Number.isFinite(s.id) && s.id >= 0) {
+    return Math.trunc(s.id);
+  }
+  if (typeof s.id === "string" && /^\d+$/.test(s.id.trim())) {
+    return parseInt(s.id.trim(), 10);
+  }
+  const stepItemId =
+    stepItem && typeof stepItem === "object"
+      ? stepItem.step_id ?? stepItem.stepId ?? stepItem.id
+      : null;
+  if (
+    typeof stepItemId === "number" &&
+    Number.isFinite(stepItemId) &&
+    stepItemId >= 0
+  ) {
+    return Math.trunc(stepItemId);
+  }
+  if (typeof stepItemId === "string" && /^\d+$/.test(stepItemId.trim())) {
+    return parseInt(stepItemId.trim(), 10);
+  }
   if (typeof s.id === "string") {
     const t = s.id.trim();
     const m =
@@ -66,14 +85,6 @@ function pathStepIdFromStep(stepItem, step) {
       /^#step_(\d+)$/i.exec(t) ||
       /^step_(\d+)$/i.exec(t);
     if (m) return parseInt(m[1], 10);
-  }
-  if (
-    stepItem &&
-    typeof stepItem.position === "number" &&
-    Number.isFinite(stepItem.position) &&
-    stepItem.position >= 0
-  ) {
-    return Math.trunc(stepItem.position);
   }
   return null;
 }
@@ -246,10 +257,11 @@ export function useCometManager(sessionData = null) {
             firstImageAsset?.ImageUrl ||
             null;
 
-          // Get screen title for display
+          // Prefer explicit title over heading: reflection (and similar) may set heading
+          // once on first keystroke and never update it, while title stays current.
           const screenTitle =
-            formData.heading ||
             formData.title ||
+            formData.heading ||
             formData.screen_title ||
             screen.title ||
             `${stepTitle} - Screen ${screenIndex + 1}`;

@@ -5,9 +5,16 @@ import StatusButton from "./StatusButton";
 import { useCometSettings } from "@/contexts/CometSettingsContext";
 import { toast } from "sonner";
 
+function formatMetric(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  return value;
+}
+
 const Comet = ({
   title,
   activeUsers,
+  wau,
+  mau,
   imageURL,
   date,
   status,
@@ -119,16 +126,16 @@ const Comet = ({
               <span className="font-inter font-medium text-sm leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
                 Total Active Users
                 <span className="bg-white py-0.5 px-2 rounded-4xl">
-                  {activeUsers || 10}
+                  {formatMetric(activeUsers)}
                 </span>
               </span>
             </div>
-            <div className="flex w-full gap-2">
+            <div className="flex w-full gap-2 flex-wrap">
               <div className="flex items-center rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
                 <span className="font-inter font-medium text-sm leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
                   WAU
                   <span className="bg-white py-0.5 px-2 rounded-4xl">
-                    {activeUsers || 10}
+                    {formatMetric(wau)}
                   </span>
                 </span>
               </div>
@@ -136,7 +143,7 @@ const Comet = ({
                 <span className="font-inter font-medium text-sm leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
                   MAU
                   <span className="bg-white py-0.5 px-2 rounded-4xl">
-                    {activeUsers || 10}
+                    {formatMetric(mau)}
                   </span>
                 </span>
               </div>
@@ -209,13 +216,33 @@ const Comet = ({
           <span className="text-gray-800 font-noto font-semibold text-[20px] leading-[30px] tracking-normal line-clamp-2 min-h-[60px]">
             {title}
           </span>
-          <div className="flex items-center w-fit rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
-            <span className="font-inter font-medium text-xs leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
-              Total Active Users
-              <span className="bg-white py-0.5 px-2 rounded-4xl">
-                {activeUsers || 10}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center w-fit rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
+              <span className="font-inter font-medium text-xs leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                Total Active Users
+                <span className="bg-white py-0.5 px-2 rounded-4xl">
+                  {formatMetric(activeUsers)}
+                </span>
               </span>
-            </span>
+            </div>
+            <div className="flex w-full gap-2 flex-wrap">
+              <div className="flex items-center rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
+                <span className="font-inter font-medium text-xs leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                  WAU
+                  <span className="bg-white py-0.5 px-2 rounded-4xl">
+                    {formatMetric(wau)}
+                  </span>
+                </span>
+              </div>
+              <div className="flex items-center rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
+                <span className="font-inter font-medium text-xs leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                  MAU
+                  <span className="bg-white py-0.5 px-2 rounded-4xl">
+                    {formatMetric(mau)}
+                  </span>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

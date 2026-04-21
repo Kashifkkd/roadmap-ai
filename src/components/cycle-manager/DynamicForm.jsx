@@ -166,7 +166,11 @@ const getFormValuesFromScreen = (screen) => {
     values.habits = content.habits || [];
   }
 
-  if (contentType === "socialDiscussion" || contentType === "social") {
+  if (
+    contentType === "social_discussion" ||
+    contentType === "socialDiscussion" ||
+    contentType === "social"
+  ) {
     values.title = content.title || content.heading || "";
     values.question = content.question || content.body || "";
   }
@@ -446,28 +450,26 @@ export default function DynamicForm({
                 currentScreen.screenContents.content.benchmark_type = value;
             } else if (contentType === "reflection") {
               if (field === "title") {
-                // Write to both title and heading to support mixed schemas
+                // Keep heading in sync with title (heading was previously only set on first
+                // keystroke, which broke display anywhere heading is read before title).
                 currentScreen.screenContents.content.title = value;
-                if (!currentScreen.screenContents.content.heading) {
-                  currentScreen.screenContents.content.heading = value;
-                }
+                currentScreen.screenContents.content.heading = value;
               } else if (field === "prompt") {
                 currentScreen.screenContents.content.prompt = value;
-                if (!currentScreen.screenContents.content.body) {
-                  currentScreen.screenContents.content.body = value;
-                }
+                currentScreen.screenContents.content.body = value;
               }
-            } else if (contentType === "socialdiscussion") {
+            } else if (
+              contentType === "social_discussion" ||
+              contentType === "socialDiscussion" ||
+              contentType === "social" ||
+              contentType === "socialdiscussion"
+            ) {
               if (field === "title") {
                 currentScreen.screenContents.content.title = value;
-                if (!currentScreen.screenContents.content.heading) {
-                  currentScreen.screenContents.content.heading = value;
-                }
+                currentScreen.screenContents.content.heading = value;
               } else if (field === "question") {
                 currentScreen.screenContents.content.question = value;
-                if (!currentScreen.screenContents.content.body) {
-                  currentScreen.screenContents.content.body = value;
-                }
+                currentScreen.screenContents.content.body = value;
               }
             } else if (contentType === "assessment") {
               if (field === "title")

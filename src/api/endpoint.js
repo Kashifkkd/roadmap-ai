@@ -7,6 +7,8 @@ export const endpoints = {
   uploadSourceMaterialWebLink: "api/n8n/upload_source_material_web_link",
   checkSourceMaterialLinkPreview: "api/n8n/check_link_previewability",
   getSourceMaterials: "api/n8n/source_materials",
+  deleteSourceMaterial: (materialId) => `api/n8n/source_material/${materialId}`,
+  bulkDeleteSourceMaterials: "api/n8n/source_materials",
   getAssets: "api/n8n/assets",
   getTools: "api/n8n/tools",
   getClients: "api/clients/v1/",

@@ -29,12 +29,25 @@ function getScreenCardContentSnippet(screen) {
   const content = screen?.screenContents?.content || {};
   const contentType = screen?.screenContents?.contentType;
 
-  const generic =
-    content.body ||
-    content.keyLearning ||
-    content.key_learning ||
-    "";
-  if (generic) return generic;
+  // Reflection / social: must run before the generic `body` branch — DynamicForm only
+  // mirrors the first keystroke into `body`, so `body` would stay stale while `prompt` /
+  // `question` updates (same class of bug as heading vs title).
+  if (contentType === "reflection") {
+    return (
+      content.prompt ||
+      content.reflectionPrompt ||
+      content.body ||
+      ""
+    );
+  }
+
+  if (
+    contentType === "social_discussion" ||
+    contentType === "socialDiscussion" ||
+    contentType === "social"
+  ) {
+    return content.question || content.body || content.title || "";
+  }
 
   if (contentType === "assessment") {
     const title = content.title || "";
@@ -47,17 +60,12 @@ function getScreenCardContentSnippet(screen) {
     return [title, qRaw].filter(Boolean).join(" — ");
   }
 
-  if (
-    contentType === "social_discussion" ||
-    contentType === "socialDiscussion" ||
-    contentType === "social"
-  ) {
-    return content.question || content.body || content.title || "";
-  }
-
-  if (contentType === "reflection") {
-    return content.prompt || content.body || "";
-  }
+  const generic =
+    content.body ||
+    content.keyLearning ||
+    content.key_learning ||
+    "";
+  if (generic) return generic;
 
   return "";
 }

@@ -94,6 +94,7 @@ export default function UserManagement({
   const [emailOptionsLoading, setEmailOptionsLoading] = useState(false);
   const [assigningPathUsers, setAssigningPathUsers] = useState(false);
   const [pathUserEmailSearch, setPathUserEmailSearch] = useState("");
+  const [showRegularAddForm, setShowRegularAddForm] = useState(false);
 
   // Helper functions
   const normalizeSearchTerm = (term) => term.trim().toLowerCase();
@@ -1029,7 +1030,7 @@ export default function UserManagement({
               </tbody>
             </table>
           </div>
-        ) : isPathUsersMode ? (
+        ) : isPathUsersMode && !showRegularAddForm ? (
           <div className="flex-1 overflow-hidden flex flex-col">
             {/* Header: Back arrow + Title */}
             <div className="flex items-center gap-3 pb-1 border-b-2 border-gray-200">
@@ -1113,13 +1114,16 @@ export default function UserManagement({
               </div>
               
               <Button
-                type="button"
+                size="md"
                 variant="outline"
-                onClick={handleAssignPathUsers}
-                disabled={assigningPathUsers || pathUserEmails.length === 0}
-                className="text-primary-700 px-8 py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border border-primary-300 hover:border-primary-400"
-              >Add User</Button>
-
+                onClick={() => {
+                  resetUserForm();
+                  setShowRegularAddForm(true);
+                }}
+                className="text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer ms-3"
+              >
+                Add User
+              </Button>
               {/* <Button
                   size="md"
                   variant="outline"
@@ -1199,7 +1203,8 @@ export default function UserManagement({
               <Button
                 type="button"
                 onClick={handleAssignPathUsers}
-                disabled={assigningPathUsers || pathUserEmails.length === 0}
+                // disabled={assigningPathUsers || pathUserEmails.length === 0}
+                disabled={assigningPathUsers }
                 className="bg-primary hover:bg-primary-600 text-white px-8 py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {assigningPathUsers ? "Saving..." : "Save"}
@@ -1645,7 +1650,7 @@ export default function UserManagement({
               <Button
                 type="button"
                 onClick={handleSaveUser}
-                disabled={savingUser || wipingUserActions}
+                disabled={savingUser || wipingUserActions || !firstName || !lastName || !email ||  !password || !confirmPassword || (password !== confirmPassword)}
                 className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {savingUser

@@ -7,9 +7,45 @@ import { useCometSettings } from "@/contexts/CometSettingsContext";
 import { toast } from "@/components/ui/toast";
 import CreateCycleVariantModal from "./CreateCycleVariantModal";
 
+/** When the sessions list omits path_id, session details in localStorage may still have it. */
+function pathIdFromSessionCache(sessionId) {
+  if (typeof window === "undefined" || sessionId == null || sessionId === "") {
+    return null;
+  }
+  try {
+    const raw = localStorage.getItem("sessionData");
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (String(data?.session_id ?? "") !== String(sessionId)) return null;
+    const candidates = [
+      data.path_id,
+      data.pathId,
+      data.response_path?.path_id,
+      data.response_path?.id,
+    ];
+    for (const v of candidates) {
+      if (v == null || v === "") continue;
+      const n = Number(v);
+      if (Number.isFinite(n) && n >= 0) return n;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/** Sessions list may expose total_active_users, wau, mau from the API. */
+function formatMetric(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  return value;
+}
+
 const Comet = ({
   title,
+  /** total_active_users from API (or legacy activeUsers) */
   activeUsers,
+  wau,
+  mau,
   imageURL,
   date,
   status,
@@ -25,6 +61,8 @@ const Comet = ({
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
   const menuRef = useRef(null);
   const { setIsCometSettingsOpen } = useCometSettings();
+  const isPublishedCycle =
+    typeof status === "string" && status.trim().toLowerCase() === "published";
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -144,27 +182,29 @@ const Comet = ({
           <div className="flex flex-col gap-2">
             <div className="flex items-start justify-between gap-2">
               <StatusButton status={status} />
-              <div className="relative" ref={menuRef}>
-                <button
-                  type="button"
-                  onClick={handleMoreClick}
-                  className="flex items-center justify-center rounded-md p-1 text-gray-600 hover:bg-gray-100 transition-colors"
-                  aria-label="More options"
-                >
-                  <MoreHorizontal className="h-5 w-5" />
-                </button>
-                {isMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-40 overflow-hidden py-1">
-                    <button
-                      type="button"
-                      onClick={handleCreateVariantClick}
-                      className="w-full px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50 transition-colors text-left whitespace-nowrap"
-                    >
-                      Create Variant
-                    </button>
-                  </div>
-                )}
-              </div>
+              {isPublishedCycle && (
+                <div className="relative" ref={menuRef}>
+                  <button
+                    type="button"
+                    onClick={handleMoreClick}
+                    className="flex items-center justify-center rounded-md p-1 text-gray-600 hover:bg-gray-100 transition-colors"
+                    aria-label="More options"
+                  >
+                    <MoreHorizontal className="h-5 w-5" />
+                  </button>
+                  {isMenuOpen && (
+                    <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-40 overflow-hidden py-1">
+                      <button
+                        type="button"
+                        onClick={handleCreateVariantClick}
+                        className="w-full px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50 transition-colors text-left whitespace-nowrap"
+                      >
+                        Create Variant
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <span className="text-gray-800 font-noto font-semibold text-[18px] leading-[24px] tracking-normal line-clamp-3 min-h-[48px]">
               {title}
@@ -173,16 +213,16 @@ const Comet = ({
               <span className="font-inter font-medium text-sm leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
                 Total Active Users
                 <span className="bg-white py-0.5 px-2 rounded-4xl">
-                  {activeUsers || "-"}
+                  {formatMetric(activeUsers)}
                 </span>
               </span>
             </div>
-            <div className="flex w-full gap-2">
+            <div className="flex w-full gap-2 flex-wrap">
               <div className="flex items-center rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
                 <span className="font-inter font-medium text-sm leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
                   WAU
                   <span className="bg-white py-0.5 px-2 rounded-4xl">
-                    {activeUsers || 10}
+                    {formatMetric(wau)}
                   </span>
                 </span>
               </div>
@@ -190,7 +230,7 @@ const Comet = ({
                 <span className="font-inter font-medium text-sm leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
                   MAU
                   <span className="bg-white py-0.5 px-2 rounded-4xl">
-                    {activeUsers || 10}
+                    {formatMetric(mau)}
                   </span>
                 </span>
               </div>
@@ -263,13 +303,33 @@ const Comet = ({
           <span className="text-gray-800 font-noto font-semibold text-[20px] leading-[30px] tracking-normal line-clamp-2 min-h-[60px]">
             {title}
           </span>
-          <div className="flex items-center w-fit rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
-            <span className="font-inter font-medium text-xs leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
-              Total Active Users
-              <span className="bg-white py-0.5 px-2 rounded-4xl">
-                {activeUsers || "-"}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center w-fit rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
+              <span className="font-inter font-medium text-xs leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                Total Active Users
+                <span className="bg-white py-0.5 px-2 rounded-4xl">
+                  {formatMetric(activeUsers)}
+                </span>
               </span>
-            </span>
+            </div>
+            <div className="flex w-full gap-2 flex-wrap">
+              <div className="flex items-center rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
+                <span className="font-inter font-medium text-xs leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                  WAU
+                  <span className="bg-white py-0.5 px-2 rounded-4xl">
+                    {formatMetric(wau)}
+                  </span>
+                </span>
+              </div>
+              <div className="flex items-center rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
+                <span className="font-inter font-medium text-xs leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                  MAU
+                  <span className="bg-white py-0.5 px-2 rounded-4xl">
+                    {formatMetric(mau)}
+                  </span>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -280,9 +340,11 @@ const Comet = ({
           onOpenChange={setIsVariantModalOpen}
           cycleName={title}
           numericPathId={(() => {
-            if (path_id == null || path_id === "") return null;
-            const n = Number(path_id);
-            return Number.isFinite(n) && n >= 0 ? n : null;
+            if (path_id != null && path_id !== "") {
+              const n = Number(path_id);
+              if (Number.isFinite(n) && n >= 0) return n;
+            }
+            return pathIdFromSessionCache(session_id);
           })()}
         />
       </div>

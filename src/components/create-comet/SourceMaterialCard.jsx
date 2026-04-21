@@ -35,6 +35,7 @@ function normalizeWebLink(item, defaultUploaded = false) {
   }
 
   return {
+    id: item?.id ?? item?.material_id ?? item?.source_material_id,
     url: urlValue,
     comment: item?.comment ?? "",
     isUploaded:
@@ -45,6 +46,18 @@ function normalizeWebLink(item, defaultUploaded = false) {
         ? item.previewWarning
         : inferredPreviewMeta.previewWarning,
   };
+}
+
+function extractSourceMaterialId(payload) {
+  if (!payload) return null;
+  if (typeof payload === "number") return payload;
+  if (typeof payload?.id === "number") return payload.id;
+  if (typeof payload?.material_id === "number") return payload.material_id;
+  if (typeof payload?.source_material_id === "number") {
+    return payload.source_material_id;
+  }
+  if (typeof payload?.response?.id === "number") return payload.response.id;
+  return null;
 }
 
 function getWebLinkKey(url = "") {
@@ -106,6 +119,7 @@ function inferLinkPreviewMeta(rawUrl = "") {
 function normalizeFileItem(item, defaultUploaded = false) {
   return {
     ...item,
+    id: item?.id ?? item?.material_id ?? item?.source_material_id,
     name: item?.name ?? item?.source_name ?? "Unknown File",
     isUploaded:
       typeof item?.isUploaded === "boolean" ? item.isUploaded : defaultUploaded,
@@ -174,6 +188,7 @@ function dedupeWebLinks(items = [], defaultUploaded = false) {
     const existing = uniqueLinks[existingIndex];
     uniqueLinks[existingIndex] = {
       ...existing,
+      id: existing.id ?? normalized.id,
       url: existing.url || trimmedUrl,
       comment: existing.comment || normalized.comment,
       isUploaded: existing.isUploaded || normalized.isUploaded,
@@ -267,6 +282,7 @@ export default function SourceMaterialCard({
             const url = resolveSourceMaterialLinkUrl(material);
             if (url) {
               linkMaterials.push({
+                id: material.id,
                 url: url.trim(),
                 comment: material.comment ?? "",
                 isUploaded: true,
@@ -342,15 +358,15 @@ export default function SourceMaterialCard({
         if (result.error) {
           console.error("Error uploading file:", result.error);
           toast.error(`Failed to upload file: ${rawFile.name}`);
-          return false;
+          return null;
         } else {
           console.log("File uploaded successfully:", result.response);
-          return true;
+          return result.response ?? {};
         }
       } catch (error) {
         console.error("Error uploading file:", error);
         toast.error("Failed to upload source material file");
-        return false;
+        return null;
       }
     },
     [sessionId],
@@ -366,12 +382,12 @@ export default function SourceMaterialCard({
             : null);
 
         const url = (entry?.url ?? "").trim();
-        if (!url) return false;
+        if (!url) return null;
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
           toast.error(
             `Invalid URL (must be http or https): ${url.slice(0, 50)}...`,
           );
-          return false;
+          return null;
         }
 
         const formData = new FormData();
@@ -389,19 +405,45 @@ export default function SourceMaterialCard({
         if (result.error) {
           console.error("Error uploading web link:", result.error);
           toast.error(`Failed to save link: ${url.slice(0, 40)}...`);
-          return false;
+          return null;
         } else {
           console.log("Web link uploaded successfully:", result.response);
-          return true;
+          return result.response ?? {};
         }
       } catch (error) {
         console.error("Error uploading web link:", error);
         toast.error("Failed to save web link");
-        return false;
+        return null;
       }
     },
     [sessionId],
   );
+
+  const deleteSourceMaterialById = useCallback(async (materialId) => {
+    if (!materialId) return false;
+
+    try {
+      const result = await apiService({
+        endpoint: endpoints.deleteSourceMaterial(materialId),
+        method: "DELETE",
+      });
+
+      if (!result.success) {
+        if (result.status === 404) {
+          toast.error("Source material not found");
+        } else {
+          toast.error("Failed to delete source material");
+        }
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error deleting source material:", error);
+      toast.error("Failed to delete source material");
+      return false;
+    }
+  }, []);
 
   const checkLinkPreviewability = useCallback(async (url) => {
     try {
@@ -585,18 +627,24 @@ export default function SourceMaterialCard({
             const linkResults = await Promise.all(
               linksToUpload.map((entry) => uploadWebLink(entry)),
             );
+            const uploadedLinkMetaByKey = new Map();
+            linkResults.forEach((result, index) => {
+              const materialId = extractSourceMaterialId(result);
+              if (!materialId) return;
+              const key = getWebLinkKey(linksToUpload[index]?.url ?? "");
+              if (key) uploadedLinkMetaByKey.set(key, materialId);
+            });
             uploadedLinkCount = linkResults.filter(Boolean).length;
-            const uploadedUrls = new Set(
-              linksToUpload
-                .filter((_, index) => linkResults[index])
-                .map((entry) => entry.url.trim().toLowerCase()),
-            );
             setWebpageUrls((prev) =>
               prev.map((entry) => {
                 const normalized = normalizeWebLink(entry);
-                const key = normalized.url.trim().toLowerCase();
-                return uploadedUrls.has(key)
-                  ? { ...normalized, isUploaded: true }
+                const key = getWebLinkKey(normalized.url);
+                return key && linkResults.some((_, index) => getWebLinkKey(linksToUpload[index]?.url ?? "") === key && linkResults[index])
+                  ? {
+                      ...normalized,
+                      isUploaded: true,
+                      id: normalized.id ?? uploadedLinkMetaByKey.get(key),
+                    }
                   : normalized;
               }),
             );
@@ -611,6 +659,12 @@ export default function SourceMaterialCard({
               newFiles.map((file) => uploadFile(file)),
             );
             uploadedFileCount = fileResults.filter(Boolean).length;
+            const uploadedFileMetaByKey = new Map();
+            fileResults.forEach((result, index) => {
+              const materialId = extractSourceMaterialId(result);
+              const key = getFileKey(newFiles[index]?.name ?? "");
+              if (materialId && key) uploadedFileMetaByKey.set(key, materialId);
+            });
             // Mark files as uploaded so they aren't re-uploaded on next call
             setFiles((prev) =>
               prev.map((f) =>
@@ -619,7 +673,12 @@ export default function SourceMaterialCard({
                     fileResults[index] &&
                     getFileKey(newFile.name) === getFileKey(f.name),
                 )
-                  ? { ...f, isUploaded: true }
+                  ? {
+                      ...f,
+                      isUploaded: true,
+                      id:
+                        f.id ?? uploadedFileMetaByKey.get(getFileKey(f.name)),
+                    }
                   : f,
               ),
             );
@@ -701,8 +760,42 @@ export default function SourceMaterialCard({
   };
 
   const handleRemoveLink = (index) => {
-    setWebpageUrls(normalizedUrls.filter((_, i) => i !== index));
+    const linkToRemove = normalizedUrls[index];
+    if (!linkToRemove) return;
+
+    const removeLocally = () =>
+      setWebpageUrls((prev) => prev.filter((_, i) => i !== index));
+
+    if (!linkToRemove.isUploaded || !linkToRemove.id) {
+      removeLocally();
+      return;
+    }
+
+    deleteSourceMaterialById(linkToRemove.id).then((deleted) => {
+      if (!deleted) return;
+      removeLocally();
+      toast.success("Link source material deleted");
+    });
   };
+
+  const handleRemoveFile = useCallback(
+    (fileToRemove, index) => {
+      const removeLocally = () =>
+        setFiles((prev) => prev.filter((_, i) => i !== index));
+
+      if (!fileToRemove?.isUploaded || !fileToRemove?.id) {
+        removeLocally();
+        return;
+      }
+
+      deleteSourceMaterialById(fileToRemove.id).then((deleted) => {
+        if (!deleted) return;
+        removeLocally();
+        toast.success("File source material deleted");
+      });
+    },
+    [setFiles, deleteSourceMaterialById],
+  );
 
   const handleLinkChange = (index, field, value) => {
     if (field === "url") {
@@ -892,10 +985,8 @@ export default function SourceMaterialCard({
           {files.map((file, index) => (
             <FilePreview
               file={file}
-              setFiles={setFiles}
-              files={files}
               onCommentChange={handleFileCommentChange}
-              onRemove={() => setFiles((prev) => prev.filter((_, i) => i !== index))}
+              onRemove={() => handleRemoveFile(file, index)}
               key={file.name || index}
             />
           ))}
@@ -990,7 +1081,7 @@ const LinkPreview = ({ entry, onCommentChange, onRemove }) => {
   );
 };
 
-const FilePreview = ({ file, setFiles, files, onCommentChange, onRemove }) => {
+const FilePreview = ({ file, onCommentChange, onRemove }) => {
   const formatFileSize = (bytes) => {
     if (!bytes || bytes === 0) return " ";
     const k = 1024;
