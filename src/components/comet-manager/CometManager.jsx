@@ -1546,12 +1546,12 @@ export default function CometManager({
     }
   };
 
-  const chapterNumber =
-    typeof currentChapter?.position === "number"
-      ? currentChapter.position
-      : chapters.findIndex(
-          (ch) => String(ch.id) === String(selectedScreen?.chapterId),
-        ) + 1 || 1;
+  const chapterNumber = (() => {
+    const chapterIndex = chapters.findIndex(
+      (ch) => String(ch.id) === String(selectedScreen?.chapterId),
+    );
+    return chapterIndex >= 0 ? chapterIndex : 0;
+  })();
 
   const stepNumber =
     (currentChapter?.steps?.findIndex(

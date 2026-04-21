@@ -858,12 +858,12 @@ export default function DynamicForm({
 
       const screenNumber =
         typeof screen?.position === "number"
-          ? screen.position
+          ? screen.position + 1
           : typeof screen?.order === "number"
             ? screen.order + 1
             : 1;
 
-      const conversationMessage = `{ 'path': 'chapter-${chapterNumber}-step-${stepNumber}-screen-${screenNumber}', 'field': '${mappedField}', 'value': '${askContext.selectedText}', 'instruction': '${query}' }`;
+      const conversationMessage = `{ 'path': 'phase-${chapterNumber}-step-${stepNumber}-screen-${screenNumber}', 'field': '${mappedField}', 'value': '${askContext.selectedText}', 'instruction': '${query}' }`;
       console.log("conversationMessage>>", conversationMessage);
 
       // Merge with existing conversation history (same pattern as ChatWindow.jsx)

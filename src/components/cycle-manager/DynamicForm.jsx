@@ -270,11 +270,11 @@ export default function DynamicForm({
 
   const screenNumber = useMemo(() => {
     if (typeof screenNumberFromParent === "number" && screenNumberFromParent >= 0) {
-      return screenNumberFromParent;
+      return screenNumberFromParent + 1;
     }
-    if (typeof screen?.order === "number") return screen.order;
-    if (typeof screen?.position === "number") return screen.position;
-    return 0;
+    if (typeof screen?.order === "number") return screen.order + 1;
+    if (typeof screen?.position === "number") return screen.position + 1;
+    return 1;
   }, [screenNumberFromParent, screen]);
 
   const [focusedField, setFocusedField] = useState(null);
@@ -960,7 +960,7 @@ export default function DynamicForm({
       const mappedField =
         fieldNameMap[askContext.fieldName] || askContext.fieldName;
 
-      const conversationMessage = `{ 'path': 'chapter-${chapterNumber}-step-${stepNumber}-screen-${screenNumber}', 'field': '${mappedField}', 'value': '${askContext.selectedText}', 'instruction': '${query}' }`;
+      const conversationMessage = `{ 'path': 'phase-${chapterNumber}-step-${stepNumber}-screen-${screenNumber}', 'field': '${mappedField}', 'value': '${askContext.selectedText}', 'instruction': '${query}' }`;
       console.log("conversationMessage>>", conversationMessage);
 
       // Merge with existing conversation history (same pattern as ChatWindow.jsx)

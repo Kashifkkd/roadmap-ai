@@ -1638,7 +1638,7 @@ const handleNextStep = useCallback(() => {
       currentChapter?.steps?.findIndex(
         (step) => String(step.id) === String(selectedScreen?.stepId),
       ) ?? -1;
-    return idx >= 0 ? idx : 0;
+    return idx >= 0 ? idx + 1 : 1;
   })();
   const responsePathId = sessionData?.response_path?.id;
   const isCyclePublished =
