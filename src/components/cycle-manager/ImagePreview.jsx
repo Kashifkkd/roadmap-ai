@@ -1,11 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { appendCacheBuster, refreshCloudfrontCookies } from "@/lib/cloudfront-cookies";
 
 export default function ImagePreview({ asset, category, onClose }) {
-  if (!asset) return null;
-
   const assetUrl = asset?.asset_url || "";
   const assetName = asset?.name || asset?.asset_name || "Image";
   
@@ -22,6 +21,36 @@ export default function ImagePreview({ asset, category, onClose }) {
   // Extract text overlay information from asset if available
   const overlayText = asset?.overlay_text || asset?.text || null;
   const overlayDefinition = asset?.overlay_definition || asset?.definition || null;
+  const [imgSrc, setImgSrc] = useState(assetUrl);
+  const [didRetry, setDidRetry] = useState(false);
+
+  useEffect(() => {
+    setImgSrc(assetUrl);
+    setDidRetry(false);
+  }, [assetUrl]);
+
+  if (!asset) return null;
+
+  const handleImageError = async () => {
+    if (!assetUrl) {
+      setImgSrc("/error-img.png");
+      return;
+    }
+
+    if (!didRetry) {
+      setDidRetry(true);
+      const result = await refreshCloudfrontCookies({
+        force: true,
+        showFailureToast: true,
+      });
+      if (result?.ok) {
+        setImgSrc(appendCacheBuster(assetUrl));
+        return;
+      }
+    }
+
+    setImgSrc("/error-img.png");
+  };
 
   return (
     <div className="flex flex-col h-full w-full bg-white rounded-lg overflow-hidden">
@@ -46,12 +75,10 @@ export default function ImagePreview({ asset, category, onClose }) {
         {assetUrl ? (
           <div className="relative w-full h-full">
             <img
-              src={assetUrl}
+              src={imgSrc}
               alt={displayName}
               className="w-full h-full object-cover"
-              onError={(e) => {
-                e.target.src = "/error-img.png";
-              }}
+              onError={handleImageError}
             />
             {/* Text Overlay if available - positioned like in Figma */}
             {(overlayText || overlayDefinition) && (

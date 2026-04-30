@@ -2,7 +2,13 @@ import React, { useMemo, useState } from "react";
 import { AppWindow, Code2, FileCode } from "lucide-react";
 import { TextField } from "./FormFields";
 
-export default function MiniAppForm({ formData, screen, updateField, askKyperHandlers = {} }) {
+export default function MiniAppForm({
+  formData,
+  screen,
+  updateField,
+  askKyperHandlers = {},
+  onRequestAutoSave,
+}) {
   const { onTextFieldSelect, onFieldBlur } = askKyperHandlers;
   const [isLoading, setIsLoading] = useState(true);
 
@@ -60,6 +66,7 @@ export default function MiniAppForm({ formData, screen, updateField, askKyperHan
           label="Title"
           value={formData.title ?? displayTitle ?? ""}
           onChange={(value) => updateField("title", value)}
+          onRequestAutoSave={onRequestAutoSave}
           inputProps={{
             onSelect: (event) =>
               onTextFieldSelect?.("title", event, formData.title),

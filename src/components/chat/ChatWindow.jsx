@@ -254,11 +254,15 @@ export default function ChatWindow({
     setInputValue(value);
   };
 
-  const handleSubmit = async (text) => {
+  const handleSubmit = async (input) => {
     try {
       setIsLoading(true);
       setError(null);
       let currentSessionId = sessionId;
+      const text = typeof input === "string" ? input : input?.text || "";
+      const sourceMaterials = Array.isArray(input?.sourceMaterials)
+        ? input.sourceMaterials
+        : [];
 
       if (!currentSessionId) {
         currentSessionId = localStorage.getItem("sessionId");
@@ -288,6 +292,18 @@ export default function ChatWindow({
       }
 
       const initialUserInput = initialInput || text;
+      const sourceContextBlock =
+        sourceMaterials.length > 0
+          ? `\n\n[Attached source materials]\n${sourceMaterials
+              .map((item, index) => {
+                const name = item?.source_name || `file_${index + 1}`;
+                const id = item?.id ?? "n/a";
+                const s3Path = item?.s3_path || "n/a";
+                return `- source_name: ${name}, id: ${id}, s3_path: ${s3Path}`;
+              })
+              .join("\n")}`
+          : "";
+      const userMessageForConversation = `${initialUserInput}${sourceContextBlock}`;
       // setAllMessages((prev) => [...prev, { from: "user", content: initialUserInput }]);
 
       // if (parsedUserQuestions.length > 0 && initialInput) {
@@ -322,7 +338,13 @@ export default function ChatWindow({
       ).length;
 
       // Build new conversation entries
-      const newEntries = [{ user: initialUserInput }];
+      const userEntry = {
+        user: userMessageForConversation,
+        ...(sourceMaterials.length > 0
+          ? { source_material: sourceMaterials }
+          : {}),
+      };
+      const newEntries = [userEntry];
       parsedUserQuestions.forEach((item) => {
         if (item.question) {
           newEntries.push({ agent: item.question });
@@ -365,7 +387,7 @@ minAgentMessageCountRef.current = existingAgentMessageCount + 1;
         },
         chatbot_conversation: chatbotConversation,
         to_modify: sessionData?.to_modify ?? {},
-        // source_material_uid: null,
+        source_material: sourceMaterials,
         webpage_url: sessionData?.webpage_url ?? [],
         execution_id: executionId,
         retry_count: 0,
@@ -404,7 +426,17 @@ minAgentMessageCountRef.current = existingAgentMessageCount + 1;
 
       await graphqlClient.sendMessage(cometJsonForMessage);
 
-      setAllMessages((prev) => [...prev, { from: "user", content: text }]);
+      const attachmentLabel =
+        sourceMaterials.length > 0
+          ? `\n\nAttached: ${sourceMaterials
+              .map((item) => item?.source_name)
+              .filter(Boolean)
+              .join(", ")}`
+          : "";
+      setAllMessages((prev) => [
+        ...prev,
+        { from: "user", content: `${text}${attachmentLabel}` },
+      ]);
 
       setInputValue("");
     } catch (error) {
@@ -455,9 +487,18 @@ minAgentMessageCountRef.current = existingAgentMessageCount + 1;
 
         conversation.forEach((entry) => {
           if (entry.user) {
+            const sourceMaterialNames = Array.isArray(entry.source_material)
+              ? entry.source_material
+                  .map((item) => item?.source_name)
+                  .filter(Boolean)
+              : [];
+            const attachmentLabel =
+              sourceMaterialNames.length > 0
+                ? `\n\nAttached: ${sourceMaterialNames.join(", ")}`
+                : "";
             allMessages.push({
               from: "user",
-              content: entry.user,
+              content: `${entry.user}${attachmentLabel}`,
               status: entry.status,
               identifier: entry.identifier,
             });

@@ -204,3 +204,20 @@ export const rehydrateStepImages = async ({ sessionId, stepUid }) => {
   });
   return response;
 };
+
+export const retryFailedStepImages = async ({ sessionId, stepUid }) => {
+  const endpoint =
+    typeof endpoints.retryFailedImages === "function"
+      ? endpoints.retryFailedImages(sessionId, stepUid)
+      : endpoints.retryFailedImages;
+  
+  const response = await apiService({
+    endpoint: endpoint || "api/ai/v2/status/retry-images",
+    method: "POST",
+    data: {
+      session_id: sessionId,
+      step_uid: stepUid,
+    },
+  });
+  return response;
+};

@@ -280,7 +280,7 @@ export default function CometManagerSidebar({
     e.stopPropagation();
     setOpenChapterMenuId(null);
     if (!isCyclePublished) {
-      toast.error("Please publish cycle first to create variant.");
+      toast.error("Please publish cycle first to copy.");
       return;
     }
     setCreateVariantSourceChapter(chapter);
@@ -292,6 +292,10 @@ export default function CometManagerSidebar({
   const handleCreateStepVariantClick = (e, chapter, step) => {
     e.stopPropagation();
     setOpenStepHeaderMenuId(null);
+    if (!isCyclePublished) {
+      toast.error("Please publish cycle first to copy.");
+      return;
+    }
     setCreateVariantSourceChapter(chapter);
     setCreateVariantSourceStep(step);
     setCreateVariantKind("step");
@@ -1322,7 +1326,7 @@ export default function CometManagerSidebar({
                                           className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-800 hover:bg-primary-50 transition-colors whitespace-nowrap"
                                         >
                                           {/* <Plus className="w-3.5 h-3.5" /> */}
-                                          Create Variant
+                                          Copy Phase
                                         </button>
                                         <button
                                           onClick={(e) =>
@@ -1661,7 +1665,7 @@ export default function CometManagerSidebar({
                                                       className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
                                                     >
                                                       <Copy className="w-3.5 h-3.5" />
-                                                      Create Variant
+                                                      Copy Step
                                                     </button>
                                                     <button
                                                       onClick={(e) =>

@@ -4,7 +4,7 @@
     "input_type": "initial_chapter_creation",
     "comet_creation_data": {
       "Basic Information": {
-        "Comet Title": "Yoga Prep for Event Day",
+        "Comet Title": "Yogas Prep for Event Day",
         "Description": "A short, practical yoga Comet for college students at a fitness club to build a simple pre-event routine. Learners will choose an intention (energy, calm, mobility), practice key warm-up and recovery sequences, and learn how to modify poses for common student needs (tight hips, stiff shoulders, low back tension). The experience emphasizes safe alignment, breath control, and time-efficient flows that fit busy schedules—so students can arrive at their event feeling focused, loose, and confident."
       },
       "Audience & Objectives": {

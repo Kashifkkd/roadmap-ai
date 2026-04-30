@@ -1,11 +1,18 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
-import { Plus, Trash2, GripVertical, CircleCheck, CircleX } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  GripVertical,
+  CircleCheck,
+  CircleX,
+  Loader2,
+} from "lucide-react";
 import "quill/dist/quill.snow.css";
 
 
@@ -16,27 +23,84 @@ export const SectionHeader = ({ title }) => (
   </div>
 );
 
+const useAutoSaveIndicator = (onRequestAutoSave, debounceMs = 450) => {
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const timerRef = useRef(null);
+  const requestIdRef = useRef(0);
+
+  const triggerAutoSave = useCallback(() => {
+    if (typeof onRequestAutoSave !== "function") return;
+
+    const nextRequestId = requestIdRef.current + 1;
+    requestIdRef.current = nextRequestId;
+    setIsAutoSaving(true);
+
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+
+    timerRef.current = setTimeout(async () => {
+      const requestIdAtStart = requestIdRef.current;
+      try {
+        await onRequestAutoSave();
+      } catch (error) {
+        console.error("Auto-save failed:", error);
+      } finally {
+        if (requestIdAtStart === requestIdRef.current) {
+          setIsAutoSaving(false);
+        }
+      }
+    }, debounceMs);
+  }, [onRequestAutoSave, debounceMs]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
+  return { isAutoSaving, triggerAutoSave };
+};
+
 export const TextField = ({
   label,
   value,
   onChange,
   placeholder = "",
   inputProps = {},
+  isSaving = false,
+  onRequestAutoSave,
+  autoSaveDebounceMs = 450,
 }) => {
-  // Debug logging
-  if (label === "Title") {
-    console.log("📝 TextField Title rendered with value:", value);
-  }
-  
+  const { isAutoSaving, triggerAutoSave } = useAutoSaveIndicator(
+    onRequestAutoSave,
+    autoSaveDebounceMs,
+  );
+  const showSaving = isSaving || isAutoSaving;
+
   return (
     <div className="mb-4">
-      <Label className="block text-sm font-medium text-gray-700 mb-2">
-        {label}
-      </Label>
+      <div className="mb-2 flex items-center justify-between">
+        <Label className="block text-sm font-medium text-gray-700">{label}</Label>
+        {showSaving ? (
+          <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Saving...
+          </span>
+        ) : null}
+      </div>
       <Input
         type="text"
         value={value || ""}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
+        onBlur={(e) => {
+          inputProps?.onBlur?.(e);
+          triggerAutoSave();
+        }}
         placeholder={placeholder}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         {...inputProps}
@@ -52,21 +116,44 @@ export const TextArea = ({
   placeholder = "",
   rows = 4,
   inputProps = {},
-}) => (
-  <div className="mb-4">
-    <Label className="block text-sm font-medium text-gray-700 mb-2">
-      {label}
-    </Label>
-    <Textarea
-      value={value || ""}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      {...inputProps}
-    />
-  </div>
-);
+  isSaving = false,
+  onRequestAutoSave,
+  autoSaveDebounceMs = 450,
+}) => {
+  const { isAutoSaving, triggerAutoSave } = useAutoSaveIndicator(
+    onRequestAutoSave,
+    autoSaveDebounceMs,
+  );
+  const showSaving = isSaving || isAutoSaving;
+
+  return (
+    <div className="mb-4">
+      <div className="mb-2 flex items-center justify-between">
+        <Label className="block text-sm font-medium text-gray-700">{label}</Label>
+        {showSaving ? (
+          <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Saving...
+          </span>
+        ) : null}
+      </div>
+      <Textarea
+        value={value || ""}
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
+        onBlur={(e) => {
+          inputProps?.onBlur?.(e);
+          triggerAutoSave();
+        }}
+        placeholder={placeholder}
+        rows={rows}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        {...inputProps}
+      />
+    </div>
+  );
+};
 
 export const NumberField = ({ label, value, onChange, placeholder = "" }) => (
   <div className="mb-4">
@@ -256,12 +343,21 @@ export const RichTextArea = ({
   onSelectionChange,
   onBlur,
   valueFormat = "delta",
+  isSaving = false,
+  onRequestAutoSave,
+  autoSaveDebounceMs = 450,
 }) => {
+  const { isAutoSaving, triggerAutoSave } = useAutoSaveIndicator(
+    onRequestAutoSave,
+    autoSaveDebounceMs,
+  );
+  const showSaving = isSaving || isAutoSaving;
   const quillEditorRef = useRef(null);
   const editorRef = useRef(null);
   const toolbarRef = useRef(null);
   const selectionCallbackRef = useRef(onSelectionChange);
   const blurCallbackRef = useRef(onBlur);
+  const changeCallbackRef = useRef(onChange);
   const blurHandlerRef = useRef(null);
   const valueFormatRef = useRef(valueFormat);
 
@@ -276,6 +372,10 @@ export const RichTextArea = ({
   useEffect(() => {
     blurCallbackRef.current = onBlur;
   }, [onBlur]);
+
+  useEffect(() => {
+    changeCallbackRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     if (quillEditorRef.current || !editorRef.current)
@@ -397,7 +497,7 @@ export const RichTextArea = ({
             if (parsed && parsed.ops && Array.isArray(parsed.ops)) {
               editor.setContents(parsed);
               // Normalize: push HTML to parent so stored value is always simple HTML
-              onChange(editor.root.innerHTML);
+              changeCallbackRef.current(editor.root.innerHTML);
             }
           } catch {
             // ignore
@@ -448,9 +548,9 @@ export const RichTextArea = ({
       // Normalize output to prevent <p><br></p> proliferation on auto-save cycles
       editor.on("text-change", () => {
         if (valueFormatRef.current === "html") {
-          onChange(normalizeQuillHtmlOutput(editor.root.innerHTML));
+          changeCallbackRef.current(normalizeQuillHtmlOutput(editor.root.innerHTML));
         } else {
-          onChange(JSON.stringify(editor.getContents()));
+          changeCallbackRef.current(JSON.stringify(editor.getContents()));
         }
       });
 
@@ -490,6 +590,7 @@ export const RichTextArea = ({
         if (callback) {
           callback();
         }
+        triggerAutoSave();
       };
 
       blurHandlerRef.current = handleEditorBlur;
@@ -581,9 +682,15 @@ export const RichTextArea = ({
 
   return (
     <div className="mb-4">
-      <Label className="block text-sm font-medium text-gray-700 mb-2">
-        {label}
-      </Label>
+      <div className="mb-2 flex items-center justify-between">
+        <Label className="block text-sm font-medium text-gray-700">{label}</Label>
+        {showSaving ? (
+          <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Saving...
+          </span>
+        ) : null}
+      </div>
       {/*Editor Area */}
       <div className="bg-gray-100 rounded-lg p-0.5">
         <div
@@ -622,6 +729,7 @@ export const RichTextArea = ({
           .rich-text-toolbar .ql-heading3.ql-active {
             color: #06c;
           }
+          .ql-editor p{ margin-bottom: 10px;}
         `}</style>
         <div
           ref={toolbarRef}

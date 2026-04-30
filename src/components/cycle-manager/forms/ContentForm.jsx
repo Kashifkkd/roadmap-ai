@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/Input";
 import { Link as LinkIcon, Check, X, Loader2, Trash2, Pencil, FileText, FileVideo, FileAudio, File } from "lucide-react";
 import ImageUpload from "@/components/common/ImageUpload";
 import { uploadAssetFile } from "@/api/uploadAssets";
+import { toast } from "@/components/ui/toast";
 
 export default function ContentForm({
   formData,
@@ -188,6 +189,7 @@ export default function ContentForm({
             label="Title"
             value={formData.heading || ""}
             onChange={(value) => updateField("heading", value)}
+            onRequestAutoSave={onRequestAutoSave}
             inputProps={{
               onSelect: (event) =>
                 onTextFieldSelect?.("heading", event, formData.heading),
@@ -203,6 +205,7 @@ export default function ContentForm({
             }
             onBlur={onRichTextBlur}
             valueFormat="html"
+            onRequestAutoSave={onRequestAutoSave}
           />
 
           {/* Upload Image/Icon Section */}

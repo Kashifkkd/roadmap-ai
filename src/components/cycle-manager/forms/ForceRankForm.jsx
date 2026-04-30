@@ -54,6 +54,7 @@ export default function ForceRankForm({
   updateField,
   reorderListItem,
   askKyperHandlers = {},
+  onRequestAutoSave,
 }) {
   const {
     onTextFieldSelect,
@@ -101,6 +102,7 @@ export default function ForceRankForm({
           label="Title"
           value={formData.title || ""}
           onChange={(value) => updateField("title", value)}
+          onRequestAutoSave={onRequestAutoSave}
           inputProps={{
             onSelect: (event) =>
               onTextFieldSelect?.("forceRankTitle", event, formData.title),
@@ -111,6 +113,7 @@ export default function ForceRankForm({
           label="Top Label"
           value={formData.highLabel || ""}
           onChange={(value) => updateField("highLabel", value)}
+          onRequestAutoSave={onRequestAutoSave}
           inputProps={{
             onSelect: (event) =>
               onTextFieldSelect?.(
@@ -125,6 +128,7 @@ export default function ForceRankForm({
           label="Bottom Label"
           value={formData.lowLabel || ""}
           onChange={(value) => updateField("lowLabel", value)}
+          onRequestAutoSave={onRequestAutoSave}
           inputProps={{
             onSelect: (event) =>
               onTextFieldSelect?.(
@@ -139,6 +143,7 @@ export default function ForceRankForm({
           label="Question"
           value={formData.question || ""}
           onChange={(value) => updateField("question", value)}
+          onRequestAutoSave={onRequestAutoSave}
           onSelectionChange={(selectionInfo) =>
             onRichTextSelection?.(
               "forceRankQuestion",

@@ -5,6 +5,7 @@ export default function ProfileForm({
   formData,
   updateField,
   askKyperHandlers = {},
+  onRequestAutoSave,
 }) {
   const {
     onTextFieldSelect,
@@ -23,6 +24,7 @@ export default function ProfileForm({
             label="Heading"
             value={formData.heading || ""}
             onChange={(value) => updateField("heading", value)}
+            onRequestAutoSave={onRequestAutoSave}
             inputProps={{
               onSelect: (event) =>
                 onTextFieldSelect?.("profileHeading", event, formData.heading),
@@ -34,6 +36,7 @@ export default function ProfileForm({
             label="Body"
             value={formData.body || ""}
             onChange={(value) => updateField("body", value)}
+            onRequestAutoSave={onRequestAutoSave}
             onSelectionChange={(selectionInfo) =>
               onRichTextSelection?.("profileBody", selectionInfo, formData.body)
             }

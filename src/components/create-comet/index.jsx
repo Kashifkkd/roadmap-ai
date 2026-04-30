@@ -21,11 +21,22 @@ import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
 function normalizeWebpageUrlEntry(item, defaultUploaded = false) {
   if (typeof item === "string") {
-    return { url: item, comment: "", isUploaded: defaultUploaded };
+    return {
+      url: item,
+      title: "",
+      comment: "",
+      isUploaded: defaultUploaded,
+    };
   }
 
   return {
     url: item?.webpage_url ?? item?.url ?? "",
+    title:
+      item?.title ??
+      item?.page_title ??
+      item?.webpage_title ??
+      item?.source_name ??
+      "",
     comment: item?.comment ?? "",
     isUploaded:
       typeof item?.isUploaded === "boolean" ? item.isUploaded : defaultUploaded,
@@ -56,6 +67,7 @@ function getUniqueWebpageUrlEntries(items = [], defaultUploaded = false) {
     const existing = uniqueEntries[existingIndex];
     uniqueEntries[existingIndex] = {
       ...existing,
+      title: existing.title || normalized.title,
       comment: existing.comment || normalized.comment,
       isUploaded: existing.isUploaded || normalized.isUploaded,
     };
@@ -559,7 +571,11 @@ export default function CreateComet({
           personalizationEnabled,
           sourceFiles: files,
           webpage_url: uniqueWebpageUrls
-            .map((e) => ({ webpage_url: e.url.trim(), comment: e.comment ?? "" })),
+            .map((e) => ({
+              webpage_url: e.url.trim(),
+              title: e.title ?? "",
+              comment: e.comment ?? "",
+            })),
         };
         await onSubmit(formData);
       }
@@ -989,7 +1005,11 @@ export default function CreateComet({
         ],
         to_modify: {},
         webpage_url: uniqueWebpageUrls
-          .map((e) => ({ webpage_url: e.url.trim(), comment: e.comment ?? "" })),
+          .map((e) => ({
+            webpage_url: e.url.trim(),
+            title: e.title ?? "",
+            comment: e.comment ?? "",
+          })),
       });
 
       console.log("Final payload:", cometJsonForMessage, {

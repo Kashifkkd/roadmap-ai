@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { SectionHeader, RichTextArea } from "./FormFields";
+import { SectionHeader, RichTextArea, TextField, TextArea } from "./FormFields";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -205,6 +205,7 @@ export default function AssessmentForm({
   updateListItem,
   removeListItem,
   askKyperHandlers = {},
+  onRequestAutoSave,
 }) {
   const {
     onTextFieldSelect,
@@ -384,31 +385,28 @@ export default function AssessmentForm({
       </div>
       {/* Assessment Title */}
       <div className="bg-white rounded-lg p-3 align-center mb-2">
-        <Label className="block text-sm font-medium text-primary mb-2">
-          Title
-        </Label>
-
-        <Input
-          type="text"
+        <TextField
+          label="Title"
           value={assessmentTitle}
-          onChange={(e) => updateTitle(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          onSelect={(event) =>
-            onTextFieldSelect?.("assessmentTitle", event, assessmentTitle)
-          }
-          onBlur={onFieldBlur}
+          onChange={updateTitle}
+          onRequestAutoSave={onRequestAutoSave}
+          inputProps={{
+            onSelect: (event) =>
+              onTextFieldSelect?.("assessmentTitle", event, assessmentTitle),
+            onBlur: onFieldBlur,
+          }}
         />
       </div>
       <div className="bg-white rounded-lg p-3 align-center mb-2">
-        <Label className="block text-sm font-medium text-primary mb-2">
-          Description
-        </Label>
-        <Input
-          type="text"
+        <TextArea
+          label="Description"
           value={assessmentDescription}
-          onChange={(e) => updateDescription(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          onBlur={onFieldBlur}
+          onChange={updateDescription}
+          onRequestAutoSave={onRequestAutoSave}
+          rows={2}
+          inputProps={{
+            onBlur: onFieldBlur,
+          }}
         />
       </div>
 
@@ -432,6 +430,7 @@ export default function AssessmentForm({
               onChange={(value) =>
                 updateQuestionField(questionIndex, "text", value)
               }
+              onRequestAutoSave={onRequestAutoSave}
               onSelectionChange={(selectionInfo) =>
                 onRichTextSelection?.(
                   "assessmentQuestions",

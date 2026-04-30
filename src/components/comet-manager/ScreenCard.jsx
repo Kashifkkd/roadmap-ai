@@ -26,12 +26,27 @@ function stripHtmlToPlainText(html) {
 /** Plain-text snippet for the card body area — schemas differ by screen type. */
 function getScreenCardContentSnippet(screen) {
   const content = screen?.screenContents?.content || {};
+  const formData = screen?.formData || {};
   const contentType = screen?.screenContents?.contentType;
+
+  if (contentType === "action" || contentType === "actions") {
+    return (
+      content.text ||
+      formData.text ||
+      formData.actionDescription ||
+      content.body ||
+      formData.body ||
+      ""
+    );
+  }
 
   const generic =
     content.body ||
+    formData.body ||
     content.keyLearning ||
+    formData.keyLearning ||
     content.key_learning ||
+    formData.key_learning ||
     "";
   if (generic) return generic;
 
@@ -51,11 +66,47 @@ function getScreenCardContentSnippet(screen) {
     contentType === "socialDiscussion" ||
     contentType === "social"
   ) {
-    return content.question || content.body || content.title || "";
+    return (
+      content.question ||
+      formData.question ||
+      content.body ||
+      formData.body ||
+      content.title ||
+      formData.title ||
+      ""
+    );
   }
 
   if (contentType === "reflection") {
-    return content.prompt || content.body || "";
+    return (
+      content.prompt ||
+      formData.prompt ||
+      content.reflectionPrompt ||
+      formData.reflectionPrompt ||
+      content.body ||
+      formData.body ||
+      ""
+    );
+  }
+
+  if (
+    contentType === "mcq" ||
+    contentType === "poll" ||
+    contentType === "poll_mcq" ||
+    contentType === "pollMcq" ||
+    contentType === "force_rank" ||
+    contentType === "forceRank" ||
+    contentType === "linear"
+  ) {
+    return (
+      content.question ||
+      formData.question ||
+      content.body ||
+      formData.body ||
+      content.title ||
+      formData.title ||
+      ""
+    );
   }
 
   return "";

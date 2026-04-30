@@ -26,6 +26,7 @@ export default function PollMcqForm({
   removeListItem,
   reorderListItem,
   askKyperHandlers = {},
+  onRequestAutoSave,
 }) {
   const {
     onTextFieldSelect,
@@ -149,6 +150,7 @@ export default function PollMcqForm({
           label="Title"
           value={formData.title || ""}
           onChange={(value) => updateField("title", value)}
+          onRequestAutoSave={onRequestAutoSave}
           inputProps={{
             onSelect: (event) =>
               onTextFieldSelect?.("mcqTitle", event, formData.title),
@@ -159,6 +161,7 @@ export default function PollMcqForm({
           label="Question"
           value={formData.question || ""}
           onChange={(value) => updateField("question", value)}
+          onRequestAutoSave={onRequestAutoSave}
           onSelectionChange={(selectionInfo) =>
             onRichTextSelection?.(
               "mcqQuestion",
@@ -173,6 +176,7 @@ export default function PollMcqForm({
           label="Key Learning"
           value={formData.keyLearning || ""}
           onChange={(value) => updateField("keyLearning", value)}
+          onRequestAutoSave={onRequestAutoSave}
           placeholder=""
           rows={3}
           inputProps={{

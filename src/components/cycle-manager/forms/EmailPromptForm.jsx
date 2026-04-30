@@ -40,6 +40,7 @@ export default function EmailPromptForm({
           label="Title"
           value={formData.heading || ""}
           onChange={(value) => updateField("heading", value)}
+          onRequestAutoSave={onRequestAutoSave}
           inputProps={{
             onSelect: (event) =>
               onTextFieldSelect?.(
@@ -54,6 +55,7 @@ export default function EmailPromptForm({
           label="Description"
           value={formData.body || ""}
           onChange={(value) => updateField("body", value)}
+          onRequestAutoSave={onRequestAutoSave}
           onSelectionChange={(selectionInfo) =>
             onRichTextSelection?.(
               `${fieldPrefix}Body`,
@@ -68,6 +70,7 @@ export default function EmailPromptForm({
           label="Email"
           value={formData.email || ""}
           onChange={(value) => updateField("email", value)}
+          onRequestAutoSave={onRequestAutoSave}
           inputProps={{
             type: "email",
             onSelect: (event) =>

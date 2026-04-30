@@ -6,6 +6,8 @@ import StatusButton from "./StatusButton";
 import { useCometSettings } from "@/contexts/CometSettingsContext";
 import { toast } from "@/components/ui/toast";
 import CreateCycleVariantModal from "./CreateCycleVariantModal";
+import CreateCycleRemixModal from "./CreateCycleRemixModal";
+import { appendCacheBuster, refreshCloudfrontCookies } from "@/lib/cloudfront-cookies";
 
 /** When the sessions list omits path_id, session details in localStorage may still have it. */
 function pathIdFromSessionCache(sessionId) {
@@ -57,8 +59,10 @@ const Comet = ({
 }) => {
   const [disabled, setDisabled] = useState(false);
   const [imgSrc, setImgSrc] = useState(imageURL || "/fallbackImage.png");
+  const [didRetryImage, setDidRetryImage] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
+  const [isRemixModalOpen, setIsRemixModalOpen] = useState(false);
   const menuRef = useRef(null);
   const { setIsCometSettingsOpen } = useCometSettings();
   const isPublishedCycle =
@@ -88,9 +92,32 @@ const Comet = ({
     setIsVariantModalOpen(true);
   };
 
+  const handleRemixClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    setIsRemixModalOpen(true);
+  };
+
   useEffect(() => {
     setImgSrc(imageURL || "/fallbackImage.png");
+    setDidRetryImage(false);
   }, [imageURL]);
+
+  const handleCardImageError = async () => {
+    if (!didRetryImage && imageURL && imageURL !== "/fallbackImage.png") {
+      setDidRetryImage(true);
+      const result = await refreshCloudfrontCookies({
+        force: true,
+        showFailureToast: true,
+      });
+      if (result?.ok) {
+        setImgSrc(appendCacheBuster(imageURL));
+        return;
+      }
+    }
+    setImgSrc("/fallbackImage.png");
+  };
 
   const handleClick = async () => {
     if (disabled) return;
@@ -161,10 +188,10 @@ const Comet = ({
   return (
     <div
       onClick={handleClick}
-      className="relative flex flex-col w-full h-[250px] md:h-[260px] lg:h-[300px] 
-      xl:h-[330px] 2xl:h-[360px] shrink-0 rounded-2xl overflow-hidden group cursor-pointer transition-transform duration-300 ease-in-out"
+      className="relative flex flex-col w-full min-h-[250px] md:min-h-[260px] lg:min-h-[300px] 
+      xl:min-h-[330px] 2xl:min-h-[360px] shrink-0 rounded-2xl overflow-hidden group cursor-pointer transition-transform duration-300 ease-in-out"
     >
-      {/* Background image with zoom effect */}
+
       <Image
         src={imgSrc}
         alt="card image"
@@ -173,12 +200,12 @@ const Comet = ({
         className="absolute inset-0 z-0 object-cover transition-transform duration-500 ease-out group-hover:scale-110"
         priority
         unoptimized
-        onError={() => setImgSrc("/fallbackImage.png")}
+        onError={handleCardImageError}
       />
       {/* White overlay on hover */}
       {/* new white overlay on hover  */}
       <div className="absolute top-2 bottom-2 left-2 right-2 rounded-lg p-3 bg-white/0 group-hover:bg-white transition-all duration-150 z-30 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
-        <div className="flex flex-col w-full h-full justify-between">
+        <div className="flex flex-col w-full h-full justify-end">
           <div className="flex flex-col gap-2">
             <div className="flex items-start justify-between gap-2">
               <StatusButton status={status} />
@@ -199,7 +226,14 @@ const Comet = ({
                         onClick={handleCreateVariantClick}
                         className="w-full px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50 transition-colors text-left whitespace-nowrap"
                       >
-                        Create Variant
+                        Copy Cycle
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRemixClick}
+                        className="w-full px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50 transition-colors text-left whitespace-nowrap"
+                      >
+                        Remix
                       </button>
                     </div>
                   )}
@@ -209,25 +243,25 @@ const Comet = ({
             <span className="text-gray-800 font-noto font-semibold text-[18px] leading-[24px] tracking-normal line-clamp-3 min-h-[48px]">
               {title}
             </span>
-            <div className="flex items-center w-fit rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
-              <span className="font-inter font-medium text-sm leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+            <div className="flex items-center w-fit rounded-4xl py-1 pr-1 pl-4 bg-[#E3E1FC]">
+              <span className="font-inter font-medium text-xs leading-4 text-gray-900 flex items-center gap-2 whitespace-nowrap">
                 Total Active Users
                 <span className="bg-white py-0.5 px-2 rounded-4xl">
                   {formatMetric(activeUsers)}
                 </span>
               </span>
             </div>
-            <div className="flex w-full gap-2 flex-wrap">
-              <div className="flex items-center rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
-                <span className="font-inter font-medium text-sm leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+            <div className="flex w-full gap-2 flex-wrap mb-2">
+              <div className="flex items-center rounded-4xl py-1 pr-1 pl-4 bg-[#E3E1FC]">
+                <span className="font-inter font-medium text-xs leading-4 text-gray-900 flex items-center gap-2 whitespace-nowrap">
                   WAU
                   <span className="bg-white py-0.5 px-2 rounded-4xl">
                     {formatMetric(wau)}
                   </span>
                 </span>
               </div>
-              <div className="flex items-center rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
-                <span className="font-inter font-medium text-sm leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+              <div className="flex items-center rounded-4xl py-1 pr-1 pl-4 bg-[#E3E1FC]">
+                <span className="font-inter font-medium text-xs leading-4 text-gray-900 flex items-center gap-2 whitespace-nowrap">
                   MAU
                   <span className="bg-white py-0.5 px-2 rounded-4xl">
                     {formatMetric(mau)}
@@ -248,7 +282,7 @@ const Comet = ({
               })}
             </span>
             <div className="flex gap-1 flex-nowrap">
-              <button className="flex justify-center items-center rounded-sm py-2 px-3 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer">
+              <button className="flex justify-center items-center rounded-sm py-[8px] px-[12px] bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer">
                 <div className="flex items-center gap-1.5">
                   <Image
                     src="/edit.png"
@@ -256,12 +290,12 @@ const Comet = ({
                     height={16}
                     width={16}
                   />
-                  <span className="font-inter font-medium text-sm text-white whitespace-nowrap">
+                  <span className="font-inter font-medium text-xs text-white whitespace-nowrap">
                     Edit
                   </span>
                 </div>
               </button>
-              <button className="flex justify-center items-center rounded-sm py-2 px-3 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer">
+              <button className="flex justify-center items-center rounded-sm py-[8px] px-[12px] bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer">
                 <div className="flex items-center gap-1.5">
                   <Image
                     src="/preview.png"
@@ -269,14 +303,14 @@ const Comet = ({
                     height={16}
                     width={16}
                   />
-                  <span className="font-inter font-medium text-sm text-white whitespace-nowrap">
+                  <span className="font-inter font-medium text-xs text-white whitespace-nowrap">
                     Preview
                   </span>
                 </div>
               </button>
               <button
                 type="button"
-                className="flex justify-center items-center rounded-sm py-2 px-3 bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer"
+                className="flex justify-center items-center rounded-sm py-[8px] px-[12px] bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer"
                 onClick={handleSettingsClick}
               >
                 <div className="flex items-center gap-1.5">
@@ -286,7 +320,7 @@ const Comet = ({
                     height={16}
                     width={16}
                   />
-                  <span className="font-inter font-medium text-sm text-white whitespace-nowrap">
+                  <span className="font-inter font-medium text-xs text-white whitespace-nowrap">
                     Settings
                   </span>
                 </div>
@@ -304,8 +338,8 @@ const Comet = ({
             {title}
           </span>
           <div className="flex flex-col gap-2">
-            <div className="flex items-center w-fit rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
-              <span className="font-inter font-medium text-xs leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+            <div className="flex items-center w-fit rounded-4xl py-1 pr-1 pl-4 bg-[#E3E1FC]">
+              <span className="font-inter font-medium text-xs leading-4 text-gray-900 flex items-center gap-2 whitespace-nowrap">
                 Total Active Users
                 <span className="bg-white py-0.5 px-2 rounded-4xl">
                   {formatMetric(activeUsers)}
@@ -313,16 +347,16 @@ const Comet = ({
               </span>
             </div>
             <div className="flex w-full gap-2 flex-wrap">
-              <div className="flex items-center rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
-                <span className="font-inter font-medium text-xs leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+              <div className="flex items-center rounded-4xl py-1 pr-1 pl-4 bg-[#E3E1FC]">
+                <span className="font-inter font-medium text-xs leading-4 text-gray-900 flex items-center gap-2 whitespace-nowrap">
                   WAU
                   <span className="bg-white py-0.5 px-2 rounded-4xl">
                     {formatMetric(wau)}
                   </span>
                 </span>
               </div>
-              <div className="flex items-center rounded-4xl py-1 pr-1 pl-2 bg-[#E3E1FC]">
-                <span className="font-inter font-medium text-xs leading-5 text-gray-900 flex items-center gap-2 whitespace-nowrap">
+              <div className="flex items-center rounded-4xl py-1 pr-1 pl-4 bg-[#E3E1FC]">
+                <span className="font-inter font-medium text-xs leading-4 text-gray-900 flex items-center gap-2 whitespace-nowrap">
                   MAU
                   <span className="bg-white py-0.5 px-2 rounded-4xl">
                     {formatMetric(mau)}
@@ -339,6 +373,19 @@ const Comet = ({
           open={isVariantModalOpen}
           onOpenChange={setIsVariantModalOpen}
           cycleName={title}
+          numericPathId={(() => {
+            if (path_id != null && path_id !== "") {
+              const n = Number(path_id);
+              if (Number.isFinite(n) && n >= 0) return n;
+            }
+            return pathIdFromSessionCache(session_id);
+          })()}
+        />
+        <CreateCycleRemixModal
+          open={isRemixModalOpen}
+          onOpenChange={setIsRemixModalOpen}
+          cycleName={title}
+          sessionId={session_id}
           numericPathId={(() => {
             if (path_id != null && path_id !== "") {
               const n = Number(path_id);

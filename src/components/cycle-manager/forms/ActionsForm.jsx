@@ -92,6 +92,7 @@ export default function ActionsForm({
             label="Title"
             value={formData.title || ""}
             onChange={(value) => updateField("title", value)}
+            onRequestAutoSave={onRequestAutoSave}
             inputProps={{
               onSelect: (event) =>
                 onTextFieldSelect?.("actionTitle", event, formData.title),
@@ -103,6 +104,7 @@ export default function ActionsForm({
             label="Description"
             value={formData.text || ""}
             onChange={(value) => updateField("text", value)}
+            onRequestAutoSave={onRequestAutoSave}
             onSelectionChange={(selectionInfo) =>
               onRichTextSelection?.("actionText", selectionInfo, formData.text)
             }

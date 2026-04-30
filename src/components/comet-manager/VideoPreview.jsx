@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { X, ExternalLink } from "lucide-react";
+import { appendCacheBuster, refreshCloudfrontCookies } from "@/lib/cloudfront-cookies";
 
 export default function VideoPreview({ asset, category, onClose }) {
   const [hasError, setHasError] = useState(false);
-
-  if (!asset) return null;
-
+  const [didRetry, setDidRetry] = useState(false);
   const assetUrl = asset?.asset_url || "";
+  const [videoSrc, setVideoSrc] = useState(assetUrl);
   const title = category?.name || "Video and Animation";
 
   const fileName =
@@ -16,6 +16,35 @@ export default function VideoPreview({ asset, category, onClose }) {
     asset?.asset_name ||
     assetUrl.split("?")[0].split("/").pop() ||
     "Video";
+
+  useEffect(() => {
+    setVideoSrc(assetUrl);
+    setHasError(false);
+    setDidRetry(false);
+  }, [assetUrl]);
+
+  if (!asset) return null;
+
+  const handleVideoError = async () => {
+    if (!assetUrl) {
+      setHasError(true);
+      return;
+    }
+
+    if (!didRetry) {
+      setDidRetry(true);
+      const result = await refreshCloudfrontCookies({
+        force: true,
+        showFailureToast: true,
+      });
+      if (result?.ok) {
+        setVideoSrc(appendCacheBuster(assetUrl));
+        return;
+      }
+    }
+
+    setHasError(true);
+  };
 
   return (
     <div className="flex flex-col h-full w-full bg-white rounded-lg overflow-hidden">
@@ -57,16 +86,16 @@ export default function VideoPreview({ asset, category, onClose }) {
 
       {/* Video */}
       <div className="flex-1 bg-black">
-        {assetUrl && !hasError ? (
+        {videoSrc && !hasError ? (
           <video
-            key={assetUrl}
+            key={videoSrc}
             className="w-full h-full"
             controls
             playsInline
             preload="metadata"
-            onError={() => setHasError(true)}
+            onError={handleVideoError}
           >
-            <source src={assetUrl} />
+            <source src={videoSrc} />
           </video>
         ) : (
           <div className="flex h-full items-center justify-center p-8 text-center bg-gray-50">

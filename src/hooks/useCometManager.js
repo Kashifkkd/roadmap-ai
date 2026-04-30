@@ -13,7 +13,7 @@ export function applyScreenDeleteToOutline(prevOutline, screenId) {
     for (const stepItem of chapter.steps || []) {
       if (stepItem.screens) {
         stepItem.screens = stepItem.screens.filter(
-          (s) => String(s.id) !== String(screenId),
+          (s) => !screenMatchesInteractionId(s, screenId),
         );
         for (let i = 0; i < stepItem.screens.length; i++) {
           stepItem.screens[i].position = i + 1;
@@ -22,6 +22,61 @@ export function applyScreenDeleteToOutline(prevOutline, screenId) {
     }
   }
   return newOutline;
+}
+
+/** Stable chapter identifier for UI state and chapter lookups. */
+export function getChapterInteractionId(chapter, chapterIndex = 0) {
+  if (!chapter || typeof chapter !== "object") {
+    return `chapter-${chapterIndex}`;
+  }
+
+  if (chapter.uuid !== undefined && chapter.uuid !== null) {
+    const uuid = String(chapter.uuid).trim();
+    if (uuid) return uuid;
+  }
+
+  const chapterDbId = chapter.chapter_id ?? chapter.chapterId;
+  if (chapterDbId !== undefined && chapterDbId !== null) {
+    const normalizedDbId = String(chapterDbId).trim();
+    if (normalizedDbId) return `chapter-db-${normalizedDbId}`;
+  }
+
+  if (chapter.id !== undefined && chapter.id !== null) {
+    const normalizedId = String(chapter.id).trim();
+    if (normalizedId) return `chapter-${normalizedId}-${chapterIndex}`;
+  }
+
+  return `chapter-${chapterIndex}`;
+}
+
+/** Stable screen identifier for UI interactions and edits. */
+function getScreenInteractionId(screen, fallbackIndex = 0) {
+  if (!screen || typeof screen !== "object") {
+    return `screen-${fallbackIndex}`;
+  }
+
+  if (screen.uuid !== undefined && screen.uuid !== null) {
+    const normalizedUuid = String(screen.uuid).trim();
+    if (normalizedUuid) return normalizedUuid;
+  }
+
+  if (screen.id !== undefined && screen.id !== null) {
+    const normalizedId = String(screen.id).trim();
+    if (normalizedId) return normalizedId;
+  }
+
+  return `screen-${fallbackIndex}`;
+}
+
+function screenMatchesInteractionId(screen, targetScreenId) {
+  if (!screen || targetScreenId === undefined || targetScreenId === null) {
+    return false;
+  }
+  const target = String(targetScreenId);
+  const candidateIds = [screen.uuid, screen.id]
+    .filter((value) => value !== undefined && value !== null)
+    .map((value) => String(value));
+  return candidateIds.includes(target);
 }
 
 /** Integer for POST …/chapters/{id}/variant — from session chapter fields only. */
@@ -146,7 +201,7 @@ export function useCometManager(sessionData = null) {
 
     const pathChapters = outline.chapters || [];
     return pathChapters.map((chapter, chapterIndex) => {
-      const chapterId = chapter.uuid || chapter.id || `chapter-${chapterIndex}`;
+      const chapterId = getChapterInteractionId(chapter, chapterIndex);
       const chapterName = chapter.name || `Chapter ${chapterIndex + 1}`;
 
       // Transform steps for this chapter
@@ -216,7 +271,7 @@ export function useCometManager(sessionData = null) {
     const pathChapters = outline.chapters || [];
 
     pathChapters.forEach((chapter, chapterIndex) => {
-      const chapterId = chapter.uuid || `chapter-${chapterIndex}`;
+      const chapterId = getChapterInteractionId(chapter, chapterIndex);
       const chapterSteps = chapter.steps || [];
 
       chapterSteps.forEach((stepItem, stepIndex) => {
@@ -230,7 +285,7 @@ export function useCometManager(sessionData = null) {
         const stepImageUrl = step.image || null;
         const isGeneratingImages = !!step.image_generation_enqueued;
         stepScreens.forEach((screen, screenIndex) => {
-          const screenId = screen.id || `screen-${screenCounter}`;
+          const screenId = getScreenInteractionId(screen, screenCounter);
 
           // Extract formData from screenContents
           let formData = {};
@@ -311,7 +366,7 @@ export function useCometManager(sessionData = null) {
       for (const chapter of pathChapters) {
         for (const stepItem of chapter.steps || []) {
           const screenIndex = stepItem.screens?.findIndex(
-            (s) => s.id === screenId,
+            (s) => screenMatchesInteractionId(s, screenId),
           );
           if (screenIndex !== undefined && screenIndex >= 0) {
             // Get the current screen from the latest state (prevOutline)
@@ -358,9 +413,10 @@ export function useCometManager(sessionData = null) {
       const targetChapterId = newScreen.chapterId;
       const targetStepId = newScreen.stepId;
 
-      for (const chapter of pathChapters) {
+      for (let chapterIndex = 0; chapterIndex < pathChapters.length; chapterIndex++) {
+        const chapter = pathChapters[chapterIndex];
         // Match by uuid
-        const chapterMatchId = chapter.uuid || chapter.id;
+        const chapterMatchId = getChapterInteractionId(chapter, chapterIndex);
         if (chapterMatchId === targetChapterId) {
           for (const stepItem of chapter.steps || []) {
             // Match step by uuid
@@ -460,9 +516,10 @@ export function useCometManager(sessionData = null) {
       const targetStepId = newScreen.stepId;
 
       // Find the target step
-      for (const chapter of pathChapters) {
+      for (let chapterIndex = 0; chapterIndex < pathChapters.length; chapterIndex++) {
+        const chapter = pathChapters[chapterIndex];
         // Match by uuid
-        const chapterMatchId = chapter.uuid || chapter.id;
+        const chapterMatchId = getChapterInteractionId(chapter, chapterIndex);
         if (chapterMatchId === targetChapterId) {
           for (const stepItem of chapter.steps || []) {
             // Match step by uuid
@@ -544,8 +601,8 @@ export function useCometManager(sessionData = null) {
 
       const newOutline = JSON.parse(JSON.stringify(prevOutline));
       const pathChapters = newOutline.chapters || [];
-      const chapterIndex = pathChapters.findIndex((chapter) => {
-        const chapterMatchId = chapter.uuid || chapter.id;
+      const chapterIndex = pathChapters.findIndex((chapter, idx) => {
+        const chapterMatchId = getChapterInteractionId(chapter, idx);
         return String(chapterMatchId) === String(chapterId);
       });
 

@@ -47,6 +47,12 @@ export default function AllCometsContainer({ cometSessions }) {
       const result = await response.json();
       console.log("Fetched session details:", result);
 
+      const sessionState = result?.meta?.state;
+      if (sessionState === "processing_variant") {
+        toast.error("Remix is happening. Please wait until it is ready.");
+        return;
+      }
+
       localStorage.setItem("sessionData", JSON.stringify(result));
       localStorage.setItem("sessionId", session_id);
 

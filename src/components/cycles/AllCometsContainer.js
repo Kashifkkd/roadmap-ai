@@ -47,6 +47,12 @@ export default function AllCometsContainer({ cometSessions }) {
       const result = await response.json();
       console.log("Fetched session details:", result);
 
+      const sessionState = result?.meta?.state;
+      if (sessionState === "processing_variant") {
+        toast.error("Remix is happening. Please wait until it is ready.");
+        return;
+      }
+
       localStorage.setItem("sessionData", JSON.stringify(result));
       localStorage.setItem("sessionId", session_id);
 
@@ -79,7 +85,7 @@ export default function AllCometsContainer({ cometSessions }) {
   // console.log("Rendering AllCometsContainer with sessions:", cometSessions);
   return (
     <div className="flex flex-1 w-[90%] mx-auto rounded-2xl p-4 bg-white overflow-y-auto no-scrollbar">
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(375px,1fr))] w-full gap-4 justify-items-center content-start items-start">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(375px,auto))] w-full gap-4 justify-items-center content-start items-start">
         {cometSessions.map((c, idx) => (
           <Comet
             key={idx} // unique key for each item

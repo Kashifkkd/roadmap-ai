@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import {
   X,
   MoreHorizontal,
@@ -95,6 +95,62 @@ export default function UserManagement({
   const [assigningPathUsers, setAssigningPathUsers] = useState(false);
   const [pathUserEmailSearch, setPathUserEmailSearch] = useState("");
   const [showRegularAddForm, setShowRegularAddForm] = useState(false);
+
+  // ── Dynamic chip overflow ──────────────────────────────────────────────────
+  const chipsContainerRef = useRef(null);
+  const [visibleChipCount, setVisibleChipCount] = useState(pathUserEmails.length);
+
+  useLayoutEffect(() => {
+    if (!chipsContainerRef.current || pathUserEmails.length === 0) return;
+
+    const calculate = () => {
+      const container = chipsContainerRef.current;
+      if (!container) return;
+
+      const containerWidth = container.offsetWidth;
+      const GAP = 8; // gap-2 = 8px
+      const BADGE_RESERVED = 72; // approx width of "+N more" badge
+
+      let usedWidth = 0;
+      let count = 0;
+
+      const chipEls = Array.from(container.querySelectorAll("[data-chip]"));
+
+      for (let i = 0; i < chipEls.length; i++) {
+        const chipWidth = chipEls[i].offsetWidth + GAP;
+        const isLast = i === pathUserEmails.length - 1;
+        const needsBadgeSpace = !isLast;
+
+        if (
+          usedWidth + chipWidth + (needsBadgeSpace ? BADGE_RESERVED : 0) >
+          containerWidth
+        ) {
+          break;
+        }
+        usedWidth += chipWidth;
+        count++;
+      }
+
+      setVisibleChipCount(Math.max(count, 1)); // always show at least 1
+    };
+
+    // Temporarily reveal all chips so we can measure them
+    setVisibleChipCount(pathUserEmails.length);
+
+    // Measure after the DOM has painted all chips
+    const raf1 = requestAnimationFrame(() => {
+      requestAnimationFrame(calculate);
+    });
+
+    const observer = new ResizeObserver(calculate);
+    observer.observe(chipsContainerRef.current);
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      observer.disconnect();
+    };
+  }, [pathUserEmails, emailOptions]);
+  // ──────────────────────────────────────────────────────────────────────────
 
   // Helper functions
   const normalizeSearchTerm = (term) => term.trim().toLowerCase();
@@ -470,8 +526,8 @@ export default function UserManagement({
 
       if (res?.success) {
         const message = pathUserEmails.length === 1 
-          ? "User assigned to this cycle"
-          : "Users assigned to this cycle";
+          ? "User assignments updated successfully"
+          : "Users assignments updated successfully";
         toast.success(message);
 
         // Refresh path users list
@@ -588,7 +644,6 @@ export default function UserManagement({
       userData.manager_email = trimmedManagerEmail;
     }
     if (accountabilityEmailsList.length > 0) {
-      userData.accountability_emails = accountabilityEmailsList;
       userData.accountability_emails = accountabilityEmailsList;
     }
 
@@ -841,6 +896,22 @@ export default function UserManagement({
     };
   }, []);
 
+  // ── Derived chip values ────────────────────────────────────────────────────
+  const visibleChips = pathUserEmails.slice(0, visibleChipCount);
+  const hiddenChipCount = pathUserEmails.length - visibleChipCount;
+  const hiddenChipNames = pathUserEmails.slice(visibleChipCount).map((emailVal) => {
+    const matchedUser = emailOptions.find((u) => u.email === emailVal);
+    return matchedUser
+      ? [
+          matchedUser.first_name || matchedUser.firstName || "",
+          matchedUser.last_name || matchedUser.lastName || "",
+        ]
+          .filter(Boolean)
+          .join(" ") || emailVal
+      : emailVal;
+  });
+  // ──────────────────────────────────────────────────────────────────────────
+
   return (
     <>
       <div className="h-full flex flex-col">
@@ -1054,36 +1125,52 @@ export default function UserManagement({
               <p className="text-sm font-medium text-gray-800 mb-2">
                 Select Users ({pathUserEmails.length})
               </p>
+
               {pathUserEmails.length > 0 && (
-                <div className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto user-list-scrollbar">
-                  {pathUserEmails.map((emailVal) => {
-                    const matchedUser = emailOptions.find(
-                      (u) => u.email === emailVal,
-                    );
-                    const displayName = matchedUser
-                      ? [
-                        matchedUser.first_name || matchedUser.firstName || "",
-                        matchedUser.last_name || matchedUser.lastName || "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ") || emailVal
-                      : emailVal;
-                    return (
-                      <span
-                        key={emailVal}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-100 text-xs font-medium text-primary-700 border border-primary-200"
-                      >
-                        {displayName}
-                        <button
-                          type="button"
-                          className="text-primary-500 hover:text-primary-800 transition-colors"
-                          onClick={() => handleRemovePathUserEmail(emailVal)}
+                <div className="flex items-center gap-2">
+                  {/* Scrollable chips */}
+                  <div
+                    ref={chipsContainerRef}
+                    className="flex gap-2 max-h-[120px] overflow-y-auto user-list-scrollbar flex-1 pb-2"
+                  >
+                    {pathUserEmails.map((emailVal) => {
+                      const matchedUser = emailOptions.find((u) => u.email === emailVal);
+                      const displayName = matchedUser
+                        ? [
+                            matchedUser.first_name || matchedUser.firstName || "",
+                            matchedUser.last_name || matchedUser.lastName || "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ") || emailVal
+                        : emailVal;
+                      return (
+                        <span
+                          key={emailVal}
+                          data-chip
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-100 text-xs font-medium text-primary-700 border border-primary-200 shrink-0"
                         >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </span>
-                    );
-                  })}
+                          {displayName}
+                          <button
+                            type="button"
+                            className="text-primary-500 hover:text-primary-800 transition-colors"
+                            onClick={() => handleRemovePathUserEmail(emailVal)}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+
+                  {/* "+N more" badge — always visible, never scrolls */}
+                  {hiddenChipCount > 0 && (
+                    <span
+                      className="shrink-0 text-xs pl-2 border-l border-[#D5D7DA] text-gray-500 cursor-default"
+                      title={hiddenChipNames.join(", ")}
+                    >
+                      +{hiddenChipCount}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -1133,7 +1220,6 @@ export default function UserManagement({
               </Button> */}
 
             </div>
-            
             
             {/* User list */}
             <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1 user-list-scrollbar">
@@ -1536,7 +1622,7 @@ export default function UserManagement({
                         <span className="text-sm font-medium text-gray-700">
                           Current Cycle
                         </span>
-                        
+
                       </button>
 
                       {/* Comet Type Dropdown */}

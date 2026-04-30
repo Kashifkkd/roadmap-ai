@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { CircleX, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -39,10 +39,10 @@ export default function CreateStepVariantModal({
   sourcePhaseName = "",
   sourceStepName = "",
 }) {
-  const [copyClientValue, setCopyClientValue] = useState("current");
+  const [copyClientValue, setCopyClientValue] = useState("");
   const [clients, setClients] = useState([]);
-  const [copyCycleValue, setCopyCycleValue] = useState("current");
-  const [copyPhaseValue, setCopyPhaseValue] = useState("Current Phase");
+  const [copyCycleValue, setCopyCycleValue] = useState("");
+  const [copyPhaseValue, setCopyPhaseValue] = useState("");
   const [cycles, setCycles] = useState([]);
   const [isLoadingCycles, setIsLoadingCycles] = useState(false);
   const [phases, setPhases] = useState([]);
@@ -51,6 +51,7 @@ export default function CreateStepVariantModal({
   const [instructions, setInstructions] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [manualStepIdInput, setManualStepIdInput] = useState("");
+  const titleInputRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
@@ -60,6 +61,11 @@ export default function CreateStepVariantModal({
       setManualStepIdInput("");
     }
   }, [open, numericStepId]);
+
+  useEffect(() => {
+    if (!open) return;
+    setTitle(sourceStepName || "");
+  }, [open, sourceStepName]);
 
   useEffect(() => {
     if (!open) return;
@@ -78,27 +84,31 @@ export default function CreateStepVariantModal({
 
   useEffect(() => {
     if (!open) return;
-    setCopyCycleValue("current");
+    setCopyCycleValue("");
+    setPhases([]);
+    setCopyPhaseValue("");
   }, [open, copyClientValue]);
 
   useEffect(() => {
     if (!open) return;
-    setCopyPhaseValue("Current Phase");
-  }, [open, copyClientValue, copyCycleValue]);
+    setCopyPhaseValue("");
+  }, [open, copyCycleValue]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const timer = window.setTimeout(() => {
+      titleInputRef.current?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
 
     const fetchCycles = async () => {
-      const currentClientIdRaw =
-        typeof window !== "undefined" ? localStorage.getItem("Client id") : null;
-      const currentClientId = parseInt((currentClientIdRaw || "").trim(), 10);
-      const selectedClientId =
-        copyClientValue !== "current"
-          ? parseInt(copyClientValue.replace("client:", ""), 10)
-          : null;
-      const clientId =
-        copyClientValue === "current" ? currentClientId : selectedClientId;
+      const clientId = parseInt(copyClientValue, 10);
       if (!Number.isFinite(clientId) || clientId < 0) {
         setCycles([]);
         return;
@@ -143,7 +153,7 @@ export default function CreateStepVariantModal({
                 item.session_name.trim()) ||
               "Untitled Cycle",
           }))
-          .filter((item) => item.sessionId && item.status === "published");
+          .filter((item) => item.sessionId);
 
         setCycles(nextCycles);
       } catch {
@@ -161,10 +171,7 @@ export default function CreateStepVariantModal({
     if (!open) return;
 
     const fetchPhasesForCycle = async () => {
-      const targetSessionId =
-        copyCycleValue !== "current"
-          ? copyCycleValue.replace("session:", "").trim()
-          : (typeof sessionId === "string" ? sessionId.trim() : "");
+      const targetSessionId = copyCycleValue.trim();
 
       if (!targetSessionId) {
         setPhases([]);
@@ -222,10 +229,10 @@ export default function CreateStepVariantModal({
 
   const handleClose = () => {
     onOpenChange(false);
-    setCopyClientValue("current");
+    setCopyClientValue("");
     setClients([]);
-    setCopyCycleValue("current");
-    setCopyPhaseValue("Current Phase");
+    setCopyCycleValue("");
+    setCopyPhaseValue("");
     setCycles([]);
     setPhases([]);
     setTitle("");
@@ -261,14 +268,8 @@ export default function CreateStepVariantModal({
       if (trimmedTitle) payload.title = trimmedTitle;
       if (trimmedInstructions) payload.instructions = trimmedInstructions;
 
-      const trimmedSessionId =
-        copyCycleValue !== "current"
-          ? copyCycleValue.replace("session:", "").trim()
-          : (typeof sessionId === "string" ? sessionId.trim() : "");
-      const trimmedChapterUid =
-        copyPhaseValue !== "Current Phase"
-          ? copyPhaseValue.replace("phase:", "").trim()
-          : (typeof sourceChapterUid === "string" ? sourceChapterUid.trim() : "");
+      const trimmedSessionId = copyCycleValue.trim();
+      const trimmedChapterUid = copyPhaseValue.trim();
       const shouldInjectToSession = Boolean(trimmedSessionId && trimmedChapterUid);
       const endpoint = endpoints.stepVariant(String(Math.trunc(pathId)));
       const requestParams = shouldInjectToSession
@@ -299,10 +300,10 @@ export default function CreateStepVariantModal({
           at: new Date().toISOString(),
         };
       }
-      toast.info?.("Step variant debug", {
-        description: `params=${JSON.stringify(requestDebug.params ?? {})} data=${JSON.stringify(requestDebug.data ?? {})}`,
-        duration: 6000,
-      });
+      // toast.info?.("Step variant debug", {
+      //   description: `params=${JSON.stringify(requestDebug.params ?? {})} data=${JSON.stringify(requestDebug.data ?? {})}`,
+      //   duration: 6000,
+      // });
 
       const result = await apiService({
         endpoint,
@@ -324,9 +325,7 @@ export default function CreateStepVariantModal({
       });
 
       if (result.success) {
-        toast.success("Step variant created", {
-          description: "The variant was created successfully.",
-        });
+        toast.success("Step copied successfully");
         onSuccess?.(result.response);
         handleClose();
         return;
@@ -352,6 +351,18 @@ export default function CreateStepVariantModal({
     }
   };
 
+  const areAllDropdownsSelected = Boolean(
+    copyClientValue && copyCycleValue && copyPhaseValue,
+  );
+  const selectedCycleHasNoPhases =
+    Boolean(copyCycleValue) && !isLoadingPhases && phases.length === 0;
+  const isSaveDisabled =
+    isSubmitting ||
+    isLoadingCycles ||
+    isLoadingPhases ||
+    !areAllDropdownsSelected ||
+    selectedCycleHasNoPhases;
+
   return (
     <Dialog
       open={open}
@@ -366,7 +377,7 @@ export default function CreateStepVariantModal({
       >
         <div className="relative px-6 pt-6 ">
           <DialogTitle className="text-[18px] font-semibold leading-6 text-[#181D27]">
-            Create Step Variant
+            Copy Step
           </DialogTitle>
           <div className="absolute right-5 top-5">
             <DialogClose asChild>
@@ -424,9 +435,10 @@ export default function CreateStepVariantModal({
                     </Label>
                     <Input
                       id="step-variant-title"
+                      ref={titleInputRef}
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder=""
+                      placeholder="Step name"
                       className="h-9 rounded-lg border border-gray-200 bg-white text-sm"
                       disabled={isSubmitting}
                     />
@@ -463,15 +475,12 @@ export default function CreateStepVariantModal({
                         onValueChange={setCopyClientValue}
                         disabled={isSubmitting}
                       >
-                        <SelectTrigger className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900">
-                          <SelectValue />
+                        <SelectTrigger className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900 overflow-hidden [&>span]:block [&>span]:truncate">
+                          <SelectValue placeholder="Select a client" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="current">
-                            Current Client
-                          </SelectItem>
                           {clients.map((client) => (
-                            <SelectItem key={client.id} value={`client:${client.id}`}>
+                            <SelectItem key={client.id} value={String(client.id)}>
                               {client.name || `Client ${client.id}`}
                             </SelectItem>
                           ))}
@@ -486,21 +495,18 @@ export default function CreateStepVariantModal({
                       <Select
                         value={copyCycleValue}
                         onValueChange={setCopyCycleValue}
-                        disabled={isSubmitting || isLoadingCycles}
+                        disabled={isSubmitting || isLoadingCycles || !copyClientValue}
                       >
-                        <SelectTrigger className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900">
-                          <SelectValue />
+                        <SelectTrigger className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900 overflow-hidden [&>span]:block [&>span]:truncate">
+                          <SelectValue placeholder="Select a cycle" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="current">
-                            Current Cycle
-                          </SelectItem>
                           {cycles
                             .filter((cycle) => cycle.sessionId !== sessionId)
                             .map((cycle) => (
                               <SelectItem
                                 key={cycle.sessionId}
-                                value={`session:${cycle.sessionId}`}
+                                value={cycle.sessionId}
                               >
                                 {cycle.name}
                               </SelectItem>
@@ -516,25 +522,29 @@ export default function CreateStepVariantModal({
                       <Select
                         value={copyPhaseValue}
                         onValueChange={setCopyPhaseValue}
-                        disabled={isSubmitting || isLoadingPhases}
+                        disabled={
+                          isSubmitting ||
+                          isLoadingPhases ||
+                          !copyCycleValue ||
+                          selectedCycleHasNoPhases
+                        }
                       >
-                        <SelectTrigger className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900">
-                          <SelectValue />
+                        <SelectTrigger className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900 overflow-hidden [&>span]:block [&>span]:truncate">
+                          <SelectValue placeholder="Select a phase" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Current Phase">
-                            Current Phase
-                          </SelectItem>
                           {phases.map((phase) => (
-                            <SelectItem
-                              key={phase.uid}
-                              value={`phase:${phase.uid}`}
-                            >
+                            <SelectItem key={phase.uid} value={phase.uid}>
                               {phase.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      {selectedCycleHasNoPhases ? (
+                        <p className="text-[11px] text-red-600">
+                          Selected cycle has no phases.Save is disabled.
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -557,7 +567,7 @@ export default function CreateStepVariantModal({
                 className="h-9 rounded-lg min-w-[88px] inline-flex items-center justify-center gap-1.5"
                 onClick={handleSave}
                 type="button"
-                disabled={isSubmitting}
+                disabled={isSaveDisabled}
               >
                 {isSubmitting ? (
                   <>

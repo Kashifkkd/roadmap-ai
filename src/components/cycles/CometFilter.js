@@ -7,6 +7,7 @@ import Image from "next/image";
 import React, { useState, useEffect, ref } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpDown } from "lucide-react";
+import { graphqlClient } from "@/lib/graphql-client";
 
 export default function CometFilter({
   handleChange,
@@ -41,10 +42,32 @@ export default function CometFilter({
 
   const router = useRouter();
 
-  const handleCreateNewComet = () => {
-    // Clear any session data if needed
+  const handleCreateNewComet = async () => {
+    // Clear any session data to start fresh
     localStorage.removeItem("sessionData");
     localStorage.removeItem("sessionId");
+
+    // Create a new session eagerly (same as chat section) so sessionId is
+    // available for auto-save and source material uploads right away
+    try {
+      const sessionResponse = await graphqlClient.createSession();
+      const newSessionId = sessionResponse.createSession.sessionId;
+      const cometJson = sessionResponse.createSession.cometJson;
+      localStorage.setItem("sessionId", newSessionId);
+      if (cometJson) {
+        localStorage.setItem("sessionData", cometJson);
+      }
+      // Notify any listeners (e.g. SourceMaterialCard) that a session is ready
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("sessionIdChanged"));
+      }
+      console.log("New session created on Create New Cycle:", newSessionId);
+    } catch (err) {
+      console.error("Failed to create session on Create New Cycle:", err);
+      // Still navigate even if session creation fails — DashboardLayout
+      // will create the session lazily on form submit
+    }
+
     router.push("/configure-cycle");
   };
 

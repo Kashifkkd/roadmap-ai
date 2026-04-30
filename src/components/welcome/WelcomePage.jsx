@@ -28,6 +28,35 @@ const SUGGESTIONS = [
 
 const SOURCE_FORMATS_HOVER_TEXT =
   ".pdf, .doc, .docx, .txt, .pptx, .mp3, .wav, .m4a, .flac, .mp4, .webm";
+const LINK_TITLE_FALLBACK = "Title not available";
+
+const sanitizeLinkTitle = (value) => {
+  if (typeof value !== "string") return "";
+  return value.replace(/\s+/g, " ").trim();
+};
+
+const extractLinkTitle = (payload) =>
+  sanitizeLinkTitle(
+    payload?.title ??
+      payload?.page_title ??
+      payload?.webpage_title ??
+      payload?.meta_title ??
+      payload?.source_name ??
+      payload?.name ??
+      "",
+  );
+
+const deriveTitleFromUrl = (rawUrl = "") => {
+  try {
+    const parsed = new URL(rawUrl);
+    const host = parsed.hostname.replace(/^www\./i, "");
+    const firstLabel = (host.split(".")[0] || "").trim();
+    if (!firstLabel) return LINK_TITLE_FALLBACK;
+    return firstLabel.charAt(0).toUpperCase() + firstLabel.slice(1);
+  } catch {
+    return LINK_TITLE_FALLBACK;
+  }
+};
 
 export default function WelcomePage() {
   const [inputText, setInputText] = useState("");
@@ -278,6 +307,7 @@ export default function WelcomePage() {
           webpageUrls.length > 0
             ? webpageUrls.map((e) => ({
               webpage_url: e.url,
+              title: e.title ?? "",
               comment: e.comment || "",
             }))
             : [],
@@ -333,7 +363,7 @@ export default function WelcomePage() {
     });
   };
 
-  const handleCreateNewCometFromDashboard = () => {
+  const handleCreateNewCometFromDashboard = async () => {
     if (!tokenManager.isAuthenticated()) {
       openLoginDialog();
       return;
@@ -341,6 +371,28 @@ export default function WelcomePage() {
     // Clear existing session data to start fresh
     localStorage.removeItem("sessionId");
     localStorage.removeItem("sessionData");
+
+    // Create a new session eagerly (same as chat section) so sessionId is
+    // available for auto-save and source material uploads right away
+    try {
+      const sessionResponse = await graphqlClient.createSession();
+      const newSessionId = sessionResponse.createSession.sessionId;
+      const cometJson = sessionResponse.createSession.cometJson;
+      localStorage.setItem("sessionId", newSessionId);
+      if (cometJson) {
+        localStorage.setItem("sessionData", cometJson);
+      }
+      // Notify any listeners (e.g. SourceMaterialCard) that a session is ready
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("sessionIdChanged"));
+      }
+      console.log("New session created on Create New Cycle:", newSessionId);
+    } catch (err) {
+      console.error("Failed to create session on Create New Cycle:", err);
+      // Still navigate even if session creation fails — DashboardLayout
+      // will create the session lazily on form submit
+    }
+
     router.push("/configure-cycle");
   };
 
@@ -363,6 +415,39 @@ export default function WelcomePage() {
       }
     }
   };
+  const extractSourceMaterialUuid = (payload) => {
+    const candidate = payload?.uuid;
+    if (typeof candidate === "string" && candidate.trim()) {
+      const normalized = candidate.trim();
+      if (/^[0-9a-fA-F]{32}$/.test(normalized)) return normalized.toLowerCase();
+      if (
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(
+          normalized,
+        )
+      ) {
+        return normalized.toLowerCase();
+      }
+    }
+
+    const s3Path = payload?.s3_path;
+    if (typeof s3Path === "string" && s3Path) {
+      const match = s3Path.match(/source_material\/([^/]+)\//i);
+      if (match?.[1]) {
+        const parsed = match[1].trim();
+        if (/^[0-9a-fA-F]{32}$/.test(parsed)) return parsed.toLowerCase();
+        if (
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(
+            parsed,
+          )
+        ) {
+          return parsed.toLowerCase();
+        }
+      }
+    }
+
+    return null;
+  };
+
   const uploadFile = useCallback(
     async (file, currentSessionId, comment = "") => {
       try {
@@ -387,8 +472,7 @@ export default function WelcomePage() {
         } else {
           console.log("File uploaded successfully:", result.response);
           const res = result.response;
-          const uid = res?.id;
-          return uid != null ? String(uid) : null;
+          return extractSourceMaterialUuid(res);
         }
       } catch (error) {
         console.error("Error uploading file:", error);
@@ -416,15 +500,18 @@ export default function WelcomePage() {
         if (result.error) {
           console.error("Error uploading web link:", result.error);
           toast.error("Failed to upload link");
-          return false;
+          return { success: false, title: deriveTitleFromUrl(url) };
         }
 
         console.log("Web link uploaded successfully:", result.response);
-        return true;
+        return {
+          success: true,
+          title: extractLinkTitle(result.response) || deriveTitleFromUrl(url),
+        };
       } catch (error) {
         console.error("Error uploading web link:", error);
         toast.error("Failed to upload link");
-        return false;
+        return { success: false, title: deriveTitleFromUrl(url) };
       }
     },
     [],
@@ -678,9 +765,12 @@ export default function WelcomePage() {
     setIsUploading(true);
     try {
       const uploaded = await uploadWebLink(url, currentSessionId, comment);
-      if (!uploaded) return;
+      if (!uploaded?.success) return;
 
-      setWebpageUrls((prev) => [...prev, { url, comment }]);
+      setWebpageUrls((prev) => [
+        ...prev,
+        { url, title: uploaded.title || LINK_TITLE_FALLBACK, comment },
+      ]);
       setLinkInputValue("");
       setLinkCommentValue("");
       setIsLinkInputVisible(false);
@@ -915,10 +1005,8 @@ export default function WelcomePage() {
                             <div className="flex items-center gap-1.5">
                               <Link2 className="w-3 h-3 flex-shrink-0 text-gray-500" />
                               <span className="truncate font-medium text-gray-700 flex-1 min-w-0">
-                                {entry.url
-                                  .replace(/^https?:\/\//, "")
-                                  .slice(0, 22)}
-                                {entry.url.replace(/^https?:\/\//, "").length >
+                                {(entry.title || LINK_TITLE_FALLBACK).slice(0, 22)}
+                                {(entry.title || LINK_TITLE_FALLBACK).length >
                                   22
                                   ? "…"
                                   : ""}
@@ -931,6 +1019,9 @@ export default function WelcomePage() {
                                 <X className="w-3 h-3" />
                               </button>
                             </div>
+                            <p className="flex item-start text-[10px] text-gray-400 mt-0.5 truncate pl-[18px]">
+                              {entry.url}
+                            </p>
                             <p className="flex item-start text-[10px] text-gray-400 mt-0.5 truncate pl-[18px]">
                               {entry.comment || ""}
                             </p>

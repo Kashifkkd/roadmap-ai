@@ -2,7 +2,7 @@ export default function CometSkeleton({ cometSessions = [] }) {
   const count = cometSessions.length || 12;
   return (
     <div className="flex flex-1 w-[90%] mx-auto rounded-2xl p-4 bg-white overflow-y-auto no-scrollbar">
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(375px,1fr))] w-full gap-4 justify-items-center content-start items-start">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(375px,auto))] w-full gap-4 justify-items-center content-start items-start">
         {Array.from({ length: count }).map((_, i) => (
           <div 
             key={i}

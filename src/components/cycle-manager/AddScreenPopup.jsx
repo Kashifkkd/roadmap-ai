@@ -2,6 +2,7 @@
 
 import React from "react";
 import { X } from "lucide-react";
+import GradientLoader from "@/components/ui/GradientLoader";
 
 export default function AddScreenPopup({
   isOpen,
@@ -9,12 +10,13 @@ export default function AddScreenPopup({
   onAddScreen,
   screenTypes,
   screenTypeGroups,
+  isAddingScreen = false,
 }) {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[85vh] overflow-y-auto">
+      <div className="relative bg-white rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[85vh] overflow-y-auto">
         <div className="px-6 py-2">
           <div className="flex justify-between items-center ">
             <div>
@@ -24,7 +26,8 @@ export default function AddScreenPopup({
             </div>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isAddingScreen}
             >
               <X size={24} />
             </button>
@@ -44,7 +47,8 @@ export default function AddScreenPopup({
                       <button
                         key={type.id}
                         onClick={() => onAddScreen(type)}
-                        className={`p-2 transition-all hover:shadow-md hover:scale-105`}
+                        disabled={isAddingScreen}
+                        className={`p-2 transition-all hover:shadow-md hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:scale-100`}
                       >
                         <div className="flex flex-row items-center text-left">
                           <div
@@ -73,7 +77,8 @@ export default function AddScreenPopup({
                 <button
                   key={type.id}
                   onClick={() => onAddScreen(type)}
-                  className={`p-4 transition-all hover:shadow-md  hover:scale-105`}
+                  disabled={isAddingScreen}
+                  className={`p-4 transition-all hover:shadow-md  hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:scale-100`}
                 >
                   <div className="flex flex-col items-center text-center">
                     <div className="mb-3 text-gray-700">{type.icon}</div>
@@ -87,6 +92,13 @@ export default function AddScreenPopup({
             </div>
           )}
         </div>
+        {isAddingScreen && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 backdrop-blur-[1px]">
+            <div className="rounded-xl border border-primary-200 bg-white px-6 py-5 shadow-sm">
+              <GradientLoader size={36} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

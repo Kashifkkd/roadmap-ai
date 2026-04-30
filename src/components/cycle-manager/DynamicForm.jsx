@@ -288,6 +288,7 @@ export default function DynamicForm({
   // Update field directly in outline - use setOutline(prev => ...) to always work with latest state
   const updateField = (field, value) => {
     const screenId = screen?.id;
+    const screenUuid = screen?.uuid;
     if (!screenId) return;
 
     setOutline((prevOutline) => {
@@ -300,7 +301,9 @@ export default function DynamicForm({
       for (const chapter of pathChapters) {
         for (const stepItem of chapter.steps || []) {
           const screenIndex = stepItem.screens?.findIndex(
-            (s) => s.id === screenId,
+            (s) =>
+              (screenUuid && String(s?.uuid) === String(screenUuid)) ||
+              String(s?.id) === String(screenId),
           );
           if (screenIndex !== undefined && screenIndex >= 0) {
             // Get current screen from latest state (prevOutline)

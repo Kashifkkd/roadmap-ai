@@ -68,6 +68,7 @@ import { SCREEN_TYPE_CONSTANTS } from "@/types/comet-manager";
 import {
   useCometManager,
   applyScreenDeleteToOutline,
+  getChapterInteractionId,
 } from "@/hooks/useCometManager";
 import { useCometSettings } from "@/contexts/CometSettingsContext";
 import CometManagerSidebar from "./CometManagerSidebar";
@@ -83,6 +84,7 @@ import CometSettingsDialog from "./CometSettingsDialog";
 import GenerateStepImageButton from "./GenerateStepImageButton";
 import UploadStepImageDialog from "./UploadStepImageDialog";
 import GradientLoader from "@/components/ui/GradientLoader";
+import { toast } from "@/components/ui/toast";
 import {
   Drawer,
   DrawerContent,
@@ -291,8 +293,9 @@ export default function CometManager({
     await new Promise((resolve) => setTimeout(resolve, 0));
     const current = outlineRef.current;
     if (current) {
-      await saveOutlineImmediately(current);
+      return await saveOutlineImmediately(current);
     }
+    return false;
   }, [saveOutlineImmediately]);
 
   const cloneOutline = useCallback((sourceOutline) => {
@@ -332,8 +335,9 @@ export default function CometManager({
       const newOutline = JSON.parse(JSON.stringify(prevOutline));
       const pathChapters = newOutline.chapters || [];
 
-      for (const chapter of pathChapters) {
-        const cId = chapter.uuid || chapter.id;
+      for (let chapterIndex = 0; chapterIndex < pathChapters.length; chapterIndex++) {
+        const chapter = pathChapters[chapterIndex];
+        const cId = getChapterInteractionId(chapter, chapterIndex);
         if (cId !== chapterId) continue;
         const chapterSteps = chapter.steps || [];
         for (const stepItem of chapterSteps) {
@@ -370,8 +374,9 @@ export default function CometManager({
       const newOutline = JSON.parse(JSON.stringify(prevOutline));
       const pathChapters = newOutline.chapters || [];
 
-      for (const chapter of pathChapters) {
-        const cId = chapter.uuid || chapter.id;
+      for (let chapterIndex = 0; chapterIndex < pathChapters.length; chapterIndex++) {
+        const chapter = pathChapters[chapterIndex];
+        const cId = getChapterInteractionId(chapter, chapterIndex);
         if (cId !== chapterId) continue;
 
         if (chapter.chapter !== undefined || chapter.name === undefined) {
@@ -402,8 +407,9 @@ export default function CometManager({
     // Pre-compute which step to select after deletion (before state update)
     let nextStepId = null;
     if (nextOutline.chapters && selectedStepId === stepId) {
-      for (const chapter of nextOutline.chapters) {
-        const cId = chapter.uuid || chapter.id;
+      for (let chapterIndex = 0; chapterIndex < nextOutline.chapters.length; chapterIndex++) {
+        const chapter = nextOutline.chapters[chapterIndex];
+        const cId = getChapterInteractionId(chapter, chapterIndex);
         if (cId !== chapterId) continue;
         const steps = chapter.steps || [];
         const stepIndex = steps.findIndex((stepItem) => {
@@ -418,9 +424,9 @@ export default function CometManager({
             nextStepId =
               steps[stepIndex - 1].step?.uuid || steps[stepIndex - 1].step?.id;
           } else {
-            const chIndex = nextOutline.chapters.findIndex(
-              (ch) => (ch.uuid || ch.id) === chapterId,
-            );
+            const chIndex = nextOutline.chapters.findIndex((ch, idx) => {
+              return getChapterInteractionId(ch, idx) === chapterId;
+            });
             if (chIndex >= 0 && chIndex + 1 < nextOutline.chapters.length) {
               const firstStep = nextOutline.chapters[chIndex + 1].steps?.[0];
               nextStepId = firstStep?.step?.uuid || firstStep?.step?.id || null;
@@ -432,8 +438,9 @@ export default function CometManager({
     }
 
     let stepWasDeleted = false;
-    for (const chapter of nextOutline.chapters || []) {
-      const cId = chapter.uuid || chapter.id;
+    for (let chapterIndex = 0; chapterIndex < (nextOutline.chapters || []).length; chapterIndex++) {
+      const chapter = nextOutline.chapters[chapterIndex];
+      const cId = getChapterInteractionId(chapter, chapterIndex);
       if (cId !== chapterId) continue;
       const chapterSteps = chapter.steps || [];
       const stepIndex = chapterSteps.findIndex((stepItem) => {
@@ -472,9 +479,9 @@ export default function CometManager({
   const handleDeleteChapter = async (chapterId) => {
     const nextOutline = cloneOutline(outline);
     const outlineChapters = nextOutline?.chapters || [];
-    const chapterIndex = outlineChapters.findIndex(
-      (chapter) => (chapter.uuid || chapter.id) === chapterId,
-    );
+    const chapterIndex = outlineChapters.findIndex((chapter, idx) => {
+      return getChapterInteractionId(chapter, idx) === chapterId;
+    });
 
     if (chapterIndex === -1) {
       return;
@@ -533,6 +540,7 @@ export default function CometManager({
   const [selectedScreenId, setSelectedScreenId] = useState(null); // Store ID instead of object
   const [showAddPopup, setShowAddPopup] = useState(false);
   const [addAtIndex, setAddAtIndex] = useState(null);
+  const [isAddingScreen, setIsAddingScreen] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [isMaximized, setIsMaximized] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
@@ -959,7 +967,10 @@ const handleNextStep = useCallback(() => {
     setShowAddPopup(true);
   };
 
-  const handleAddNewScreen = (screenType) => {
+  const handleAddNewScreen = async (screenType) => {
+    if (isAddingScreen) return;
+    setIsAddingScreen(true);
+    try {
     // Get current chapter and step
     const targetChapter = currentChapter || chapters[0] || null;
     const targetChapterId =
@@ -1591,8 +1602,6 @@ const handleNextStep = useCallback(() => {
       console.log("newScreen added>>>>>>>>>>>>>>>>>>>>>>>>", newScreen);
     }
 
-    setShowAddPopup(false);
-    setAddAtIndex(null);
     setSelectedScreenId(newScreen?.id ?? newScreen?.uuid ?? null);
     setCurrentScreen(addAtIndex !== null ? addAtIndex : screens.length);
     console.log(
@@ -1603,6 +1612,19 @@ const handleNextStep = useCallback(() => {
       "newScreen set current screen>>>>>>>>>>>>>>>>>>>>>>>>",
       addAtIndex !== null ? addAtIndex : screens.length,
     );
+    const autoSaveOk = await requestAutoSaveAfterOutlineCommit();
+    if (autoSaveOk === false) {
+      throw new Error("Auto-save failed while adding screen.");
+    }
+    await onFlushSave?.();
+    setShowAddPopup(false);
+    setAddAtIndex(null);
+    } catch (error) {
+      console.error("Failed to add screen manually:", error);
+      toast.error("Failed to add screen. Please try again.");
+    } finally {
+      setIsAddingScreen(false);
+    }
   };
 
   const navigateScreen = (direction) => {
@@ -2700,6 +2722,7 @@ const handleNextStep = useCallback(() => {
         onClose={() => setShowAddPopup(false)}
         onAddScreen={handleAddNewScreen}
         screenTypeGroups={SCREEN_TYPE_GROUPS}
+        isAddingScreen={isAddingScreen}
       />
       {/* Comet Settings Dialog */}
       <CometSettingsDialog
@@ -2719,23 +2742,33 @@ const handleNextStep = useCallback(() => {
 
           const path = sessionData?.response_path;
           const pathChapters = path?.chapters || [];
-          for (const chapter of pathChapters) {
+          for (
+            let chapterIndex = 0;
+            chapterIndex < pathChapters.length;
+            chapterIndex++
+          ) {
+            const chapter = pathChapters[chapterIndex];
             if (chapter.steps) {
               for (const stepItem of chapter.steps) {
                 const step = stepItem?.step;
                 if (step && (step.uuid === stepUid || step.id === stepUid))
-                  return chapter.uuid || chapter.id || null;
+                  return getChapterInteractionId(chapter, chapterIndex);
               }
             }
           }
           const outline = sessionData?.response_outline;
           const outlineChapters = outline?.chapters || [];
-          for (const chapter of outlineChapters) {
+          for (
+            let chapterIndex = 0;
+            chapterIndex < outlineChapters.length;
+            chapterIndex++
+          ) {
+            const chapter = outlineChapters[chapterIndex];
             if (chapter.steps) {
               for (const stepItem of chapter.steps) {
                 const step = stepItem?.step;
                 if (step && (step.uuid === stepUid || step.id === stepUid))
-                  return chapter.uuid || chapter.id || null;
+                  return getChapterInteractionId(chapter, chapterIndex);
               }
             }
           }

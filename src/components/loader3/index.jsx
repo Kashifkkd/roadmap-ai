@@ -13,6 +13,8 @@ const Loader = ({
 }) => {
   const [sessionData, setSessionData] = useState(null);
   const [sessionId, setSessionId] = useState(null);
+  const normalizedInputText =
+    typeof inputText === "string" ? inputText.toLowerCase() : inputText;
 
   // Initialize sessionId and sessionData from localStorage
   useEffect(() => {
@@ -87,7 +89,7 @@ const Loader = ({
 
           <p className="text-sm sm:text-base text-gray-700 mb-12 text-center max-w-xl">
             Extracting insights, drafting early ideas, and preparing your{" "}
-            <span className="font-medium">{inputText}</span> Screen.
+            <span className="font-medium">{normalizedInputText}</span> screen.
           </p>
 
           {/* Pill Loader */}

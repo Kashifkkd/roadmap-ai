@@ -7,6 +7,7 @@ export default function PathPersonalizationForm({
   formData,
   updateField,
   askKyperHandlers = {},
+  onRequestAutoSave,
 }) {
   const {
     onTextFieldSelect,
@@ -26,6 +27,7 @@ export default function PathPersonalizationForm({
           label="Heading"
           value={formData.heading || ""}
           onChange={(value) => updateField("heading", value)}
+          onRequestAutoSave={onRequestAutoSave}
           inputProps={{
             onSelect: (event) =>
               onTextFieldSelect?.("heading", event, formData.heading),
@@ -38,6 +40,7 @@ export default function PathPersonalizationForm({
           label="Body"
           value={formData.body || ""}
           onChange={(value) => updateField("body", value)}
+          onRequestAutoSave={onRequestAutoSave}
           onSelectionChange={(selectionInfo) =>
             onRichTextSelection?.("body", selectionInfo, formData.body)
           }

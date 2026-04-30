@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from "react";
+import React, { useEffect, useCallback, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
@@ -21,6 +21,38 @@ import { cn } from "@/lib/utils";
 import { resolveSourceMaterialLinkUrl } from "@/lib/sourceMaterialLinkUrl";
 import { toast } from "@/components/ui/toast";
 
+const LINK_TITLE_FALLBACK = "Title not available";
+
+function sanitizeLinkTitle(value) {
+  if (typeof value !== "string") return "";
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function extractLinkTitle(payload) {
+  if (!payload || typeof payload !== "object") return "";
+  return sanitizeLinkTitle(
+    payload.title ??
+      payload.page_title ??
+      payload.webpage_title ??
+      payload.meta_title ??
+      payload.source_name ??
+      payload.name ??
+      "",
+  );
+}
+
+function deriveTitleFromUrl(rawUrl = "") {
+  try {
+    const parsed = new URL(rawUrl);
+    const host = parsed.hostname.replace(/^www\./i, "");
+    const firstLabel = (host.split(".")[0] || "").trim();
+    if (!firstLabel) return LINK_TITLE_FALLBACK;
+    return firstLabel.charAt(0).toUpperCase() + firstLabel.slice(1);
+  } catch {
+    return LINK_TITLE_FALLBACK;
+  }
+}
+
 function normalizeWebLink(item, defaultUploaded = false) {
   const urlValue = item?.url ?? item?.webpage_url ?? "";
   const inferredPreviewMeta = inferLinkPreviewMeta(urlValue);
@@ -30,6 +62,7 @@ function normalizeWebLink(item, defaultUploaded = false) {
       url: item,
       comment: "",
       isUploaded: defaultUploaded,
+      title: "",
       ...inferLinkPreviewMeta(item),
     };
   }
@@ -38,6 +71,7 @@ function normalizeWebLink(item, defaultUploaded = false) {
     id: item?.id ?? item?.material_id ?? item?.source_material_id,
     url: urlValue,
     comment: item?.comment ?? "",
+    title: extractLinkTitle(item) || deriveTitleFromUrl(urlValue),
     isUploaded:
       typeof item?.isUploaded === "boolean" ? item.isUploaded : defaultUploaded,
     linkType: item?.linkType ?? inferredPreviewMeta.linkType,
@@ -190,6 +224,7 @@ function dedupeWebLinks(items = [], defaultUploaded = false) {
       ...existing,
       id: existing.id ?? normalized.id,
       url: existing.url || trimmedUrl,
+      title: existing.title || normalized.title,
       comment: existing.comment || normalized.comment,
       isUploaded: existing.isUploaded || normalized.isUploaded,
     };
@@ -249,6 +284,52 @@ export default function SourceMaterialCard({
   const [isCheckingLinkPreview, setIsCheckingLinkPreview] = useState(false);
   const [linkDraft, setLinkDraft] = useState({ url: "" });
   const [isDragOver, setIsDragOver] = useState(false);
+  const sourcesListRef = useRef(null);
+  const sourceItemRefs = useRef(new Map());
+  const [pendingScrollTargetKey, setPendingScrollTargetKey] = useState(null);
+
+  const setSourceItemRef = useCallback(
+    (key) => (node) => {
+      if (!key) return;
+      if (node) {
+        sourceItemRefs.current.set(key, node);
+      } else {
+        sourceItemRefs.current.delete(key);
+      }
+    },
+    [],
+  );
+
+  const scrollToSourceItem = useCallback((targetKey) => {
+    if (!targetKey || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const node = sourcesListRef.current;
+        const targetNode = sourceItemRefs.current.get(targetKey);
+
+        if (node) {
+          node.scrollTo({
+            top: node.scrollHeight,
+            behavior: "smooth",
+          });
+        }
+
+        if (targetNode) {
+          targetNode.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+          });
+        }
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!pendingScrollTargetKey) return;
+    scrollToSourceItem(pendingScrollTargetKey);
+    setPendingScrollTargetKey(null);
+  }, [pendingScrollTargetKey, files, webpageUrls, scrollToSourceItem]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -284,6 +365,7 @@ export default function SourceMaterialCard({
               linkMaterials.push({
                 id: material.id,
                 url: url.trim(),
+                title: extractLinkTitle(material),
                 comment: material.comment ?? "",
                 isUploaded: true,
               });
@@ -464,6 +546,20 @@ export default function SourceMaterialCard({
     }
   }, []);
 
+  const resolveLinkTitle = useCallback(
+    async (url) => {
+      const fallbackTitle = deriveTitleFromUrl(url);
+      try {
+        const previewCheck = await checkLinkPreviewability(url);
+        const extractedTitle = extractLinkTitle(previewCheck);
+        return extractedTitle || fallbackTitle;
+      } catch {
+        return fallbackTitle;
+      }
+    },
+    [checkLinkPreviewability],
+  );
+
   const addSourceFiles = useCallback(
     (incomingFiles) => {
       const selectedFiles = Array.from(incomingFiles || []);
@@ -543,6 +639,13 @@ export default function SourceMaterialCard({
 
         // Don't upload immediately — let the user add comments first.
         // Files will be uploaded when "Create Outline" is clicked (via uploadAllFiles).
+        queueMicrotask(() => {
+          const newestFile = newFiles[newFiles.length - 1];
+          if (newestFile?.name) {
+            setPendingScrollTargetKey(`file-${getFileKey(newestFile.name)}`);
+          }
+        });
+
         return dedupeFiles([
           ...prev,
           ...newFiles.map((file) => ({
@@ -628,11 +731,18 @@ export default function SourceMaterialCard({
               linksToUpload.map((entry) => uploadWebLink(entry)),
             );
             const uploadedLinkMetaByKey = new Map();
+            const uploadedLinkTitleByKey = new Map();
             linkResults.forEach((result, index) => {
               const materialId = extractSourceMaterialId(result);
               if (!materialId) return;
               const key = getWebLinkKey(linksToUpload[index]?.url ?? "");
-              if (key) uploadedLinkMetaByKey.set(key, materialId);
+              if (key) {
+                uploadedLinkMetaByKey.set(key, materialId);
+                const uploadedTitle = extractLinkTitle(result);
+                if (uploadedTitle) {
+                  uploadedLinkTitleByKey.set(key, uploadedTitle);
+                }
+              }
             });
             uploadedLinkCount = linkResults.filter(Boolean).length;
             setWebpageUrls((prev) =>
@@ -644,6 +754,10 @@ export default function SourceMaterialCard({
                       ...normalized,
                       isUploaded: true,
                       id: normalized.id ?? uploadedLinkMetaByKey.get(key),
+                      title:
+                        normalized.title ||
+                        uploadedLinkTitleByKey.get(key) ||
+                        LINK_TITLE_FALLBACK,
                     }
                   : normalized;
               }),
@@ -728,10 +842,12 @@ export default function SourceMaterialCard({
       return toast.error("This link is already added");
 
     let previewMeta = inferLinkPreviewMeta(url);
+    let pageTitle = deriveTitleFromUrl(url);
     if (!previewMeta.previewWarning) {
       setIsCheckingLinkPreview(true);
       const previewCheck = await checkLinkPreviewability(url);
       setIsCheckingLinkPreview(false);
+      pageTitle = extractLinkTitle(previewCheck) || deriveTitleFromUrl(url);
 
       if (previewCheck?.is_pdf) {
         previewMeta = { ...previewMeta, linkType: "pdf", previewWarning: "" };
@@ -742,9 +858,14 @@ export default function SourceMaterialCard({
             "This link is likely not previewable in-app. Please use a different source link if preview is required.",
         };
       }
+    } else {
+      pageTitle = await resolveLinkTitle(url);
     }
 
-    setWebpageUrls([...normalizedUrls, { url, comment: "", ...previewMeta }]);
+    setWebpageUrls((prev) =>
+      dedupeWebLinks([...prev, { url, comment: "", ...previewMeta }]),
+    );
+    setPendingScrollTargetKey(`link-${getWebLinkKey(url)}`);
     setLinkDraft({ url: "" });
 
     if (previewMeta.previewWarning) {
@@ -814,7 +935,12 @@ export default function SourceMaterialCard({
     const updated = normalizedUrls.map((entry, i) =>
       i === index
         ? field === "url"
-          ? { ...entry, ...inferLinkPreviewMeta(value), [field]: value }
+          ? {
+              ...entry,
+              ...inferLinkPreviewMeta(value),
+              title: LINK_TITLE_FALLBACK,
+              [field]: value,
+            }
           : { ...entry, [field]: value }
         : entry,
     );
@@ -981,26 +1107,38 @@ export default function SourceMaterialCard({
         normalizedUrls.some(
           (entry) => (entry?.url ?? "").trim().length > 0,
         )) && (
-        <CardContent className="mt-2 text-sm space-y-2 overflow-auto no-scrollbar">
-          {files.map((file, index) => (
-            <FilePreview
-              file={file}
-              onCommentChange={handleFileCommentChange}
-              onRemove={() => handleRemoveFile(file, index)}
-              key={file.name || index}
-            />
-          ))}
+        <CardContent
+          ref={sourcesListRef}
+          className="mt-2 text-sm space-y-2 overflow-auto no-scrollbar"
+        >
+          {files.map((file, index) => {
+            const fileKey = `file-${getFileKey(file?.name ?? "")}`;
+            return (
+              <div key={file.name || index} ref={setSourceItemRef(fileKey)}>
+                <FilePreview
+                  file={file}
+                  onCommentChange={handleFileCommentChange}
+                  onRemove={() => handleRemoveFile(file, index)}
+                />
+              </div>
+            );
+          })}
           {normalizedUrls.map((entry, index) => {
             if (!(entry?.url ?? "").trim()) return null;
+            const linkKey = `link-${getWebLinkKey(entry.url)}`;
             return (
-              <LinkPreview
+              <div
                 key={`link-${index}-${getWebLinkKey(entry.url)}`}
-                entry={entry}
-                onCommentChange={(value) =>
-                  handleLinkChange(index, "comment", value)
-                }
-                onRemove={() => handleRemoveLink(index)}
-              />
+                ref={setSourceItemRef(linkKey)}
+              >
+                <LinkPreview
+                  entry={entry}
+                  onCommentChange={(value) =>
+                    handleLinkChange(index, "comment", value)
+                  }
+                  onRemove={() => handleRemoveLink(index)}
+                />
+              </div>
             );
           })}
         </CardContent>
@@ -1035,7 +1173,13 @@ const LinkPreview = ({ entry, onCommentChange, onRemove }) => {
               )}
             </div>
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-sm font-medium truncate" title={entry.url}>
+              <span
+                className="text-sm font-medium truncate"
+                title={entry.title || LINK_TITLE_FALLBACK}
+              >
+                {entry.title || LINK_TITLE_FALLBACK}
+              </span>
+              <span className="text-xs text-muted-foreground truncate" title={entry.url}>
                 {truncateUrl(entry.url)}
               </span>
               {entry.linkType === "pdf" && (

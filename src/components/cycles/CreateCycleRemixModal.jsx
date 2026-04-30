@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { CircleX, Loader2, X } from "lucide-react";
+import { CircleX, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -23,16 +23,19 @@ import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import { getClients } from "@/api/client";
 import { toast } from "@/components/ui/toast";
+import SourceMaterialCard from "@/components/create-comet/SourceMaterialCard";
+import { getSourceMaterials } from "@/api/getSourceMaterials";
+import { resolveSourceMaterialLinkUrl } from "@/lib/sourceMaterialLinkUrl";
 
 function isValidPathId(n) {
   return typeof n === "number" && Number.isFinite(n) && n >= 0;
 }
 
-export default function CreateCycleVariantModal({
+export default function CreateCycleRemixModal({
   open,
   onOpenChange,
-  /** From session list: path_id when set, else session row id; POST …/paths/{id}/variant */
   numericPathId = null,
+  sessionId = "",
   onSuccess,
   cycleName = "",
 }) {
@@ -41,12 +44,66 @@ export default function CreateCycleVariantModal({
   const [title, setTitle] = useState("");
   const [instructions, setInstructions] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sourceFiles, setSourceFiles] = useState([]);
+  const [webpageUrls, setWebpageUrls] = useState([]);
+  const [isUploadingSources, setIsUploadingSources] = useState(false);
   const titleInputRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
     setTitle(cycleName || "");
+    setSourceFiles([]);
+    setWebpageUrls([]);
   }, [open, cycleName]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const currentSessionId =
+      sessionId ||
+      (typeof window !== "undefined" ? localStorage.getItem("sessionId") : null);
+    if (!currentSessionId) return;
+
+    const preloadSourceMaterials = async () => {
+      try {
+        const materials = await getSourceMaterials(currentSessionId);
+        if (!Array.isArray(materials) || materials.length === 0) return;
+
+        const preloadedFiles = [];
+        const preloadedLinks = [];
+
+        materials.forEach((material) => {
+          if (material?.type === "link") {
+            const linkUrl = resolveSourceMaterialLinkUrl(material);
+            if (!linkUrl) return;
+            preloadedLinks.push({
+              id: material?.id ?? material?.material_id ?? null,
+              url: linkUrl.trim(),
+              title: material?.source_name || "",
+              comment: material?.comment ?? "",
+              isUploaded: true,
+            });
+            return;
+          }
+
+          preloadedFiles.push({
+            id: material?.id ?? material?.material_id ?? null,
+            name: material?.source_name || "Unknown File",
+            comment: material?.comment ?? "",
+            isUploaded: true,
+            output_presigned_url: material?.output_presigned_url,
+          });
+        });
+
+        if (preloadedFiles.length > 0) setSourceFiles(preloadedFiles);
+        if (preloadedLinks.length > 0) setWebpageUrls(preloadedLinks);
+      } catch (error) {
+        console.error("Failed to preload source materials for remix:", error);
+      }
+    };
+
+    preloadSourceMaterials();
+  }, [open, sessionId]);
 
   useEffect(() => {
     if (!open) return;
@@ -79,6 +136,8 @@ export default function CreateCycleVariantModal({
     setClients([]);
     setTitle("");
     setInstructions("");
+    setSourceFiles([]);
+    setWebpageUrls([]);
     setIsSubmitting(false);
   };
 
@@ -87,7 +146,7 @@ export default function CreateCycleVariantModal({
     try {
       const pathId = numericPathId;
       if (!isValidPathId(pathId)) {
-        toast.error("Cannot create variant", {
+        toast.error("Cannot remix cycle", {
           description:
             "No path id for this session. Ensure the sessions list includes path_id or id.",
         });
@@ -96,7 +155,7 @@ export default function CreateCycleVariantModal({
 
       const targetClientId = parseInt(copyClientValue, 10);
       if (!Number.isFinite(targetClientId) || targetClientId < 0) {
-        toast.error("Cannot create variant", {
+        toast.error("Cannot remix cycle", {
           description: "Please select a valid target client.",
         });
         return;
@@ -104,11 +163,23 @@ export default function CreateCycleVariantModal({
 
       const trimmedTitle = title.trim();
       const trimmedInstructions = instructions.trim();
+
+      if (
+        typeof window !== "undefined" &&
+        typeof window.uploadAllFiles === "function"
+      ) {
+        setIsUploadingSources(true);
+        try {
+          await window.uploadAllFiles();
+        } finally {
+          setIsUploadingSources(false);
+        }
+      }
+
       const hasBody = Boolean(trimmedTitle || trimmedInstructions);
       const payload = {};
       if (trimmedTitle) payload.title = trimmedTitle;
       if (trimmedInstructions) payload.instructions = trimmedInstructions;
-
       const params = {
         count: 1,
         persist_to_redis: true,
@@ -126,27 +197,26 @@ export default function CreateCycleVariantModal({
             }
           : {}),
       });
-
-      if (result.success) {
-        toast.success("Cycle copied successfully");
-        onSuccess?.(result.response);
-        handleClose();
+      if (!result?.success) {
+        const detail =
+          (typeof result.response === "object" && result.response?.detail) ||
+          (typeof result.response === "object" && result.response?.message) ||
+          (typeof result.response === "string" ? result.response : null);
+        toast.error("Could not remix cycle", {
+          description:
+            detail ||
+            (result.status
+              ? `Request failed (${result.status})`
+              : "Unexpected response"),
+        });
         return;
       }
 
-      const detail =
-        (typeof result.response === "object" && result.response?.detail) ||
-        (typeof result.response === "object" && result.response?.message) ||
-        (typeof result.response === "string" ? result.response : null);
-      toast.error("Could not create variant", {
-        description:
-          detail ||
-          (result.status
-            ? `Request failed (${result.status})`
-            : "Unexpected response"),
-      });
+      toast.success("Cycle remixed successfully");
+      onSuccess?.(result.response);
+      handleClose();
     } catch (e) {
-      toast.error("Could not create variant", {
+      toast.error("Could not remix cycle", {
         description: e?.message || "Unexpected error",
       });
     } finally {
@@ -154,7 +224,7 @@ export default function CreateCycleVariantModal({
     }
   };
 
-  const isSaveDisabled = isSubmitting || !copyClientValue;
+  const isSaveDisabled = isSubmitting || isUploadingSources || !copyClientValue;
 
   return (
     <Dialog
@@ -163,11 +233,10 @@ export default function CreateCycleVariantModal({
         if (!isOpen) handleClose();
       }}
     >
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-[728px] gap-4 overflow-hidden rounded-[24px] border-0 bg-white p-0 pt-4 pb-2 px-2 shadow-xl [&>button]:hidden">
-        {/* Header */}
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[760px] max-h-[85vh] gap-3 overflow-hidden rounded-[24px] border-0 bg-white p-0 pt-3 pb-2 px-2 shadow-xl [&>button]:hidden">
         <div className="flex h-[47px] items-center justify-between gap-2 px-2">
           <DialogTitle className="text-left text-[18px] font-semibold leading-7 text-[#181D27]">
-            Copy Cycle
+            Remix Cycle
           </DialogTitle>
           <DialogClose asChild>
             <button
@@ -180,62 +249,58 @@ export default function CreateCycleVariantModal({
           </DialogClose>
         </div>
 
-        {/* Outer gray panel */}
         <div className="flex flex-col items-stretch gap-[2px] rounded-2xl bg-[#F5F5F5] p-2">
-          {/* Top white section (content) */}
-          <div className="rounded-t-lg bg-white p-2">
-            <div className="flex flex-col gap-2 rounded-t-lg bg-white p-2">
-              {/* Cycle title */}
-              <div className="flex flex-col gap-1">
+          <div className="rounded-t-lg bg-white p-2 overflow-y-auto max-h-[calc(85vh-150px)]">
+            <div className="grid grid-cols-1 gap-2 rounded-t-lg bg-white p-2">
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1">
                 <p className="text-sm font-medium leading-5 text-[#181D27]">
-                  Cycle Title
+                  Comet Title
                 </p>
                 <p className="text-base font-semibold leading-6 text-[#181D27]">
                   {cycleName || "—"}
                 </p>
               </div>
 
-              {/* Inputs card */}
               <div className="flex flex-col gap-2 rounded-2xl bg-[#F5F5F5] p-4">
                 <div className="flex flex-col gap-2">
                   <Label
-                    htmlFor="cycle-variant-title"
+                    htmlFor="cycle-remix-title"
                     className="text-sm font-medium leading-5 text-[#181D27]"
                   >
-                    New Cycle Title
+                    New Comet Title
                   </Label>
                   <Input
-                    id="cycle-variant-title"
+                    id="cycle-remix-title"
                     ref={titleInputRef}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Cycle title"
+                    placeholder="Comet title"
                     className="h-9 min-h-9 rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
                     disabled={isSubmitting}
                   />
                 </div>
-                {/* <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2">
                   <Label
-                    htmlFor="cycle-variant-instructions"
+                    htmlFor="cycle-remix-instructions"
                     className="text-sm font-medium leading-5 text-[#181D27]"
                   >
                     Instruction
                   </Label>
                   <Textarea
-                    id="cycle-variant-instructions"
+                    id="cycle-remix-instructions"
                     value={instructions}
                     onChange={(e) => setInstructions(e.target.value)}
-                    placeholder=""
-                    className="min-h-[76px] resize-y rounded-lg border border-[#D5D7DA] bg-white px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+                    placeholder="Add instructions for remix"
+                    className="min-h-[88px] resize-y rounded-lg border border-[#D5D7DA] bg-white px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
                     disabled={isSubmitting}
                   />
-                </div> */}
+                </div>
               </div>
 
-              {/* Copy to card */}
               <div className="flex flex-col gap-2 rounded-2xl bg-[#F5F5F5] p-4">
                 <p className="text-sm font-medium leading-5 text-[#181D27]">
-                  Copy to
+                  Remix to
                 </p>
                 <div className="h-px w-full bg-[#D5D7DA]" aria-hidden />
                 <div className="flex flex-col gap-2">
@@ -263,10 +328,21 @@ export default function CreateCycleVariantModal({
                   </Select>
                 </div>
               </div>
+              </div>
+
+              <div className="rounded-2xl bg-[#F5F5F5] p-3">
+                <SourceMaterialCard
+                  files={sourceFiles}
+                  setFiles={setSourceFiles}
+                  isNewComet
+                  webpageUrls={webpageUrls}
+                  setWebpageUrls={setWebpageUrls}
+                  onUploadingChange={setIsUploadingSources}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Bottom white footer */}
           <div className="flex items-center justify-end rounded-b-lg bg-white p-2">
             <Button
               className="inline-flex h-9 min-h-9 items-center justify-center gap-2 rounded-lg bg-[#7367F0] px-4 py-[7.5px] text-sm font-medium leading-5 text-white hover:bg-[#625acc] active:bg-[#574fb3]"

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import StatusButton from "./StatusButton";
 import { useCometSettings } from "@/contexts/CometSettingsContext";
 import { toast } from "sonner";
+import { appendCacheBuster, refreshCloudfrontCookies } from "@/lib/cloudfront-cookies";
 
 function formatMetric(value) {
   if (value === null || value === undefined || value === "") return "-";
@@ -24,11 +25,28 @@ const Comet = ({
 }) => {
   const [disabled, setDisabled] = useState(false);
   const [imgSrc, setImgSrc] = useState(imageURL || "/fallbackImage.png");
+  const [didRetryImage, setDidRetryImage] = useState(false);
   const { setIsCometSettingsOpen } = useCometSettings();
 
   useEffect(() => {
     setImgSrc(imageURL || "/fallbackImage.png");
+    setDidRetryImage(false);
   }, [imageURL]);
+
+  const handleCardImageError = async () => {
+    if (!didRetryImage && imageURL && imageURL !== "/fallbackImage.png") {
+      setDidRetryImage(true);
+      const result = await refreshCloudfrontCookies({
+        force: true,
+        showFailureToast: true,
+      });
+      if (result?.ok) {
+        setImgSrc(appendCacheBuster(imageURL));
+        return;
+      }
+    }
+    setImgSrc("/fallbackImage.png");
+  };
 
   const handleClick = async () => {
     if (disabled) return;
@@ -111,7 +129,7 @@ const Comet = ({
         className="absolute inset-0 z-0 object-cover transition-transform duration-500 ease-out group-hover:scale-110"
         priority
         unoptimized
-        onError={() => setImgSrc("/fallbackImage.png")}
+        onError={handleCardImageError}
       />
       {/* White overlay on hover */}
       {/* new white overlay on hover  */}

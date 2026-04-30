@@ -3,6 +3,9 @@ import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 
 const Loader = ({ inputText, onBack, backLabel = "Back" }) => {
+  const normalizedInputText =
+    typeof inputText === "string" ? inputText.toLowerCase() : inputText;
+
   const steps = [
     "Reading your documents",
     "Extracting key insights",
@@ -78,7 +81,7 @@ const Loader = ({ inputText, onBack, backLabel = "Back" }) => {
 
           <p className="text-sm sm:text-base text-gray-700 mb-12 text-center max-w-xl">
             Extracting insights, drafting early ideas, and preparing your{" "}
-            {inputText} Screen.
+            {normalizedInputText} screen.
           </p>
 
           <div className="w-full  relative">

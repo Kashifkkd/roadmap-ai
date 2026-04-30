@@ -797,81 +797,10 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
       </div>
 
       <div className="grid grid-cols-2 gap-6">
-        {/* General Image Upload */}
+        {/* Dark Logo (Dark Background) */}
         <div>
           <Label className="text-sm font-medium text-gray-700 mb-3 block">
-            White-on-transparent Logo
-          </Label>
-          <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
-            <input
-              ref={backgroundImageInputRef}
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleImageUpload(e, true)}
-              className="hidden"
-            />
-            {backgroundImagePreview ? (
-              <div className="relative w-full h-[104px] rounded-lg overflow-hidden group/image">
-                <img
-                  src={backgroundImagePreview}
-                  alt="Preview"
-                  className="w-full h-full object-contain rounded-lg"
-                />
-                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/image:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-3">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (pendingBackgroundImagePreview) {
-                        removeImage(
-                          setPendingBackgroundImageFile,
-                          setPendingBackgroundImagePreview,
-                          pendingBackgroundImagePreview,
-                        );
-                      } else {
-                        setExistingBackgroundImageUrl("");
-                      }
-                    }}
-                    className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
-                    title="Delete image"
-                  >
-                    <Trash2 className="w-4 h-4 text-gray-600" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleImageClick(true);
-                    }}
-                    className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
-                    title="Replace image"
-                  >
-                    <Pencil className="w-4 h-4 text-gray-600" />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div
-                onClick={() => handleImageClick(true)}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-4 gap-2 flex flex-col items-center justify-center bg-gray-50 cursor-pointer relative h-[104px]"
-              >
-                <div className="text-gray-500 text-sm">
-                  {uploadingBackgroundImage ? "Uploading..." : "Upload PNG"}
-                </div>
-                <Button
-                  type="button"
-                  disabled={uploadingBackgroundImage}
-                  className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
-                >
-                  {uploadingBackgroundImage ? "Uploading..." : "+ Browse"}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Color Logo */}
-        <div>
-          <Label className="text-sm font-medium text-gray-700 mb-3 block">
-            Color Logo
+            Dark Logo (Dark Background)
           </Label>
           <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
             <input
@@ -882,13 +811,13 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
               className="hidden"
             />
             {imagePreview ? (
-              <div className="relative w-full h-[104px] rounded-lg overflow-hidden group/bgimage">
+              <div className="relative w-full h-[104px] rounded-lg overflow-hidden group/image">
                 <img
                   src={imagePreview}
                   alt="Preview"
                   className="w-full h-full object-contain rounded-lg"
                 />
-                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/bgimage:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-3">
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/image:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-3">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -933,6 +862,77 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
                 >
                   {uploadingImage ? "Uploading..." : "+ Browse"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Color Logo */}
+        <div>
+          <Label className="text-sm font-medium text-gray-700 mb-3 block">
+            Color Logo
+          </Label>
+          <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
+            <input
+              ref={backgroundImageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleImageUpload(e, true)}
+              className="hidden"
+            />
+            {backgroundImagePreview ? (
+              <div className="relative w-full h-[104px] rounded-lg overflow-hidden group/bgimage">
+                <img
+                  src={backgroundImagePreview}
+                  alt="Preview"
+                  className="w-full h-full object-contain rounded-lg"
+                />
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/bgimage:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (pendingBackgroundImagePreview) {
+                        removeImage(
+                          setPendingBackgroundImageFile,
+                          setPendingBackgroundImagePreview,
+                          pendingBackgroundImagePreview,
+                        );
+                      } else {
+                        setExistingBackgroundImageUrl("");
+                      }
+                    }}
+                    className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+                    title="Delete image"
+                  >
+                    <Trash2 className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleImageClick(true);
+                    }}
+                    className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+                    title="Replace image"
+                  >
+                    <Pencil className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => handleImageClick(true)}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-4 gap-2 flex flex-col items-center justify-center bg-gray-50 cursor-pointer relative h-[104px]"
+              >
+                <div className="text-gray-500 text-sm">
+                  {uploadingBackgroundImage ? "Uploading..." : "Upload PNG"}
+                </div>
+                <Button
+                  type="button"
+                  disabled={uploadingBackgroundImage}
+                  className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                >
+                  {uploadingBackgroundImage ? "Uploading..." : "+ Browse"}
                 </Button>
               </div>
             )}

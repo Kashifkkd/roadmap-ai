@@ -46,6 +46,7 @@ export default function AccountabilityPartnerEmailForm({
           label="Title"
           value={formData.heading || ""}
           onChange={(value) => updateField("heading", value)}
+          onRequestAutoSave={onRequestAutoSave}
           inputProps={{
             onSelect: (event) =>
               onTextFieldSelect?.(
@@ -60,6 +61,7 @@ export default function AccountabilityPartnerEmailForm({
           label="Description"
           value={formData.body || ""}
           onChange={(value) => updateField("body", value)}
+          onRequestAutoSave={onRequestAutoSave}
           onSelectionChange={(selectionInfo) =>
             onRichTextSelection?.(
               "accountabilityPartnerBody",

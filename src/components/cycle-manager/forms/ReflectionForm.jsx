@@ -1,7 +1,5 @@
 import React from "react";
-import { SectionHeader, RichTextArea } from "./FormFields";
-import { Label } from "@/components/ui/Label";
-import { Input } from "@/components/ui/Input";
+import { SectionHeader, RichTextArea, TextField } from "./FormFields";
 import ImageUpload from "@/components/common/ImageUpload";
 
 export default function ReflectionForm({
@@ -43,25 +41,22 @@ export default function ReflectionForm({
         <SectionHeader title="Reflection" />
       </div>
       <div className="bg-white rounded-lg p-2 align-center">
-        <div className="mb-4">
-          <Label className="block text-sm font-medium text-gray-700 mb-2">
-            Title
-          </Label>
-          <Input
-            type="text"
-            value={formData.title || ""}
-            onChange={(e) => updateField("title", e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary"
-            onSelect={(event) =>
-              onTextFieldSelect?.("reflectionTitle", event, formData.title)
-            }
-            onBlur={onFieldBlur}
-          />
-        </div>
+        <TextField
+          label="Title"
+          value={formData.title || ""}
+          onChange={(value) => updateField("title", value)}
+          onRequestAutoSave={onRequestAutoSave}
+          inputProps={{
+            onSelect: (event) =>
+              onTextFieldSelect?.("reflectionTitle", event, formData.title),
+            onBlur: onFieldBlur,
+          }}
+        />
         <RichTextArea
           label="Prompt"
           value={formData.prompt || ""}
           onChange={(value) => updateField("prompt", value)}
+          onRequestAutoSave={onRequestAutoSave}
           onSelectionChange={(selectionInfo) =>
             onRichTextSelection?.(
               "reflectionPrompt",

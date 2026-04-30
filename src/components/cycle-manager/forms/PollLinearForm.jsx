@@ -19,6 +19,7 @@ export default function PollLinearForm({
   formData,
   updateField,
   askKyperHandlers = {},
+  onRequestAutoSave,
 }) {
   const {
     onTextFieldSelect,
@@ -36,6 +37,7 @@ export default function PollLinearForm({
           label="Title"
           value={formData.title || ""}
           onChange={(value) => updateField("title", value)}
+          onRequestAutoSave={onRequestAutoSave}
           inputProps={{
             onSelect: (event) =>
               onTextFieldSelect?.("linearTitle", event, formData.title),
@@ -46,6 +48,7 @@ export default function PollLinearForm({
           label="Top Label"
           value={formData.highLabel || ""}
           onChange={(value) => updateField("highLabel", value)}
+          onRequestAutoSave={onRequestAutoSave}
           inputProps={{
             onSelect: (event) =>
               onTextFieldSelect?.("linearHighLabel", event, formData.highLabel),
@@ -56,6 +59,7 @@ export default function PollLinearForm({
           label="Bottom Label"
           value={formData.lowLabel || ""}
           onChange={(value) => updateField("lowLabel", value)}
+          onRequestAutoSave={onRequestAutoSave}
           inputProps={{
             onSelect: (event) =>
               onTextFieldSelect?.("linearLowLabel", event, formData.lowLabel),
@@ -66,6 +70,7 @@ export default function PollLinearForm({
           label="Question"
           value={formData.question || ""}
           onChange={(value) => updateField("question", value)}
+          onRequestAutoSave={onRequestAutoSave}
           onSelectionChange={(selectionInfo) =>
             onRichTextSelection?.(
               "linearQuestion",

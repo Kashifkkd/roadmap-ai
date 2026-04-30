@@ -10,6 +10,7 @@ import {
   getStepPrompts,
   getStepStatus,
   rehydrateStepImages,
+  retryFailedStepImages,
 } from "@/api/generateStepImages";
 import { Button } from "@/components/ui/Button";
 import {
@@ -51,6 +52,20 @@ export default function GenerateStepImageButton({
   const [attributesError, setAttributesError] = useState(null);
   const [generateError, setGenerateError] = useState(null);
   const [isRehydrating, setIsRehydrating] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  const handleRetryImages = async () => {
+    if (isRetrying || !sessionId || !stepUid) return;
+    setIsRetrying(true);
+    try {
+      await retryFailedStepImages({ sessionId, stepUid });
+      fetchStepStatusSilent();
+    } catch (err) {
+      console.error("Retry failed:", err);
+    } finally {
+      setIsRetrying(false);
+    }
+  };
 
   // Attribute fields
   const [artStyle, setArtStyle] = useState("Editorial Illustration");
@@ -380,20 +395,33 @@ export default function GenerateStepImageButton({
 
   // Check completion
   const imagesComplete = useMemo(() => {
-    if (!isEnqueued) return false;
-    if (stepStatus?.images?.is_complete) return true;
-    
-    // Check if step has image in sessionData 
+    // 1. Check if step or any of its screens have images in sessionData 
     const allChapters = [
       ...(sessionData?.response_path?.chapters || []),
       ...(sessionData?.response_outline?.chapters || []),
     ];
     
-    return allChapters.some(ch => 
-      ch.steps?.some(item => 
-        (item?.step?.uuid === stepUid || item?.step?.id === stepUid) && item?.step?.image
-      )
+    const hasAnyImage = allChapters.some(ch => 
+      ch.steps?.some(item => {
+        if (item?.step?.uuid !== stepUid && item?.step?.id !== stepUid) return false;
+        
+        // Check step wallpaper
+        if (item?.step?.image) return true;
+        
+        // Check screens
+        if (item?.step?.screens?.some(s => s?.imageStatus === "completed" || s?.assets?.length > 0)) {
+          return true;
+        }
+        
+        return false;
+      })
     );
+
+    if (hasAnyImage) return true;
+    if (stepStatus?.images?.is_complete) return true;
+    if (!isEnqueued) return false;
+    
+    return false;
   }, [isEnqueued, stepStatus?.images?.is_complete, sessionData, stepUid]);
 
   const handleRehydrate = async () => {
@@ -438,23 +466,37 @@ export default function GenerateStepImageButton({
         </div>
       ) : isEnqueued ? (
         /* Generating Images state button */
-        <button
-          type="button"
-          // onClick={handleOpenStatusDialog}
-          disabled
-          className="w-full flex items-center gap-3 rounded-full px-3 py-2 bg-[#C7C2F9] hover:bg-[#cfc7f5] transition-colors sticky bottom-0 cursor-pointer"
-        >
-          <span className="shrink-0 w-8 h-8 rounded-full bg-white flex items-center justify-center">
-            <GradientLoader size={18} />
-          </span>
-          <span className="flex-1 text-sm font-semibold text-[#352F6E]">
-            Generating Images
-          </span>
-          <span className="shrink-0 px-2.5 py-0.5 rounded-full bg-white text-sm font-semibold text-[#574EB6]">
-            {stepStatus?.images?.generated ?? 0}/
-            {stepStatus?.images?.expected ?? 0}
-          </span>
-        </button>
+        <div className="w-full flex items-center gap-2 sticky bottom-0">
+          <button
+            type="button"
+            // onClick={handleOpenStatusDialog}
+            disabled
+            className="flex-1 flex items-center gap-3 rounded-full px-3 py-2 bg-[#C7C2F9] hover:bg-[#cfc7f5] transition-colors cursor-pointer"
+          >
+            <span className="shrink-0 w-8 h-8 rounded-full bg-white flex items-center justify-center">
+              <GradientLoader size={18} />
+            </span>
+            <span className="flex-1 text-sm font-semibold text-[#352F6E] text-left">
+              Generating Images
+            </span>
+            <span className="shrink-0 px-2.5 py-0.5 rounded-full bg-white text-sm font-semibold text-[#574EB6]">
+              {stepStatus?.images?.generated ?? 0}/
+              {stepStatus?.images?.expected ?? 0}
+            </span>
+          </button>
+          
+          {stepStatus?.images?.has_failures && (
+            <button
+              type="button"
+              onClick={handleRetryImages}
+              disabled={isRetrying}
+              title="Regenerate failed images"
+              className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-red-100 hover:bg-red-200 text-red-600 transition-colors disabled:opacity-50 border border-red-200"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRetrying ? "animate-spin" : ""}`} />
+            </button>
+          )}
+        </div>
       ) : (
         /* Generate Step Images state button */
         <Button

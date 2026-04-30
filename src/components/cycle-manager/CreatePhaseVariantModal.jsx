@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { CircleX, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -38,9 +38,9 @@ export default function CreatePhaseVariantModal({
   currentCycleName = "",
   sourcePhaseName = "",
 }) {
-  const [copyClientValue, setCopyClientValue] = useState("current");
+  const [copyClientValue, setCopyClientValue] = useState("");
   const [clients, setClients] = useState([]);
-  const [copyCycleValue, setCopyCycleValue] = useState("current");
+  const [copyCycleValue, setCopyCycleValue] = useState("");
   const [cycles, setCycles] = useState([]);
   const [isLoadingCycles, setIsLoadingCycles] = useState(false);
   const [title, setTitle] = useState("");
@@ -48,6 +48,7 @@ export default function CreatePhaseVariantModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   /** When the session has no integer chapter id, user can paste the DB id for POST …/chapters/{id}/variant. */
   const [manualChapterIdInput, setManualChapterIdInput] = useState("");
+  const titleInputRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
@@ -57,6 +58,11 @@ export default function CreatePhaseVariantModal({
       setManualChapterIdInput("");
     }
   }, [open, numericChapterId]);
+
+  useEffect(() => {
+    if (!open) return;
+    setTitle(sourcePhaseName || "");
+  }, [open, sourcePhaseName]);
 
   useEffect(() => {
     if (!open) return;
@@ -75,24 +81,24 @@ export default function CreatePhaseVariantModal({
 
   useEffect(() => {
     if (!open) return;
-    setCopyCycleValue("current");
+    setCopyCycleValue("");
   }, [open, copyClientValue]);
 
   useEffect(() => {
     if (!open) return;
 
+    const timer = window.setTimeout(() => {
+      titleInputRef.current?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
     const fetchCycles = async () => {
-      const currentClientIdRaw =
-        typeof window !== "undefined"
-          ? localStorage.getItem("Client id")
-          : null;
-      const currentClientId = parseInt((currentClientIdRaw || "").trim(), 10);
-      const selectedClientId =
-        copyClientValue !== "current"
-          ? parseInt(copyClientValue.replace("client:", ""), 10)
-          : null;
-      const clientId =
-        copyClientValue === "current" ? currentClientId : selectedClientId;
+      const clientId = parseInt(copyClientValue, 10);
       if (!Number.isFinite(clientId) || clientId < 0) {
         setCycles([]);
         return;
@@ -139,7 +145,7 @@ export default function CreatePhaseVariantModal({
                 item.session_name.trim()) ||
               "Untitled Cycle",
           }))
-          .filter((item) => item.sessionId && item.status === "published");
+          .filter((item) => item.sessionId);
 
         setCycles(nextCycles);
       } catch {
@@ -155,9 +161,9 @@ export default function CreatePhaseVariantModal({
 
   const handleClose = () => {
     onOpenChange(false);
-    setCopyClientValue("current");
+    setCopyClientValue("");
     setClients([]);
-    setCopyCycleValue("current");
+    setCopyCycleValue("");
     setCycles([]);
     setTitle("");
     setInstructions("");
@@ -191,12 +197,7 @@ export default function CreatePhaseVariantModal({
       if (trimmedTitle) payload.title = trimmedTitle;
       if (trimmedInstructions) payload.instructions = trimmedInstructions;
 
-      const trimmedSessionId =
-        copyCycleValue !== "current"
-          ? copyCycleValue.replace("session:", "").trim()
-          : typeof sessionId === "string"
-            ? sessionId.trim()
-            : "";
+      const trimmedSessionId = copyCycleValue.trim();
       const endpoint = endpoints.chapterVariant(String(Math.trunc(pathId)));
       const requestParams = trimmedSessionId
         ? { session_id: trimmedSessionId }
@@ -219,10 +220,10 @@ export default function CreatePhaseVariantModal({
           at: new Date().toISOString(),
         };
       }
-      toast.info?.("Phase variant debug", {
-        description: `params=${JSON.stringify(requestDebug.params ?? {})} data=${JSON.stringify(requestDebug.data ?? {})}`,
-        duration: 6000,
-      });
+      // toast.info?.("Phase variant debug", {
+      //   description: `params=${JSON.stringify(requestDebug.params ?? {})} data=${JSON.stringify(requestDebug.data ?? {})}`,
+      //   duration: 6000,
+      // });
 
       const result = await apiService({
         endpoint,
@@ -237,9 +238,7 @@ export default function CreatePhaseVariantModal({
       });
 
       if (result.success) {
-        toast.success("Phase variant created", {
-          description: "The variant was created successfully.",
-        });
+        toast.success("Phase copied successfully");
         onSuccess?.(result.response);
         handleClose();
         return;
@@ -265,6 +264,10 @@ export default function CreatePhaseVariantModal({
     }
   };
 
+  const areAllDropdownsSelected = Boolean(copyClientValue && copyCycleValue);
+  const isSaveDisabled =
+    isSubmitting || isLoadingCycles || !areAllDropdownsSelected;
+
   return (
     <Dialog
       open={open}
@@ -280,7 +283,7 @@ export default function CreatePhaseVariantModal({
         {/* Header */}
         <div className="flex h-[47px] items-center justify-between gap-2 px-2">
           <DialogTitle className="text-left text-[18px] font-semibold leading-7 text-[#181D27]">
-            Create Phase Variant
+            Copy Phase
           </DialogTitle>
           <DialogClose asChild>
             <button
@@ -319,7 +322,7 @@ export default function CreatePhaseVariantModal({
               </div>
 
               {/* Inputs card */}
-              <div className="flex flex-col gap-2 rounded-2xl bg-[#F5F5F5] p-4">
+              <div className="flex flex-col gap-2 rounded-2xl bg-[#FNew Step Title5F5F5] p-4">
                 <div className="flex flex-col gap-2">
                   <Label
                     htmlFor="phase-variant-title"
@@ -329,14 +332,15 @@ export default function CreatePhaseVariantModal({
                   </Label>
                   <Input
                     id="phase-variant-title"
+                    ref={titleInputRef}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder=""
+                    placeholder="Phase name"
                     className="h-9 min-h-9 rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
                     disabled={isSubmitting}
                   />
                 </div>
-                <div className="flex flex-col gap-2">
+                {/* <div className="flex flex-col gap-2">
                   <Label
                     htmlFor="phase-variant-instructions"
                     className="text-sm font-medium leading-5 text-[#181D27]"
@@ -351,7 +355,7 @@ export default function CreatePhaseVariantModal({
                     className="min-h-[76px] resize-y rounded-lg border border-[#D5D7DA] bg-white px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
                     disabled={isSubmitting}
                   />
-                </div>
+                </div> */}
               </div>
 
               {/* Copy to card */}
@@ -371,14 +375,13 @@ export default function CreatePhaseVariantModal({
                       disabled={isSubmitting}
                     >
                       <SelectTrigger className="h-9 min-h-9 w-full rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                        <SelectValue />
+                        <SelectValue placeholder="Select a client" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="current">Current Client</SelectItem>
                         {clients.map((client) => (
                           <SelectItem
                             key={client.id}
-                            value={`client:${client.id}`}
+                            value={String(client.id)}
                           >
                             {client.name || `Client ${client.id}`}
                           </SelectItem>
@@ -394,19 +397,18 @@ export default function CreatePhaseVariantModal({
                     <Select
                       value={copyCycleValue}
                       onValueChange={setCopyCycleValue}
-                      disabled={isSubmitting || isLoadingCycles}
+                      disabled={isSubmitting || isLoadingCycles || !copyClientValue}
                     >
                       <SelectTrigger className="h-9 min-h-9 w-full rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                        <SelectValue />
+                        <SelectValue placeholder="Select a cycle" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="current">Current Cycle</SelectItem>
                         {cycles
                           .filter((cycle) => cycle.sessionId !== sessionId)
                           .map((cycle) => (
                             <SelectItem
                               key={cycle.sessionId}
-                              value={`session:${cycle.sessionId}`}
+                              value={cycle.sessionId}
                             >
                               {cycle.name}
                             </SelectItem>
@@ -425,15 +427,15 @@ export default function CreatePhaseVariantModal({
               className="inline-flex h-9 min-h-9 items-center justify-center gap-2 rounded-lg bg-[#7367F0] px-4 py-[7.5px] text-sm font-medium leading-5 text-white hover:bg-[#625acc] active:bg-[#574fb3]"
               onClick={handleSave}
               type="button"
-              disabled={isSubmitting}
+              disabled={isSaveDisabled}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-                  Publishing
+                  Saving
                 </>
               ) : (
-                "Publish"
+                "Save"
               )}
             </Button>
           </div>
