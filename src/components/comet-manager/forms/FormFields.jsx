@@ -1,11 +1,17 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
-import { Plus, Trash2, GripVertical, CircleCheck, CircleX } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  GripVertical,
+  CircleCheck,
+  CircleX,
+} from "lucide-react";
 import "quill/dist/quill.snow.css";
 
 
@@ -16,27 +22,47 @@ export const SectionHeader = ({ title }) => (
   </div>
 );
 
+
 export const TextField = ({
   label,
   value,
   onChange,
   placeholder = "",
   inputProps = {},
-}) => (
-  <div className="mb-4">
-    <Label className="block text-sm font-medium text-gray-700 mb-2">
-      {label}
-    </Label>
-    <Input
-      type="text"
-      value={value || ""}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      {...inputProps}
-    />
-  </div>
-);
+}) => {
+  const [localValue, setLocalValue] = useState(value || "");
+  const isFocusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isFocusedRef.current) {
+      setLocalValue(value || "");
+    }
+  }, [value]);
+
+  return (
+    <div className="mb-4">
+      <div className="mb-2">
+        <Label className="block text-sm font-medium text-gray-700">{label}</Label>
+      </div>
+      <Input
+        type="text"
+        value={localValue}
+        onChange={(e) => {
+          setLocalValue(e.target.value);
+          onChange(e.target.value);
+        }}
+        onFocus={() => { isFocusedRef.current = true; }}
+        onBlur={(e) => {
+          isFocusedRef.current = false;
+          inputProps?.onBlur?.(e);
+        }}
+        placeholder={placeholder}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        {...inputProps}
+      />
+    </div>
+  );
+};
 
 export const TextArea = ({
   label,
@@ -45,21 +71,40 @@ export const TextArea = ({
   placeholder = "",
   rows = 4,
   inputProps = {},
-}) => (
-  <div className="mb-4">
-    <Label className="block text-sm font-medium text-gray-700 mb-2">
-      {label}
-    </Label>
-    <Textarea
-      value={value || ""}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      {...inputProps}
-    />
-  </div>
-);
+}) => {
+  const [localValue, setLocalValue] = useState(value || "");
+  const isFocusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isFocusedRef.current) {
+      setLocalValue(value || "");
+    }
+  }, [value]);
+
+  return (
+    <div className="mb-4">
+      <div className="mb-2">
+        <Label className="block text-sm font-medium text-gray-700">{label}</Label>
+      </div>
+      <Textarea
+        value={localValue}
+        onChange={(e) => {
+          setLocalValue(e.target.value);
+          onChange(e.target.value);
+        }}
+        onFocus={() => { isFocusedRef.current = true; }}
+        onBlur={(e) => {
+          isFocusedRef.current = false;
+          inputProps?.onBlur?.(e);
+        }}
+        placeholder={placeholder}
+        rows={rows}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        {...inputProps}
+      />
+    </div>
+  );
+};
 
 export const NumberField = ({ label, value, onChange, placeholder = "" }) => (
   <div className="mb-4">
@@ -250,11 +295,13 @@ export const RichTextArea = ({
   onBlur,
   valueFormat = "delta",
 }) => {
+  const isFocusedRef = useRef(false);
   const quillEditorRef = useRef(null);
   const editorRef = useRef(null);
   const toolbarRef = useRef(null);
   const selectionCallbackRef = useRef(onSelectionChange);
   const blurCallbackRef = useRef(onBlur);
+  const changeCallbackRef = useRef(onChange);
   const blurHandlerRef = useRef(null);
   const valueFormatRef = useRef(valueFormat);
 
@@ -269,6 +316,10 @@ export const RichTextArea = ({
   useEffect(() => {
     blurCallbackRef.current = onBlur;
   }, [onBlur]);
+
+  useEffect(() => {
+    changeCallbackRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     if (quillEditorRef.current || !editorRef.current)
@@ -390,7 +441,7 @@ export const RichTextArea = ({
             if (parsed && parsed.ops && Array.isArray(parsed.ops)) {
               editor.setContents(parsed);
               // Normalize: push HTML to parent so stored value is always simple HTML
-              onChange(editor.root.innerHTML);
+              changeCallbackRef.current(editor.root.innerHTML);
             }
           } catch {
             // ignore
@@ -441,9 +492,9 @@ export const RichTextArea = ({
       // Normalize output to prevent <p><br></p> proliferation on auto-save cycles
       editor.on("text-change", () => {
         if (valueFormatRef.current === "html") {
-          onChange(normalizeQuillHtmlOutput(editor.root.innerHTML));
+          changeCallbackRef.current(normalizeQuillHtmlOutput(editor.root.innerHTML));
         } else {
-          onChange(JSON.stringify(editor.getContents()));
+          changeCallbackRef.current(JSON.stringify(editor.getContents()));
         }
       });
 
@@ -478,7 +529,12 @@ export const RichTextArea = ({
         }
       });
 
+      const handleEditorFocus = () => {
+        isFocusedRef.current = true;
+      };
+
       const handleEditorBlur = () => {
+        isFocusedRef.current = false;
         const callback = blurCallbackRef.current;
         if (callback) {
           callback();
@@ -487,6 +543,7 @@ export const RichTextArea = ({
 
       blurHandlerRef.current = handleEditorBlur;
       const editorRoot = editor.root;
+      editorRoot.addEventListener("focus", handleEditorFocus);
       editorRoot.addEventListener("blur", handleEditorBlur);
 
       quillEditorRef.current = editor;
@@ -513,14 +570,38 @@ export const RichTextArea = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When valueFormat is "html", sync editor when value prop changes (e.g. after auto-save)
-  // Use normalized HTML and avoid direct innerHTML to prevent br tag proliferation
+  // Sync editor when value prop changes (e.g. navigating to a different screen).
+  // Skip while the editor is focused — the user is actively typing and their local state is the source of truth.
   useEffect(() => {
-    if (valueFormat !== "html" || !value || !quillEditorRef.current) return;
+    if (valueFormat !== "html" || !quillEditorRef.current) return;
+    if (isFocusedRef.current) return;
     const editor = quillEditorRef.current;
-    let html = typeof value === "string" ? value : "";
-    if (html.trim().startsWith("<")) {
-      html = html
+    const raw = typeof value === "string" ? value : "";
+    if (!raw.trim()) return;
+
+    const isHtmlString =
+      raw.trim().length > 0 && raw.trim().startsWith("<");
+    const isDeltaString =
+      raw.trim().length > 0 && raw.trim().startsWith("{");
+
+    if (isDeltaString) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed?.ops && Array.isArray(parsed.ops)) {
+          const next = JSON.stringify(parsed.ops);
+          const cur = JSON.stringify(editor.getContents().ops || []);
+          if (next !== cur) {
+            editor.setContents(parsed);
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
+    if (isHtmlString) {
+      let html = raw
         .replace(/<span style="[^"]*font-size:\s*1\.75em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h1 style="display:inline">$1</h1>')
         .replace(/<span style="[^"]*font-size:\s*1\.35em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h2 style="display:inline">$1</h2>')
         .replace(/<span style="[^"]*font-size:\s*1\.1em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h3 style="display:inline">$1</h3>');
@@ -538,14 +619,22 @@ export const RichTextArea = ({
           editor.root.innerHTML = normalized;
         }
       }
+      return;
+    }
+
+    // Plain text (common for Kyper `body` updates)
+    const plain = raw.replace(/\r\n/g, "\n");
+    const currentText = editor.getText().replace(/\n$/, "");
+    if (currentText !== plain) {
+      editor.setText(plain);
     }
   }, [valueFormat, value]);
 
   return (
     <div className="mb-4">
-      <Label className="block text-sm font-medium text-gray-700 mb-2">
-        {label}
-      </Label>
+      <div className="mb-2">
+        <Label className="block text-sm font-medium text-gray-700">{label}</Label>
+      </div>
       {/*Editor Area */}
       <div className="bg-gray-100 rounded-lg p-0.5">
         <div
@@ -584,6 +673,7 @@ export const RichTextArea = ({
           .rich-text-toolbar .ql-heading3.ql-active {
             color: #06c;
           }
+          .ql-editor p{ margin-bottom: 10px;}
         `}</style>
         <div
           ref={toolbarRef}

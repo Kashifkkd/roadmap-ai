@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -11,7 +11,6 @@ import {
   GripVertical,
   CircleCheck,
   CircleX,
-  Loader2,
 } from "lucide-react";
 import "quill/dist/quill.snow.css";
 
@@ -23,46 +22,6 @@ export const SectionHeader = ({ title }) => (
   </div>
 );
 
-const useAutoSaveIndicator = (onRequestAutoSave, debounceMs = 450) => {
-  const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const timerRef = useRef(null);
-  const requestIdRef = useRef(0);
-
-  const triggerAutoSave = useCallback(() => {
-    if (typeof onRequestAutoSave !== "function") return;
-
-    const nextRequestId = requestIdRef.current + 1;
-    requestIdRef.current = nextRequestId;
-    setIsAutoSaving(true);
-
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
-
-    timerRef.current = setTimeout(async () => {
-      const requestIdAtStart = requestIdRef.current;
-      try {
-        await onRequestAutoSave();
-      } catch (error) {
-        console.error("Auto-save failed:", error);
-      } finally {
-        if (requestIdAtStart === requestIdRef.current) {
-          setIsAutoSaving(false);
-        }
-      }
-    }, debounceMs);
-  }, [onRequestAutoSave, debounceMs]);
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, []);
-
-  return { isAutoSaving, triggerAutoSave };
-};
 
 export const TextField = ({
   label,
@@ -70,36 +29,32 @@ export const TextField = ({
   onChange,
   placeholder = "",
   inputProps = {},
-  isSaving = false,
-  onRequestAutoSave,
-  autoSaveDebounceMs = 450,
 }) => {
-  const { isAutoSaving, triggerAutoSave } = useAutoSaveIndicator(
-    onRequestAutoSave,
-    autoSaveDebounceMs,
-  );
-  const showSaving = isSaving || isAutoSaving;
+  const [localValue, setLocalValue] = useState(value || "");
+  const isFocusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isFocusedRef.current) {
+      setLocalValue(value || "");
+    }
+  }, [value]);
 
   return (
     <div className="mb-4">
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2">
         <Label className="block text-sm font-medium text-gray-700">{label}</Label>
-        {showSaving ? (
-          <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Saving...
-          </span>
-        ) : null}
       </div>
       <Input
         type="text"
-        value={value || ""}
+        value={localValue}
         onChange={(e) => {
+          setLocalValue(e.target.value);
           onChange(e.target.value);
         }}
+        onFocus={() => { isFocusedRef.current = true; }}
         onBlur={(e) => {
+          isFocusedRef.current = false;
           inputProps?.onBlur?.(e);
-          triggerAutoSave();
         }}
         placeholder={placeholder}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -116,35 +71,31 @@ export const TextArea = ({
   placeholder = "",
   rows = 4,
   inputProps = {},
-  isSaving = false,
-  onRequestAutoSave,
-  autoSaveDebounceMs = 450,
 }) => {
-  const { isAutoSaving, triggerAutoSave } = useAutoSaveIndicator(
-    onRequestAutoSave,
-    autoSaveDebounceMs,
-  );
-  const showSaving = isSaving || isAutoSaving;
+  const [localValue, setLocalValue] = useState(value || "");
+  const isFocusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isFocusedRef.current) {
+      setLocalValue(value || "");
+    }
+  }, [value]);
 
   return (
     <div className="mb-4">
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2">
         <Label className="block text-sm font-medium text-gray-700">{label}</Label>
-        {showSaving ? (
-          <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Saving...
-          </span>
-        ) : null}
       </div>
       <Textarea
-        value={value || ""}
+        value={localValue}
         onChange={(e) => {
+          setLocalValue(e.target.value);
           onChange(e.target.value);
         }}
+        onFocus={() => { isFocusedRef.current = true; }}
         onBlur={(e) => {
+          isFocusedRef.current = false;
           inputProps?.onBlur?.(e);
-          triggerAutoSave();
         }}
         placeholder={placeholder}
         rows={rows}
@@ -343,15 +294,8 @@ export const RichTextArea = ({
   onSelectionChange,
   onBlur,
   valueFormat = "delta",
-  isSaving = false,
-  onRequestAutoSave,
-  autoSaveDebounceMs = 450,
 }) => {
-  const { isAutoSaving, triggerAutoSave } = useAutoSaveIndicator(
-    onRequestAutoSave,
-    autoSaveDebounceMs,
-  );
-  const showSaving = isSaving || isAutoSaving;
+  const isFocusedRef = useRef(false);
   const quillEditorRef = useRef(null);
   const editorRef = useRef(null);
   const toolbarRef = useRef(null);
@@ -585,16 +529,21 @@ export const RichTextArea = ({
         }
       });
 
+      const handleEditorFocus = () => {
+        isFocusedRef.current = true;
+      };
+
       const handleEditorBlur = () => {
+        isFocusedRef.current = false;
         const callback = blurCallbackRef.current;
         if (callback) {
           callback();
         }
-        triggerAutoSave();
       };
 
       blurHandlerRef.current = handleEditorBlur;
       const editorRoot = editor.root;
+      editorRoot.addEventListener("focus", handleEditorFocus);
       editorRoot.addEventListener("blur", handleEditorBlur);
 
       quillEditorRef.current = editor;
@@ -621,10 +570,11 @@ export const RichTextArea = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When valueFormat is "html", sync editor when value prop changes (e.g. path updation, auto-save).
-  // Path updates often send plain text in `body` (no "<...>" wrapper); previously only HTML was synced, so Quill stayed stale until remount.
+  // Sync editor when value prop changes (e.g. navigating to a different screen).
+  // Skip while the editor is focused — the user is actively typing and their local state is the source of truth.
   useEffect(() => {
     if (valueFormat !== "html" || !quillEditorRef.current) return;
+    if (isFocusedRef.current) return;
     const editor = quillEditorRef.current;
     const raw = typeof value === "string" ? value : "";
     if (!raw.trim()) return;
@@ -682,14 +632,8 @@ export const RichTextArea = ({
 
   return (
     <div className="mb-4">
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2">
         <Label className="block text-sm font-medium text-gray-700">{label}</Label>
-        {showSaving ? (
-          <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Saving...
-          </span>
-        ) : null}
       </div>
       {/*Editor Area */}
       <div className="bg-gray-100 rounded-lg p-0.5">
