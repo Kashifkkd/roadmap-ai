@@ -23,6 +23,7 @@ import { apiService } from "@/api/apiService";
 import { endpoints } from "@/api/endpoint";
 import { getClients } from "@/api/client";
 import { toast } from "@/components/ui/toast";
+import { subscribeToVariantReadyWithToast } from "@/lib/variant-ready-notify";
 
 function isValidPathId(n) {
   return typeof n === "number" && Number.isFinite(n) && n >= 0;
@@ -129,6 +130,7 @@ export default function CreateCycleVariantModal({
 
       if (result.success) {
         toast.success("Cycle copied successfully");
+        subscribeToVariantReadyWithToast(result.response?.session_id, title.trim() || cycleName);
         onSuccess?.(result.response);
         handleClose();
         return;

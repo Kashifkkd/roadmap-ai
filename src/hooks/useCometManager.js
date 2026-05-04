@@ -202,11 +202,11 @@ export function useCometManager(sessionData = null) {
     const pathChapters = outline.chapters || [];
     return pathChapters.map((chapter, chapterIndex) => {
       const chapterId = getChapterInteractionId(chapter, chapterIndex);
-      const chapterName = chapter.name || `Chapter ${chapterIndex + 1}`;
+      const chapterName = chapter?.name || `Chapter ${chapterIndex + 1}`;
 
       // Transform steps for this chapter
       const transformedSteps = [];
-      const chapterSteps = chapter.steps || [];
+      const chapterSteps = chapter?.steps || [];
 
       chapterSteps.forEach((stepItem, stepIndex) => {
         const step = stepItem.step || {};
@@ -255,7 +255,7 @@ export function useCometManager(sessionData = null) {
       return {
         id: chapterId,
         name: chapterName,
-        order: chapter.position ? chapter.position - 1 : chapterIndex,
+        order: chapter?.position ? chapter.position - 1 : chapterIndex,
         steps: transformedSteps,
         numericChapterId: pathChapterIdFromChapter(chapter),
       };
@@ -272,7 +272,7 @@ export function useCometManager(sessionData = null) {
 
     pathChapters.forEach((chapter, chapterIndex) => {
       const chapterId = getChapterInteractionId(chapter, chapterIndex);
-      const chapterSteps = chapter.steps || [];
+      const chapterSteps = chapter?.steps || [];
 
       chapterSteps.forEach((stepItem, stepIndex) => {
         const step = stepItem.step || {};

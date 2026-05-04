@@ -1167,7 +1167,7 @@ export default function ClientSettingsDialog({
                                           type="button"
                                           variant="outline"
                                           disabled={clientsListLoading}
-                                          className="w-full justify-between bg-white font-normal border border-gray-300"
+                                          className="w-full justify-between bg-white font-normal border border-gray-300 focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-none"
                                         >
                                           <span className="truncate text-left">
                                             {clientsListLoading

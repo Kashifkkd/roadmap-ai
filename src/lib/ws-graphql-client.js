@@ -130,6 +130,59 @@ class WebSocketGraphQLClient {
     };
   }
 
+  subscribeToVariantReady(sessionId, onUpdate, onError) {
+    const client = this.initializeClient();
+
+    const subscription = `
+      subscription {
+        variantReady(sessionId: "${sessionId}")
+      }
+    `;
+
+    const unsubscribe = client.subscribe(
+      {
+        query: subscription,
+      },
+      {
+        next: (data) => {
+          console.log("WebSocket variantReady data received:", data);
+          const payload =
+            data?.data?.variantReady ??
+            data?.data?.variant_ready ??
+            data?.variantReady ??
+            data?.variant_ready ??
+            null;
+
+          if (payload !== null && payload !== undefined) {
+            onUpdate(payload, data);
+            return;
+          }
+
+          // Keep callback informed even for unexpected response shapes so
+          // callers can inspect/log and decide how to handle it.
+          onUpdate(data, data);
+        },
+        error: (error) => {
+          console.error("WebSocket variantReady subscription error:", error);
+          onError(error);
+        },
+        complete: () => {
+          console.log("WebSocket variantReady subscription completed");
+        },
+      }
+    );
+
+    const subscriptionId = `variant-ready-${sessionId}`;
+    this.subscriptions.set(subscriptionId, unsubscribe);
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+      this.subscriptions.delete(subscriptionId);
+    };
+  }
+
   cleanup() {
     this.subscriptions.forEach((unsubscribe) => {
       unsubscribe();

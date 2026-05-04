@@ -2656,7 +2656,8 @@ const handleNextStep = useCallback(() => {
                           onClick={handleNextChapter}
                           disabled={
                             sessionData?.is_initial_chapter_created== false ||
-                            isGeneratingNextChapter 
+                            isGeneratingNextChapter ||
+                            !showNextChapter
                           }
                         >
                           <span>Create Remaining Phases</span>

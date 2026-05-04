@@ -11,7 +11,15 @@ import {
   GripVertical,
   CircleCheck,
   CircleX,
+  Loader2,
+  Check,
 } from "lucide-react";
+
+const SaveIndicator = ({ state }) => {
+  if (state === "saving") return <Loader2 size={13} className="animate-spin text-blue-400 shrink-0" />;
+  if (state === "saved") return <Check size={13} className="text-green-500 shrink-0" />;
+  return null;
+};
 import "quill/dist/quill.snow.css";
 
 
@@ -29,36 +37,57 @@ export const TextField = ({
   onChange,
   placeholder = "",
   inputProps = {},
+  onRequestAutoSave,
 }) => {
   const [localValue, setLocalValue] = useState(value || "");
+  const [saveState, setSaveState] = useState("idle");
   const isFocusedRef = useRef(false);
+  const debounceRef = useRef(null);
+  const resetRef = useRef(null);
+  const onRequestAutoSaveRef = useRef(onRequestAutoSave);
+
+  useEffect(() => { onRequestAutoSaveRef.current = onRequestAutoSave; }, [onRequestAutoSave]);
 
   useEffect(() => {
-    if (!isFocusedRef.current) {
-      setLocalValue(value || "");
-    }
+    if (!isFocusedRef.current) setLocalValue(value || "");
   }, [value]);
+
+  const triggerSave = () => {
+    const saveFn = onRequestAutoSaveRef.current;
+    if (!saveFn) return;
+    setSaveState("saving");
+    saveFn().then((result) => {
+      setSaveState(result !== false ? "saved" : "idle");
+      if (resetRef.current) clearTimeout(resetRef.current);
+      resetRef.current = setTimeout(() => setSaveState("idle"), 2000);
+    }).catch(() => setSaveState("idle"));
+  };
+
+  const handleChange = (e) => {
+    setLocalValue(e.target.value);
+    onChange(e.target.value);
+    if (onRequestAutoSaveRef.current) {
+      setSaveState("saving");
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(triggerSave, 1200);
+    }
+  };
 
   return (
     <div className="mb-4">
-      <div className="mb-2">
+      <div className="mb-2 flex items-center gap-1.5">
         <Label className="block text-sm font-medium text-gray-700">{label}</Label>
+        <SaveIndicator state={saveState} />
       </div>
       <Input
         type="text"
         value={localValue}
-        onChange={(e) => {
-          setLocalValue(e.target.value);
-          onChange(e.target.value);
-        }}
+        onChange={handleChange}
         onFocus={() => { isFocusedRef.current = true; }}
-        onBlur={(e) => {
-          isFocusedRef.current = false;
-          inputProps?.onBlur?.(e);
-        }}
         placeholder={placeholder}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         {...inputProps}
+        onBlur={(e) => { isFocusedRef.current = false; inputProps?.onBlur?.(e); }}
       />
     </div>
   );
@@ -71,36 +100,53 @@ export const TextArea = ({
   placeholder = "",
   rows = 4,
   inputProps = {},
+  onRequestAutoSave,
 }) => {
   const [localValue, setLocalValue] = useState(value || "");
+  const [saveState, setSaveState] = useState("idle");
   const isFocusedRef = useRef(false);
+  const debounceRef = useRef(null);
+  const resetRef = useRef(null);
+  const onRequestAutoSaveRef = useRef(onRequestAutoSave);
+
+  useEffect(() => { onRequestAutoSaveRef.current = onRequestAutoSave; }, [onRequestAutoSave]);
 
   useEffect(() => {
-    if (!isFocusedRef.current) {
-      setLocalValue(value || "");
-    }
+    if (!isFocusedRef.current) setLocalValue(value || "");
   }, [value]);
+
+  const handleChange = (e) => {
+    setLocalValue(e.target.value);
+    onChange(e.target.value);
+    const saveFn = onRequestAutoSaveRef.current;
+    if (saveFn) {
+      setSaveState("saving");
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        saveFn().then((result) => {
+          setSaveState(result !== false ? "saved" : "idle");
+          if (resetRef.current) clearTimeout(resetRef.current);
+          resetRef.current = setTimeout(() => setSaveState("idle"), 2000);
+        }).catch(() => setSaveState("idle"));
+      }, 1200);
+    }
+  };
 
   return (
     <div className="mb-4">
-      <div className="mb-2">
+      <div className="mb-2 flex items-center gap-1.5">
         <Label className="block text-sm font-medium text-gray-700">{label}</Label>
+        <SaveIndicator state={saveState} />
       </div>
       <Textarea
         value={localValue}
-        onChange={(e) => {
-          setLocalValue(e.target.value);
-          onChange(e.target.value);
-        }}
+        onChange={handleChange}
         onFocus={() => { isFocusedRef.current = true; }}
-        onBlur={(e) => {
-          isFocusedRef.current = false;
-          inputProps?.onBlur?.(e);
-        }}
         placeholder={placeholder}
         rows={rows}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         {...inputProps}
+        onBlur={(e) => { isFocusedRef.current = false; inputProps?.onBlur?.(e); }}
       />
     </div>
   );
@@ -293,8 +339,11 @@ export const RichTextArea = ({
   onChange,
   onSelectionChange,
   onBlur,
+  onRequestAutoSave,
   valueFormat = "delta",
 }) => {
+  const [saveState, setSaveState] = useState("idle");
+  const onRequestAutoSaveRef = useRef(onRequestAutoSave);
   const isFocusedRef = useRef(false);
   const quillEditorRef = useRef(null);
   const editorRef = useRef(null);
@@ -320,6 +369,10 @@ export const RichTextArea = ({
   useEffect(() => {
     changeCallbackRef.current = onChange;
   }, [onChange]);
+
+  useEffect(() => {
+    onRequestAutoSaveRef.current = onRequestAutoSave;
+  }, [onRequestAutoSave]);
 
   useEffect(() => {
     if (quillEditorRef.current || !editorRef.current)
@@ -490,11 +543,25 @@ export const RichTextArea = ({
 
       // Emit simple HTML when valueFormat is "html", else delta
       // Normalize output to prevent <p><br></p> proliferation on auto-save cycles
+      let rtDebounceTimer = null;
+      let rtResetTimer = null;
       editor.on("text-change", () => {
         if (valueFormatRef.current === "html") {
           changeCallbackRef.current(normalizeQuillHtmlOutput(editor.root.innerHTML));
         } else {
           changeCallbackRef.current(JSON.stringify(editor.getContents()));
+        }
+        const saveFn = onRequestAutoSaveRef.current;
+        if (saveFn) {
+          setSaveState("saving");
+          if (rtDebounceTimer) clearTimeout(rtDebounceTimer);
+          rtDebounceTimer = setTimeout(() => {
+            saveFn().then((result) => {
+              setSaveState(result !== false ? "saved" : "idle");
+              if (rtResetTimer) clearTimeout(rtResetTimer);
+              rtResetTimer = setTimeout(() => setSaveState("idle"), 2000);
+            }).catch(() => setSaveState("idle"));
+          }, 1200);
         }
       });
 
@@ -536,9 +603,7 @@ export const RichTextArea = ({
       const handleEditorBlur = () => {
         isFocusedRef.current = false;
         const callback = blurCallbackRef.current;
-        if (callback) {
-          callback();
-        }
+        if (callback) callback();
       };
 
       blurHandlerRef.current = handleEditorBlur;
@@ -632,8 +697,9 @@ export const RichTextArea = ({
 
   return (
     <div className="mb-4">
-      <div className="mb-2">
+      <div className="mb-2 flex items-center gap-1.5">
         <Label className="block text-sm font-medium text-gray-700">{label}</Label>
+        <SaveIndicator state={saveState} />
       </div>
       {/*Editor Area */}
       <div className="bg-gray-100 rounded-lg p-0.5">

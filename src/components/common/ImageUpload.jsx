@@ -411,6 +411,10 @@ export default function ImageUpload({
     setAssetsError(null);
     setCreateAssetError(null);
 
+    if (tab === "upload") {
+      autoOpenFilePickerRef.current = true;
+    }
+
     if (tab === "generate") {
       setAiPrompt("");
       setAiSuggestedPrompt("");
@@ -684,6 +688,22 @@ export default function ImageUpload({
   };
 
   useEffect(() => {
+    if (
+      isImageDialogOpen &&
+      activeTab === "upload" &&
+      autoOpenFilePickerRef.current &&
+      !previewImageUrl &&
+      !isUploadingImage
+    ) {
+      autoOpenFilePickerRef.current = false;
+      const timer = setTimeout(() => {
+        dropZoneFileInputRef.current?.click();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isImageDialogOpen, activeTab, previewImageUrl, isUploadingImage]);
+
+  useEffect(() => {
     if (!isImageDialogOpen) {
       setRightPaneBounds(null);
       return;
@@ -724,6 +744,7 @@ export default function ImageUpload({
 
   const replaceFileInputRef = useRef(null);
   const dropZoneFileInputRef = useRef(null);
+  const autoOpenFilePickerRef = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = (e) => {

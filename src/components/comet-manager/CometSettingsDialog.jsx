@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Info,
   Calendar,
@@ -40,6 +40,10 @@ import {
   ART_STYLE_KEYS,
   normalizeArtStyleFromApi,
 } from "@/constants/artStyles";
+import {
+  normalizeKickOffDatesFromSession,
+  serializeKickOffDatesForResponsePath,
+} from "@/lib/kickoff-dates";
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
@@ -172,6 +176,12 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
       setDescription(
         sessionData?.comet_creation_data?.["Basic Information"]?.Description ||
           "",
+      );
+
+      setKickOffDates(
+        normalizeKickOffDatesFromSession(
+          sessionData?.response_path?.all_kickoff_dates,
+        ),
       );
 
       // Fetch path_image from response_path (exclude fallback images)
@@ -493,6 +503,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         ...currentResponsePath,
         enabled_attributes: updatedEnabledAttributes,
         colours: coloursObject,
+        all_kickoff_dates: serializeKickOffDatesForResponsePath(kickOffDates),
         ...(uploadedImageUrl && !uploadedImageUrl.startsWith("blob:")
           ? { path_image: uploadedImageUrl }
           : pathImageUrl && !pathImageUrl.startsWith("blob:")

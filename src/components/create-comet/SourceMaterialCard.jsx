@@ -28,26 +28,65 @@ function sanitizeLinkTitle(value) {
   return value.replace(/\s+/g, " ").trim();
 }
 
-function extractLinkTitle(payload) {
+function extractFetchedPageTitle(payload) {
   if (!payload || typeof payload !== "object") return "";
   return sanitizeLinkTitle(
     payload.title ??
       payload.page_title ??
       payload.webpage_title ??
       payload.meta_title ??
-      payload.source_name ??
-      payload.name ??
       "",
   );
+}
+
+function extractLinkTitle(payload) {
+  if (!payload || typeof payload !== "object") return "";
+  const candidates = [
+    payload.title,
+    payload.page_title,
+    payload.webpage_title,
+    payload.meta_title,
+    payload.source_name,
+    payload.name,
+  ]
+    .map((v) => sanitizeLinkTitle(v ?? ""))
+    .filter(Boolean);
+  // Prefer the longest non-trivial title (avoids bare site names like "Wikipedia")
+  if (candidates.length === 0) return "";
+  return candidates.reduce((best, cur) => (cur.length > best.length ? cur : best), candidates[0]);
 }
 
 function deriveTitleFromUrl(rawUrl = "") {
   try {
     const parsed = new URL(rawUrl);
+
+    // Try to get a meaningful title from the URL path first
+    const skipSegments = new Set(["wiki", "w", "en", "article", "page", "index"]);
+    const pathParts = parsed.pathname.split("/").filter(Boolean);
+    const candidate = [...pathParts].reverse().find((part) => {
+      const decoded = decodeURIComponent(part);
+      return (
+        decoded.length > 3 &&
+        !skipSegments.has(decoded.toLowerCase()) &&
+        !/^[0-9a-f-]{8,}$/i.test(decoded)
+      );
+    });
+    if (candidate) {
+      const decoded = decodeURIComponent(candidate)
+        .replace(/\.[^.]+$/, "")
+        .replace(/[_-]/g, " ")
+        .trim();
+      if (decoded.length > 3) {
+        return decoded.charAt(0).toUpperCase() + decoded.slice(1);
+      }
+    }
+
+    // Fall back to the registered domain name (e.g. "wikipedia" from "pl.wikipedia.org")
     const host = parsed.hostname.replace(/^www\./i, "");
-    const firstLabel = (host.split(".")[0] || "").trim();
-    if (!firstLabel) return LINK_TITLE_FALLBACK;
-    return firstLabel.charAt(0).toUpperCase() + firstLabel.slice(1);
+    const labels = host.split(".");
+    const label = (labels.length >= 2 ? labels[labels.length - 2] : labels[0] || "").trim();
+    if (!label) return LINK_TITLE_FALLBACK;
+    return label.charAt(0).toUpperCase() + label.slice(1);
   } catch {
     return LINK_TITLE_FALLBACK;
   }
@@ -527,6 +566,23 @@ export default function SourceMaterialCard({
     }
   }, []);
 
+  const fetchPageTitle = useCallback(async (url) => {
+    const encodedUrl = encodeURIComponent(url);
+    const candidates = [`/api/fetch-page-title?url=${encodedUrl}`];
+
+    for (const endpoint of candidates) {
+      try {
+        const res = await fetch(endpoint);
+        if (!res.ok) continue;
+        const data = await res.json();
+        const title = extractFetchedPageTitle(data);
+        if (title) return title;
+      } catch {}
+    }
+
+    return "";
+  }, []);
+
   const checkLinkPreviewability = useCallback(async (url) => {
     try {
       const result = await apiService({
@@ -539,26 +595,13 @@ export default function SourceMaterialCard({
         return null;
       }
 
-      return result.response ?? null;
+      const payload = result.response ?? null;
+      return Array.isArray(payload) ? (payload[0] ?? null) : payload;
     } catch (error) {
       console.error("Error checking link previewability:", error);
       return null;
     }
   }, []);
-
-  const resolveLinkTitle = useCallback(
-    async (url) => {
-      const fallbackTitle = deriveTitleFromUrl(url);
-      try {
-        const previewCheck = await checkLinkPreviewability(url);
-        const extractedTitle = extractLinkTitle(previewCheck);
-        return extractedTitle || fallbackTitle;
-      } catch {
-        return fallbackTitle;
-      }
-    },
-    [checkLinkPreviewability],
-  );
 
   const addSourceFiles = useCallback(
     (incomingFiles) => {
@@ -842,28 +885,27 @@ export default function SourceMaterialCard({
       return toast.error("This link is already added");
 
     let previewMeta = inferLinkPreviewMeta(url);
-    let pageTitle = deriveTitleFromUrl(url);
-    if (!previewMeta.previewWarning) {
-      setIsCheckingLinkPreview(true);
-      const previewCheck = await checkLinkPreviewability(url);
-      setIsCheckingLinkPreview(false);
-      pageTitle = extractLinkTitle(previewCheck) || deriveTitleFromUrl(url);
+    let pageTitle = "";
+    setIsCheckingLinkPreview(true);
+    const [previewCheck, fetchedTitle] = await Promise.all([
+      checkLinkPreviewability(url),
+      fetchPageTitle(url),
+    ]);
+    setIsCheckingLinkPreview(false);
+    pageTitle = fetchedTitle;
 
-      if (previewCheck?.is_pdf) {
-        previewMeta = { ...previewMeta, linkType: "pdf", previewWarning: "" };
-      } else if (previewCheck?.likely_previewable === false) {
-        previewMeta = {
-          ...previewMeta,
-          previewWarning:
-            "This link is likely not previewable in-app. Please use a different source link if preview is required.",
-        };
-      }
-    } else {
-      pageTitle = await resolveLinkTitle(url);
+    if (previewCheck?.is_pdf) {
+      previewMeta = { ...previewMeta, linkType: "pdf", previewWarning: "" };
+    } else if (!previewMeta.previewWarning && previewCheck?.likely_previewable === false) {
+      previewMeta = {
+        ...previewMeta,
+        previewWarning:
+          "This link is likely not previewable in-app. Please use a different source link if preview is required.",
+      };
     }
 
     setWebpageUrls((prev) =>
-      dedupeWebLinks([...prev, { url, comment: "", ...previewMeta }]),
+      dedupeWebLinks([...prev, { url, comment: "", title: pageTitle, ...previewMeta }]),
     );
     setPendingScrollTargetKey(`link-${getWebLinkKey(url)}`);
     setLinkDraft({ url: "" });

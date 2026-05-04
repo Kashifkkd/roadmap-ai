@@ -112,6 +112,29 @@ function getScreenCardContentSnippet(screen) {
   return "";
 }
 
+/**
+ * Resolves the best available preview image URL for a screen card.
+ * Priority:
+ *   1. screen.assets[] — first entry with type === "image"
+ *   2. screen.screenContents.content.media — if type === "image"
+ *   3. screen.thumbnail (legacy fallback)
+ */
+function getPreviewImageUrl(screen) {
+  const imageAsset = (screen?.assets || []).find(
+    (a) =>
+      a &&
+      typeof a === "object" &&
+      (a.type === "image" || a.asset_type === "image") &&
+      (a.url || a.ImageUrl)
+  );
+  if (imageAsset) return imageAsset.url || imageAsset.ImageUrl;
+
+  const media = screen?.screenContents?.content?.media;
+  if (media?.type === "image" && media?.url) return media.url;
+
+  return screen?.thumbnail || null;
+}
+
 function shouldShowScreenCardImage(screen) {
   const contentType = screen?.screenContents?.contentType;
   const content = screen?.screenContents?.content || {};
@@ -160,10 +183,11 @@ export default function ScreenCard({
   };
 
   const showImagePreview = shouldShowScreenCardImage(screen);
+  const previewImageUrl = getPreviewImageUrl(screen);
   const hasExistingThumbnail = !!(
-    screen?.thumbnail &&
-    screen.thumbnail !== "/noImage.png" &&
-    screen.thumbnail !== "/error-img.png"
+    previewImageUrl &&
+    previewImageUrl !== "/noImage.png" &&
+    previewImageUrl !== "/error-img.png"
   );
 
   const AddButton = ({ position, insertIndex }) => (
@@ -279,7 +303,7 @@ export default function ScreenCard({
                       }`}
                   >
                     <img
-                      src={screen.thumbnail || "/noImage.png"}
+                      src={previewImageUrl || "/noImage.png"}
                       alt={screen.title || "Screen preview"}
                       className="w-full h-full object-cover transition-all duration-300"
                       onError={(e) => (e.target.src = "/error-img.png")}

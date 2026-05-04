@@ -35,24 +35,64 @@ const sanitizeLinkTitle = (value) => {
   return value.replace(/\s+/g, " ").trim();
 };
 
-const extractLinkTitle = (payload) =>
-  sanitizeLinkTitle(
-    payload?.title ??
-      payload?.page_title ??
-      payload?.webpage_title ??
-      payload?.meta_title ??
-      payload?.source_name ??
-      payload?.name ??
+const extractFetchedPageTitle = (payload) => {
+  if (!payload || typeof payload !== "object") return "";
+  return sanitizeLinkTitle(
+    payload.title ??
+      payload.page_title ??
+      payload.webpage_title ??
+      payload.meta_title ??
       "",
   );
+};
+
+const extractLinkTitle = (payload) => {
+  if (!payload || typeof payload !== "object") return "";
+  const raw = Array.isArray(payload) ? payload[0] : payload;
+  if (!raw || typeof raw !== "object") return "";
+  const candidates = [
+    raw.title,
+    raw.page_title,
+    raw.webpage_title,
+    raw.meta_title,
+    raw.source_name,
+    raw.name,
+  ]
+    .map((v) => sanitizeLinkTitle(v ?? ""))
+    .filter(Boolean);
+  if (candidates.length === 0) return "";
+  return candidates.reduce((best, cur) => (cur.length > best.length ? cur : best), candidates[0]);
+};
 
 const deriveTitleFromUrl = (rawUrl = "") => {
   try {
     const parsed = new URL(rawUrl);
+
+    const skipSegments = new Set(["wiki", "w", "en", "article", "page", "index"]);
+    const pathParts = parsed.pathname.split("/").filter(Boolean);
+    const candidate = [...pathParts].reverse().find((part) => {
+      const decoded = decodeURIComponent(part);
+      return (
+        decoded.length > 3 &&
+        !skipSegments.has(decoded.toLowerCase()) &&
+        !/^[0-9a-f-]{8,}$/i.test(decoded)
+      );
+    });
+    if (candidate) {
+      const decoded = decodeURIComponent(candidate)
+        .replace(/\.[^.]+$/, "")
+        .replace(/[_-]/g, " ")
+        .trim();
+      if (decoded.length > 3) {
+        return decoded.charAt(0).toUpperCase() + decoded.slice(1);
+      }
+    }
+
     const host = parsed.hostname.replace(/^www\./i, "");
-    const firstLabel = (host.split(".")[0] || "").trim();
-    if (!firstLabel) return LINK_TITLE_FALLBACK;
-    return firstLabel.charAt(0).toUpperCase() + firstLabel.slice(1);
+    const labels = host.split(".");
+    const label = (labels.length >= 2 ? labels[labels.length - 2] : labels[0] || "").trim();
+    if (!label) return LINK_TITLE_FALLBACK;
+    return label.charAt(0).toUpperCase() + label.slice(1);
   } catch {
     return LINK_TITLE_FALLBACK;
   }
@@ -287,6 +327,8 @@ export default function WelcomePage() {
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
+        client_name: localStorage.getItem("ClientName") || "",
+        client_url: localStorage.getItem("ClientUrl") || "",
         input_type: "cycle_data_creation",
         cycle_creation_data: sessionData?.cycle_creation_data ?? {},
         response_outline: sessionData?.response_outline ?? {},
@@ -504,9 +546,11 @@ export default function WelcomePage() {
         }
 
         console.log("Web link uploaded successfully:", result.response);
+        const payload = result.response;
+        const unwrapped = Array.isArray(payload) ? (payload[0] ?? null) : payload;
         return {
           success: true,
-          title: extractLinkTitle(result.response) || deriveTitleFromUrl(url),
+          title: extractLinkTitle(unwrapped) || deriveTitleFromUrl(url),
         };
       } catch (error) {
         console.error("Error uploading web link:", error);
@@ -762,6 +806,21 @@ export default function WelcomePage() {
       return;
     }
 
+    let pageTitle = "";
+    const encodedUrl = encodeURIComponent(url);
+    const titleEndpoints = [`/api/fetch-page-title?url=${encodedUrl}`];
+    for (const endpoint of titleEndpoints) {
+      try {
+        const res = await fetch(endpoint);
+        if (!res.ok) continue;
+        const data = await res.json();
+        pageTitle = extractFetchedPageTitle(data);
+        if (pageTitle) break;
+      } catch {
+        // try next endpoint
+      }
+    }
+
     setIsUploading(true);
     try {
       const uploaded = await uploadWebLink(url, currentSessionId, comment);
@@ -769,7 +828,7 @@ export default function WelcomePage() {
 
       setWebpageUrls((prev) => [
         ...prev,
-        { url, title: uploaded.title || LINK_TITLE_FALLBACK, comment },
+        { url, title: pageTitle || "", comment },
       ]);
       setLinkInputValue("");
       setLinkCommentValue("");
@@ -1005,11 +1064,9 @@ export default function WelcomePage() {
                             <div className="flex items-center gap-1.5">
                               <Link2 className="w-3 h-3 flex-shrink-0 text-gray-500" />
                               <span className="truncate font-medium text-gray-700 flex-1 min-w-0">
-                                {(entry.title || LINK_TITLE_FALLBACK).slice(0, 22)}
-                                {(entry.title || LINK_TITLE_FALLBACK).length >
-                                  22
-                                  ? "…"
-                                  : ""}
+                                {entry.title
+                                  ? entry.title.slice(0, 22) + (entry.title.length > 22 ? "…" : "")
+                                  : entry.url.slice(0, 22) + (entry.url.length > 22 ? "…" : "")}
                               </span>
                               <button
                                 onClick={() => handleRemoveLink(index)}

@@ -26,6 +26,7 @@ import { toast } from "@/components/ui/toast";
 import SourceMaterialCard from "@/components/create-comet/SourceMaterialCard";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
 import { resolveSourceMaterialLinkUrl } from "@/lib/sourceMaterialLinkUrl";
+import { subscribeToVariantReadyWithToast } from "@/lib/variant-ready-notify";
 
 function isValidPathId(n) {
   return typeof n === "number" && Number.isFinite(n) && n >= 0;
@@ -213,6 +214,7 @@ export default function CreateCycleRemixModal({
       }
 
       toast.success("Cycle remixed successfully");
+      subscribeToVariantReadyWithToast(result.response?.session_id, title.trim() || cycleName);
       onSuccess?.(result.response);
       handleClose();
     } catch (e) {

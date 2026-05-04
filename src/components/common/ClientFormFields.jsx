@@ -185,6 +185,9 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
     if (initialValues) {
       setClientName(initialValues.name || initialValues.client_name || "");
       setWebsite(initialValues.faq_url || "");
+      if (initialValues.faq_url) {
+        localStorage.setItem("ClientUrl", initialValues.faq_url);
+      }
 
       // Initialize brand colors from initialValues 
       setBrandColors({

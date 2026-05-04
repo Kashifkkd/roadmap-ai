@@ -100,6 +100,7 @@ export default function CreateComet({
   const [fieldPosition, setFieldPosition] = useState(null);
   const [habitEnabled, setHabitEnabled] = useState(false);
   const [personalizationEnabled, setPersonalizationEnabled] = useState(false);
+  const [chapterSkipEnabled, setChapterSkipEnabled] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const isAskingKyperRef = useRef(false);
   const autoSaveTimerRef = useRef(null);
@@ -311,6 +312,13 @@ export default function CreateComet({
         if (enabledAttrs.path_personalization !== undefined) {
           setPersonalizationEnabled(!!enabledAttrs.path_personalization);
         }
+        if (enabledAttrs.path_personalization) {
+          if (enabledAttrs.chapter_skip !== undefined) {
+            setChapterSkipEnabled(!!enabledAttrs.chapter_skip);
+          }
+        } else {
+          setChapterSkipEnabled(false);
+        }
         if (enabledAttrs.habit_description) {
           setValue("habit", enabledAttrs.habit_description);
         }
@@ -461,6 +469,12 @@ export default function CreateComet({
     }
   }, [prefillData, setValue]);
 
+  useEffect(() => {
+    if (!personalizationEnabled) {
+      setChapterSkipEnabled(false);
+    }
+  }, [personalizationEnabled]);
+
   // Track form changes in real-time using subscription (including toggle states)
   useEffect(() => {
     console.log("Auto-save: Setting up form subscription");
@@ -470,6 +484,7 @@ export default function CreateComet({
         ...values,
         habitEnabled,
         personalizationEnabled,
+        chapterSkipEnabled,
       };
       const formDataString = JSON.stringify(formDataWithToggles);
       const prevString = currentFormDataRef.current;
@@ -483,6 +498,7 @@ export default function CreateComet({
           description: values.description,
           habitEnabled,
           personalizationEnabled,
+          chapterSkipEnabled,
           changed: changed,
           hasPrevData: !!prevString
         });
@@ -492,7 +508,7 @@ export default function CreateComet({
       console.log("Auto-save: Cleaning up form subscription");
       subscription.unsubscribe();
     };
-  }, [watch, habitEnabled, personalizationEnabled]);
+  }, [watch, habitEnabled, personalizationEnabled, chapterSkipEnabled]);
 
   // Initialize prevFormDataRef after form is populated from prefillData
   useEffect(() => {
@@ -504,6 +520,7 @@ export default function CreateComet({
           ...currentFormValues,
           habitEnabled,
           personalizationEnabled,
+          chapterSkipEnabled,
         };
         const formDataString = JSON.stringify(formDataWithToggles);
         prevFormDataRef.current = formDataString;
@@ -511,7 +528,7 @@ export default function CreateComet({
       }, 200);
       return () => clearTimeout(timer);
     }
-  }, [prefillData, watch, habitEnabled, personalizationEnabled]);
+  }, [prefillData, watch, habitEnabled, personalizationEnabled, chapterSkipEnabled]);
 
   // Update tracked data when toggles change - this triggers auto-save detection
   useEffect(() => {
@@ -525,6 +542,7 @@ export default function CreateComet({
       ...currentFormValues,
       habitEnabled,
       personalizationEnabled,
+      chapterSkipEnabled,
     };
     const formDataString = JSON.stringify(formDataWithToggles);
     const prevString = currentFormDataRef.current;
@@ -538,12 +556,13 @@ export default function CreateComet({
     console.log("Auto-save: Toggle states changed:", {
       habitEnabled,
       personalizationEnabled,
+      chapterSkipEnabled,
       hasChanged,
       willTriggerAutoSave: hasChanged
     });
 
     // If this is a change (not initialization), the next interval tick will detect it
-  }, [habitEnabled, personalizationEnabled, watch]);
+  }, [habitEnabled, personalizationEnabled, chapterSkipEnabled, watch]);
 
   const requiredFields = [
     "cometTitle",
@@ -569,6 +588,8 @@ export default function CreateComet({
           habitEnabled,
           habitText: data.habit || "",
           personalizationEnabled,
+          chapterSkipEnabled:
+            personalizationEnabled && chapterSkipEnabled,
           sourceFiles: files,
           webpage_url: uniqueWebpageUrls
             .map((e) => ({
@@ -633,6 +654,7 @@ export default function CreateComet({
         ...initialValues,
         habitEnabled,
         personalizationEnabled,
+        chapterSkipEnabled,
       };
       const initialDataString = JSON.stringify(initialDataWithToggles);
       prevFormDataRef.current = initialDataString;
@@ -667,6 +689,7 @@ export default function CreateComet({
           ...currentFormValues,
           habitEnabled,
           personalizationEnabled,
+          chapterSkipEnabled,
         };
         const formDataString = JSON.stringify(formDataWithToggles);
         if (!prevFormDataRef.current) {
@@ -698,7 +721,12 @@ export default function CreateComet({
               prev: prev?.personalizationEnabled,
               stateValue: personalizationEnabled
             },
-            togglesChanged: prev ? (current.habitEnabled !== prev.habitEnabled || current.personalizationEnabled !== prev.personalizationEnabled) : false
+            chapterSkipEnabled: {
+              current: current.chapterSkipEnabled,
+              prev: prev?.chapterSkipEnabled,
+              stateValue: chapterSkipEnabled
+            },
+            togglesChanged: prev ? (current.habitEnabled !== prev.habitEnabled || current.personalizationEnabled !== prev.personalizationEnabled || current.chapterSkipEnabled !== prev.chapterSkipEnabled) : false
           });
         } catch (e) {
           console.log("Auto-save: Form data changed detected (parse error)");
@@ -719,6 +747,8 @@ export default function CreateComet({
         // Override any values from parsed JSON with current state
         currentFormValues.habitEnabled = habitEnabled;
         currentFormValues.personalizationEnabled = personalizationEnabled;
+        currentFormValues.chapterSkipEnabled =
+          personalizationEnabled && chapterSkipEnabled;
 
         try {
           isSavingRef.current = true;
@@ -781,29 +811,36 @@ export default function CreateComet({
           // Use current state values directly - they're always up-to-date
           const currentHabitEnabled = habitEnabled;
           const currentPersonalizationEnabled = personalizationEnabled;
+          const currentChapterSkipEnabled =
+            personalizationEnabled && chapterSkipEnabled;
 
           console.log("Auto-save: Toggle states being saved:", {
             habitEnabled: currentHabitEnabled,
             personalizationEnabled: currentPersonalizationEnabled,
+            chapterSkipEnabled: currentChapterSkipEnabled,
             stateValues: {
               habit: habitEnabled,
-              personalization: personalizationEnabled
+              personalization: personalizationEnabled,
+              chapterSkip: chapterSkipEnabled
             },
             parsedValues: {
               habit: currentFormValues.habitEnabled,
-              personalization: currentFormValues.personalizationEnabled
+              personalization: currentFormValues.personalizationEnabled,
+              chapterSkip: currentFormValues.chapterSkipEnabled
             }
           });
 
           const enabled_attributes = {
             ...(parsedSessionData?.response_path?.enabled_attributes || {}),
             path_personalization: currentPersonalizationEnabled,
+            chapter_skip: currentChapterSkipEnabled,
             habit_enabled: currentHabitEnabled,
             habit_description: currentFormValues.habit || "",
           };
 
           console.log("Auto-save: enabled_attributes being saved:", {
             path_personalization: enabled_attributes.path_personalization,
+            chapter_skip: enabled_attributes.chapter_skip,
             habit_enabled: enabled_attributes.habit_enabled
           });
 
@@ -922,7 +959,7 @@ export default function CreateComet({
         console.log("Auto-save: Cleaned up interval");
       }
     };
-  }, [sessionId, habitEnabled, personalizationEnabled, watch]);
+  }, [sessionId, habitEnabled, personalizationEnabled, chapterSkipEnabled, watch]);
 
   const handleAskKyper = async (query) => {
     try {
@@ -987,6 +1024,7 @@ export default function CreateComet({
 
       const additionalData = {
         personalization_enabled: personalizationEnabled || false,
+        chapter_skip: (personalizationEnabled && chapterSkipEnabled) || false,
         habit_enabled: habitEnabled || false,
         habit_description: formValues.habit || "",
       };
@@ -1414,6 +1452,14 @@ export default function CreateComet({
                         label="Personalization"
                         showInfo={false}
                       />
+                      {personalizationEnabled ? (
+                        <ToggleSwitch
+                          checked={chapterSkipEnabled}
+                          onChange={setChapterSkipEnabled}
+                          label="Allow Users to Skip Content"
+                          showInfo={false}
+                        />
+                      ) : null}
                     </div>
                   </CardContent>
                 </FormCard>

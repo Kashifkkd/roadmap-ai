@@ -22,6 +22,7 @@ import { apiService } from "@/api/apiService";
 import { getClients } from "@/api/client";
 import { endpoints } from "@/api/endpoint";
 import { toast } from "@/components/ui/toast";
+import { subscribeToVariantReadyWithToast } from "@/lib/variant-ready-notify";
 
 function isValidPathStepId(n) {
   return typeof n === "number" && Number.isFinite(n) && n >= 0;
@@ -326,6 +327,7 @@ export default function CreateStepVariantModal({
 
       if (result.success) {
         toast.success("Step copied successfully");
+        subscribeToVariantReadyWithToast(result.response?.session_id, title.trim() || currentCycleName);
         onSuccess?.(result.response);
         handleClose();
         return;

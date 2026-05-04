@@ -276,7 +276,12 @@ export default function ContentForm({
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-0 mb-2 bg-white overflow-hidden">
                   <div className="relative w-full h-[120px] group/media">
                     {/* Media preview based on type */}
-                    {formData.mediaType === "video" || existingMediaAsset?.type === "video" ? (
+                    {formData.mediaType === "link" ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 gap-2 px-4">
+                        <LinkIcon className="w-10 h-10 text-blue-400 shrink-0" />
+                        <span className="text-xs text-gray-500 truncate max-w-full">{formData.mediaUrl}</span>
+                      </div>
+                    ) : formData.mediaType === "video" || existingMediaAsset?.type === "video" ? (
                       <div className="w-full h-full flex items-center justify-center bg-gray-50">
                         <video
                           src={formData.mediaUrl || existingMediaAsset?.url || existingMediaAsset?.videoUrl}
@@ -294,6 +299,7 @@ export default function ContentForm({
                         src={formData.mediaUrl || existingMediaAsset?.url || existingMediaAsset?.ImageUrl}
                         alt="Media preview"
                         className="w-full h-full object-contain bg-gray-50"
+                        onError={(e) => { e.currentTarget.style.display = "none"; }}
                       />
                     ) : formData.mediaType === "pdf" || existingMediaAsset?.type === "pdf" ? (
                       <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 gap-2">

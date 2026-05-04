@@ -313,6 +313,9 @@ export default function DashboardLayout() {
       const enabled_attributes = {
         ...(parsedSessionData?.response_path?.enabled_attributes || {}),
         path_personalization: formData.personalizationEnabled || false,
+        chapter_skip:
+          (formData.personalizationEnabled && formData.chapterSkipEnabled) ||
+          false,
         habit_enabled: formData.habitEnabled || false,
         habit_description: formData.habitText || "",
       };
