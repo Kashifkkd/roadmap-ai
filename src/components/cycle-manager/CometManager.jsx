@@ -1034,7 +1034,7 @@ const handleNextStep = useCallback(() => {
       assessment: "assessment",
       reflection: "reflection",
       action: "action",
-      discussion: "social_discussion",
+      discussion: "socialDiscussion",
       habits: "habits",
       profile: "profile",
       managerEmail: "managerEmail",
@@ -1326,28 +1326,59 @@ const handleNextStep = useCallback(() => {
         order: allScreens.length,
       };
     } else if (screenType.id === "discussion") {
-      // Social Discussion screen structure
+      // Social Discussion screen structure (persist screenType "social" for Kyper; picker id stays "discussion")
       const discussionTitle = "";
+      const hyphenateUuidBytes = (bytes) => {
+        const hex = [...bytes]
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+      };
+      let discussionScreenUuid;
+      let discussionContentsUuid;
+      if (typeof globalThis.crypto?.randomUUID === "function") {
+        discussionScreenUuid = globalThis.crypto.randomUUID();
+        discussionContentsUuid = globalThis.crypto.randomUUID();
+      } else {
+        const b1 = new Uint8Array(16);
+        const b2 = new Uint8Array(16);
+        globalThis.crypto.getRandomValues(b1);
+        globalThis.crypto.getRandomValues(b2);
+        discussionScreenUuid = hyphenateUuidBytes(b1);
+        discussionContentsUuid = hyphenateUuidBytes(b2);
+      }
+      const numericDiscussionScreenId =
+        Date.now() * 1000 + Math.floor(Math.random() * 1000);
+      const numericDiscussionContentId =
+        Date.now() * 1000 + Math.floor(Math.random() * 1000);
+      const discussionPlaceholderPost = {
+        postId: "",
+        userId: "",
+        text: "",
+        votesCount: "",
+        rootId: "null",
+        socialDiscussionId: "",
+        replies: [],
+      };
       newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: "discussion",
+        id: numericDiscussionScreenId,
+        uuid: discussionScreenUuid,
+        screenType: "social",
         position: position,
         screenContents: {
-          id: screenContentId,
-          contentType: "social_discussion",
+          id: numericDiscussionContentId,
+          contentType: "socialDiscussion",
+          uuid: discussionContentsUuid,
           content: {
             title: discussionTitle,
             question: "",
-            posts: [],
+            posts: [discussionPlaceholderPost],
           },
         },
         assets: [],
-        imageStatus: "pending",
         chapterId: targetChapterId,
         stepId: targetStepId,
         thumbnail: "",
-        title: discussionTitle,
         formData: {
           socialTitle: discussionTitle,
           discussionQuestion: "",

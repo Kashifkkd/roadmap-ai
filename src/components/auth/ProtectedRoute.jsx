@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { tokenManager } from "@/lib/api-client";
+import { ClientAccessGuard } from "@/components/auth/ClientAccessGuard";
 
 export function ProtectedRoute({ children }) {
   const router = useRouter();
@@ -38,6 +39,9 @@ export function ProtectedRoute({ children }) {
     return null;
   }
 
-  return <>{children}</>;
+  // Once auth passes, gate access on whether the user's selected client is
+  // still visible in Kyper. This blocks direct-URL hits to /cycle-manager,
+  // /configure-cycle, /cycles, etc. for clients that 1st90 has just hidden.
+  return <ClientAccessGuard>{children}</ClientAccessGuard>;
 }
 

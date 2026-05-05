@@ -11,6 +11,7 @@ import Loader from "../loader3";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
 import { resolveSourceMaterialLinkUrl } from "@/lib/sourceMaterialLinkUrl";
+import { mergeWebpageUrlTitlesFromPreviousSession } from "@/lib/mergeWebpageUrlTitles";
 
 const normalizeUrlForKey = (url = "") =>
   (url || "").trim().toLowerCase().replace(/\/+$/, "");
@@ -155,16 +156,27 @@ export default function DashboardLayout() {
   useSessionSubscription(
     sessionId,
     (sessionData) => {
+      let incoming = sessionData;
+      try {
+        const prevRaw = localStorage.getItem("sessionData");
+        if (prevRaw) {
+          const prev = JSON.parse(prevRaw);
+          incoming = mergeWebpageUrlTitlesFromPreviousSession(sessionData, prev);
+        }
+      } catch (e) {
+        console.warn("Dashboard: merge webpage_url titles", e);
+      }
+
       // Normalize data structure to handle different formats
-      const normalized = { ...sessionData };
+      const normalized = { ...incoming };
 
       // Handle output.chatbot_conversation -> chatbot_conversation
       if (
-        sessionData.output?.chatbot_conversation &&
-        !sessionData.chatbot_conversation
+        incoming.output?.chatbot_conversation &&
+        !incoming.chatbot_conversation
       ) {
         normalized.chatbot_conversation =
-          sessionData.output.chatbot_conversation;
+          incoming.output.chatbot_conversation;
       }
 
       // Normalize Learning Objectives field name
@@ -186,11 +198,11 @@ export default function DashboardLayout() {
       // Preserve enabled_attributes from current session if server didn't return them
       if (
         !normalized.response_path?.enabled_attributes &&
-        sessionData?.response_path?.enabled_attributes
+        incoming?.response_path?.enabled_attributes
       ) {
         normalized.response_path = {
           ...normalized.response_path,
-          enabled_attributes: sessionData.response_path.enabled_attributes,
+          enabled_attributes: incoming.response_path.enabled_attributes,
         };
       }
       // Create a new object reference to ensure React detects the change

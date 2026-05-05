@@ -301,8 +301,17 @@ export default function Header() {
     return client.role === "Super Admin";
   };
 
-  // Use recent clients for dropdown list
-  const displayClients = clients.length > 0 ? clients : [];
+  // Use recent clients for dropdown list. We defensively drop any client that
+  // is hidden in 1st90 (`is_kyper_enabled === false`) or globally disabled
+  // (`enabled === false`) so a stale cache (or a partial backend regression)
+  // can never re-expose a client that should be inaccessible. `undefined`
+  // values are treated as visible — older API payloads may omit the fields.
+  const displayClients =
+    clients.length > 0
+      ? clients.filter(
+          (c) => c?.is_kyper_enabled !== false && c?.enabled !== false,
+        )
+      : [];
 
   // Mock collaborators data
   // const mockCollaborators = [

@@ -15,6 +15,12 @@ import { endpoints } from "@/api/endpoint";
 import { toast } from "@/components/ui/toast";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 import { tokenManager } from "@/lib/api-client";
+import {
+  deriveTitleFromUrl,
+  extractFetchedPageTitleFromJson,
+  extractLinkTitleFromRecord,
+} from "@/lib/linkTitleFromUrl";
+import { mergeWebpageUrlTitlesFromPreviousSession } from "@/lib/mergeWebpageUrlTitles";
 
 const SUGGESTIONS = [
   "Help my team apply AI tools in their daily work",
@@ -28,75 +34,6 @@ const SUGGESTIONS = [
 
 const SOURCE_FORMATS_HOVER_TEXT =
   ".pdf, .doc, .docx, .txt, .pptx, .mp3, .wav, .m4a, .flac, .mp4, .webm";
-const LINK_TITLE_FALLBACK = "Title not available";
-
-const sanitizeLinkTitle = (value) => {
-  if (typeof value !== "string") return "";
-  return value.replace(/\s+/g, " ").trim();
-};
-
-const extractFetchedPageTitle = (payload) => {
-  if (!payload || typeof payload !== "object") return "";
-  return sanitizeLinkTitle(
-    payload.title ??
-      payload.page_title ??
-      payload.webpage_title ??
-      payload.meta_title ??
-      "",
-  );
-};
-
-const extractLinkTitle = (payload) => {
-  if (!payload || typeof payload !== "object") return "";
-  const raw = Array.isArray(payload) ? payload[0] : payload;
-  if (!raw || typeof raw !== "object") return "";
-  const candidates = [
-    raw.title,
-    raw.page_title,
-    raw.webpage_title,
-    raw.meta_title,
-    raw.source_name,
-    raw.name,
-  ]
-    .map((v) => sanitizeLinkTitle(v ?? ""))
-    .filter(Boolean);
-  if (candidates.length === 0) return "";
-  return candidates.reduce((best, cur) => (cur.length > best.length ? cur : best), candidates[0]);
-};
-
-const deriveTitleFromUrl = (rawUrl = "") => {
-  try {
-    const parsed = new URL(rawUrl);
-
-    const skipSegments = new Set(["wiki", "w", "en", "article", "page", "index"]);
-    const pathParts = parsed.pathname.split("/").filter(Boolean);
-    const candidate = [...pathParts].reverse().find((part) => {
-      const decoded = decodeURIComponent(part);
-      return (
-        decoded.length > 3 &&
-        !skipSegments.has(decoded.toLowerCase()) &&
-        !/^[0-9a-f-]{8,}$/i.test(decoded)
-      );
-    });
-    if (candidate) {
-      const decoded = decodeURIComponent(candidate)
-        .replace(/\.[^.]+$/, "")
-        .replace(/[_-]/g, " ")
-        .trim();
-      if (decoded.length > 3) {
-        return decoded.charAt(0).toUpperCase() + decoded.slice(1);
-      }
-    }
-
-    const host = parsed.hostname.replace(/^www\./i, "");
-    const labels = host.split(".");
-    const label = (labels.length >= 2 ? labels[labels.length - 2] : labels[0] || "").trim();
-    if (!label) return LINK_TITLE_FALLBACK;
-    return label.charAt(0).toUpperCase() + label.slice(1);
-  } catch {
-    return LINK_TITLE_FALLBACK;
-  }
-};
 
 export default function WelcomePage() {
   const [inputText, setInputText] = useState("");
@@ -135,6 +72,31 @@ export default function WelcomePage() {
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const loginButtonRef = useRef(null);
+
+  // Keep sessionData.webpage_url in sync so Configure Cycle always sees fetched titles
+  useEffect(() => {
+    if (typeof window === "undefined" || !sessionId) return;
+    try {
+      const raw = localStorage.getItem("sessionData");
+      const base = raw ? JSON.parse(raw) : {};
+      const webpage_url = webpageUrls.map((e) => ({
+        webpage_url: e.url,
+        title:
+          (e.title && String(e.title).trim()) || deriveTitleFromUrl(e.url),
+        comment: e.comment || "",
+      }));
+      localStorage.setItem(
+        "sessionData",
+        JSON.stringify({
+          ...base,
+          session_id: base.session_id || sessionId,
+          webpage_url,
+        }),
+      );
+    } catch (e) {
+      console.warn("Welcome: persist webpage_url to sessionData", e);
+    }
+  }, [sessionId, webpageUrls]);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -219,12 +181,25 @@ export default function WelcomePage() {
   useSessionSubscription(
     sessionId,
     (receivedSessionData) => {
-      localStorage.setItem("sessionData", JSON.stringify(receivedSessionData));
-      setSessionData(receivedSessionData);
+      let merged = receivedSessionData;
+      try {
+        const prevRaw = localStorage.getItem("sessionData");
+        if (prevRaw) {
+          const prev = JSON.parse(prevRaw);
+          merged = mergeWebpageUrlTitlesFromPreviousSession(
+            receivedSessionData,
+            prev,
+          );
+        }
+      } catch (e) {
+        console.warn("Welcome: merge webpage_url titles", e);
+      }
+      localStorage.setItem("sessionData", JSON.stringify(merged));
+      setSessionData(merged);
 
       // Update chatbot_conversation
-      if (receivedSessionData.chatbot_conversation) {
-        const conversation = receivedSessionData.chatbot_conversation;
+      if (merged.chatbot_conversation) {
+        const conversation = merged.chatbot_conversation;
         const allMessages = [];
 
         // Only show messages without identifier
@@ -256,8 +231,8 @@ export default function WelcomePage() {
 
       // Navigate to configure-cycle when cycle_creation_data is populated
       const hasCometData =
-        receivedSessionData?.cycle_creation_data &&
-        Object.keys(receivedSessionData.cycle_creation_data).length > 0;
+        merged?.cycle_creation_data &&
+        Object.keys(merged.cycle_creation_data).length > 0;
       if (hasCometData) {
         setCometCreated(true);
         router.push("/configure-cycle");
@@ -550,7 +525,7 @@ export default function WelcomePage() {
         const unwrapped = Array.isArray(payload) ? (payload[0] ?? null) : payload;
         return {
           success: true,
-          title: extractLinkTitle(unwrapped) || deriveTitleFromUrl(url),
+          title: extractLinkTitleFromRecord(unwrapped) || deriveTitleFromUrl(url),
         };
       } catch (error) {
         console.error("Error uploading web link:", error);
@@ -814,7 +789,7 @@ export default function WelcomePage() {
         const res = await fetch(endpoint);
         if (!res.ok) continue;
         const data = await res.json();
-        pageTitle = extractFetchedPageTitle(data);
+        pageTitle = extractFetchedPageTitleFromJson(data);
         if (pageTitle) break;
       } catch {
         // try next endpoint
@@ -828,7 +803,11 @@ export default function WelcomePage() {
 
       setWebpageUrls((prev) => [
         ...prev,
-        { url, title: pageTitle || "", comment },
+        {
+          url,
+          title: pageTitle || deriveTitleFromUrl(url),
+          comment,
+        },
       ]);
       setLinkInputValue("");
       setLinkCommentValue("");

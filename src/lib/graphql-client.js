@@ -5,6 +5,14 @@ class GraphQLClient {
   constructor() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
     this.baseURL = `${apiUrl}/graphql`;
+    // Single-flight chain for autoSaveComet.  Prevents two auto-save
+    // mutations from being in flight at the same time, which is what
+    // caused deleted steps/phases to reappear 2-3 seconds later: a stale
+    // payload sometimes landed AFTER a fresh one and overwrote the
+    // deletion.  Every caller of autoSaveComet now queues behind the
+    // previous call, so saves leave this client in strict order and the
+    // network can't reorder them.
+    this._autoSaveChain = Promise.resolve();
   }
 
 
@@ -98,6 +106,19 @@ class GraphQLClient {
   }
 
   async autoSaveComet(cometJson) {
+    // Enqueue this save onto the chain.  The .catch() prevents a previous
+    // failed save from breaking subsequent ones, while still letting THIS
+    // call's caller see its own error normally (because the returned
+    // promise — the new tail of the chain — only rejects if _sendAutoSave
+    // rejects for THIS payload, not for an earlier one).
+    const next = this._autoSaveChain
+      .catch(() => {})
+      .then(() => this._sendAutoSave(cometJson));
+    this._autoSaveChain = next;
+    return next;
+  }
+
+  async _sendAutoSave(cometJson) {
     const query = `
       mutation {
         autoSaveComet(
@@ -107,8 +128,15 @@ class GraphQLClient {
         )
       }
     `;
-
     return await this.request(query);
+  }
+
+  /**
+   * Resolves once every queued autoSaveComet call has settled.
+   * Useful before navigation / unload so in-flight saves aren't lost.
+   */
+  flushAutoSaves() {
+    return this._autoSaveChain.catch(() => {});
   }
 
   subscribeToSessionUpdates(sessionId, onUpdate, onError) {

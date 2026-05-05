@@ -1021,7 +1021,7 @@ export default function CometManager({
       assessment: "assessment",
       reflection: "reflection",
       action: "action",
-      discussion: "social_discussion",
+      discussion: "socialDiscussion",
       habits: "habits",
       profile: "profile",
       managerEmail: "managerEmail",
@@ -1285,28 +1285,41 @@ export default function CometManager({
         order: allScreens.length,
       };
     } else if (screenType.id === "discussion") {
-      // Social Discussion screen structure
+      // Social Discussion screen structure (persist screenType "social" for Kyper; picker id stays "discussion")
       const discussionTitle = "";
+      const discussionContentsUuid = crypto.randomUUID();
+      const numericDiscussionScreenId =
+        Date.now() * 1000 + Math.floor(Math.random() * 1000);
+      const numericDiscussionContentId =
+        Date.now() * 1000 + Math.floor(Math.random() * 1000);
+      const discussionPlaceholderPost = {
+        postId: "",
+        userId: "",
+        text: "",
+        votesCount: "",
+        rootId: "null",
+        socialDiscussionId: "",
+        replies: [],
+      };
       newScreen = {
-        id: screenId,
+        id: numericDiscussionScreenId,
         uuid: screenUuid,
-        screenType: "discussion",
+        screenType: "social",
         position: position,
         screenContents: {
-          id: screenContentId,
-          contentType: "social_discussion",
+          id: numericDiscussionContentId,
+          contentType: "socialDiscussion",
+          uuid: discussionContentsUuid,
           content: {
             title: discussionTitle,
             question: "",
-            posts: [],
+            posts: [discussionPlaceholderPost],
           },
         },
         assets: [],
-        imageStatus: "pending",
         chapterId: targetChapterId,
         stepId: targetStepId,
         thumbnail: "",
-        title: discussionTitle,
         formData: {
           socialTitle: discussionTitle,
           discussionQuestion: "",

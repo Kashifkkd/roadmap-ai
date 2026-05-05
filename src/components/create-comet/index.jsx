@@ -18,25 +18,25 @@ import { graphqlClient } from "@/lib/graphql-client";
 import { Info, Trash2, Link2, X } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
+import { deriveTitleFromUrl, extractLinkTitleFromRecord } from "@/lib/linkTitleFromUrl";
 
 function normalizeWebpageUrlEntry(item, defaultUploaded = false) {
   if (typeof item === "string") {
+    const u = item.trim();
     return {
-      url: item,
-      title: "",
+      url: u,
+      title: deriveTitleFromUrl(u),
       comment: "",
       isUploaded: defaultUploaded,
     };
   }
 
+  const url = String(item?.webpage_url ?? item?.url ?? "").trim();
+  const fromApi = (extractLinkTitleFromRecord(item) || "").trim();
+
   return {
-    url: item?.webpage_url ?? item?.url ?? "",
-    title:
-      item?.title ??
-      item?.page_title ??
-      item?.webpage_title ??
-      item?.source_name ??
-      "",
+    url,
+    title: fromApi || deriveTitleFromUrl(url),
     comment: item?.comment ?? "",
     isUploaded:
       typeof item?.isUploaded === "boolean" ? item.isUploaded : defaultUploaded,
