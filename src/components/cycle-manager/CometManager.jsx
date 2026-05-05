@@ -1170,36 +1170,53 @@ export default function CometManager({
           order: allScreens.length,
         };
       } else if (screenType.id === "force_question") {
-        // Force Rank screen structure
-        const forceRankTitle = "";
+        // Force rank screens must be saved as poll + force_rank with strict schema.
+        const forceRankTitle = "Rank priorities for this scenario";
+        const forceRankQuestion =
+          "Drag to rank each option from most important to least important.";
+        const forceRankOptions = [
+          { optionId: 1, text: "Immediate impact on the goal" },
+          { optionId: 2, text: "Ease of implementation" },
+        ];
+        const forceRankScreenId = Date.now();
+        const forceRankContentId = forceRankScreenId + 1;
+        const forceRankUuid = globalThis.crypto?.randomUUID
+          ? globalThis.crypto.randomUUID()
+          : `${screenUuid.slice(0, 8)}-${screenUuid.slice(8, 12)}-${screenUuid.slice(12, 16)}-${screenUuid.slice(16, 20)}-${screenUuid.slice(20, 32)}`;
+
         newScreen = {
-          id: screenId,
-          uuid: screenUuid,
-          screenType: "force_question",
+          id: forceRankScreenId,
+          uuid: forceRankUuid,
+          screenType: "poll",
           position: position,
           screenContents: {
-            id: screenContentId,
+            id: forceRankContentId,
             contentType: "force_rank",
             content: {
+              ptype: "force_rank",
               title: forceRankTitle,
-              highLabel: "",
-              lowLabel: "",
-              key_learning: "",
-              options: [],
+              question: forceRankQuestion,
+              keyLearning:
+                "Ranking trade-offs clarifies which choice should be prioritized first.",
+              options: forceRankOptions,
+              lowLabel: "Least critical",
+              highLabel: "Most critical",
             },
           },
           assets: [],
-          imageStatus: "pending",
+          imageStatus: null,
+          toolStatus: null,
           chapterId: targetChapterId,
           stepId: targetStepId,
           thumbnail: "",
-          title: forceRankTitle,
           formData: {
             pollTitle: forceRankTitle,
-            topLabel: "",
-            bottomLabel: "",
-            keyLearning: "",
-            mcqOptions: [],
+            question: forceRankQuestion,
+            topLabel: "Most critical",
+            bottomLabel: "Least critical",
+            keyLearning:
+              "Ranking trade-offs clarifies which choice should be prioritized first.",
+            mcqOptions: forceRankOptions,
           },
           assessment: null,
           order: allScreens.length,
