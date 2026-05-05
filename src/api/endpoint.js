@@ -37,6 +37,7 @@ export const endpoints = {
     `api/comet/v2/sessions/${sessionId}/assign_path_users`,
 
   generateDalleImage: "api/generative-ai/v1/generate-dalle-image",
+  editDalleImage: "api/generative-ai/v1/edit-dalle-image",
 
   getClientDetails: (clientId) =>
     `api/clients/v1/client_details/?client_id=${clientId}`,

@@ -40,6 +40,15 @@ function isValidHttpUrl(string) {
   }
 }
 
+// A client is "visible in Kyper" only when both flags allow it: 1st90's
+// `is_kyper_enabled` and the global `enabled` flag. We treat `undefined` as
+// visible because older API payloads omit these fields — only an explicit
+// `false` blocks the client.
+const isClientVisibleInKyper = (client) =>
+  client &&
+  client.is_kyper_enabled !== false &&
+  client.enabled !== false;
+
 export default function ClientDropdown({
   onClientSelect,
   clients = [],
@@ -50,7 +59,9 @@ export default function ClientDropdown({
   const { refreshClients } = useRefreshData();
   const [isOpen, setIsOpen] = useState(false);
   const [isAllClientsOpen, setIsAllClientsOpen] = useState(false);
-  const [allClients, setAllClients] = useState(clients);
+  // Client lists must only ever contain clients that 1st90 has marked visible.
+  const visibleClients = (clients || []).filter(isClientVisibleInKyper);
+  const [allClients, setAllClients] = useState(visibleClients);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [isClientSettingsDialogOpen, setIsClientSettingsDialogOpen] =
@@ -89,7 +100,7 @@ export default function ClientDropdown({
   }, [selectedClient?.id, selectedClient?.background_image_url]);
 
   useEffect(() => {
-    setAllClients(clients);
+    setAllClients((clients || []).filter(isClientVisibleInKyper));
   }, [clients]);
 
   const handleClientClick = (client) => {
@@ -155,7 +166,10 @@ export default function ClientDropdown({
           enabledOnly: true,
           search: debouncedSearchQuery,
         });
-        setAllClients(res?.response || []);
+        // Belt-and-suspenders: backend already filters by is_kyper_enabled,
+        // but if a client is in flight when 1st90 disables it we'd briefly
+        // see it in the list. Filter again on the client.
+        setAllClients((res?.response || []).filter(isClientVisibleInKyper));
       } catch (error) {
         console.error("Failed to load clients", error);
         toast.error("Unable to load clients");
@@ -253,13 +267,13 @@ export default function ClientDropdown({
       {isOpen && !isLoading && !isError && (
         <div className="absolute top-full mt-2 right-0 w-44 sm:w-48 md:w-56 bg-background rounded-md shadow-xl overflow-visible no-scrollbar z-60">
           <div className="flex flex-col p-1.5 sm:p-2 gap-1.5 sm:gap-2 max-h-80 overflow-y-auto">
-            {clients.length === 0 ? (
+            {visibleClients.length === 0 ? (
               <div className="py-4 sm:py-6 text-center text-xs sm:text-sm text-muted-foreground">
                 No clients found
               </div>
             ) : (
-              isArrayWithValues(clients) &&
-              clients.map((client) => {
+              isArrayWithValues(visibleClients) &&
+              visibleClients.map((client) => {
                 const clientThumbnailUrl = getClientThumbnailUrl(client);
                 const hasImg =
                   client &&

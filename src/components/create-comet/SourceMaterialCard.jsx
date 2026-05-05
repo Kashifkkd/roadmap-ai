@@ -1,4 +1,10 @@
-import React, { useEffect, useCallback, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useCallback,
+  useRef,
+  useState,
+  useMemo,
+} from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
@@ -20,77 +26,14 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { resolveSourceMaterialLinkUrl } from "@/lib/sourceMaterialLinkUrl";
 import { toast } from "@/components/ui/toast";
+import {
+  LINK_TITLE_FALLBACK,
+  deriveTitleFromUrl,
+  extractFetchedPageTitleFromJson,
+  extractLinkTitleFromRecord,
+} from "@/lib/linkTitleFromUrl";
 
-const LINK_TITLE_FALLBACK = "Title not available";
-
-function sanitizeLinkTitle(value) {
-  if (typeof value !== "string") return "";
-  return value.replace(/\s+/g, " ").trim();
-}
-
-function extractFetchedPageTitle(payload) {
-  if (!payload || typeof payload !== "object") return "";
-  return sanitizeLinkTitle(
-    payload.title ??
-      payload.page_title ??
-      payload.webpage_title ??
-      payload.meta_title ??
-      "",
-  );
-}
-
-function extractLinkTitle(payload) {
-  if (!payload || typeof payload !== "object") return "";
-  const candidates = [
-    payload.title,
-    payload.page_title,
-    payload.webpage_title,
-    payload.meta_title,
-    payload.source_name,
-    payload.name,
-  ]
-    .map((v) => sanitizeLinkTitle(v ?? ""))
-    .filter(Boolean);
-  // Prefer the longest non-trivial title (avoids bare site names like "Wikipedia")
-  if (candidates.length === 0) return "";
-  return candidates.reduce((best, cur) => (cur.length > best.length ? cur : best), candidates[0]);
-}
-
-function deriveTitleFromUrl(rawUrl = "") {
-  try {
-    const parsed = new URL(rawUrl);
-
-    // Try to get a meaningful title from the URL path first
-    const skipSegments = new Set(["wiki", "w", "en", "article", "page", "index"]);
-    const pathParts = parsed.pathname.split("/").filter(Boolean);
-    const candidate = [...pathParts].reverse().find((part) => {
-      const decoded = decodeURIComponent(part);
-      return (
-        decoded.length > 3 &&
-        !skipSegments.has(decoded.toLowerCase()) &&
-        !/^[0-9a-f-]{8,}$/i.test(decoded)
-      );
-    });
-    if (candidate) {
-      const decoded = decodeURIComponent(candidate)
-        .replace(/\.[^.]+$/, "")
-        .replace(/[_-]/g, " ")
-        .trim();
-      if (decoded.length > 3) {
-        return decoded.charAt(0).toUpperCase() + decoded.slice(1);
-      }
-    }
-
-    // Fall back to the registered domain name (e.g. "wikipedia" from "pl.wikipedia.org")
-    const host = parsed.hostname.replace(/^www\./i, "");
-    const labels = host.split(".");
-    const label = (labels.length >= 2 ? labels[labels.length - 2] : labels[0] || "").trim();
-    if (!label) return LINK_TITLE_FALLBACK;
-    return label.charAt(0).toUpperCase() + label.slice(1);
-  } catch {
-    return LINK_TITLE_FALLBACK;
-  }
-}
+const extractLinkTitle = extractLinkTitleFromRecord;
 
 function normalizeWebLink(item, defaultUploaded = false) {
   const urlValue = item?.url ?? item?.webpage_url ?? "";
@@ -101,7 +44,7 @@ function normalizeWebLink(item, defaultUploaded = false) {
       url: item,
       comment: "",
       isUploaded: defaultUploaded,
-      title: "",
+      title: deriveTitleFromUrl(item),
       ...inferLinkPreviewMeta(item),
     };
   }
@@ -404,7 +347,9 @@ export default function SourceMaterialCard({
               linkMaterials.push({
                 id: material.id,
                 url: url.trim(),
-                title: extractLinkTitle(material),
+                title:
+                  extractLinkTitle(material) ||
+                  deriveTitleFromUrl(url.trim()),
                 comment: material.comment ?? "",
                 isUploaded: true,
               });
@@ -422,7 +367,15 @@ export default function SourceMaterialCard({
 
         setFiles(dedupeFiles(fileMaterials, true));
         if (linkMaterials.length > 0) {
-          setWebpageUrls(dedupeWebLinks(linkMaterials, true));
+          setWebpageUrls((prev) =>
+            dedupeWebLinks(
+              [
+                ...dedupeWebLinks(Array.isArray(prev) ? prev : [], true),
+                ...linkMaterials,
+              ],
+              true,
+            ),
+          );
         }
       }
     } catch (error) {
@@ -575,13 +528,65 @@ export default function SourceMaterialCard({
         const res = await fetch(endpoint);
         if (!res.ok) continue;
         const data = await res.json();
-        const title = extractFetchedPageTitle(data);
+        const title = extractFetchedPageTitleFromJson(data);
         if (title) return title;
       } catch {}
     }
 
     return "";
   }, []);
+
+  const webpageUrlsKey = useMemo(
+    () =>
+      webpageUrls
+        .map((e) => getWebLinkKey(e?.url ?? e?.webpage_url ?? ""))
+        .filter(Boolean)
+        .sort()
+        .join("|"),
+    [webpageUrls],
+  );
+
+  // Re-fetch document titles when session only has URL (e.g. after Welcome → Configure Cycle)
+  useEffect(() => {
+    if (!webpageUrlsKey) return;
+
+    let cancelled = false;
+    const snapshot = [...webpageUrls];
+
+    (async () => {
+      const results = await Promise.all(
+        snapshot.map(async (entry) => {
+          const url = (entry?.url ?? entry?.webpage_url ?? "").trim();
+          const t = (entry?.title ?? "").trim();
+          if (!url) return null;
+          const needsFetch =
+            !t || t === url || t === LINK_TITLE_FALLBACK;
+          if (!needsFetch) return null;
+          const fetched = await fetchPageTitle(url);
+          const clean = (fetched || "").trim();
+          if (!clean) return null;
+          return { key: getWebLinkKey(url), title: clean };
+        }),
+      );
+
+      if (cancelled) return;
+      const hits = results.filter(Boolean);
+      if (hits.length === 0) return;
+
+      setWebpageUrls((prev) =>
+        prev.map((e) => {
+          const k = getWebLinkKey(e?.url ?? e?.webpage_url ?? "");
+          const hit = hits.find((h) => h.key === k);
+          return hit ? { ...e, title: hit.title } : e;
+        }),
+      );
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run when URL set changes; snapshot reads latest webpageUrls from closure
+  }, [webpageUrlsKey, fetchPageTitle]);
 
   const checkLinkPreviewability = useCallback(async (url) => {
     try {

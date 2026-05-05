@@ -75,6 +75,10 @@ export default function ImageUpload({
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
   const [promptError, setPromptError] = useState(null);
 
+  const [isEditingImage, setIsEditingImage] = useState(false);
+  const [editPrompt, setEditPrompt] = useState("");
+  const [editError, setEditError] = useState(null);
+
   const [assets, setAssets] = useState([]);
   const [isLoadingAssets, setIsLoadingAssets] = useState(false);
   const [assetsError, setAssetsError] = useState(null);
@@ -362,6 +366,60 @@ export default function ImageUpload({
     }
   };
 
+  const handleEditImage = async () => {
+    setIsEditingImage(true);
+    setEditError(null);
+
+    try {
+      const sourceUrl = currentImageUrl || generateTabPreviewUrl;
+      if (!sourceUrl) {
+        throw new Error("No image to edit");
+      }
+
+      const payload = {
+        image_url: sourceUrl,
+        prompt: editPrompt,
+        art_style: aiArtStyle,
+        session_id: sessionId || "",
+        chapter_uid: chapterUid || "",
+        step_uid: stepUid || "",
+        screen_uid: screenUid || "",
+      };
+
+      const { response, error } = await apiService({
+        endpoint: endpoints.editDalleImage,
+        method: "POST",
+        data: payload,
+      });
+
+      if (error) {
+        throw new Error("Failed to edit image");
+      }
+
+      if (response) {
+        const assetToSave = {
+          status: response.status || "success",
+          ImageUrl: response.image_url || response.url,
+          asset_id: response.asset_id || response.id,
+          style: response.style,
+          prompt_used: response.prompt_used,
+          type: response.type || "image",
+          generated_by: response.generated_by || "generative_ai",
+          source: "ai_generated",
+        };
+
+        setSelectedImageAsset(assetToSave);
+      }
+    } catch (error) {
+      setEditError(
+        error.message || "Failed to edit image. Please try again.",
+      );
+      console.error("Error editing image:", error);
+    } finally {
+      setIsEditingImage(false);
+    }
+  };
+
   // Fetch assets from API
   const fetchAssets = async () => {
     if (!sessionId) {
@@ -424,6 +482,12 @@ export default function ImageUpload({
     if (tab === "assets") {
       fetchAssets();
     }
+
+    if (tab === "edit") {
+      setEditPrompt("");
+      setEditError(null);
+      await loadAIAttributes();
+    }
   };
 
   const handleTabChange = async (tab) => {
@@ -431,6 +495,7 @@ export default function ImageUpload({
     setUploadErrorImage(null);
     setAiGenerateError(null);
     setCreateAssetError(null);
+    setEditError(null);
 
     if (tab === "generate" && !isLoadingAttributes && !isLoadingPrompt) {
       setAiPrompt("");
@@ -440,6 +505,12 @@ export default function ImageUpload({
 
     if (tab === "assets" && !isLoadingAssets) {
       fetchAssets();
+    }
+
+    if (tab === "edit" && !isLoadingAttributes) {
+      setEditPrompt("");
+      setEditError(null);
+      await loadAIAttributes();
     }
   };
 
@@ -642,6 +713,8 @@ export default function ImageUpload({
     setAttributesError(null);
     setPromptError(null);
     setCreateAssetError(null);
+    setEditPrompt("");
+    setEditError(null);
   };
 
   const handleCloseDialog = () => {
@@ -654,6 +727,8 @@ export default function ImageUpload({
     setAttributesError(null);
     setPromptError(null);
     setCreateAssetError(null);
+    setEditPrompt("");
+    setEditError(null);
   };
 
   const handleRemoveCurrentImage = async () => {
@@ -769,19 +844,29 @@ export default function ImageUpload({
     }
   };
 
-  const tabs = [
-    { key: "upload", label: "Upload", icon: <Upload className="h-4 w-4" /> },
-    {
-      key: "generate",
-      label: "Generate",
-      icon: <Sparkles className="h-4 w-4" />,
-    },
-    {
-      key: "assets",
-      label: "Assets",
-      icon: <Paperclip className="h-4 w-4" />,
-    },
-  ];
+  const tabs = useMemo(() => {
+    const baseTabs = [
+      { key: "upload", label: "Upload", icon: <Upload className="h-4 w-4" /> },
+      {
+        key: "generate",
+        label: "Generate",
+        icon: <Sparkles className="h-4 w-4" />,
+      },
+      {
+        key: "assets",
+        label: "Assets",
+        icon: <Paperclip className="h-4 w-4" />,
+      },
+    ];
+    if (currentImageUrl || generateTabPreviewUrl) {
+      baseTabs.push({
+        key: "edit",
+        label: "Edit",
+        icon: <Pencil className="h-4 w-4" />,
+      });
+    }
+    return baseTabs;
+  }, [currentImageUrl, generateTabPreviewUrl]);
 
   return (
     <div ref={imageUploadRootRef} className="relative">
@@ -824,16 +909,27 @@ export default function ImageUpload({
                     className="max-w-[300px] max-h-[400px] w-auto h-auto object-contain rounded-lg"
                   />
                   <div className="absolute inset-0 rounded-lg flex flex-col items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
-                    <div className="rounded-md p-2 flex flex-col items-center gap-2">
+                    <div className="rounded-md p-2 flex flex-col items-center gap-2 w-28">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           openImageDialog("upload");
                         }}
-                        className="rounded-md border border-primary bg-white px-5 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary-600 hover:border-none hover:text-white cursor-pointer"
+                        className="w-full rounded-md border border-primary bg-white px-5 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary-600 hover:border-none hover:text-white cursor-pointer"
                       >
                         Replace
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openImageDialog("edit");
+                        }}
+                        className="w-full rounded-md border border-primary bg-white px-5 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary-600 hover:border-none hover:text-white cursor-pointer"
+                      >
+                        Edit
                       </button>
 
                       {onRemoveAsset && (
@@ -843,7 +939,7 @@ export default function ImageUpload({
                           e.stopPropagation();
                           handleRemoveCurrentImage();
                         }}
-                        className="rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-none hover:text-white cursor-pointer"
+                        className="w-full rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-none hover:text-white cursor-pointer"
                       >
                         Remove
                       </button>
@@ -909,7 +1005,7 @@ export default function ImageUpload({
                 type="button"
                 onClick={() => {
                   if (
-                    !(isUploadingImage || isGeneratingImage || isCreatingAsset)
+                    !(isUploadingImage || isGeneratingImage || isCreatingAsset || isEditingImage)
                   ) {
                     handleCloseDialog();
                   }
@@ -1405,6 +1501,119 @@ export default function ImageUpload({
                       )}
                     </div>
                   )}
+
+                  {activeTab === "edit" && (
+                    <div className="space-y-4 h-full">
+                      {isLoadingAttributes ? (
+                        <div className="flex flex-col items-center justify-center gap-2 py-8">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          <p className="text-sm text-gray-600">
+                            Loading image attributes...
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:items-stretch h-full">
+                          <div className="flex h-full flex-col gap-2">
+                            <p className="text-sm font-medium text-gray-700">
+                              {selectedImageAsset?.ImageUrl ? "Edited Image" : "Current Image"}
+                            </p>
+                            <div className="flex min-h-[150px] flex-col items-center justify-center rounded-xl bg-gray-50/50 p-4 transition-all">
+                              {(selectedImageAsset?.ImageUrl || currentImageUrl || generateTabPreviewUrl) ? (
+                                <div className="relative overflow-hidden rounded-lg bg-white p-1 shadow-md">
+                                  <img
+                                    src={selectedImageAsset?.ImageUrl || currentImageUrl || generateTabPreviewUrl}
+                                    alt={selectedImageAsset?.ImageUrl ? "Edited preview" : "Image to edit"}
+                                    className="max-h-[250px] w-auto rounded-md object-contain"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="flex flex-col items-center gap-3 text-gray-400">
+                                  <Pencil className="h-8 w-8 opacity-20" />
+                                  <p className="text-sm italic">No image to edit</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col justify-between h-full items-stretch">
+                            <p className="text-sm font-medium text-gray-700">
+                              Edit Instructions
+                            </p>
+
+                            <div className="flex flex-col gap-2">
+                              <div className="space-y-2">
+                                <Label htmlFor="edit-prompt">
+                                  What would you like to change?
+                                </Label>
+                                <Input
+                                  id="edit-prompt"
+                                  value={editPrompt}
+                                  onChange={(e) => setEditPrompt(e.target.value)}
+                                  placeholder="e.g. Change the background to a sunset..."
+                                  className="w-full"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor="edit-art-style">Art Style</Label>
+                                <Select
+                                  value={aiArtStyle || undefined}
+                                  onValueChange={setAiArtStyle}
+                                >
+                                  <SelectTrigger
+                                    id="edit-art-style"
+                                    className="w-full"
+                                  >
+                                    <SelectValue placeholder="Select art style" />
+                                  </SelectTrigger>
+                                  <SelectContent className="!z-[200]">
+                                    {ART_STYLE_KEYS.map((style) => (
+                                      <SelectItem key={style} value={style}>
+                                        {style}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {editError && (
+                                <div className="flex items-center gap-2 text-sm text-red-600">
+                                  <X className="h-4 w-4" />
+                                  <span>{editError}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="mt-auto pt-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleEditImage}
+                                disabled={
+                                  isEditingImage ||
+                                  !editPrompt.trim() ||
+                                  !(currentImageUrl || generateTabPreviewUrl)
+                                }
+                                className="w-full border-primary text-primary hover:bg-primary-100"
+                              >
+                                {isEditingImage ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Editing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit Image
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex w-full shrink-0 flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 rounded-b-lg bg-white p-2">
@@ -1419,7 +1628,7 @@ export default function ImageUpload({
                         setPromptError(null);
                       }}
                       disabled={
-                        isGeneratingImage || isUploadingImage || isCreatingAsset
+                        isGeneratingImage || isUploadingImage || isCreatingAsset || isEditingImage
                       }
                     >
                       Cancel
@@ -1430,7 +1639,8 @@ export default function ImageUpload({
                         !selectedImageAsset ||
                         isCreatingAsset ||
                         isGeneratingImage ||
-                        isUploadingImage
+                        isUploadingImage ||
+                        isEditingImage
                       }
                       className="bg-primary hover:bg-primary/90"
                     >

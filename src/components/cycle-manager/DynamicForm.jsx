@@ -492,10 +492,12 @@ export default function DynamicForm({
             ) {
               if (field === "title") {
                 currentScreen.screenContents.content.title = value;
-                currentScreen.screenContents.content.heading = value;
               } else if (field === "question") {
                 currentScreen.screenContents.content.question = value;
-                currentScreen.screenContents.content.body = value;
+              }
+              if (field === "title" || field === "question") {
+                delete currentScreen.screenContents.content.heading;
+                delete currentScreen.screenContents.content.body;
               }
             } else if (contentType === "assessment") {
               if (field === "title")
@@ -1307,7 +1309,11 @@ export default function DynamicForm({
     }
     console.log("AFTERRRRRR");
     //6-Social Discussion
-    if (screenType === "social" || contentType === "social_discussion") {
+    if (
+      screenType === "social" ||
+      contentType === "social_discussion" ||
+      contentType === "socialDiscussion"
+    ) {
       return (
         <SocialDiscussionForm
           {...formProps}

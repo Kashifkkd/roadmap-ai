@@ -1188,9 +1188,14 @@ const ActionScreenPreview = ({ deviceView, content }) => {
 
 const SocialDiscussionScreenPreview = ({ deviceView, content }) => {
   console.log(">>>content", content);
-  const title = content?.title || "";
-  const question = content?.question || "";
-  const posts = content?.posts || [];
+  const title = content?.title || content?.heading || "";
+  const question = content?.question || content?.body || "";
+  const posts = (Array.isArray(content?.posts) ? content.posts : []).filter(
+    (p) =>
+      p &&
+      (String(p.text ?? p.content ?? "").trim() !== "" ||
+        String(p.author ?? "").trim() !== ""),
+  );
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
@@ -1669,6 +1674,7 @@ export default function FromDoerToEnabler({
         });
         break;
       case "social_discussion":
+      case "socialDiscussion":
         addSection({
           id: "discussion",
           sectionTitle: content.title || title,
@@ -1781,7 +1787,9 @@ export default function FromDoerToEnabler({
           <LinearPollScreenPreview deviceView={deviceView} content={content} />
         ) : contentType === "action" || contentType === "actions" ? (
           <ActionScreenPreview deviceView={deviceView} content={content} />
-        ) : contentType === "socialDiscussion" ? (
+        ) : contentType === "socialDiscussion" ||
+          contentType === "social_discussion" ||
+          contentType === "socialdiscussion" ? (
           <SocialDiscussionScreenPreview
             deviceView={deviceView}
             content={content}

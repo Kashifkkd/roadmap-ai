@@ -386,17 +386,20 @@ export default function DynamicForm({
                   currentScreen.screenContents.content.body = value;
                 }
               }
-            } else if (contentType === "socialdiscussion") {
+            } else if (
+              contentType === "socialdiscussion" ||
+              contentType === "socialDiscussion" ||
+              contentType === "social_discussion" ||
+              contentType === "social"
+            ) {
               if (field === "title") {
                 currentScreen.screenContents.content.title = value;
-                if (!currentScreen.screenContents.content.heading) {
-                  currentScreen.screenContents.content.heading = value;
-                }
               } else if (field === "question") {
                 currentScreen.screenContents.content.question = value;
-                if (!currentScreen.screenContents.content.body) {
-                  currentScreen.screenContents.content.body = value;
-                }
+              }
+              if (field === "title" || field === "question") {
+                delete currentScreen.screenContents.content.heading;
+                delete currentScreen.screenContents.content.body;
               }
             } else if (contentType === "assessment") {
               if (field === "title")
@@ -1176,7 +1179,11 @@ export default function DynamicForm({
     }
     console.log("AFTERRRRRR");
     //6-Social Discussion
-    if (screenType === "social" || contentType === "social_discussion") {
+    if (
+      screenType === "social" ||
+      contentType === "social_discussion" ||
+      contentType === "socialDiscussion"
+    ) {
       return (
         <SocialDiscussionForm
           {...formProps}

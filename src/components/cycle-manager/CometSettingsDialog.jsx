@@ -37,18 +37,10 @@ import { uploadAssetFile } from "@/api/uploadAssets";
 import { uploadPathImage } from "@/api/uploadPathImage";
 import UserManagement from "@/components/common/UserManagement";
 import { publishComet } from "@/api/publishComet";
-import { toast } from "@/components/ui/toast";
 import {
   ART_STYLE_KEYS,
   normalizeArtStyleFromApi,
 } from "@/constants/artStyles";
-import {
-  formatKickOffDateDisplay,
-  formatKickOffTimeDisplay,
-  normalizeKickOffDatesFromSession,
-  serializeKickOffDatesForResponsePath,
-} from "@/lib/kickoff-dates";
-import { persistKickOffDatesToSessionAndBackend } from "@/lib/persist-kick-off-dates";
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
@@ -102,8 +94,6 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [kickOffDates, setKickOffDates] = useState([]);
   const [newKickOffDate, setNewKickOffDate] = useState("");
   const [newKickOffTime, setNewKickOffTime] = useState("");
-  const newKickOffDateInputRef = useRef(null);
-  const newKickOffTimeInputRef = useRef(null);
 
   // Ad Hoc Notifications
   const [adHocChannelRows, setAdHocChannelRows] = useState([
@@ -118,6 +108,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
     sendTime: "",
   });
   const [adHocNotifications, setAdHocNotifications] = useState([]);
+  console.log("shdfhgsh");
 
   // Toggles (all available from backend)
   const [habitEnabled, setHabitEnabled] = useState(false);
@@ -222,12 +213,6 @@ const cancelColor = (index) => {
       setDescription(
         sessionData?.cycle_creation_data?.["Basic Information"]?.Description ||
           "",
-      );
-
-      setKickOffDates(
-        normalizeKickOffDatesFromSession(
-          sessionData?.response_path?.all_kickoff_dates,
-        ),
       );
 
       // Fetch path_image from response_path (exclude fallback images)
@@ -549,7 +534,6 @@ const cancelColor = (index) => {
         ...currentResponsePath,
         enabled_attributes: updatedEnabledAttributes,
         colours: coloursObject,
-        all_kickoff_dates: serializeKickOffDatesForResponsePath(kickOffDates),
         ...(uploadedImageUrl && !uploadedImageUrl.startsWith("blob:")
           ? { path_image: uploadedImageUrl }
           : pathImageUrl && !pathImageUrl.startsWith("blob:")
@@ -622,50 +606,19 @@ const cancelColor = (index) => {
     }
   };
 
-  const handleAddKickOff = async () => {
-    const dateVal = (
-      newKickOffDateInputRef.current?.value ??
-      newKickOffDate ??
-      ""
-    ).trim();
-    const timeVal = (
-      newKickOffTimeInputRef.current?.value ??
-      newKickOffTime ??
-      ""
-    ).trim();
-    if (!dateVal || !timeVal) {
-      toast.error("Select both a kick-off date and time, then click Add.");
-      return;
-    }
-    const next = [...kickOffDates, { date: dateVal, time: timeVal }];
-    setKickOffDates(next);
-    setNewKickOffDate("");
-    setNewKickOffTime("");
-    const { ok, error } = await persistKickOffDatesToSessionAndBackend(next, {
-      isCycle: true,
-    });
-    if (!ok) {
-      toast.error(
-        error === "no_session"
-          ? "No session data — open your cycle from the editor first."
-          : "Could not save kick-off dates. Try again or use Save in settings.",
-      );
+  const handleAddKickOff = () => {
+    if (newKickOffDate && newKickOffTime) {
+      setKickOffDates([
+        ...kickOffDates,
+        { date: newKickOffDate, time: newKickOffTime },
+      ]);
+      setNewKickOffDate("");
+      setNewKickOffTime("");
     }
   };
 
-  const handleRemoveKickOff = async (index) => {
-    const next = kickOffDates.filter((_, i) => i !== index);
-    setKickOffDates(next);
-    const { ok, error } = await persistKickOffDatesToSessionAndBackend(next, {
-      isCycle: true,
-    });
-    if (!ok) {
-      toast.error(
-        error === "no_session"
-          ? "No session data — open your cycle from the editor first."
-          : "Could not update kick-off dates on the server.",
-      );
-    }
+  const handleRemoveKickOff = (index) => {
+    setKickOffDates(kickOffDates.filter((_, i) => i !== index));
   };
 
   const addAdHocChannelRow = () => {
@@ -797,6 +750,34 @@ const cancelColor = (index) => {
     ) {
       setBrandColors(brandColors.filter((_, i) => i !== index));
     }
+  };
+
+  // Formated time
+  const formatTimeForDisplay = (time24) => {
+    const [hours, minutes] = time24.split(":");
+    const hour12 = parseInt(hours) % 12 || 12;
+    const ampm = parseInt(hours) >= 12 ? "PM" : "AM";
+    return `${hour12.toString().padStart(2, "0")}:${minutes} ${ampm}`;
+  };
+
+  // Formated date
+  const formatDateForDisplay = (dateStr) => {
+    const date = new Date(dateStr);
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
   };
 
   if (!open) return null;
@@ -1350,10 +1331,9 @@ const cancelColor = (index) => {
                                 key={index}
                                 className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm text-gray-600 items-center border-b border-gray-200 py-2"
                               >
-                                <div>{formatKickOffDateDisplay(item.date)}</div>
-                                <div>{formatKickOffTimeDisplay(item.time)}</div>
+                                <div>{formatDateForDisplay(item.date)}</div>
+                                <div>{formatTimeForDisplay(item.time)}</div>
                                 <button
-                                  type="button"
                                   onClick={() => handleRemoveKickOff(index)}
                                   className="text-red-500 hover:text-red-700 p-1"
                                 >
@@ -1372,7 +1352,6 @@ const cancelColor = (index) => {
                             </Label>
                             <div className="relative">
                               <Input
-                                ref={newKickOffDateInputRef}
                                 type="date"
                                 value={newKickOffDate}
                                 onChange={(e) =>
@@ -1392,7 +1371,6 @@ const cancelColor = (index) => {
                             </Label>
                             <div className="relative">
                               <Input
-                                ref={newKickOffTimeInputRef}
                                 type="time"
                                 value={newKickOffTime}
                                 onChange={(e) =>
@@ -1408,7 +1386,6 @@ const cancelColor = (index) => {
                           </div>
                           <div className="flex justify-end">
                             <Button
-                              type="button"
                               variant="outline"
                               onClick={handleAddKickOff}
                               className="text-primary hover:text-primary-dark rounded-lg px-4 py-2"
