@@ -465,7 +465,7 @@ const MCQScreenPreview = ({ deviceView, content }) => {
   const title = content?.title || "";
   const question = content?.question || "";
   const options = content?.options || [];
-  const keyLearning = content?.key_learning || null;
+  const keyLearning = content?.keyLearning || content?.key_learning || null;
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
@@ -646,6 +646,7 @@ const ForceRankScreenPreview = ({ deviceView, content }) => {
   const options = content?.options || [];
   const lowLabel = content?.lowLabel || "";
   const highLabel = content?.highLabel || "";
+  const keyLearning = content?.keyLearning || content?.key_learning || null;
 
   const containerWidth =
     deviceView === DEVICE_VIEWS.mobile
@@ -754,6 +755,16 @@ const ForceRankScreenPreview = ({ deviceView, content }) => {
             </div>
             <span className="font-semibold">{lowLabel}</span>
           </div>
+
+          {/* Key Learning */}
+          {keyLearning && (
+            <div className="mt-6">
+              <p className={`text-gray-700 ${questionSizeClass} leading-relaxed`}>
+                <span className="font-semibold">Key Learning:</span>{" "}
+                {keyLearning}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1596,7 +1607,7 @@ export default function FromDoerToEnabler({
           sectionTitle: content.title || title,
           description: content.question || "",
           list: content.options,
-          secondaryText: content.key_learning || null,
+          secondaryText: content.keyLearning || content.key_learning || null,
         });
         break;
       case "force_rank":
@@ -1605,6 +1616,7 @@ export default function FromDoerToEnabler({
           sectionTitle: content.title || title,
           description: content.question || "",
           list: content.options,
+          secondaryText: content.keyLearning || content.key_learning || null,
           meta: [
             content.lowLabel
               ? { label: "Lowest Rank", value: content.lowLabel }

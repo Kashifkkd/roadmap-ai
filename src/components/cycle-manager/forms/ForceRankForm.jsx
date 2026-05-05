@@ -2,6 +2,7 @@ import React from "react";
 import {
   SectionHeader,
   TextField,
+  TextArea,
   RichTextArea,
   ListField,
 } from "./FormFields";
@@ -153,6 +154,23 @@ export default function ForceRankForm({
           }
           onBlur={onRichTextBlur}
           valueFormat="html"
+        />
+        <TextArea
+          label="Key Learning"
+          value={formData.keyLearning || ""}
+          onChange={(value) => updateField("keyLearning", value)}
+          onRequestAutoSave={onRequestAutoSave}
+          placeholder=""
+          rows={3}
+          inputProps={{
+            onSelect: (event) =>
+              onTextFieldSelect?.(
+                "forceRankKeyLearning",
+                event,
+                formData.keyLearning
+              ),
+            onBlur: onFieldBlur,
+          }}
         />
         <ListField
           label="Options"

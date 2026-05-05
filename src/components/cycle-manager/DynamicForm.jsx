@@ -130,7 +130,7 @@ const getFormValuesFromScreen = (screen) => {
     values.question = content.question || "";
     values.highLabel = content.highLabel || "";
     values.lowLabel = content.lowLabel || "";
-    values.key_learning = content.key_learning || "";
+    values.keyLearning = content.keyLearning || content.key_learning || "";
     values.options = content.options || [];
   }
 
@@ -453,10 +453,12 @@ export default function DynamicForm({
                 currentScreen.screenContents.content.highLabel = value;
               else if (field === "lowLabel")
                 currentScreen.screenContents.content.lowLabel = value;
-              else if (field === "key_learning")
-                currentScreen.screenContents.content.key_learning = value;
+              else if (field === "keyLearning")
+                currentScreen.screenContents.content.keyLearning = value;
               else if (field === "options")
                 currentScreen.screenContents.content.options = value;
+
+              delete currentScreen.screenContents.content.key_learning;
             } else if (contentType === "linear") {
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
@@ -949,7 +951,7 @@ export default function DynamicForm({
         forceRankHighLabel: "highLabel",
         forceRankLowLabel: "lowLabel",
         forceRankQuestion: "question",
-        forceRankKeyLearning: "key_learning",
+        forceRankKeyLearning: "keyLearning",
         forceRankOptions: "options",
         linearTitle: "title",
         linearHighLabel: "highLabel",
