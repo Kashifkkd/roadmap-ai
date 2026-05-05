@@ -97,7 +97,7 @@ const getFormValuesFromScreen = (screen) => {
     values.question = content.question || "";
     values.highLabel = content.highLabel || "";
     values.lowLabel = content.lowLabel || "";
-    values.key_learning = content.key_learning || "";
+    values.key_learning = content.keyLearning || content.key_learning || "";
     values.options = content.options || [];
   }
 
@@ -352,8 +352,13 @@ export default function DynamicForm({
                 currentScreen.screenContents.content.highLabel = value;
               else if (field === "lowLabel")
                 currentScreen.screenContents.content.lowLabel = value;
-              else if (field === "key_learning")
-                currentScreen.screenContents.content.key_learning = value;
+              else if (field === "key_learning") {
+                // Keep compatibility with old payloads while writing the current schema key.
+                currentScreen.screenContents.content.keyLearning = value;
+                if ("key_learning" in currentScreen.screenContents.content) {
+                  currentScreen.screenContents.content.key_learning = value;
+                }
+              }
               else if (field === "options")
                 currentScreen.screenContents.content.options = value;
             } else if (contentType === "linear") {

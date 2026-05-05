@@ -235,7 +235,7 @@ export default function CreateCycleRemixModal({
         if (!isOpen) handleClose();
       }}
     >
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-[1040px] max-h-[92vh] gap-3 overflow-hidden rounded-[24px] border-0 bg-white p-0 pt-3 pb-2 px-2 shadow-xl [&>button]:hidden">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[min(1024px,calc(100vw-2rem))] max-h-[85vh] gap-3 overflow-hidden rounded-[24px] border-0 bg-white p-0 pt-3 pb-2 px-2 shadow-xl [&>button]:hidden">
         <div className="flex h-[47px] items-center justify-between gap-2 px-2">
           <DialogTitle className="text-left text-[18px] font-semibold leading-7 text-[#181D27]">
             Remix Cycle
@@ -252,9 +252,10 @@ export default function CreateCycleRemixModal({
         </div>
 
         <div className="flex flex-col items-stretch gap-[2px] rounded-2xl bg-[#F5F5F5] p-2">
-          <div className="rounded-t-lg bg-white p-2 overflow-y-auto max-h-[calc(92vh-150px)]">
-            <div className="grid grid-cols-2 gap-2 rounded-t-lg bg-white p-2">
-              <div className="flex flex-col gap-3">
+          <div className="flex max-h-[calc(85vh-150px)] min-h-[280px] flex-col overflow-hidden rounded-t-lg bg-white p-2 md:min-h-[320px]">
+            <div className="flex min-h-0 flex-1 flex-col gap-0 divide-y divide-[#E9EAEB] md:flex-row md:divide-x md:divide-y-0">
+              {/* Left: cycle + remix form */}
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-2 md:max-w-[50%] md:pr-3">
                 <div className="flex flex-col gap-1">
                   <p className="text-sm font-medium leading-5 text-[#181D27]">
                     Comet Title
@@ -319,10 +320,10 @@ export default function CreateCycleRemixModal({
                       </SelectTrigger>
                       <SelectContent>
                         {clients.map((client) => (
-                        <SelectItem
-                          key={client.id}
-                          value={String(client.id)}
-                        >
+                          <SelectItem
+                            key={client.id}
+                            value={String(client.id)}
+                          >
                             {client.name || `Client ${client.id}`}
                           </SelectItem>
                         ))}
@@ -332,15 +333,22 @@ export default function CreateCycleRemixModal({
                 </div>
               </div>
 
-              <div className="h-[calc(92vh-180px)] overflow-y-auto ">
-                <SourceMaterialCard
-                  files={sourceFiles}
-                  setFiles={setSourceFiles}
-                  isNewComet
-                  webpageUrls={webpageUrls}
-                  setWebpageUrls={setWebpageUrls}
-                  onUploadingChange={setIsUploadingSources}
-                />
+              {/* Right: source materials */}
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-2 pt-3 md:max-w-[50%] md:pl-3 md:pt-2">
+                {/* <p className="mb-2 shrink-0 text-sm font-medium leading-5 text-[#181D27]">
+                  Source materials
+                </p>
+                 */}
+                <div className="min-h-0 flex-1 rounded-2xl bg-[#F5F5F5] p-3">
+                  <SourceMaterialCard
+                    files={sourceFiles}
+                    setFiles={setSourceFiles}
+                    isNewComet
+                    webpageUrls={webpageUrls}
+                    setWebpageUrls={setWebpageUrls}
+                    onUploadingChange={setIsUploadingSources}
+                  />
+                </div>
               </div>
             </div>
           </div>

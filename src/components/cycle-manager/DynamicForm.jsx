@@ -74,28 +74,6 @@ const stripHtmlToPlainText = (value) => {
     .trim();
 };
 
-const linkifyToAnchors = (value) => {
-  if (typeof value !== "string" || !value.trim()) return value;
-
-  // URL regex — matches http(s) URLs, avoids double-wrapping existing anchors
-  const URL_REGEX = /(?<!href=["'])(?<!\bsrc=["'])(https?:\/\/[^\s<>"']+)/g;
-
-  return value.replace(URL_REGEX, (url) => {
-    // Strip trailing punctuation that's unlikely part of the URL
-    const cleanUrl = url.replace(/[.,;:!?)]+$/, "");
-    const trailing = url.slice(cleanUrl.length);
-
-    // Friendly display label — strip protocol + www
-    const label = cleanUrl
-      .replace(/^https?:\/\/(www\.)?/, "")
-      .replace(/\/$/, "");
-
-    return (
-      `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="ql-link">${label}</a>` +
-      trailing
-    );
-  });
-};
 
 // Helper to get form values directly from screen content (no local state)
 // Uses actual keys from the structure as defined in temp2.js
@@ -109,7 +87,7 @@ const getFormValuesFromScreen = (screen) => {
 
   if (contentType === "content") {
     values.heading = content.heading || "";
-    values.body = linkifyToAnchors(content.body || "");
+    values.body = content.body || "";
     values.mediaUrl = content.media?.url || "";
     values.mediaType = content.media?.type || "";
     values.contentFullBleed = content.fullBleed ?? true;
@@ -236,12 +214,12 @@ const getFormValuesFromScreen = (screen) => {
 
   if (contentType === "profile") {
     values.heading = content.heading || "";
-    values.body = linkifyToAnchors(content.body || "");
+    values.body = content.body || "";
   }
 
   if (contentType === "managerEmail" || contentType === "managerEmail") {
     values.heading = content.heading || "";
-    values.body = linkifyToAnchors(content.body || "");
+    values.body = content.body || "";
     values.email = content.email || "";
   }
   if (
@@ -249,7 +227,7 @@ const getFormValuesFromScreen = (screen) => {
     contentType === "accountabilityPartnerEmail"
   ) {
     values.heading = content.heading || "";
-    values.body = linkifyToAnchors(content.body || "");
+    values.body = content.body || "";
     values.emails = Array.isArray(content.emails) ? content.emails : [""];
   }
 
@@ -258,7 +236,7 @@ const getFormValuesFromScreen = (screen) => {
     contentType === "pathpersonalization"
   ) {
     values.heading = content.heading || "";
-    values.body = linkifyToAnchors(content.body || "");
+    values.body = content.body || "";
     values.mediaType = content.media?.type || "";
     values.mediaUrl = content.media?.url || "";
     values.mediaAlt = content.media?.alt || "";

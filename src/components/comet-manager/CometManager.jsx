@@ -1154,36 +1154,50 @@ export default function CometManager({
         order: allScreens.length,
       };
     } else if (screenType.id === "force_question") {
-      // Force Rank screen structure
-      const forceRankTitle = "";
+      // Force rank screens must be saved as poll + force_rank with strict schema.
+      const forceRankTitle = "Rank priorities for this scenario";
+      const forceRankQuestion =
+        "Drag to rank each option from most important to least important.";
+      const forceRankOptions = [
+        { optionId: 1, text: "Immediate impact on the goal" },
+        { optionId: 2, text: "Ease of implementation" },
+      ];
+      const forceRankScreenId = Date.now();
+      const forceRankContentId = forceRankScreenId + 1;
+
       newScreen = {
-        id: screenId,
+        id: forceRankScreenId,
         uuid: screenUuid,
-        screenType: "force_question",
+        screenType: "poll",
         position: position,
         screenContents: {
-          id: screenContentId,
+          id: forceRankContentId,
           contentType: "force_rank",
           content: {
+            ptype: "force_rank",
             title: forceRankTitle,
-            highLabel: "",
-            lowLabel: "",
-            key_learning: "",
-            options: [],
+            question: forceRankQuestion,
+            keyLearning:
+              "Ranking trade-offs clarifies which choice should be prioritized first.",
+            options: forceRankOptions,
+            lowLabel: "Least critical",
+            highLabel: "Most critical",
           },
         },
         assets: [],
-        imageStatus: "pending",
+        imageStatus: null,
+        toolStatus: null,
         chapterId: targetChapterId,
         stepId: targetStepId,
         thumbnail: "",
-        title: forceRankTitle,
         formData: {
           pollTitle: forceRankTitle,
-          topLabel: "",
-          bottomLabel: "",
-          keyLearning: "",
-          mcqOptions: [],
+          question: forceRankQuestion,
+          topLabel: "Most critical",
+          bottomLabel: "Least critical",
+          keyLearning:
+            "Ranking trade-offs clarifies which choice should be prioritized first.",
+          mcqOptions: forceRankOptions,
         },
         assessment: null,
         order: allScreens.length,
@@ -2446,10 +2460,12 @@ export default function CometManager({
                                     }
                                     sessionId={sessionId}
                                     onAssetLinked={(screenId, asset) => {
-                                      // Add the linked asset to the screen's assets array
+                                      // Replace old image assets, keep non-image assets
+                                      const existingAssets = screens.find(s => s.id === screenId)?.assets || [];
+                                      const isImageAsset = (a) => Boolean((a?.ImageUrl || a?.url || a?.image_url) && !a?.audioUrl && !a?.videoUrl);
                                       updateScreenData(screenId, {
                                         assets: [
-                                          ...(screens.find(s => s.id === screenId)?.assets || []),
+                                          ...existingAssets.filter(a => !isImageAsset(a)),
                                           asset,
                                         ],
                                         imageStatus: "completed",

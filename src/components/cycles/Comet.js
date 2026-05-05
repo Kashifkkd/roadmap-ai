@@ -228,13 +228,13 @@ const Comet = ({
                       >
                         Copy Cycle
                       </button>
-                      <button
+                      {/* <button
                         type="button"
                         onClick={handleRemixClick}
                         className="w-full px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50 transition-colors text-left whitespace-nowrap"
                       >
                         Remix
-                      </button>
+                      </button> */}
                     </div>
                   )}
                 </div>

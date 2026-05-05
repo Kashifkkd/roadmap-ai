@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Loader2, ImageIcon, Check, X } from "lucide-react";
-import { getSessionAssets, linkAssetToScreen } from "@/api/generateStepImages";
+import { getSessionAssets, linkAssetToScreen, unlinkScreenAssets } from "@/api/generateStepImages";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +50,10 @@ export default function AssetPicker({
     if (!screenUid) return;
     setIsLinking(asset.id);
     try {
+      // Unlink old image assets before linking the new one
+      await unlinkScreenAssets({ sessionId, screenUid }).catch((err) =>
+        console.error("Failed to unlink old screen assets:", err)
+      );
       const res = await linkAssetToScreen({
         sessionId,
         assetId: asset.id,

@@ -54,17 +54,15 @@ const ToggleSwitch = ({ checked, onChange, label }) => (
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none  ${
-        checked ? "bg-primary-700" : "bg-gray-300"
-      }`}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none  ${checked ? "bg-primary-700" : "bg-gray-300"
+        }`}
       role="switch"
       value={checked}
       aria-checked={checked}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
-          checked ? "translate-x-6" : "translate-x-1"
-        }`}
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${checked ? "translate-x-6" : "translate-x-1"
+          }`}
       />
     </button>
   </div>
@@ -143,7 +141,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
     if (!initialValues) return "";
     return initialValues.id || initialValues.client_id;
   };
- 
+
   const [tempColors, setTempColors] = useState(() => ({ ...brandColors }));
   const [openColorIndex, setOpenColorIndex] = useState(null); // will store color.key
 
@@ -803,7 +801,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
         {/* Dark Logo (Dark Background) */}
         <div>
           <Label className="text-sm font-medium text-gray-700 mb-3 block">
-            Dark Logo (Dark Background)
+            White-on-Transparent Logo (Dark Mode)
           </Label>
           <div className="p-2 bg-gray-100 rounded-lg max-w-[322px] max-h-[128px]">
             <input
@@ -955,11 +953,10 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
             return (
               <div
                 key={color.key}
-                className={`flex items-center gap-2 border rounded-lg p-2 cursor-pointer transition-all ${
-                  selectedColorCode === color.key
+                className={`flex items-center gap-2 border rounded-lg p-2 cursor-pointer transition-all ${selectedColorCode === color.key
                     ? "border-primary-700 border-2 shadow-md"
                     : "border-gray-200 hover:border-gray-300"
-                }`}
+                  }`}
                 onClick={() => {
                   setSelectedColorCode(color.key);
                 }}
@@ -967,19 +964,19 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                 <div className="relative w-12 h-8 sm:w-16 sm:h-10 shrink-0 overflow-hidden">
                   <div className="relative w-16 h-10 rounded-sm overflow-hidden">
                     <input
-                        type="color"
-                        value={displayColor}
-                        onChange={(e) => {
-                          const newHex = e.target.value.toUpperCase();
-                          setTempColors((prev) => ({ ...prev, [color.key]: newHex }));
-                          setSelectedColorCode(color.key);
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenColorIndex(color.key);
-                        }}
-                        className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
-                      />
+                      type="color"
+                      value={displayColor}
+                      onChange={(e) => {
+                        const newHex = e.target.value.toUpperCase();
+                        setTempColors((prev) => ({ ...prev, [color.key]: newHex }));
+                        setSelectedColorCode(color.key);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenColorIndex(color.key);
+                      }}
+                      className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                    />
                     <div
                       className="w-full h-full rounded-sm"
                       style={{ backgroundColor: displayColor }}
@@ -995,7 +992,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   </span>
                 </div>
 
-                 {openColorIndex === color.key && (
+                {openColorIndex === color.key && (
                   <div className="flex flex-wrap gap-1 justify-end">
                     <Button
                       variant="outline"
@@ -1158,9 +1155,8 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                     (cohort, index) => (
                       <div
                         key={cohort.id || cohort.cohort_id || index}
-                        className={`grid grid-cols-3 ${
-                          index % 2 === 1 ? "bg-gray-50" : "bg-white"
-                        }`}
+                        className={`grid grid-cols-3 ${index % 2 === 1 ? "bg-gray-50" : "bg-white"
+                          }`}
                       >
                         <div className="px-4 py-2 text-gray-700">
                           {cohort.name || cohort.cohort_name || "N/A"}
@@ -1224,11 +1220,10 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                   <span className="text-sm font-semibold text-gray-800">
                     {pathsLoading
                       ? "Loading Cycle..."
-                      : `Select Cycle for ${
-                          pathDialogCohort?.name ||
-                          pathDialogCohort?.cohort_name ||
-                          "Cohort"
-                        }`}
+                      : `Select Cycle for ${pathDialogCohort?.name ||
+                      pathDialogCohort?.cohort_name ||
+                      "Cohort"
+                      }`}
                   </span>
                   <button
                     type="button"
@@ -1269,13 +1264,12 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                       return (
                         <label
                           key={pathId}
-                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                            isSelected
+                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isSelected
                               ? "bg-primary-50 border-primary-500"
                               : isDisabled
                                 ? "bg-gray-50 border-gray-200 cursor-not-allowed opacity-60"
                                 : "bg-white border-gray-200 hover:border-gray-300"
-                          }`}
+                            }`}
                         >
                           <input
                             type="checkbox"
@@ -1386,9 +1380,8 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                     commit?.map((cohort, index) => (
                       <div
                         key={cohort.id}
-                        className={`grid grid-cols-3 ${
-                          index % 2 === 1 ? "bg-gray-50" : "bg-white"
-                        }`}
+                        className={`grid grid-cols-3 ${index % 2 === 1 ? "bg-gray-50" : "bg-white"
+                          }`}
                       >
                         <div className="px-4 py-2 text-gray-700">
                           {cohort.session_name || "N/A"}

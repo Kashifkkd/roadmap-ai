@@ -367,11 +367,10 @@ const ScreenContentTypePreview = ({
               {/* Description box with backdrop blur */}
               {description && (
                 <div className="backdrop-blur-md bg-gray-200/80 px-4 py-3 rounded-sm shadow-lg">
-                  <p
-                    className={`text-gray-800 ${descriptionSizeClass} leading-relaxed line-clamp-4`}
-                  >
-                    {description}
-                  </p>
+                  <div
+                    className={`text-gray-800 ${descriptionSizeClass} leading-relaxed line-clamp-4 [&_p]:mb-2 [&_strong]:font-semibold`}
+                    dangerouslySetInnerHTML={{ __html: description }}
+                  />
                 </div>
               )}
             </div>
@@ -424,11 +423,10 @@ const ScreenContentTypePreview = ({
               {/* Description box */}
               {description && (
                 <div className="bg-gray-200/40 backdrop-blur-lg border-2 border-white/50 px-4 py-3 rounded-sm shadow-sm">
-                  <p
-                    className={`text-gray-800 ${descriptionSizeClass} leading-relaxed`}
-                  >
-                    {description}
-                  </p>
+                  <div
+                    className={`text-gray-800 ${descriptionSizeClass} leading-relaxed [&_p]:mb-2 [&_strong]:font-semibold`}
+                    dangerouslySetInnerHTML={{ __html: description }}
+                  />
                 </div>
               )}
 
