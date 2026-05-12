@@ -1,8 +1,62 @@
 export const LINK_TITLE_FALLBACK = "Title not available";
+export const FETCHED_LINK_TITLES_STORAGE_KEY = "fetchedLinkTitlesByUrl";
 
 function sanitizeLinkTitle(value) {
   if (typeof value !== "string") return "";
   return value.replace(/\s+/g, " ").trim();
+}
+
+function normalizeLinkStorageKey(rawUrl = "") {
+  if (typeof rawUrl !== "string") return "";
+  return rawUrl.trim().toLowerCase().replace(/\/+$/, "");
+}
+
+function readStoredLinkTitles() {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(FETCHED_LINK_TITLES_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveFetchedTitleToLocalStorage(url, title) {
+  if (typeof window === "undefined") return;
+  const key = normalizeLinkStorageKey(url);
+  const cleanTitle = sanitizeLinkTitle(title);
+  if (!key || !cleanTitle || cleanTitle === LINK_TITLE_FALLBACK) return;
+  try {
+    const current = readStoredLinkTitles();
+    if (current[key] === cleanTitle) return;
+    localStorage.setItem(
+      FETCHED_LINK_TITLES_STORAGE_KEY,
+      JSON.stringify({
+        ...current,
+        [key]: cleanTitle,
+      }),
+    );
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+export function getFetchedTitleFromLocalStorage(url) {
+  const key = normalizeLinkStorageKey(url);
+  if (!key) return "";
+  const current = readStoredLinkTitles();
+  return sanitizeLinkTitle(current[key] || "");
+}
+
+export function clearFetchedTitlesFromLocalStorage() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(FETCHED_LINK_TITLES_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
 }
 
 /**

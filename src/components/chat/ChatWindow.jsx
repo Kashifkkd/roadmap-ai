@@ -7,6 +7,43 @@ import { graphqlClient } from "@/lib/graphql-client";
 import { useRouter } from "next/navigation";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
 
+// Build the chat message list from a chatbot_conversation array.
+// User entries can carry attached source_material / webpage_url; append a
+// readable label so they're visible in the chat bubble.
+const messagesFromConversation = (conversation) => {
+  if (!Array.isArray(conversation)) return [];
+  const out = [];
+  conversation.forEach((entry) => {
+    if (entry.user) {
+      const names = Array.isArray(entry.source_material)
+        ? entry.source_material.map((i) => i?.source_name).filter(Boolean)
+        : [];
+      const titles = Array.isArray(entry.webpage_url)
+        ? entry.webpage_url
+            .map((i) => i?.title || i?.webpage_url || i?.url)
+            .filter(Boolean)
+        : [];
+      const attach = names.length ? `\n\nAttached: ${names.join(", ")}` : "";
+      const links = titles.length ? `\n\nLinks: ${titles.join(", ")}` : "";
+      out.push({
+        from: "user",
+        content: `${entry.user}${attach}${links}`,
+        status: entry.status,
+        identifier: entry.identifier,
+      });
+    }
+    if (entry.agent) {
+      out.push({
+        from: "bot",
+        content: entry.agent,
+        status: entry.status,
+        identifier: entry.identifier,
+      });
+    }
+  });
+  return out;
+};
+
 export default function ChatWindow({
   initialInput = null,
   userQuestions = null,
@@ -213,7 +250,7 @@ export default function ChatWindow({
 
     // Extract learning objectives
     const objectivesMatch = responseText.match(
-      /Learning Objectives?:\s*([^\n]+)/i
+      /Learning Objectives?:\s*([^\n]+)/i,
     );
     if (objectivesMatch) {
       data.learningObjectives = objectivesMatch[1].trim();
@@ -227,6 +264,23 @@ export default function ChatWindow({
 
     return data;
   };
+
+  // Re-render the chat when ChatInput appends an upload entry locally.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const refresh = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem("sessionData") || "{}");
+        const rebuilt = messagesFromConversation(stored?.chatbot_conversation);
+        if (rebuilt.length > 0) setAllMessages(rebuilt);
+      } catch (e) {
+        console.error("chatConversationUpdated handler failed:", e);
+      }
+    };
+    window.addEventListener("chatConversationUpdated", refresh);
+    return () => window.removeEventListener("chatConversationUpdated", refresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handle initial input on load
   useEffect(() => {
@@ -263,6 +317,19 @@ export default function ChatWindow({
       const sourceMaterials = Array.isArray(input?.sourceMaterials)
         ? input.sourceMaterials
         : [];
+      const webLinks = Array.isArray(input?.webLinks) ? input.webLinks : [];
+      const mergedWebpageUrls = [
+        ...(Array.isArray(sessionData?.webpage_url)
+          ? sessionData.webpage_url
+          : []),
+        ...webLinks.map((entry) => ({
+          webpage_url: entry?.url ?? entry?.webpage_url ?? "",
+          title: entry?.title ?? "",
+          comment: entry?.comment ?? "",
+          ...(entry?.id ? { id: entry.id } : {}),
+          ...(entry?.s3_path ? { s3_path: entry.s3_path } : {}),
+        })),
+      ];
 
       if (!currentSessionId) {
         currentSessionId = localStorage.getItem("sessionId");
@@ -303,7 +370,18 @@ export default function ChatWindow({
               })
               .join("\n")}`
           : "";
-      const userMessageForConversation = `${initialUserInput}${sourceContextBlock}`;
+      const linkContextBlock =
+        webLinks.length > 0
+          ? `\n\n[Attached links]\n${webLinks
+              .map((item, index) => {
+                const title = item?.title || `link_${index + 1}`;
+                const url = item?.url || "";
+                const comment = item?.comment || "";
+                return `- title: ${title}, url: ${url}${comment ? `, comment: ${comment}` : ""}`;
+              })
+              .join("\n")}`
+          : "";
+      const userMessageForConversation = `${initialUserInput}${sourceContextBlock}${linkContextBlock}`;
       // setAllMessages((prev) => [...prev, { from: "user", content: initialUserInput }]);
 
       // if (parsedUserQuestions.length > 0 && initialInput) {
@@ -334,7 +412,7 @@ export default function ChatWindow({
       // NEW CODE
       const existingConversation = sessionData?.chatbot_conversation || [];
       const existingAgentMessageCount = existingConversation.filter(
-        (entry) => entry?.agent
+        (entry) => entry?.agent,
       ).length;
 
       // Build new conversation entries
@@ -343,6 +421,7 @@ export default function ChatWindow({
         ...(sourceMaterials.length > 0
           ? { source_material: sourceMaterials }
           : {}),
+        ...(webLinks.length > 0 ? { webpage_url: webLinks } : {}),
       };
       const newEntries = [userEntry];
       parsedUserQuestions.forEach((item) => {
@@ -357,7 +436,7 @@ export default function ChatWindow({
       const chatbotConversation = [...existingConversation, ...newEntries];
       console.log("chatbotConversation>>>>>>>>>>", chatbotConversation);
       awaitingConversationRef.current = true;
-minAgentMessageCountRef.current = existingAgentMessageCount + 1;
+      minAgentMessageCountRef.current = existingAgentMessageCount + 1;
 
       const currentResponsePath =
         inputType === "outline_updation"
@@ -366,12 +445,14 @@ minAgentMessageCountRef.current = existingAgentMessageCount + 1;
               chapters: [],
               remaining_chapters: [],
             }
-          : sessionData?.response_path ?? {};
+          : (sessionData?.response_path ?? {});
 
       // build complete payload
       const executionId = Math.floor(Math.random() * 10000).toString();
       // Generate UUID using crypto.getRandomValues for browser compatibility
-      const traceId = globalThis.crypto.getRandomValues(new Uint8Array(16)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '');
+      const traceId = globalThis.crypto
+        .getRandomValues(new Uint8Array(16))
+        .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
       const receivedAt = new Date().toISOString();
 
       const cometJsonForMessage = JSON.stringify({
@@ -388,7 +469,7 @@ minAgentMessageCountRef.current = existingAgentMessageCount + 1;
         chatbot_conversation: chatbotConversation,
         to_modify: sessionData?.to_modify ?? {},
         source_material: sourceMaterials,
-        webpage_url: sessionData?.webpage_url ?? [],
+        webpage_url: mergedWebpageUrls,
         execution_id: executionId,
         retry_count: 0,
         error_history: [],
@@ -406,7 +487,10 @@ minAgentMessageCountRef.current = existingAgentMessageCount + 1;
             ...(sessionData || {}),
             response_path: currentResponsePath,
           };
-          localStorage.setItem("sessionData", JSON.stringify(clearedSessionSnapshot));
+          localStorage.setItem(
+            "sessionData",
+            JSON.stringify(clearedSessionSnapshot),
+          );
           await graphqlClient.autoSaveComet(
             JSON.stringify({
               session_id: currentSessionId,
@@ -433,9 +517,16 @@ minAgentMessageCountRef.current = existingAgentMessageCount + 1;
               .filter(Boolean)
               .join(", ")}`
           : "";
+      const linksLabel =
+        webLinks.length > 0
+          ? `\n\nLinks: ${webLinks
+              .map((item) => item?.title || item?.url)
+              .filter(Boolean)
+              .join(", ")}`
+          : "";
       setAllMessages((prev) => [
         ...prev,
-        { from: "user", content: `${text}${attachmentLabel}` },
+        { from: "user", content: `${text}${attachmentLabel}${linksLabel}` },
       ]);
 
       setInputValue("");
@@ -456,7 +547,10 @@ minAgentMessageCountRef.current = existingAgentMessageCount + 1;
 
       // Preserve enabled_attributes from current session if server didn't return them
       let dataToStore = sessionData;
-      if (!sessionData?.response_path?.enabled_attributes && typeof window !== "undefined") {
+      if (
+        !sessionData?.response_path?.enabled_attributes &&
+        typeof window !== "undefined"
+      ) {
         try {
           const stored = localStorage.getItem("sessionData");
           if (stored) {
@@ -483,48 +577,13 @@ minAgentMessageCountRef.current = existingAgentMessageCount + 1;
         const agentMessageCount = Array.isArray(conversation)
           ? conversation.filter((entry) => entry?.agent).length
           : 0;
-        const allMessages = [];
-
-        conversation.forEach((entry) => {
-          if (entry.user) {
-            const sourceMaterialNames = Array.isArray(entry.source_material)
-              ? entry.source_material
-                  .map((item) => item?.source_name)
-                  .filter(Boolean)
-              : [];
-            const attachmentLabel =
-              sourceMaterialNames.length > 0
-                ? `\n\nAttached: ${sourceMaterialNames.join(", ")}`
-                : "";
-            allMessages.push({
-              from: "user",
-              content: `${entry.user}${attachmentLabel}`,
-              status: entry.status,
-              identifier: entry.identifier,
-            });
-          }
-          if (entry.agent) {
-            allMessages.push({
-              from: "bot",
-              content: entry.agent,
-              status: entry.status,
-              identifier: entry.identifier,
-            });
-          }
-        });
-
-        console.log("allMessages with status:", allMessages);
-        console.log("conversation:", conversation);
+        const allMessages = messagesFromConversation(conversation);
 
         const shouldStopLoading =
           !awaitingConversationRef.current ||
           agentMessageCount >= minAgentMessageCountRef.current;
 
-        // Update messages and loading state together to prevent intermediate
-        // renders where response is visible but loader is still showing.
-        if (allMessages.length > 0) {
-          setAllMessages(allMessages);
-        }
+        if (allMessages.length > 0) setAllMessages(allMessages);
         if (shouldStopLoading) {
           setIsLoading(false);
           awaitingConversationRef.current = false;
@@ -534,7 +593,7 @@ minAgentMessageCountRef.current = existingAgentMessageCount + 1;
     (error) => {
       console.error("Subscription error:", error);
       setError(error.message);
-    }
+    },
   );
 
   if (isGeneratingOutline) {

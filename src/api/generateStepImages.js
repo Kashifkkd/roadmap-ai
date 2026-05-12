@@ -193,12 +193,82 @@ export const unlinkScreenAssets = async ({ sessionId, screenUid }) => {
   return response;
 };
 
+/**
+ * POST unlink a single asset from a screen by asset_id.
+ */
+export const unlinkAsset = async ({ sessionId, assetId, screenUid }) => {
+  const response = await apiService({
+    endpoint: endpoints.unlinkAsset,
+    method: "POST",
+    data: {
+      session_id: sessionId,
+      asset_id: assetId,
+      screen_uid: screenUid,
+    },
+  });
+  return response;
+};
+
 export const rehydrateStepImages = async ({ sessionId, stepUid }) => {
   const response = await apiService({
     endpoint: endpoints.rehydrateStepImages,
     method: "POST",
     data: {
       session_id: sessionId,
+      step_uid: stepUid,
+    },
+  });
+  return response;
+};
+
+export const getStepImageDetails = async ({ sessionId, chapterUid, stepUid }) => {
+  const endpoint =
+    typeof endpoints.getStepImageDetails === "function"
+      ? endpoints.getStepImageDetails(sessionId, chapterUid, stepUid)
+      : endpoints.getStepImageDetails;
+  const response = await apiService({
+    endpoint,
+    method: "GET",
+  });
+  return response;
+};
+
+export const regenerateSelectedImages = async ({
+  sessionId,
+  chapterUid,
+  stepUid,
+  screenUids,
+  includeStepWallpaper,
+  prompt,
+  artStyle,
+  imageGuidance,
+}) => {
+  const data = {
+    session_id: sessionId,
+    chapter_uid: chapterUid,
+    step_uid: stepUid,
+    screen_uids: screenUids || [],
+    include_step_wallpaper: !!includeStepWallpaper,
+    prompt: prompt || "",
+  };
+  if (artStyle !== undefined && artStyle !== null) data.art_style = artStyle;
+  if (imageGuidance !== undefined && imageGuidance !== null) data.image_guidance = imageGuidance;
+
+  const response = await apiService({
+    endpoint: endpoints.regenerateSelectedImages,
+    method: "POST",
+    data,
+  });
+  return response;
+};
+
+export const cancelStepImages = async ({ sessionId, chapterUid, stepUid }) => {
+  const response = await apiService({
+    endpoint: endpoints.cancelStepImages,
+    method: "POST",
+    data: {
+      session_id: sessionId,
+      chapter_uid: chapterUid,
       step_uid: stepUid,
     },
   });

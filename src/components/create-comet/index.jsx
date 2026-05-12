@@ -18,7 +18,11 @@ import { graphqlClient } from "@/lib/graphql-client";
 import { Info, Trash2, Link2, X } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
-import { deriveTitleFromUrl, extractLinkTitleFromRecord } from "@/lib/linkTitleFromUrl";
+import {
+  deriveTitleFromUrl,
+  extractLinkTitleFromRecord,
+  getFetchedTitleFromLocalStorage,
+} from "@/lib/linkTitleFromUrl";
 
 function normalizeWebpageUrlEntry(item, defaultUploaded = false) {
   if (typeof item === "string") {
@@ -36,7 +40,7 @@ function normalizeWebpageUrlEntry(item, defaultUploaded = false) {
 
   return {
     url,
-    title: fromApi || deriveTitleFromUrl(url),
+    title: fromApi || getFetchedTitleFromLocalStorage(url) || deriveTitleFromUrl(url),
     comment: item?.comment ?? "",
     isUploaded:
       typeof item?.isUploaded === "boolean" ? item.isUploaded : defaultUploaded,
@@ -107,6 +111,8 @@ export default function CreateComet({
   const isSavingRef = useRef(false);
   const prevFormDataRef = useRef(null);
   const currentFormDataRef = useRef(null);
+  const chapterSkipSectionRef = useRef(null);
+  const prevPersonalizationEnabledRef = useRef(personalizationEnabled);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -126,6 +132,8 @@ export default function CreateComet({
     reset,
     setValue,
     watch,
+    getValues,
+    getFieldState,
     formState: { errors, isValid, isSubmitting },
   } = useForm({
     mode: "onChange",
@@ -300,179 +308,213 @@ export default function CreateComet({
   );
 
   useEffect(() => {
-    if (prefillData) {
-      // console.log("CreateComet: Prefilling form with data:", prefillData);
+    if (!prefillData) return;
 
-      // Restore Habit/Path personalization toggles from enabled_attributes (persists when returning from comet-manager/outline)
-      const enabledAttrs = prefillData.response_path?.enabled_attributes;
-      if (enabledAttrs) {
-        if (enabledAttrs.habit_enabled !== undefined) {
-          setHabitEnabled(!!enabledAttrs.habit_enabled);
-        }
-        if (enabledAttrs.path_personalization !== undefined) {
-          setPersonalizationEnabled(!!enabledAttrs.path_personalization);
-        }
-        if (enabledAttrs.path_personalization) {
-          if (enabledAttrs.chapter_skip !== undefined) {
-            setChapterSkipEnabled(!!enabledAttrs.chapter_skip);
-          }
-        } else {
-          setChapterSkipEnabled(false);
-        }
-        if (enabledAttrs.habit_description) {
-          setValue("habit", enabledAttrs.habit_description);
-        }
+    // Session updates pass a new `prefillData` reference on every WebSocket tick
+    // (see DashboardLayout). Blind setValue() would reset caret/scroll in text fields.
+    const prefillField = (name, value) => {
+      if (value === undefined || value === null || value === "") return;
+      if (getFieldState(name).isDirty) return;
+      const current = getValues(name);
+      const same =
+        typeof value === "object" && value !== null
+          ? JSON.stringify(current ?? null) === JSON.stringify(value)
+          : current === value;
+      if (same) return;
+      setValue(name, value);
+    };
+
+    // console.log("CreateComet: Prefilling form with data:", prefillData);
+
+    // Restore Habit/Path personalization toggles from enabled_attributes (persists when returning from comet-manager/outline)
+    const enabledAttrs = prefillData.response_path?.enabled_attributes;
+    if (enabledAttrs) {
+      if (enabledAttrs.habit_enabled !== undefined) {
+        setHabitEnabled(!!enabledAttrs.habit_enabled);
       }
-
-      // Restore webpage URLs (with comments) from local/session so they show in the UI
-      if (
-        prefillData.webpage_url &&
-        Array.isArray(prefillData.webpage_url) &&
-        prefillData.webpage_url.length > 0
-      ) {
-        const normalized = getUniqueWebpageUrlEntries(
-          prefillData.webpage_url,
-          true,
-        );
-        setWebpageUrls(normalized);
+      if (enabledAttrs.path_personalization !== undefined) {
+        setPersonalizationEnabled(!!enabledAttrs.path_personalization);
       }
-
-      if (prefillData.cycle_creation_data) {
-        const basicInfo = prefillData.cycle_creation_data["Basic Information"];
-        const audienceObjectives =
-          prefillData.cycle_creation_data["Audience & Objectives"];
-        const experienceDesign =
-          prefillData.cycle_creation_data["Experience Design"];
-
-        if (basicInfo) {
-          if (basicInfo["Cycle Title"])
-            setValue("cometTitle", basicInfo["Cycle Title"]);
-          if (basicInfo["Description"])
-            setValue("description", basicInfo["Description"]);
-          if (basicInfo["Client Organization"])
-            setValue("clientOrg", basicInfo["Client Organization"]);
-          if (basicInfo["Client Website"])
-            setValue("clientWebsite", basicInfo["Client Website"]);
-        }
-
-        if (audienceObjectives) {
-          if (audienceObjectives["Target Audience"])
-            setValue("targetAudience", audienceObjectives["Target Audience"]);
-          // Handle both "Learning Objectives" and "Learning and Behaviour Objectives"
-          const learningObjectives =
-            audienceObjectives["Learning and Behaviour Objectives"] ||
-            audienceObjectives["Learning Objectives"];
-          if (learningObjectives) {
-            setValue("learningObjectives", learningObjectives);
-          }
-        }
-
-        if (experienceDesign) {
-          // console.log("Experience Design data:", experienceDesign);
-          // Map Focus field to cometFocus
-          if (experienceDesign["Focus"]) {
-            // Map text values to form values
-            const focusValue = experienceDesign["Focus"];
-            const lowerFocus = focusValue.toLowerCase();
-            if (
-              lowerFocus.includes("teaching new things") ||
-              lowerFocus.includes("teaching new")
-            ) {
-              setValue("cometFocus", "Teaching new things");
-            } else if (
-              lowerFocus.includes("reinforcing") ||
-              lowerFocus.includes("applying")
-            ) {
-              setValue("cometFocus", "reinforcing_applying");
-            } else {
-              setValue("cometFocus", focusValue);
-            }
-          }
-
-          // Map Duration field to lengthFrequency
-          if (experienceDesign["Duration"]) {
-            setValue("lengthFrequency", experienceDesign["Duration"]);
-          } else if (experienceDesign["Length & Frequency"]) {
-            setValue("lengthFrequency", experienceDesign["Length & Frequency"]);
-          }
-
-          // Map Engagement Frequency field
-          if (experienceDesign["Engagement Frequency"]) {
-            const engagementValue = experienceDesign["Engagement Frequency"];
-            if (engagementValue.toLowerCase().includes("weekly")) {
-              setValue("engagementFrequency", "weekly");
-            } else if (engagementValue.toLowerCase().includes("daily")) {
-              setValue("engagementFrequency", "daily");
-            } else {
-              setValue("engagementFrequency", engagementValue);
-            }
-          }
-
-          if (experienceDesign["Source Alignment"]) {
-            const sourceValue = experienceDesign["Source Alignment"];
-            if (sourceValue.toLowerCase().includes("fidelity")) {
-              setValue("sourceMaterialFidelity", "fidelity");
-            } else if (sourceValue.toLowerCase().includes("balanced")) {
-              setValue("sourceMaterialFidelity", "balanced");
-            } else if (sourceValue.toLowerCase().includes("extension")) {
-              setValue("sourceMaterialFidelity", "extension");
-            } else {
-              setValue("sourceMaterialFidelity", sourceValue);
-            }
-          }
-
-          if (experienceDesign["Experience Type"])
-            setValue("experienceType", experienceDesign["Experience Type"]);
-          if (experienceDesign["Special Instructions"])
-            setValue(
-              "specialInstructions",
-              experienceDesign["Special Instructions"],
-            );
-        }
-
-        if (prefillData.cycle_creation_data["Source Materials"]) {
+      if (enabledAttrs.path_personalization) {
+        if (enabledAttrs.chapter_skip !== undefined) {
+          setChapterSkipEnabled(!!enabledAttrs.chapter_skip);
         }
       } else {
-        if (prefillData.cometTitle)
-          setValue("cometTitle", prefillData.cometTitle);
-        if (prefillData.description)
-          setValue("specialInstructions", prefillData.description);
-        if (prefillData.specialInstructions)
-          setValue("specialInstructions", prefillData.specialInstructions);
-        if (prefillData.targetAudience)
-          setValue("targetAudience", prefillData.targetAudience);
-        if (prefillData.learningObjectives) {
-          const objectives = Array.isArray(prefillData.learningObjectives)
-            ? prefillData.learningObjectives
-            : typeof prefillData.learningObjectives === "string"
-              ? prefillData.learningObjectives
-                  .split("\n")
-                  .filter((obj) => obj.trim())
-              : [prefillData.learningObjectives];
-          setValue("learningObjectives", objectives);
-        }
-        if (prefillData.cometFocus)
-          setValue("cometFocus", prefillData.cometFocus);
-        if (prefillData.sourceMaterialFidelity)
-          setValue(
-            "sourceMaterialFidelity",
-            prefillData.sourceMaterialFidelity,
-          );
-        if (prefillData.engagementFrequency)
-          setValue("engagementFrequency", prefillData.engagementFrequency);
-        if (prefillData.lengthFrequency)
-          setValue("lengthFrequency", prefillData.duration);
-        if (prefillData.clientOrg) setValue("clientOrg", prefillData.clientOrg);
-        if (prefillData.clientWebsite)
-          setValue("clientWebsite", prefillData.clientWebsite);
+        setChapterSkipEnabled(false);
+      }
+      if (enabledAttrs.habit_description) {
+        prefillField("habit", enabledAttrs.habit_description);
       }
     }
-  }, [prefillData, setValue]);
+
+    // Restore webpage URLs (with comments) from local/session so they show in the UI
+    if (
+      prefillData.webpage_url &&
+      Array.isArray(prefillData.webpage_url) &&
+      prefillData.webpage_url.length > 0
+    ) {
+      const normalized = getUniqueWebpageUrlEntries(
+        prefillData.webpage_url,
+        true,
+      );
+      setWebpageUrls(normalized);
+    }
+
+    if (prefillData.cycle_creation_data) {
+      const basicInfo = prefillData.cycle_creation_data["Basic Information"];
+      const audienceObjectives =
+        prefillData.cycle_creation_data["Audience & Objectives"];
+      const experienceDesign =
+        prefillData.cycle_creation_data["Experience Design"];
+
+      if (basicInfo) {
+        if (basicInfo["Cycle Title"])
+          prefillField("cometTitle", basicInfo["Cycle Title"]);
+        if (basicInfo["Description"])
+          prefillField("description", basicInfo["Description"]);
+        if (basicInfo["Client Organization"])
+          prefillField("clientOrg", basicInfo["Client Organization"]);
+        if (basicInfo["Client Website"])
+          prefillField("clientWebsite", basicInfo["Client Website"]);
+      }
+
+      if (audienceObjectives) {
+        if (audienceObjectives["Target Audience"])
+          prefillField("targetAudience", audienceObjectives["Target Audience"]);
+        // Handle both "Learning Objectives" and "Learning and Behaviour Objectives"
+        const learningObjectives =
+          audienceObjectives["Learning and Behaviour Objectives"] ||
+          audienceObjectives["Learning Objectives"];
+        if (learningObjectives) {
+          prefillField("learningObjectives", learningObjectives);
+        }
+      }
+
+      if (experienceDesign) {
+        // console.log("Experience Design data:", experienceDesign);
+        // Map Focus field to cometFocus
+        if (experienceDesign["Focus"]) {
+          // Map text values to form values
+          const focusValue = experienceDesign["Focus"];
+          const lowerFocus = focusValue.toLowerCase();
+          if (
+            lowerFocus.includes("teaching new things") ||
+            lowerFocus.includes("teaching new")
+          ) {
+            prefillField("cometFocus", "Teaching new things");
+          } else if (
+            lowerFocus.includes("reinforcing") ||
+            lowerFocus.includes("applying")
+          ) {
+            prefillField("cometFocus", "reinforcing_applying");
+          } else {
+            prefillField("cometFocus", focusValue);
+          }
+        }
+
+        // Map Duration field to lengthFrequency
+        if (experienceDesign["Duration"]) {
+          prefillField("lengthFrequency", experienceDesign["Duration"]);
+        } else if (experienceDesign["Length & Frequency"]) {
+          prefillField(
+            "lengthFrequency",
+            experienceDesign["Length & Frequency"],
+          );
+        }
+
+        // Map Engagement Frequency field
+        if (experienceDesign["Engagement Frequency"]) {
+          const engagementValue = experienceDesign["Engagement Frequency"];
+          if (engagementValue.toLowerCase().includes("weekly")) {
+            prefillField("engagementFrequency", "weekly");
+          } else if (engagementValue.toLowerCase().includes("daily")) {
+            prefillField("engagementFrequency", "daily");
+          } else {
+            prefillField("engagementFrequency", engagementValue);
+          }
+        }
+
+        if (experienceDesign["Source Alignment"]) {
+          const sourceValue = experienceDesign["Source Alignment"];
+          if (sourceValue.toLowerCase().includes("fidelity")) {
+            prefillField("sourceMaterialFidelity", "fidelity");
+          } else if (sourceValue.toLowerCase().includes("balanced")) {
+            prefillField("sourceMaterialFidelity", "balanced");
+          } else if (sourceValue.toLowerCase().includes("extension")) {
+            prefillField("sourceMaterialFidelity", "extension");
+          } else {
+            prefillField("sourceMaterialFidelity", sourceValue);
+          }
+        }
+
+        if (experienceDesign["Experience Type"])
+          prefillField("experienceType", experienceDesign["Experience Type"]);
+        if (experienceDesign["Special Instructions"])
+          prefillField(
+            "specialInstructions",
+            experienceDesign["Special Instructions"],
+          );
+      }
+
+      if (prefillData.cycle_creation_data["Source Materials"]) {
+      }
+    } else {
+      if (prefillData.cometTitle)
+        prefillField("cometTitle", prefillData.cometTitle);
+      if (prefillData.description)
+        prefillField("specialInstructions", prefillData.description);
+      if (prefillData.specialInstructions)
+        prefillField("specialInstructions", prefillData.specialInstructions);
+      if (prefillData.targetAudience)
+        prefillField("targetAudience", prefillData.targetAudience);
+      if (prefillData.learningObjectives) {
+        const objectives = Array.isArray(prefillData.learningObjectives)
+          ? prefillData.learningObjectives
+          : typeof prefillData.learningObjectives === "string"
+            ? prefillData.learningObjectives
+                .split("\n")
+                .filter((obj) => obj.trim())
+            : [prefillData.learningObjectives];
+        prefillField("learningObjectives", objectives);
+      }
+      if (prefillData.cometFocus)
+        prefillField("cometFocus", prefillData.cometFocus);
+      if (prefillData.sourceMaterialFidelity)
+        prefillField(
+          "sourceMaterialFidelity",
+          prefillData.sourceMaterialFidelity,
+        );
+      if (prefillData.engagementFrequency)
+        prefillField("engagementFrequency", prefillData.engagementFrequency);
+      if (prefillData.lengthFrequency)
+        prefillField("lengthFrequency", prefillData.duration);
+      if (prefillData.clientOrg) prefillField("clientOrg", prefillData.clientOrg);
+      if (prefillData.clientWebsite)
+        prefillField("clientWebsite", prefillData.clientWebsite);
+    }
+  }, [prefillData, setValue, getValues, getFieldState]);
 
   useEffect(() => {
+    const wasPersonalizationEnabled = prevPersonalizationEnabledRef.current;
+
+    if (personalizationEnabled && !wasPersonalizationEnabled) {
+      setChapterSkipEnabled(true);
+      if (typeof window !== "undefined") {
+        window.requestAnimationFrame(() => {
+          chapterSkipSectionRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        });
+      }
+      return;
+    }
+
     if (!personalizationEnabled) {
       setChapterSkipEnabled(false);
     }
+
+    prevPersonalizationEnabledRef.current = personalizationEnabled;
   }, [personalizationEnabled]);
 
   // Track form changes in real-time using subscription (including toggle states)
@@ -1137,6 +1179,50 @@ export default function CreateComet({
     }
   };
 
+  useEffect(() => {
+    if (!focusedField) return;
+
+    const shouldDismissOnKey = (event) => {
+      if (
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        event.isComposing ||
+        event.key === "Escape" ||
+        event.key === "Tab" ||
+        event.key.startsWith("Arrow")
+      ) {
+        return false;
+      }
+
+      return (
+        event.key.length === 1 ||
+        event.key === "Backspace" ||
+        event.key === "Delete" ||
+        event.key === "Enter"
+      );
+    };
+
+    const handleReplaceSelection = (event) => {
+      if (!shouldDismissOnKey(event)) return;
+
+      const activeElement = document.activeElement;
+      if (!activeElement) return;
+
+      if (activeElement.closest?.("[data-ask-kyper-popup]")) {
+        return;
+      }
+
+      setFocusedField(null);
+      setFieldPosition(null);
+    };
+
+    document.addEventListener("keydown", handleReplaceSelection, true);
+    return () => {
+      document.removeEventListener("keydown", handleReplaceSelection, true);
+    };
+  }, [focusedField]);
+
   // Toggle Switch Component
   const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
     <div className="flex items-center justify-between py-2">
@@ -1407,13 +1493,13 @@ export default function CreateComet({
                       </Label>
                       <Textarea
                         id="special-instructions"
-                        rows={3}
+                        rows={6}
                         // placeholder="Focus on practical scenarios for first-time managers. Include at least one interactive quiz and one downloadable tool template"
                         {...register("specialInstructions")}
                         onSelect={(e) =>
                           handleTextSelection("specialInstructions", e)
                         }
-                        className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300"
+                        className="border border-gray-200 rounded-sm outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:border-primary-300 resize-y min-h-[9rem] max-h-[50vh] overflow-y-auto leading-6 break-words"
                       />
                     </div>
 
@@ -1453,12 +1539,14 @@ export default function CreateComet({
                         showInfo={false}
                       />
                       {personalizationEnabled ? (
-                        <ToggleSwitch
-                          checked={chapterSkipEnabled}
-                          onChange={setChapterSkipEnabled}
-                          label="Allow Users to Skip Content"
-                          showInfo={false}
-                        />
+                        <div ref={chapterSkipSectionRef}>
+                          <ToggleSwitch
+                            checked={chapterSkipEnabled}
+                            onChange={setChapterSkipEnabled}
+                            label="Allow Users to Skip Content"
+                            showInfo={false}
+                          />
+                        </div>
                       ) : null}
                     </div>
                   </CardContent>

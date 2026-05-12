@@ -46,6 +46,7 @@ export default function UploadStepImageDialog({
   existingImageUrl,
   onSuccess,
   onError,
+  onImageUpdated,
 }) {
   const [mode, setMode] = useState("upload"); // 'upload' | 'generate'
 
@@ -113,11 +114,15 @@ export default function UploadStepImageDialog({
     if (!sessionData || !setSessionData || !stepUid || !imageUrl) return;
     try {
       const updated = JSON.parse(JSON.stringify(sessionData));
+      const matchesStep = (step) =>
+        step &&
+        (String(step.uuid ?? "") === String(stepUid) ||
+          String(step.id ?? "") === String(stepUid));
       let stepFound = false;
       if (updated.response_path?.chapters) {
         for (const ch of updated.response_path.chapters) {
           for (const stepItem of ch.steps || []) {
-            if (stepItem.step?.uuid === stepUid) {
+            if (matchesStep(stepItem.step)) {
               stepItem.step.image = imageUrl;
               stepFound = true;
               break;
@@ -129,7 +134,7 @@ export default function UploadStepImageDialog({
       const outlineChapters = updated.response_outline?.chapters ?? (Array.isArray(updated.response_outline) ? updated.response_outline : []);
       for (const chapter of Array.isArray(outlineChapters) ? outlineChapters : []) {
         for (const stepData of chapter.steps || []) {
-          if (stepData.step?.uuid === stepUid) {
+          if (matchesStep(stepData.step)) {
             stepData.step.image = imageUrl;
             break;
           }
@@ -263,10 +268,10 @@ export default function UploadStepImageDialog({
 
       if (response?.success && response?.response) {
         setStatus("success");
-        // Update step.image in sessionData + localStorage + backend (same as generate flow)
         const imageUrl = response.response?.image_url;
         if (imageUrl) {
           updateStepImage(imageUrl);
+          onImageUpdated?.(stepUid, imageUrl);
         }
         if (onSuccess) {
           onSuccess(response.response);

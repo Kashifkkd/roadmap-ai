@@ -5,6 +5,10 @@ import ChatWindow from "@/components/chat/ChatWindow";
 import CometManager from "./CometManager";
 import { usePreviewMode } from "@/contexts/PreviewModeContext";
 import { graphqlClient } from "@/lib/graphql-client";
+import {
+  applyTombstonesToOutline,
+  useDeletionTombstones,
+} from "@/hooks/useDeletionTombstones";
 // import { sampleSessionData } from "@/hooks/sampleSessionData";
 // import { temp2 } from "@/hooks/temp2";
 
@@ -24,6 +28,8 @@ export default function CometManagerLayout() {
   const initializedSessionIdRef = useRef(null);
   /** Match useCometManager: only apply response_path when the server snapshot actually changed — not when it differs from outlineRef (local edits are often ahead of sessionData). */
   const lastServerResponsePathJsonRef = useRef(null);
+  const { deletedUuidsRef, addPendingDeletion, getDeletedUuids } =
+    useDeletionTombstones(sessionData?.session_id);
 
   useEffect(() => {
     const currentSessionId = sessionData?.session_id;
@@ -44,7 +50,10 @@ export default function CometManagerLayout() {
       }
       lastServerResponsePathJsonRef.current = pathJson;
 
-      const currentOutline = sessionData.response_path;
+      const currentOutline = applyTombstonesToOutline(
+        sessionData.response_path,
+        deletedUuidsRef.current,
+      );
       setOutline(currentOutline);
       setPrevOutline(currentOutline);
       outlineRef.current = currentOutline;
@@ -162,6 +171,7 @@ export default function CometManagerLayout() {
             chatbot_conversation: sessionData?.chatbot_conversation || [],
             to_modify: sessionData?.to_modify || {},
             webpage_url: sessionData?.webpage_url || [],
+            deleted_uuids: getDeletedUuids(),
           });
 
           const response = await graphqlClient.autoSaveComet(cometJsonForSave);
@@ -245,6 +255,7 @@ export default function CometManagerLayout() {
         chatbot_conversation: sessionData?.chatbot_conversation || [],
         to_modify: sessionData?.to_modify || {},
         webpage_url: sessionData?.webpage_url || [],
+        deleted_uuids: getDeletedUuids(),
       });
       await graphqlClient.autoSaveComet(cometJsonForSave);
       setPrevOutline(target);
@@ -335,6 +346,7 @@ export default function CometManagerLayout() {
             onOutlineChange={handleOutlineChange}
             saveOutlineImmediately={saveOutlineImmediately}
             onFlushSave={flushSave}
+            addPendingDeletion={addPendingDeletion}
             isAskingKyper={isAskingKyper}
             setIsAskingKyper={setIsAskingKyper}
           />

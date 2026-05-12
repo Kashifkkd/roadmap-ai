@@ -1,5 +1,6 @@
 import { wsGraphQLClient } from "./ws-graphql-client";
 import { refreshAccessToken } from "./token-refresh";
+import { clearFetchedTitlesFromLocalStorage } from "./linkTitleFromUrl";
 
 class GraphQLClient {
   constructor() {
@@ -77,6 +78,9 @@ class GraphQLClient {
   }
 
   async createSession() {
+    // New session should start with a fresh link-title cache to avoid
+    // carrying over URL titles from a previous session.
+    clearFetchedTitlesFromLocalStorage();
     const clientId = localStorage.getItem("Client id");
     console.log("clientId", clientId);
     const query = `

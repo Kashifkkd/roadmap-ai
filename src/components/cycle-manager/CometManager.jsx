@@ -38,6 +38,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Sparkles,
+  AppWindow,
 } from "lucide-react";
 import { graphqlClient } from "@/lib/graphql-client";
 import {
@@ -160,6 +161,13 @@ const SCREEN_TYPE_GROUPS = [
         color: "bg-cyan-100 border-cyan-300",
         description: "Let learners choose helpful reminder notifications.",
       },
+      // {
+      //   id: "mini_app",
+      //   name: "HTML Mini App",
+      //   icon: <AppWindow size={20} />,
+      //   color: "bg-emerald-100 border-emerald-300",
+      //   description: "Interactive HTML in an iframe; paste or upload a file.",
+      // },
     ],
   },
   {
@@ -260,6 +268,7 @@ export default function CometManager({
   onOutlineChange,
   saveOutlineImmediately,
   onFlushSave,
+  addPendingDeletion = () => {},
   isAskingKyper = false,
   setIsAskingKyper = () => { },
 }) {
@@ -287,6 +296,88 @@ export default function CometManager({
   useEffect(() => {
     outlineRef.current = outline;
   }, [outline]);
+
+  const allWebpageUrls = useMemo(() => {
+    return Array.isArray(sessionData?.webpage_url) ? sessionData.webpage_url : [];
+  }, [sessionData?.webpage_url]);
+
+  // Collect all image assets from content screens in response_path
+  const contentImageAssets = useMemo(() => {
+    const images = [];
+    const seen = new Set();
+
+    const add = (url, name = "") => {
+      const clean = (url || "").trim();
+      if (!clean || seen.has(clean)) return;
+      seen.add(clean);
+      images.push({ url: clean, name: name || clean.split("/").pop() || "image" });
+    };
+
+    (sessionData?.response_path?.chapters || []).forEach((chapter) => {
+      const chapterSteps = Array.isArray(chapter?.steps) ? chapter.steps : [];
+      chapterSteps.forEach((stepItem) => {
+        const step = stepItem.step || {};
+        if (step.image) add(step.image, `${step.title || "Step"} image`);
+
+        (stepItem.screens || []).forEach((screen) => {
+          (screen.assets || []).forEach((asset) => {
+            if (asset.type === "image") {
+              add(asset.url || asset.ImageUrl, asset.name || "");
+            }
+          });
+          const media = screen.screenContents?.content?.media;
+          if (media?.type === "image" && media?.url) add(media.url);
+
+          const content = screen.screenContents?.content || {};
+          if (content.mediaType === "image" && content.mediaUrl) add(content.mediaUrl);
+        });
+      });
+    });
+
+    return images;
+  }, [sessionData?.response_path]);
+
+  // Collect links from WelcomePage (sessionData.webpage_url) and content screens (mediaType === "link")
+  const contentLinkedUrls = useMemo(() => {
+    const seen = new Set();
+    const items = [];
+
+    const add = (url, comment = "") => {
+      const clean = (url || "").trim();
+      if (!clean || seen.has(clean)) return;
+      seen.add(clean);
+      items.push({ type: "link", source_name: clean, comment });
+    };
+
+    (sessionData?.webpage_url || []).forEach((entry) => {
+      add(entry.webpage_url, entry.comment || entry.title || "");
+    });
+
+    const walkChapters = (chapters) => {
+      (chapters || []).forEach((chapter) => {
+        const chapterSteps = Array.isArray(chapter?.steps) ? chapter.steps : [];
+        chapterSteps.forEach((stepItem) => {
+          (stepItem.screens || []).forEach((screen) => {
+            const content = screen.screenContents?.content || {};
+            // DynamicForm stores mediaUrl under content.media.url / content.media.type
+            if (content.media?.type === "link" && content.media?.url) {
+              add(content.media.url);
+            }
+            // Also handle flat fields for other screen types
+            if (content.mediaType === "link" && content.mediaUrl) {
+              add(content.mediaUrl);
+            }
+          });
+        });
+      });
+    };
+
+    // Use live outline (updated by DynamicForm) rather than sessionData.response_path
+    walkChapters(outline?.chapters);
+    walkChapters(sessionData?.response_path?.remaining_chapters);
+
+    return items;
+  }, [sessionData?.webpage_url, outline, sessionData?.response_path?.remaining_chapters]);
 
   const requestAutoSaveAfterOutlineCommit = useCallback(async () => {
     if (!saveOutlineImmediately) return;
@@ -448,6 +539,10 @@ export default function CometManager({
         return (step.uuid || step.id) === stepId;
       });
       if (stepIndex !== -1) {
+        const deletedStepObj = chapterSteps[stepIndex]?.step || {};
+        addPendingDeletion(
+          deletedStepObj.uuid || deletedStepObj.uid || deletedStepObj.id,
+        );
         chapterSteps.splice(stepIndex, 1);
         chapter.steps = chapterSteps;
         stepWasDeleted = true;
@@ -510,6 +605,10 @@ export default function CometManager({
       const fallbackStep = fallbackChapter?.steps?.[0]?.step || null;
       nextSelectedStepId = fallbackStep?.uuid || fallbackStep?.id || null;
     }
+
+    addPendingDeletion(
+      deletedChapter?.uuid || deletedChapter?.uid || deletedChapter?.id,
+    );
 
     nextOutline.chapters.splice(chapterIndex, 1);
 
@@ -594,7 +693,6 @@ export default function CometManager({
   const [nextChapterError, setNextChapterError] = useState(null);
   const [isAnalyzingTextCollapsed, setIsAnalyzingTextCollapsed] =
     useState(false);
-  const [showNextChapter, setShowNextChapter] = useState(true);
   const [hasClickedGenerateRemaining, setHasClickedGenerateRemaining] =
     useState(false);
 
@@ -620,36 +718,6 @@ export default function CometManager({
       }
     } catch { }
   }, [setIsCometSettingsOpen]);
-  useEffect(() => {
-    const outline = sessionData?.response_outline;
-    const path = sessionData?.response_path;
-
-    let outlineCount = 0;
-    let pathCount = 0;
-
-    // outline count
-    if (Array.isArray(outline)) {
-      outlineCount = outline.length;
-    } else if (Array.isArray(outline?.chapters)) {
-      outlineCount = outline.chapters.length;
-    } else if (outline && typeof outline === "object") {
-      outlineCount = Object.keys(outline).length;
-    }
-
-    // path count
-    if (Array.isArray(path?.chapters)) {
-      pathCount = path.chapters.length;
-    } else if (Array.isArray(path)) {
-      pathCount = path.length;
-    }
-
-    // disable button if path >= outline (never hide, only disable)
-    if (outlineCount > 0 && pathCount >= outlineCount) {
-      setShowNextChapter(false);
-    } else {
-      setShowNextChapter(true);
-    }
-  }, [sessionData]);
 
   // Subscribe to session updates - persistent subscription for comet-manager
   // This will reuse the existing subscription if one exists
@@ -783,11 +851,6 @@ export default function CometManager({
   }, [selectedScreenId, screens]);
   console.log("selectedScreen", selectedScreen);
 
-  const selectedLinkUrl = useMemo(() => {
-    if (selectedMaterial?.type !== "link") return "";
-    return resolveSourceMaterialLinkUrl(selectedMaterial);
-  }, [selectedMaterial]);
-
   const handleRequestDeleteScreen = useCallback((screenId) => {
     setScreenDeleteConfirmId(screenId);
   }, []);
@@ -797,6 +860,25 @@ export default function CometManager({
     if (id == null) return;
     setScreenDeleteConfirmId(null);
     setDeletingScreenId(id);
+    // Resolve UUID before mutating outline so backend receives tombstone.
+    const targetStr = String(id);
+    let deletedUuid = null;
+    for (const ch of outline?.chapters || []) {
+      for (const stepItem of ch.steps || []) {
+        for (const sc of stepItem.screens || []) {
+          const candidates = [sc.uuid, sc.uid, sc.id]
+            .filter((v) => v !== undefined && v !== null)
+            .map(String);
+          if (candidates.includes(targetStr)) {
+            deletedUuid = sc.uuid || sc.uid || sc.id;
+            break;
+          }
+        }
+        if (deletedUuid) break;
+      }
+      if (deletedUuid) break;
+    }
+    addPendingDeletion(deletedUuid);
     const nextOutline = applyScreenDeleteToOutline(outline, id);
     try {
       if (saveOutlineImmediately) {
@@ -817,6 +899,7 @@ export default function CometManager({
     saveOutlineImmediately,
     deleteScreenData,
     onFlushSave,
+    addPendingDeletion,
   ]);
 
   // Select first screen by default when screens are first loaded
@@ -918,30 +1001,30 @@ export default function CometManager({
     ) || null;
 
   const allSteps = useMemo(() => {
-  const steps = [];
-  for (const chapter of chapters) {
-    for (const step of chapter.steps || []) {
-      steps.push({ chapterId: chapter.id, stepId: step.id });
+    const steps = [];
+    for (const chapter of chapters) {
+      for (const step of chapter.steps || []) {
+        steps.push({ chapterId: chapter.id, stepId: step.id });
+      }
     }
-  }
-  return steps;
-}, [chapters]);
+    return steps;
+  }, [chapters]);
 
-// Use selectedStepId (from useCometManager hook) — NOT selectedScreen.stepId
-const currentStepIndex = useMemo(
-  () => allSteps.findIndex((s) => s.stepId === selectedStepId),
-  [allSteps, selectedStepId],
-);
+  // Use selectedStepId (from useCometManager hook) — NOT selectedScreen.stepId
+  const currentStepIndex = useMemo(
+    () => allSteps.findIndex((s) => s.stepId === selectedStepId),
+    [allSteps, selectedStepId],
+  );
 
-const handlePrevStep = useCallback(() => {
-  if (currentStepIndex <= 0) return;
-  setSelectedStep(allSteps[currentStepIndex - 1].stepId);
-}, [currentStepIndex, allSteps, setSelectedStep]);
+  const handlePrevStep = useCallback(() => {
+    if (currentStepIndex <= 0) return;
+    setSelectedStep(allSteps[currentStepIndex - 1].stepId);
+  }, [currentStepIndex, allSteps, setSelectedStep]);
 
-const handleNextStep = useCallback(() => {
-  if (currentStepIndex >= allSteps.length - 1) return;
-  setSelectedStep(allSteps[currentStepIndex + 1].stepId);
-}, [currentStepIndex, allSteps, setSelectedStep]);
+  const handleNextStep = useCallback(() => {
+    if (currentStepIndex >= allSteps.length - 1) return;
+    setSelectedStep(allSteps[currentStepIndex + 1].stepId);
+  }, [currentStepIndex, allSteps, setSelectedStep]);
 
   const handleScreenClick = (screen) => {
     setSelectedMaterial(null);
@@ -971,292 +1054,333 @@ const handleNextStep = useCallback(() => {
     if (isAddingScreen) return;
     setIsAddingScreen(true);
     try {
-    // Get current chapter and step
-    const targetChapter = currentChapter || chapters[0] || null;
-    const targetChapterId =
-      targetChapter?.id || chapters[0]?.id || "#chapter_1";
+      // Get current chapter and step
+      const targetChapter = currentChapter || chapters[0] || null;
+      const targetChapterId =
+        targetChapter?.id || chapters[0]?.id || "#chapter_1";
 
-    // Get step ID - use selectedStepId if available, otherwise get first step from chapter
-    let targetStepId = selectedStepId;
-    console.log("targetStepId>>>>>>>>>>>>>>>>>>>>>>>>", targetStepId);
-    if (
-      !targetStepId &&
-      targetChapter?.steps &&
-      targetChapter.steps.length > 0
-    ) {
-      targetStepId = targetChapter.steps[0].id;
-    }
-    if (!targetStepId) {
-      targetStepId = "#step_1";
-    }
+      // Get step ID - use selectedStepId if available, otherwise get first step from chapter
+      let targetStepId = selectedStepId;
+      console.log("targetStepId>>>>>>>>>>>>>>>>>>>>>>>>", targetStepId);
+      if (
+        !targetStepId &&
+        targetChapter?.steps &&
+        targetChapter.steps.length > 0
+      ) {
+        targetStepId = targetChapter.steps[0].id;
+      }
+      if (!targetStepId) {
+        targetStepId = "#step_1";
+      }
 
-    // Generate screen ID -  like #screen_2_2
-    const chapterNum =
-      targetChapter?.order !== undefined
-        ? targetChapter.order + 1
-        : chapters.findIndex(
-          (ch) => String(ch.id) === String(targetChapterId),
+      // Generate screen ID -  like #screen_2_2
+      const chapterNum =
+        targetChapter?.order !== undefined
+          ? targetChapter.order + 1
+          : chapters.findIndex(
+            (ch) => String(ch.id) === String(targetChapterId),
+          ) + 1 || 1;
+      console.log("chapterNum>>>>>>>>>>>>>>>>>>>>>>>>", chapterNum);
+      const stepNum =
+        targetChapter?.steps?.findIndex(
+          (step) => String(step.id) === String(targetStepId),
         ) + 1 || 1;
-    console.log("chapterNum>>>>>>>>>>>>>>>>>>>>>>>>", chapterNum);
-    const stepNum =
-      targetChapter?.steps?.findIndex(
-        (step) => String(step.id) === String(targetStepId),
-      ) + 1 || 1;
-    console.log("stepNum>>>>>>>>>>>>>>>>>>>>>>>>", stepNum);
-    const screenNum =
-      allScreens.filter(
-        (s) =>
-          String(s.chapterId) === String(targetChapterId) &&
-          String(s.stepId) === String(targetStepId),
-      ).length + 1;
-    console.log("screenNum>>>>>>>>>>>>>>>>>>>>>>>>", screenNum);
-    const screenId = `#screen_${chapterNum}_${stepNum}_${screenNum}`;
-    console.log("screenId>>>>>>>>>>>>>>>>>>>>>>>>", screenId);
-    const screenContentId = `#screen_content_${chapterNum}_${stepNum}_${screenNum}`;
-    console.log("screenContentId>>>>>>>>>>>>>>>>>>>>>>>>", screenContentId);
-    const screenUuid = globalThis.crypto.getRandomValues(new Uint8Array(16)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '');
-    console.log("screenUuid>>>>>>>>>>>>>>>>>>>>>>>>", screenUuid);
-    console.log(currentChapter, "currentChapter>>>>>>>>>>>>>>>>>>>>>>>>");
-    // Get position: when inserting between screens use insert index + 1 (1-based);
-    // when appending, use count of screens in step + 1
-    const screensInStep = allScreens.filter(
-      (s) => String(s.stepId) === String(targetStepId),
-    );
-    const position =
-      addAtIndex !== null ? addAtIndex + 1 : screensInStep.length + 1;
-    console.log("position>>>>>>>>>>>>>>>>>>>>>>>>", position);
-    // Map screenType.id to contentType
-    const contentTypeMap = {
-      content: "content",
-      multiple_choice: "mcq",
-      force_question: "force_rank",
-      poll: "linear",
-      assessment: "assessment",
-      reflection: "reflection",
-      action: "action",
-      discussion: "socialDiscussion",
-      habits: "habits",
-      profile: "profile",
-      managerEmail: "managerEmail",
-      accountabilityPartnerEmail: "accountabilityPartnerEmail",
-      path_personalization: "pathPersonalization",
-      notifications: "notifications",
-    };
-
-    const contentType = contentTypeMap[screenType.id] || screenType.id;
-    console.log("contentType>>>>>>>>>>>>>>>>>>>>>>>>", contentType);
-    // Initialize screen based on type
-    let newScreen = {};
-    console.log("newScreen>>>>>>>>>>>>>>>>>>>>>>>>", newScreen);
-    if (screenType.id === "action") {
-      // Action screen structure
-      const actionTitle = "";
-      const actionText = "";
-      console.log("actionTitle>>>>>>>>>>>>>>>>>>>>>>>>", actionTitle);
-      console.log("actionText>>>>>>>>>>>>>>>>>>>>>>>>", actionText);
-      newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: "action",
-        position: position,
-        screenContents: {
-          id: screenContentId,
-          contentType: "action",
-          content: {
-            title: actionTitle,
-            text: actionText,
-            canSchedule: true,
-            canCompleteNow: true,
-            replyCount: 0,
-            votesCount: 0,
-            toolLink: "",
-            ImageUrl: "",
-            reflectionPrompt: "",
-          },
-        },
-        assets: [],
-        imageStatus: "pending",
-        toolStatus: "pending",
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        title: actionTitle,
-        formData: {
-          actionTitle: actionTitle,
-          actionDescription: actionText,
-          actionCanSchedule: true,
-          actionCanCompleteImmediately: true,
-          actionHasReflectionQuestion: false,
-          actionToolLink: "",
-          actionToolPrompt: "",
-        },
-        assessment: null,
-        order: allScreens.length,
+      console.log("stepNum>>>>>>>>>>>>>>>>>>>>>>>>", stepNum);
+      const screenNum =
+        allScreens.filter(
+          (s) =>
+            String(s.chapterId) === String(targetChapterId) &&
+            String(s.stepId) === String(targetStepId),
+        ).length + 1;
+      console.log("screenNum>>>>>>>>>>>>>>>>>>>>>>>>", screenNum);
+      const screenId = `#screen_${chapterNum}_${stepNum}_${screenNum}`;
+      console.log("screenId>>>>>>>>>>>>>>>>>>>>>>>>", screenId);
+      const screenContentId = `#screen_content_${chapterNum}_${stepNum}_${screenNum}`;
+      console.log("screenContentId>>>>>>>>>>>>>>>>>>>>>>>>", screenContentId);
+      const screenUuid = globalThis.crypto.getRandomValues(new Uint8Array(16)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '');
+      console.log("screenUuid>>>>>>>>>>>>>>>>>>>>>>>>", screenUuid);
+      console.log(currentChapter, "currentChapter>>>>>>>>>>>>>>>>>>>>>>>>");
+      // Get position: when inserting between screens use insert index + 1 (1-based);
+      // when appending, use count of screens in step + 1
+      const screensInStep = allScreens.filter(
+        (s) => String(s.stepId) === String(targetStepId),
+      );
+      const position =
+        addAtIndex !== null ? addAtIndex + 1 : screensInStep.length + 1;
+      console.log("position>>>>>>>>>>>>>>>>>>>>>>>>", position);
+      // Map screenType.id to contentType
+      const contentTypeMap = {
+        content: "content",
+        multiple_choice: "mcq",
+        force_question: "force_rank",
+        poll: "linear",
+        assessment: "assessment",
+        reflection: "reflection",
+        action: "action",
+        discussion: "socialDiscussion",
+        habits: "habits",
+        profile: "profile",
+        managerEmail: "managerEmail",
+        accountabilityPartnerEmail: "accountabilityPartnerEmail",
+        path_personalization: "pathPersonalization",
+        notifications: "notifications",
+        mini_app: "miniApp",
       };
-    } else if (screenType.id === "content") {
-      // Content screen structure
-      const contentTitle = "";
-      newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: "content",
-        position: position,
-        screenContents: {
-          id: screenContentId,
-          contentType: "content",
-          content: {
-            heading: contentTitle,
-            body: "",
-            fullBleed: true,
-            media: {
-              type: "",
-              url: "",
-              alt: "",
+
+      const contentType = contentTypeMap[screenType.id] || screenType.id;
+      console.log("contentType>>>>>>>>>>>>>>>>>>>>>>>>", contentType);
+      // Initialize screen based on type
+      let newScreen = {};
+      console.log("newScreen>>>>>>>>>>>>>>>>>>>>>>>>", newScreen);
+      if (screenType.id === "action") {
+        // Action screen structure
+        const actionTitle = "";
+        const actionText = "";
+        console.log("actionTitle>>>>>>>>>>>>>>>>>>>>>>>>", actionTitle);
+        console.log("actionText>>>>>>>>>>>>>>>>>>>>>>>>", actionText);
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "action",
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: "action",
+            content: {
+              title: actionTitle,
+              text: actionText,
+              canSchedule: true,
+              canCompleteNow: true,
+              replyCount: 0,
+              votesCount: 0,
+              toolLink: "",
+              ImageUrl: "",
+              reflectionPrompt: "",
             },
           },
-        },
-        assets: [],
-        imageStatus: "pending",
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        title: contentTitle,
-        formData: {
-          contentSimpleTitle: contentTitle,
-          contentSimpleDescription: "",
-          contentMediaLink: "",
-          contentFullBleed: true,
-        },
-        assessment: null,
-        order: allScreens.length,
-      };
-    } else if (screenType.id === "multiple_choice") {
-      // Multiple Choice/Survey screen structure
-      const mcqTitle = "Quick Check";
-      newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: "poll",
-        position: position,
-        screenContents: {
-          id: screenContentId,
-          contentType: "mcq",
-          content: {
-            title: mcqTitle,
+          assets: [],
+          imageStatus: "pending",
+          toolStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          title: actionTitle,
+          formData: {
+            actionTitle: actionTitle,
+            actionDescription: actionText,
+            actionCanSchedule: true,
+            actionCanCompleteImmediately: true,
+            actionHasReflectionQuestion: false,
+            actionToolLink: "",
+            actionToolPrompt: "",
+          },
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else if (screenType.id === "content") {
+        // Content screen structure
+        const contentTitle = "";
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "content",
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: "content",
+            content: {
+              heading: contentTitle,
+              body: "",
+              fullBleed: true,
+              media: {
+                type: "",
+                url: "",
+                alt: "",
+              },
+            },
+          },
+          assets: [],
+          imageStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          title: contentTitle,
+          formData: {
+            contentSimpleTitle: contentTitle,
+            contentSimpleDescription: "",
+            contentMediaLink: "",
+            contentFullBleed: true,
+          },
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else if (screenType.id === "multiple_choice") {
+        // Multiple Choice/Survey screen structure
+        const mcqTitle = "Quick Check";
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "poll",
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: "mcq",
+            content: {
+              title: mcqTitle,
+              question: "Select the best answer.",
+              keyLearning: "Choose the option that best reflects the key takeaway.",
+              options: [
+                { optionId: 1, text: "Option 1", isCorrect: true },
+                { optionId: 2, text: "Option 2", isCorrect: false },
+              ],
+            },
+          },
+          assets: [],
+          imageStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          title: mcqTitle,
+          formData: {
+            mcqTitle: mcqTitle,
             question: "Select the best answer.",
-            keyLearning: "Choose the option that best reflects the key takeaway.",
-            options: [
+            mcqKeyLearning: "Choose the option that best reflects the key takeaway.",
+            mcqOptions: [
               { optionId: 1, text: "Option 1", isCorrect: true },
               { optionId: 2, text: "Option 2", isCorrect: false },
             ],
           },
-        },
-        assets: [],
-        imageStatus: "pending",
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        title: mcqTitle,
-        formData: {
-          mcqTitle: mcqTitle,
-          question: "Select the best answer.",
-          mcqKeyLearning: "Choose the option that best reflects the key takeaway.",
-          mcqOptions: [
-            { optionId: 1, text: "Option 1", isCorrect: true },
-            { optionId: 2, text: "Option 2", isCorrect: false },
-          ],
-        },
-        assessment: null,
-        order: allScreens.length,
-      };
-    } else if (screenType.id === "force_question") {
-      // Force Rank screen structure
-      const forceRankTitle = "";
-      newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: "force_question",
-        position: position,
-        screenContents: {
-          id: screenContentId,
-          contentType: "force_rank",
-          content: {
-            title: forceRankTitle,
-            highLabel: "",
-            lowLabel: "",
-            key_learning: "",
-            options: [],
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else if (screenType.id === "force_question") {
+        // Force rank screens must be saved as poll + force_rank with strict schema.
+        const forceRankTitle = "Rank priorities for this scenario";
+        const forceRankQuestion =
+          "Drag to rank each option from most important to least important.";
+        const forceRankOptions = [
+          { optionId: 1, text: "Immediate impact on the goal" },
+          { optionId: 2, text: "Ease of implementation" },
+        ];
+        const forceRankScreenId = Date.now();
+        const forceRankContentId = forceRankScreenId + 1;
+        const forceRankUuid = globalThis.crypto?.randomUUID
+          ? globalThis.crypto.randomUUID()
+          : `${screenUuid.slice(0, 8)}-${screenUuid.slice(8, 12)}-${screenUuid.slice(12, 16)}-${screenUuid.slice(16, 20)}-${screenUuid.slice(20, 32)}`;
+
+        newScreen = {
+          id: forceRankScreenId,
+          uuid: forceRankUuid,
+          screenType: "poll",
+          position: position,
+          screenContents: {
+            id: forceRankContentId,
+            contentType: "force_rank",
+            content: {
+              ptype: "force_rank",
+              title: forceRankTitle,
+              question: forceRankQuestion,
+              keyLearning:
+                "Ranking trade-offs clarifies which choice should be prioritized first.",
+              options: forceRankOptions,
+              lowLabel: "Least critical",
+              highLabel: "Most critical",
+            },
           },
-        },
-        assets: [],
-        imageStatus: "pending",
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        title: forceRankTitle,
-        formData: {
-          pollTitle: forceRankTitle,
-          topLabel: "",
-          bottomLabel: "",
-          keyLearning: "",
-          mcqOptions: [],
-        },
-        assessment: null,
-        order: allScreens.length,
-      };
-    } else if (screenType.id === "poll") {
-      // Linear Poll screen structure
-      const linearTitle = "";
-      newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: "poll",
-        position: position,
-        screenContents: {
-          id: screenContentId,
-          contentType: "linear",
-          content: {
-            title: linearTitle,
-            highLabel: "",
-            lowLabel: "",
-            key_learning: "",
-            lowerScale: 1,
-            higherScale: 10,
+          assets: [],
+          imageStatus: null,
+          toolStatus: null,
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          formData: {
+            pollTitle: forceRankTitle,
+            question: forceRankQuestion,
+            topLabel: "Most critical",
+            bottomLabel: "Least critical",
+            keyLearning:
+              "Ranking trade-offs clarifies which choice should be prioritized first.",
+            mcqOptions: forceRankOptions,
           },
-        },
-        assets: [],
-        imageStatus: "pending",
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        title: linearTitle,
-        formData: {
-          linearTitle: linearTitle,
-          linearTopLabel: "",
-          linearBottomLabel: "",
-          linearKeyLearning: "",
-          linearScaleMin: 1,
-          linearScaleMax: 10,
-        },
-        assessment: null,
-        order: allScreens.length,
-      };
-    } else if (screenType.id === "assessment") {
-      // Assessment screen structure
-      const assessmentTitle = "Self-Assessment Checkpoint";
-      newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: "assessment",
-        position: position,
-        screenContents: {
-          id: screenContentId,
-          contentType: "assessment",
-          content: {
-            title: assessmentTitle,
-            description:
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else if (screenType.id === "poll") {
+        // Linear Poll screen structure
+        const linearTitle = "";
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "poll",
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: "linear",
+            content: {
+              title: linearTitle,
+              highLabel: "",
+              lowLabel: "",
+              key_learning: "",
+              lowerScale: 1,
+              higherScale: 10,
+            },
+          },
+          assets: [],
+          imageStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          title: linearTitle,
+          formData: {
+            linearTitle: linearTitle,
+            linearTopLabel: "",
+            linearBottomLabel: "",
+            linearKeyLearning: "",
+            linearScaleMin: 1,
+            linearScaleMax: 10,
+          },
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else if (screenType.id === "assessment") {
+        // Assessment screen structure
+        const assessmentTitle = "Self-Assessment Checkpoint";
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "assessment",
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: "assessment",
+            content: {
+              title: assessmentTitle,
+              description:
+                "Reflect on the concept and select the most accurate responses.",
+              questions: [
+                {
+                  questionId: 1,
+                  text: "What is the primary purpose of building consistent habits?",
+                  options: [
+                    { optionId: 1, text: "To reduce effort on repeated decisions" },
+                    { optionId: 2, text: "To avoid learning new skills" },
+                    { optionId: 3, text: "To delay important work" },
+                    { optionId: 4, text: "To remove all team collaboration" },
+                  ],
+                },
+              ],
+            },
+          },
+          assets: [],
+          imageStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          formData: {
+            assessmentTitle: assessmentTitle,
+            assessmentDescription:
               "Reflect on the concept and select the most accurate responses.",
-            questions: [
+            assessmentQuestions: [
               {
                 questionId: 1,
                 text: "What is the primary purpose of building consistent habits?",
@@ -1269,387 +1393,391 @@ const handleNextStep = useCallback(() => {
               },
             ],
           },
-        },
-        assets: [],
-        imageStatus: "pending",
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        formData: {
-          assessmentTitle: assessmentTitle,
-          assessmentDescription:
-            "Reflect on the concept and select the most accurate responses.",
-          assessmentQuestions: [
-            {
-              questionId: 1,
-              text: "What is the primary purpose of building consistent habits?",
-              options: [
-                { optionId: 1, text: "To reduce effort on repeated decisions" },
-                { optionId: 2, text: "To avoid learning new skills" },
-                { optionId: 3, text: "To delay important work" },
-                { optionId: 4, text: "To remove all team collaboration" },
-              ],
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else if (screenType.id === "reflection") {
+        // Reflection screen structure
+        const reflectionTitle = "";
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "reflection",
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: "reflection",
+            content: {
+              title: reflectionTitle,
+              prompt: "",
             },
-          ],
-        },
-        assessment: null,
-        order: allScreens.length,
-      };
-    } else if (screenType.id === "reflection") {
-      // Reflection screen structure
-      const reflectionTitle = "";
-      newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: "reflection",
-        position: position,
-        screenContents: {
-          id: screenContentId,
-          contentType: "reflection",
-          content: {
-            title: reflectionTitle,
-            prompt: "",
           },
-        },
-        assets: [],
-        imageStatus: "pending",
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        title: reflectionTitle,
-        formData: {
-          reflectionTitle: reflectionTitle,
-          reflectionPrompt: "",
-          reflectionDescription: "",
-        },
-        assessment: null,
-        order: allScreens.length,
-      };
-    } else if (screenType.id === "discussion") {
-      // Social Discussion screen structure (persist screenType "social" for Kyper; picker id stays "discussion")
-      const discussionTitle = "";
-      const hyphenateUuidBytes = (bytes) => {
-        const hex = [...bytes]
-          .map((b) => b.toString(16).padStart(2, "0"))
-          .join("");
-        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-      };
-      let discussionScreenUuid;
-      let discussionContentsUuid;
-      if (typeof globalThis.crypto?.randomUUID === "function") {
-        discussionScreenUuid = globalThis.crypto.randomUUID();
-        discussionContentsUuid = globalThis.crypto.randomUUID();
-      } else {
-        const b1 = new Uint8Array(16);
-        const b2 = new Uint8Array(16);
-        globalThis.crypto.getRandomValues(b1);
-        globalThis.crypto.getRandomValues(b2);
-        discussionScreenUuid = hyphenateUuidBytes(b1);
-        discussionContentsUuid = hyphenateUuidBytes(b2);
-      }
-      const numericDiscussionScreenId =
-        Date.now() * 1000 + Math.floor(Math.random() * 1000);
-      const numericDiscussionContentId =
-        Date.now() * 1000 + Math.floor(Math.random() * 1000);
-      const discussionPlaceholderPost = {
-        postId: "",
-        userId: "",
-        text: "",
-        votesCount: "",
-        rootId: "null",
-        socialDiscussionId: "",
-        replies: [],
-      };
-      newScreen = {
-        id: numericDiscussionScreenId,
-        uuid: discussionScreenUuid,
-        screenType: "social",
-        position: position,
-        screenContents: {
-          id: numericDiscussionContentId,
-          contentType: "socialDiscussion",
-          uuid: discussionContentsUuid,
-          content: {
-            title: discussionTitle,
-            question: "",
-            posts: [discussionPlaceholderPost],
+          assets: [],
+          imageStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          title: reflectionTitle,
+          formData: {
+            reflectionTitle: reflectionTitle,
+            reflectionPrompt: "",
+            reflectionDescription: "",
           },
-        },
-        assets: [],
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        formData: {
-          socialTitle: discussionTitle,
-          discussionQuestion: "",
-        },
-        assessment: null,
-        order: allScreens.length,
-      };
-    } else if (screenType.id === "habits") {
-      // Habits screen structure
-      const habitsTitle = "";
-      newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: "habits",
-        position: position,
-        screenContents: {
-          id: screenContentId,
-          contentType: "habits",
-          content: {
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else if (screenType.id === "discussion") {
+        // Social Discussion screen structure (persist screenType "social" for Kyper; picker id stays "discussion")
+        const discussionTitle = "";
+        const hyphenateUuidBytes = (bytes) => {
+          const hex = [...bytes]
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+          return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+        };
+        let discussionScreenUuid;
+        let discussionContentsUuid;
+        if (typeof globalThis.crypto?.randomUUID === "function") {
+          discussionScreenUuid = globalThis.crypto.randomUUID();
+          discussionContentsUuid = globalThis.crypto.randomUUID();
+        } else {
+          const b1 = new Uint8Array(16);
+          const b2 = new Uint8Array(16);
+          globalThis.crypto.getRandomValues(b1);
+          globalThis.crypto.getRandomValues(b2);
+          discussionScreenUuid = hyphenateUuidBytes(b1);
+          discussionContentsUuid = hyphenateUuidBytes(b2);
+        }
+        const numericDiscussionScreenId =
+          Date.now() * 1000 + Math.floor(Math.random() * 1000);
+        const numericDiscussionContentId =
+          Date.now() * 1000 + Math.floor(Math.random() * 1000);
+        const discussionPlaceholderPost = {
+          postId: "",
+          userId: "",
+          text: "",
+          votesCount: "",
+          rootId: "null",
+          socialDiscussionId: "",
+          replies: [],
+        };
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "social",
+          position: position,
+          screenContents: {
+            id: numericDiscussionContentId,
+            contentType: "socialDiscussion",
+            uuid: discussionContentsUuid,
+            content: {
+              title: discussionTitle,
+              question: "",
+              posts: [discussionPlaceholderPost],
+            },
+          },
+          assets: [],
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          formData: {
+            socialTitle: discussionTitle,
+            discussionQuestion: "",
+          },
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else if (screenType.id === "habits") {
+        // Habits screen structure
+        const habitsTitle = "";
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "habits",
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: "habits",
+            content: {
+              title: habitsTitle,
+              habit_image: {
+                url: "",
+                description: "",
+              },
+              enabled: false,
+              habits: [],
+            },
+          },
+          assets: [],
+          imageStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          title: habitsTitle,
+          formData: {
             title: habitsTitle,
-            habit_image: {
-              url: "",
-              description: "",
-            },
-            enabled: false,
+            description: "",
+            url: "",
+            habitsIsMandatory: false,
             habits: [],
           },
-        },
-        assets: [],
-        imageStatus: "pending",
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        title: habitsTitle,
-        formData: {
-          title: habitsTitle,
-          description: "",
-          url: "",
-          habitsIsMandatory: false,
-          habits: [],
-        },
-        assessment: null,
-        order: allScreens.length,
-      };
-    } else if (screenType.id === "profile") {
-      // Profile screen structure
-      const profileTitle = "";
-      newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: "profile",
-        position: position,
-        screenContents: {
-          id: screenContentId,
-          contentType: "profile",
-          content: {
-            heading: "",
-            body: "",
-          },
-        },
-        assets: [],
-        imageStatus: "pending",
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        title: profileTitle,
-        formData: {
-          heading: "",
-          body: "",
-        },
-        assessment: null,
-        order: allScreens.length,
-      };
-    } else if (screenType.id === "path_personalization") {
-      // Path Personalization screen structure
-      newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: "path_personalization",
-        position: position,
-        screenContents: {
-          id: screenContentId,
-          contentType: "pathPersonalization",
-          content: {
-            heading: "",
-            body: "",
-            media: {
-              type: "",
-              url: "",
-              alt: "",
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else if (screenType.id === "profile") {
+        // Profile screen structure
+        const profileTitle = "";
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "profile",
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: "profile",
+            content: {
+              heading: "",
+              body: "",
             },
           },
-        },
-        assets: [],
-        imageStatus: "pending",
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        title: "",
-        formData: {
-          heading: "",
-          body: "",
-          mediaType: "",
-          mediaUrl: "",
-          mediaAlt: "",
-        },
-        assessment: null,
-        order: allScreens.length,
-      };
-    } else if (screenType.id === "managerEmail") {
-      newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: "managerEmail",
-        position: position,
-        screenContents: {
-          id: screenContentId,
-          contentType: "managerEmail",
-          content: {
+          assets: [],
+          imageStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          title: profileTitle,
+          formData: {
+            heading: "",
+            body: "",
+          },
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else if (screenType.id === "path_personalization") {
+        // Path Personalization screen structure
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "path_personalization",
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: "pathPersonalization",
+            content: {
+              heading: "",
+              body: "",
+              media: {
+                type: "",
+                url: "",
+                alt: "",
+              },
+            },
+          },
+          assets: [],
+          imageStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          title: "",
+          formData: {
+            heading: "",
+            body: "",
+            mediaType: "",
+            mediaUrl: "",
+            mediaAlt: "",
+          },
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else if (screenType.id === "managerEmail") {
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "managerEmail",
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: "managerEmail",
+            content: {
+              ...DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT,
+              media: { ...DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT.media },
+            },
+          },
+          assets: [],
+          imageStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          title: DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT.heading,
+          formData: {
             ...DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT,
             media: { ...DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT.media },
           },
-        },
-        assets: [],
-        imageStatus: "pending",
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        title: DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT.heading,
-        formData: {
-          ...DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT,
-          media: { ...DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT.media },
-        },
-        assessment: null,
-        order: allScreens.length,
-      };
-    } else if (screenType.id === "notifications") {
-      const notificationsBody = DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.body;
-      newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: "notifications",
-        position: position,
-        screenContents: {
-          id: screenContentId,
-          contentType: "notifications",
-          content: {
-            heading: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.heading,
-            body: notificationsBody,
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else if (screenType.id === "notifications") {
+        const notificationsBody = DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.body;
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "notifications",
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: "notifications",
+            content: {
+              heading: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.heading,
+              body: notificationsBody,
+              message: notificationsBody,
+              media: {
+                ...DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.media,
+              },
+            },
+            uuid: globalThis.crypto.getRandomValues(new Uint8Array(16)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), ''),
+          },
+          assets: [],
+          imageStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          title: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.heading,
+          formData: {
+            title: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.heading,
             message: notificationsBody,
-            media: {
-              ...DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.media,
+            mediaType: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.media.type,
+            mediaUrl: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.media.url,
+          },
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else if (screenType.id === "accountabilityPartnerEmail") {
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "accountabilityPartnerEmail",
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: "accountabilityPartnerEmail",
+            content: {
+              ...DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT,
+              emails: [""],
+              media: {
+                ...DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT.media,
+              },
             },
           },
-          uuid: globalThis.crypto.getRandomValues(new Uint8Array(16)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), ''),
-        },
-        assets: [],
-        imageStatus: "pending",
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        title: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.heading,
-        formData: {
-          title: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.heading,
-          message: notificationsBody,
-          mediaType: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.media.type,
-          mediaUrl: DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.media.url,
-        },
-        assessment: null,
-        order: allScreens.length,
-      };
-    } else if (screenType.id === "accountabilityPartnerEmail") {
-      newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: "accountabilityPartnerEmail",
-        position: position,
-        screenContents: {
-          id: screenContentId,
-          contentType: "accountabilityPartnerEmail",
-          content: {
+          assets: [],
+          imageStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          title: DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT.heading,
+          formData: {
             ...DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT,
             emails: [""],
             media: {
               ...DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT.media,
             },
           },
-        },
-        assets: [],
-        imageStatus: "pending",
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        title: DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT.heading,
-        formData: {
-          ...DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT,
-          emails: [""],
-          media: {
-            ...DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT.media,
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else if (screenType.id === "mini_app") {
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "miniApp",
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: "miniApp",
+            content: {
+              heading: "",
+              html: "",
+            },
           },
-        },
-        assessment: null,
-        order: allScreens.length,
-      };
-    } else {
-      // Default structure for unknown screen types (fallback)
-      newScreen = {
-        id: screenId,
-        uuid: screenUuid,
-        screenType: screenType.id,
-        position: position,
-        screenContents: {
-          id: screenContentId,
-          contentType: contentType,
-          content: {},
-        },
-        assets: [],
-        imageStatus: "pending",
-        chapterId: targetChapterId,
-        stepId: targetStepId,
-        thumbnail: "",
-        title: "",
-        formData: {},
-        assessment: null,
-        order: allScreens.length,
-      };
-    }
+          assets: [],
+          imageStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          title: "",
+          formData: {
+            title: "",
+            htmlContent: "",
+          },
+          assessment: null,
+          order: allScreens.length,
+        };
+      } else {
+        // Default structure for unknown screen types (fallback)
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: screenType.id,
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: contentType,
+            content: {},
+          },
+          assets: [],
+          imageStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          title: "",
+          formData: {},
+          assessment: null,
+          order: allScreens.length,
+        };
+      }
 
-    // Ensure every newly added screen has stable UUIDs.
-    if (!newScreen.uuid) {
-      newScreen.uuid = globalThis.crypto
-        .getRandomValues(new Uint8Array(16))
-        .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
-    }
-    if (!newScreen.screenContents) {
-      newScreen.screenContents = {};
-    }
-    if (!newScreen.screenContents.uuid) {
-      newScreen.screenContents.uuid = globalThis.crypto
-        .getRandomValues(new Uint8Array(16))
-        .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
-    }
+      // Ensure every newly added screen has stable UUIDs.
+      if (!newScreen.uuid) {
+        newScreen.uuid = globalThis.crypto
+          .getRandomValues(new Uint8Array(16))
+          .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
+      }
+      if (!newScreen.screenContents) {
+        newScreen.screenContents = {};
+      }
+      if (!newScreen.screenContents.uuid) {
+        newScreen.screenContents.uuid = globalThis.crypto
+          .getRandomValues(new Uint8Array(16))
+          .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
+      }
 
-    if (addAtIndex !== null) {
-      insertScreenAt(newScreen, addAtIndex);
+      if (addAtIndex !== null) {
+        insertScreenAt(newScreen, addAtIndex);
+        console.log(
+          "newScreen inserted at index>>>>>>>>>>>>>>>>>>>>>>>>",
+          newScreen,
+        );
+      } else {
+        addScreenData(newScreen);
+        console.log("newScreen added>>>>>>>>>>>>>>>>>>>>>>>>", newScreen);
+      }
+
+      setSelectedScreenId(newScreen?.id ?? newScreen?.uuid ?? null);
+      setCurrentScreen(addAtIndex !== null ? addAtIndex : screens.length);
       console.log(
-        "newScreen inserted at index>>>>>>>>>>>>>>>>>>>>>>>>",
-        newScreen,
+        "newScreen set selected screen id>>>>>>>>>>>>>>>>>>>>>>>>",
+        newScreen.id,
       );
-    } else {
-      addScreenData(newScreen);
-      console.log("newScreen added>>>>>>>>>>>>>>>>>>>>>>>>", newScreen);
-    }
-
-    setSelectedScreenId(newScreen?.id ?? newScreen?.uuid ?? null);
-    setCurrentScreen(addAtIndex !== null ? addAtIndex : screens.length);
-    console.log(
-      "newScreen set selected screen id>>>>>>>>>>>>>>>>>>>>>>>>",
-      newScreen.id,
-    );
-    console.log(
-      "newScreen set current screen>>>>>>>>>>>>>>>>>>>>>>>>",
-      addAtIndex !== null ? addAtIndex : screens.length,
-    );
-    const autoSaveOk = await requestAutoSaveAfterOutlineCommit();
-    if (autoSaveOk === false) {
-      throw new Error("Auto-save failed while adding screen.");
-    }
-    await onFlushSave?.();
-    setShowAddPopup(false);
-    setAddAtIndex(null);
+      console.log(
+        "newScreen set current screen>>>>>>>>>>>>>>>>>>>>>>>>",
+        addAtIndex !== null ? addAtIndex : screens.length,
+      );
+      const autoSaveOk = await requestAutoSaveAfterOutlineCommit();
+      if (autoSaveOk === false) {
+        throw new Error("Auto-save failed while adding screen.");
+      }
+      await onFlushSave?.();
+      setShowAddPopup(false);
+      setAddAtIndex(null);
     } catch (error) {
       console.error("Failed to add screen manually:", error);
       toast.error("Failed to add screen. Please try again.");
@@ -1715,13 +1843,19 @@ const handleNextStep = useCallback(() => {
                 isCyclePublished={isCyclePublished}
                 onAddScreen={handleAddScreen}
                 chapters={chapters}
-                onReorderChapters={(...args) => {
+                onReorderChapters={async (...args) => {
                   reorderChapters(...args);
-                  setTimeout(() => onFlushSave?.(), 0);
+                  const autoSaveOk = await requestAutoSaveAfterOutlineCommit();
+                  if (autoSaveOk === false) {
+                    console.error("Auto-save failed while reordering chapters.");
+                  }
                 }}
-                onReorderSteps={(...args) => {
+                onReorderSteps={async (...args) => {
                   reorderSteps(...args);
-                  setTimeout(() => onFlushSave?.(), 0);
+                  const autoSaveOk = await requestAutoSaveAfterOutlineCommit();
+                  if (autoSaveOk === false) {
+                    console.error("Auto-save failed while reordering steps.");
+                  }
                 }}
                 onDeleteChapter={handleDeleteChapter}
                 onEditChapter={handleEditChapter}
@@ -1733,6 +1867,9 @@ const handleNextStep = useCallback(() => {
                 sessionId={sessionId}
                 selectedStepId={selectedStepId}
                 setSelectedStep={setSelectedStep}
+                webpageUrls={allWebpageUrls}
+                contentImageAssets={contentImageAssets}
+                contentLinkedUrls={contentLinkedUrls}
                 externalTab={activeTab}
                 onMaterialSelect={(material) => {
                   setSelectedMaterial(material);
@@ -2170,16 +2307,16 @@ const handleNextStep = useCallback(() => {
                       )}
                     </div>
                   </div>
-                ) : selectedMaterial?.type === "link" ? (
+                ) : selectedMaterial?._isKyper ? (
                   <div className="flex-1 overflow-hidden p-4">
                     <div className="flex flex-col h-full w-full bg-white rounded-lg overflow-hidden shadow-md">
                       <div className="shrink-0 p-4 border-b border-gray-200 bg-white flex justify-between items-start">
                         <div className="flex-1 min-w-0">
                           <h2
                             className="text-lg font-bold text-gray-900 break-all mb-1"
-                            title={selectedLinkUrl || undefined}
+                            title={selectedMaterial.source_name || undefined}
                           >
-                            {selectedLinkUrl || "Web link"}
+                            {selectedMaterial.source_name || "Web link"}
                           </h2>
                           {selectedMaterial.comment && (
                             <p className="text-sm text-gray-500 mt-2">
@@ -2189,7 +2326,7 @@ const handleNextStep = useCallback(() => {
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <a
-                            href={selectedLinkUrl || "#"}
+                            href={selectedMaterial.source_name || "#"}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-600 text-sm font-medium"
@@ -2208,57 +2345,24 @@ const handleNextStep = useCallback(() => {
                       </div>
                       <div className="flex-1 min-h-[200px] overflow-hidden flex flex-col bg-gray-50">
                         <div className="shrink-0 px-3 py-2 text-xs text-amber-900 bg-amber-50 border-b border-amber-100">
-                          Preview only loads here if the site allows embedding
-                          (many apps, SPAs, and food-ordering sites block it for
-                          security). PDFs open in the viewer below when the file
-                          allows it—otherwise use{" "}
-                          <span className="font-semibold">Open link</span>.
+                          Preview only loads if the site allows embedding. Use <span className="font-semibold">Open link</span> if the panel is blank.
                         </div>
-                        {isDirectPdfUrl(selectedLinkUrl) ? (
+                        {isDirectPdfUrl(selectedMaterial.source_name) ? (
                           <embed
-                            key={selectedLinkUrl}
-                            src={selectedLinkUrl}
+                            key={selectedMaterial.source_name}
+                            src={selectedMaterial.source_name}
                             type="application/pdf"
-                            title={selectedLinkUrl || "PDF preview"}
                             className="flex-1 w-full min-h-[320px] border-0 bg-white"
                           />
                         ) : (
                           <iframe
-                            key={selectedLinkUrl}
-                            src={selectedLinkUrl || undefined}
-                            title={selectedLinkUrl || "Link preview"}
+                            key={selectedMaterial.source_name}
+                            src={selectedMaterial.source_name || undefined}
+                            title={selectedMaterial.source_name || "Link preview"}
                             className="flex-1 w-full min-h-[320px] border-0 bg-white"
-                            // No sandbox: sandbox breaks many embeds (incl. PDF
-                            // in iframe) and does not bypass X-Frame-Options anyway.
                             referrerPolicy="strict-origin-when-cross-origin"
                           />
                         )}
-                        <div className="shrink-0 px-4 py-2 bg-gray-100 border-t border-gray-200 flex items-center justify-between gap-2 flex-wrap">
-                          <div className="flex flex-col gap-1 min-w-0">
-                            <p className="text-xs text-gray-500">
-                              Blank panel = the site refused an embedded frame
-                              (not a Kyper bug). Open in a new tab to view.
-                            </p>
-                            {isDirectPdfUrl(selectedLinkUrl) && (
-                              <a
-                                href={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedLinkUrl)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-primary-600 hover:underline w-fit"
-                              >
-                                PDF still blank? Open in Google Viewer (new tab)
-                              </a>
-                            )}
-                          </div>
-                          <a
-                            href={selectedLinkUrl || "#"}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-600 text-sm font-medium shrink-0"
-                          >
-                            Open link
-                          </a>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -2567,14 +2671,16 @@ const handleNextStep = useCallback(() => {
                                     isDeleting={
                                       deletingScreenId != null &&
                                       String(deletingScreenId) ===
-                                        String(screen.id)
+                                      String(screen.id)
                                     }
                                     sessionId={sessionId}
                                     onAssetLinked={(screenId, asset) => {
-                                      // Add the linked asset to the screen's assets array
+                                      // Replace old image assets, keep non-image assets
+                                      const existingAssets = screens.find(s => s.id === screenId)?.assets || [];
+                                      const isImageAsset = (a) => Boolean((a?.ImageUrl || a?.url || a?.image_url) && !a?.audioUrl && !a?.videoUrl);
                                       updateScreenData(screenId, {
                                         assets: [
-                                          ...(screens.find(s => s.id === screenId)?.assets || []),
+                                          ...existingAssets.filter(a => !isImageAsset(a)),
                                           asset,
                                         ],
                                         imageStatus: "completed",
@@ -2686,9 +2792,9 @@ const handleNextStep = useCallback(() => {
                           className="ml-0 sm:ml-auto bg-primary-100 hover:bg-primary-600 text-primary hover:text-white border-0 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50 cursor-pointer w-full sm:w-auto"
                           onClick={handleNextChapter}
                           disabled={
-                            sessionData?.is_initial_chapter_created== false ||
+                            sessionData?.is_initial_chapter_created == false ||
                             isGeneratingNextChapter ||
-                            !showNextChapter
+                            !(Array.isArray(sessionData?.response_path?.remaining_chapters) && sessionData.response_path.remaining_chapters.length > 0)
                           }
                         >
                           <span>Create Remaining Phases</span>
@@ -2808,6 +2914,29 @@ const handleNextStep = useCallback(() => {
         })()}
         sessionData={sessionData}
         setSessionData={setSessionData}
+        onImageUpdated={(stepUid, newImageUrl) => {
+          // Patch the local outline directly so the `<img>` re-renders even if
+          // the sessionData → outline sync path stalls (e.g. JSON-equality cache
+          // or timing with auto-save).
+          if (!stepUid || !newImageUrl) return;
+          setOutline?.((prev) => {
+            if (!prev?.chapters) return prev;
+            const next = JSON.parse(JSON.stringify(prev));
+            for (const ch of next.chapters || []) {
+              for (const stepItem of ch.steps || []) {
+                const step = stepItem.step;
+                if (
+                  step &&
+                  (String(step.uuid ?? "") === String(stepUid) ||
+                    String(step.id ?? "") === String(stepUid))
+                ) {
+                  step.image = newImageUrl;
+                }
+              }
+            }
+            return next;
+          });
+        }}
         onSuccess={(response) => {
           console.log("Step image uploaded:", response);
           // Flush save immediately so auto-save doesn't overwrite with stale outline
@@ -2871,7 +3000,7 @@ const handleNextStep = useCallback(() => {
               onPrev={() => navigateScreen("prev")}
               onNext={() => navigateScreen("next")}
 
-             // step navigation
+              // step navigation
               hasPrevStep={currentStepIndex > 0}
               hasNextStep={currentStepIndex < allSteps.length - 1}
               onPrevStep={handlePrevStep}
@@ -2918,21 +3047,21 @@ const handleNextStep = useCallback(() => {
           </div>
           <div className="border-t border-gray-200 px-5 py-3.5">
             <DialogFooter className="flex-row justify-end gap-3 space-x-0">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-9 min-w-[92px] rounded-lg border-primary text-primary hover:bg-primary-50 active:bg-primary-100"
-              onClick={() => setScreenDeleteConfirmId(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              className="h-9 min-w-[92px] rounded-lg"
-              onClick={handleConfirmDeleteScreen}
-            >
-              Delete
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 min-w-[92px] rounded-lg border-primary text-primary hover:bg-primary-50 active:bg-primary-100"
+                onClick={() => setScreenDeleteConfirmId(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="h-9 min-w-[92px] rounded-lg"
+                onClick={handleConfirmDeleteScreen}
+              >
+                Delete
+              </Button>
             </DialogFooter>
           </div>
         </DialogContent>

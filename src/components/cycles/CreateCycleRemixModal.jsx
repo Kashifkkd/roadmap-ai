@@ -48,6 +48,7 @@ export default function CreateCycleRemixModal({
   const [sourceFiles, setSourceFiles] = useState([]);
   const [webpageUrls, setWebpageUrls] = useState([]);
   const [isUploadingSources, setIsUploadingSources] = useState(false);
+  const [remixSessionId, setRemixSessionId] = useState(null);
   const titleInputRef = useRef(null);
 
   useEffect(() => {
@@ -55,6 +56,9 @@ export default function CreateCycleRemixModal({
     setTitle(cycleName || "");
     setSourceFiles([]);
     setWebpageUrls([]);
+    // Generate a unique session_id for this remix up front so source
+    // material uploads go directly to the new session.
+    setRemixSessionId(crypto.randomUUID());
   }, [open, cycleName]);
 
   useEffect(() => {
@@ -139,6 +143,7 @@ export default function CreateCycleRemixModal({
     setInstructions("");
     setSourceFiles([]);
     setWebpageUrls([]);
+    setRemixSessionId(null);
     setIsSubmitting(false);
   };
 
@@ -165,6 +170,7 @@ export default function CreateCycleRemixModal({
       const trimmedTitle = title.trim();
       const trimmedInstructions = instructions.trim();
 
+      // 1. Upload source materials to the pre-generated remix session_id
       if (
         typeof window !== "undefined" &&
         typeof window.uploadAllFiles === "function"
@@ -177,16 +183,28 @@ export default function CreateCycleRemixModal({
         }
       }
 
-      const hasBody = Boolean(trimmedTitle || trimmedInstructions);
+      // 2. Create the variant, telling the backend to use our remix session_id
+      //    Collect IDs of preloaded (original) sources the user kept in the list.
+      //    Items without an id are newly added and already uploaded to remixSessionId.
+      const keptSourceIds = [
+        ...sourceFiles.filter((f) => f.isUploaded && f.id).map((f) => f.id),
+        ...webpageUrls
+          .map((e) => e?.id ?? e?.material_id ?? null)
+          .filter((id) => id != null),
+      ];
+
       const payload = {};
       if (trimmedTitle) payload.title = trimmedTitle;
       if (trimmedInstructions) payload.instructions = trimmedInstructions;
+      if (keptSourceIds.length > 0) payload.include_source_ids = keptSourceIds;
       const params = {
         count: 1,
         persist_to_redis: true,
         client_id: targetClientId,
+        ...(remixSessionId ? { target_session_id: remixSessionId } : {}),
       };
 
+      const hasBody = Object.keys(payload).length > 0;
       const result = await apiService({
         endpoint: endpoints.pathVariant(String(Math.trunc(pathId))),
         method: "POST",
@@ -213,7 +231,7 @@ export default function CreateCycleRemixModal({
         return;
       }
 
-      toast.success("Cycle remixed successfully");
+      toast.success("Cycle remix has started. You'll receive a notification once the remix is complete.");
       subscribeToVariantReadyWithToast(result.response?.session_id, title.trim() || cycleName);
       onSuccess?.(result.response);
       handleClose();
@@ -235,7 +253,7 @@ export default function CreateCycleRemixModal({
         if (!isOpen) handleClose();
       }}
     >
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-[1040px] max-h-[92vh] gap-3 overflow-hidden rounded-[24px] border-0 bg-white p-0 pt-3 pb-2 px-2 shadow-xl [&>button]:hidden">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[min(1024px,calc(100vw-2rem))] max-h-[85vh] gap-3 overflow-hidden rounded-[24px] border-0 bg-white p-0 pt-3 pb-2 px-2 shadow-xl [&>button]:hidden">
         <div className="flex h-[47px] items-center justify-between gap-2 px-2">
           <DialogTitle className="text-left text-[18px] font-semibold leading-7 text-[#181D27]">
             Remix Cycle
@@ -252,12 +270,13 @@ export default function CreateCycleRemixModal({
         </div>
 
         <div className="flex flex-col items-stretch gap-[2px] rounded-2xl bg-[#F5F5F5] p-2">
-          <div className="rounded-t-lg bg-white p-2 overflow-y-auto max-h-[calc(92vh-150px)]">
-            <div className="grid grid-cols-2 gap-2 rounded-t-lg bg-white p-2">
-              <div className="flex flex-col gap-3">
+          <div className="flex max-h-[calc(85vh-150px)] min-h-[280px] flex-col overflow-hidden rounded-t-lg bg-white p-2 md:min-h-[320px]">
+            <div className="flex min-h-0 flex-1 flex-col gap-0 divide-y divide-[#E9EAEB] md:flex-row md:divide-x md:divide-y-0">
+              {/* Left: cycle + remix form */}
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-2 md:max-w-[50%] md:pr-3">
                 <div className="flex flex-col gap-1">
                   <p className="text-sm font-medium leading-5 text-[#181D27]">
-                    Comet Title
+                    Cycle Title
                   </p>
                   <p className="text-base font-semibold leading-6 text-[#181D27]">
                     {cycleName || "—"}
@@ -265,29 +284,29 @@ export default function CreateCycleRemixModal({
                 </div>
 
                 <div className="flex flex-col gap-2 rounded-2xl bg-[#F5F5F5] p-4">
-                  <div className="flex flex-col gap-2">
+                  {/* <div className="flex flex-col gap-2">
                     <Label
                       htmlFor="cycle-remix-title"
                       className="text-sm font-medium leading-5 text-[#181D27]"
                     >
-                      New Comet Title
+                      New Cycle Title
                     </Label>
                     <Input
                       id="cycle-remix-title"
                       ref={titleInputRef}
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Comet title"
+                      placeholder="Cycle title"
                       className="h-9 min-h-9 rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
                       disabled={isSubmitting}
                     />
-                  </div>
+                  </div> */}
                   <div className="flex flex-col gap-2">
                     <Label
                       htmlFor="cycle-remix-instructions"
                       className="text-sm font-medium leading-5 text-[#181D27]"
                     >
-                      Instruction
+                     Remix Instruction
                     </Label>
                     <Textarea
                       id="cycle-remix-instructions"
@@ -319,10 +338,10 @@ export default function CreateCycleRemixModal({
                       </SelectTrigger>
                       <SelectContent>
                         {clients.map((client) => (
-                        <SelectItem
-                          key={client.id}
-                          value={String(client.id)}
-                        >
+                          <SelectItem
+                            key={client.id}
+                            value={String(client.id)}
+                          >
                             {client.name || `Client ${client.id}`}
                           </SelectItem>
                         ))}
@@ -332,15 +351,24 @@ export default function CreateCycleRemixModal({
                 </div>
               </div>
 
-              <div className="h-[calc(92vh-180px)] overflow-y-auto ">
-                <SourceMaterialCard
-                  files={sourceFiles}
-                  setFiles={setSourceFiles}
-                  isNewComet
-                  webpageUrls={webpageUrls}
-                  setWebpageUrls={setWebpageUrls}
-                  onUploadingChange={setIsUploadingSources}
-                />
+              {/* Right: source materials */}
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-2 pt-3 md:max-w-[50%] md:pl-3 md:pt-2">
+                {/* <p className="mb-2 shrink-0 text-sm font-medium leading-5 text-[#181D27]">
+                  Source materials
+                </p>
+                 */}
+                <div className="min-h-0 flex-1 rounded-2xl bg-[#F5F5F5] p-3">
+                  <SourceMaterialCard
+                    sessionId={remixSessionId}
+                    files={sourceFiles}
+                    setFiles={setSourceFiles}
+                    isNewComet
+                    webpageUrls={webpageUrls}
+                    setWebpageUrls={setWebpageUrls}
+                    onUploadingChange={setIsUploadingSources}
+                    localDeleteOnly
+                  />
+                </div>
               </div>
             </div>
           </div>

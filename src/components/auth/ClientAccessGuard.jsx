@@ -110,7 +110,7 @@ export function ClientAccessGuard({ children }) {
   } = useClientDetails(storedClientId, isAuthenticated && !!storedClientId);
 
   const visibleRecentClients = useMemo(
-    () => (recentClients || []).filter(isClientVisibleInKyper),
+    () => (Array.isArray(recentClients) ? recentClients : []).filter(isClientVisibleInKyper),
     [recentClients],
   );
 

@@ -11,13 +11,6 @@ function normalizeWhitespace(value) {
 function extractTitleFromHtml(html) {
   if (typeof html !== "string" || !html) return "";
 
-  const ogTitleMatch = html.match(
-    /<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["'][^>]*>/i,
-  );
-  if (ogTitleMatch?.[1]) {
-    return normalizeWhitespace(ogTitleMatch[1]);
-  }
-
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   if (titleMatch?.[1]) {
     return normalizeWhitespace(titleMatch[1]);
@@ -57,10 +50,15 @@ export async function GET(request) {
       method: "GET",
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; KyperTitleFetcher/1.0; +https://kyper-stage.1st90.com)",
-        Accept: "text/html,application/xhtml+xml",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
       },
       cache: "no-store",
+      redirect: "follow",
     });
 
     if (!response.ok) {

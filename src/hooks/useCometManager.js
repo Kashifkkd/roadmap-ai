@@ -144,6 +144,48 @@ function pathStepIdFromStep(stepItem, step) {
   return null;
 }
 
+/** Read the persisted tombstone set for a session from localStorage. */
+function readTombstones(sessionId) {
+  if (!sessionId || typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(`kyper:deletedUuids:${sessionId}`);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((u) => typeof u === "string" && u));
+  } catch {
+    return new Set();
+  }
+}
+
+/**
+ * Defensive filter: drop any chapter / step / screen whose UUID is in the
+ * tombstone set. Protects the UI from a backend subscription update that
+ * contains an entity the user just deleted (e.g. when racing against an
+ * in-flight save, or when the backend hasn't yet honoured the deletion).
+ */
+function filterOutlineByTombstones(outline, tombstones) {
+  if (!outline || !tombstones || tombstones.size === 0) return outline;
+  const cloned = JSON.parse(JSON.stringify(outline));
+  const chapters = cloned.chapters || [];
+  cloned.chapters = chapters.filter((ch) => {
+    const chId = ch?.uuid || ch?.uid || ch?.id;
+    if (chId && tombstones.has(String(chId))) return false;
+    ch.steps = (ch.steps || []).filter((stepItem) => {
+      const stepObj = stepItem?.step || {};
+      const stepId = stepObj.uuid || stepObj.uid || stepObj.id;
+      if (stepId && tombstones.has(String(stepId))) return false;
+      stepItem.screens = (stepItem.screens || []).filter((sc) => {
+        const screenId = sc?.uuid || sc?.uid || sc?.id;
+        return !(screenId && tombstones.has(String(screenId)));
+      });
+      return true;
+    });
+    return true;
+  });
+  return cloned;
+}
+
 export function useCometManager(sessionData = null) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -170,7 +212,13 @@ export function useCometManager(sessionData = null) {
       }
       lastServerPathJsonRef.current = pathJson;
 
-      const newOutline = JSON.parse(pathJson);
+      // Apply tombstone filter so deleted entities cannot reappear via a
+      // stale subscription update or a backend response that didn't yet
+      // honour the deletion. Tombstones live in localStorage keyed by
+      // session_id; see CometManagerLayout's deletedUuidsRef.
+      const parsedPath = JSON.parse(pathJson);
+      const tombstones = readTombstones(sessionId);
+      const newOutline = filterOutlineByTombstones(parsedPath, tombstones);
       setOutline(newOutline);
 
       // Set initial selected step when path content from server changes

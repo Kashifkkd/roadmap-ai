@@ -52,7 +52,13 @@ export function useRecentClients(enabled = true) {
     queryKey: ["recentClients"],
     queryFn: async () => {
       const res = await getRecentClients();
-      return res?.response || [];
+      const payload = res?.response;
+      if (Array.isArray(payload)) return payload;
+      // Tolerate paginated / wrapped shapes so consumers can always .filter/.map.
+      if (Array.isArray(payload?.results)) return payload.results;
+      if (Array.isArray(payload?.data)) return payload.data;
+      if (Array.isArray(payload?.clients)) return payload.clients;
+      return [];
     },
     enabled,
   });

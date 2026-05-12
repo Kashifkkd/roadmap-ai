@@ -92,10 +92,69 @@ const Comet = ({
     setIsVariantModalOpen(true);
   };
 
-  const handleRemixClick = (e) => {
+  const handleRemixClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsMenuOpen(false);
+    if (!isPublishedCycle) {
+      toast.error("Please publish the cycle first.");
+      return;
+    }
+    if (!session_id) {
+      toast.error("Unable to remix this cycle right now.");
+      return;
+    }
+    try {
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
+      const response = await fetch(
+        `${apiUrl}/api/comet/session_details/${session_id}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      if (!response.ok) {
+        toast.error("Failed to validate cycle phases. Please try again.");
+        return;
+      }
+      const result = await response.json();
+      const pathChapters = result?.response_path?.chapters;
+      const outlineRoot = result?.response_outline;
+      const outlineChapters = Array.isArray(outlineRoot?.chapters)
+        ? outlineRoot.chapters
+        : Array.isArray(outlineRoot)
+          ? outlineRoot
+          : [];
+      const collectionLength = (value) =>
+        Array.isArray(value)
+          ? value.length
+          : value && typeof value === "object"
+            ? Object.keys(value).length
+            : 0;
+      const pathList = Array.isArray(pathChapters)
+        ? pathChapters
+        : pathChapters && typeof pathChapters === "object"
+          ? Object.values(pathChapters)
+          : [];
+      const outlineLen = collectionLength(outlineChapters);
+      // Exclude onboarding (position 0) so counts align with outline chapters.
+      const pathCurriculumLen = pathList.filter(
+        (ch) => ch != null && Number(ch.position) !== 0,
+      ).length;
+      if (outlineLen > 0 && pathCurriculumLen < outlineLen) {
+        toast.error("Generate all the phases and re-publish the full cycle to use Remix.");
+        return;
+      }
+    } catch (error) {
+      const msg = error.message?.includes("fetch") || error.message?.includes("network")
+        ? "Network error. Please check your connection."
+        : error.message || "Something went wrong. Please try again.";
+      toast.error(msg);
+      return;
+    }
     setIsRemixModalOpen(true);
   };
 
@@ -233,7 +292,7 @@ const Comet = ({
                         onClick={handleRemixClick}
                         className="w-full px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50 transition-colors text-left whitespace-nowrap"
                       >
-                        Remix
+                        Remix Cycle
                       </button>
                     </div>
                   )}

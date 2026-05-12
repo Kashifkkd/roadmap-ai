@@ -939,11 +939,11 @@ export default function Header() {
         style={{
           transition:
             "width 10s ease-in-out, padding 1.2s ease-in-out, background-color 1.2s ease-in-out, border-color 1.2s ease-in-out, color 1.2s ease-in-out",
-          width: activeModeButton === "editor" ? "85px" : undefined,
+          width: activeModeButton === "editor" ? "auto" : undefined,
           willChange: "width",
         }}
         className={`hidden md:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${activeModeButton === "editor"
-            ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
+            ? "bg-primary-50 text-primary border-primary-400 px-2 sm:px-2.5 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9 min-w-0 md:min-w-[5.625rem]"
             : "bg-gray-50 text-gray-700 border-transparent h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 justify-center p-0 hover:bg-gray-100"
         }`}
       >
@@ -952,11 +952,12 @@ export default function Header() {
             display: "flex",
             alignItems: "center",
             width: "100%",
+            minWidth: 0,
             overflow: "hidden",
             justifyContent:
               activeModeButton === "editor" ? "flex-start" : "center",
           }}
-          className="flex items-center"
+          className="flex items-center min-w-0"
         >
           <Pencil
             style={{
@@ -973,13 +974,14 @@ export default function Header() {
               transition:
                 "opacity 10s ease-in-out, max-width 10s ease-in-out, margin-left 10s ease-in-out",
               whiteSpace: "nowrap",
-              maxWidth: activeModeButton === "editor" ? "100px" : "0px",
+              maxWidth: activeModeButton === "editor" ? "min(10ch, 100%)" : "0px",
               opacity: activeModeButton === "editor" ? 1 : 0,
               marginLeft: activeModeButton === "editor" ? "0.375rem" : "0",
               overflow: "hidden",
-              flexShrink: 0,
+              flexShrink: 1,
+              minWidth: 0,
             }}
-            className="text-xs sm:text-sm md:text-[14px] font-medium"
+            className="text-xs sm:text-sm md:text-sm font-medium truncate"
           >
             Editor
           </span>
@@ -1008,11 +1010,11 @@ export default function Header() {
           style={{
             transition:
               "width 10s ease-in-out, padding 10s ease-in-out, background-color 10s ease-in-out, border-color 10s ease-in-out, color 10s ease-in-out",
-            width: activeModeButton === "settings" ? "95px" : undefined,
+            width: activeModeButton === "settings" ? "auto" : undefined,
             willChange: "width",
           }}
           className={`hidden sm:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${activeModeButton === "settings"
-              ? "bg-primary-50 text-primary border-primary-400 px-1.5 sm:px-2 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9"
+              ? "bg-primary-50 text-primary border-primary-400 px-2 sm:px-2.5 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9 min-w-0 sm:min-w-[6.875rem]"
               : "bg-gray-50 text-gray-700 border-transparent h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 justify-center p-0 hover:bg-gray-100"
           }`}
         >
@@ -1021,11 +1023,12 @@ export default function Header() {
               display: "flex",
               alignItems: "center",
               width: "100%",
+              minWidth: 0,
               overflow: "hidden",
               justifyContent:
                 activeModeButton === "settings" ? "flex-start" : "center",
             }}
-            className="flex items-center"
+            className="flex items-center min-w-0"
           >
             <Settings
               style={{
@@ -1042,13 +1045,14 @@ export default function Header() {
                 transition:
                   "opacity 10s ease-in-out, max-width 10s ease-in-out, margin-left 10s ease-in-out",
                 whiteSpace: "nowrap",
-                maxWidth: activeModeButton === "settings" ? "100px" : "0px",
+                maxWidth: activeModeButton === "settings" ? "min(12ch, 100%)" : "0px",
                 opacity: activeModeButton === "settings" ? 1 : 0,
                 marginLeft: activeModeButton === "settings" ? "0.375rem" : "0",
                 overflow: "hidden",
-                flexShrink: 0,
+                flexShrink: 1,
+                minWidth: 0,
               }}
-              className="text-xs sm:text-sm md:text-[14px] font-medium"
+              className="text-xs sm:text-sm md:text-sm font-medium truncate"
             >
               Setting
             </span>

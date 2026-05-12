@@ -116,6 +116,12 @@ export default function CometManagerSidebar({
   /** When set, "Cycle Title" from session is shown for variant modals and labels. */
   cycleCreationData = null,
   isCyclePublished = false,
+  /** AI-discovered web sources extracted from response_path text content */
+  webpageUrls = [],
+  /** Image assets extracted from content screens (step hero + media uploads) */
+  contentImageAssets = [],
+  /** User-added links from WelcomePage and content screens (mediaType === "link") */
+  contentLinkedUrls = [],
 }) {
   console.log(selectedScreen, "selectedScreen >>>>>>>>>>>>");
   // console.log(chapters, "chapters >>>>>>>>>>>><<<<<<<<<<<<<<");
@@ -636,6 +642,13 @@ export default function CometManagerSidebar({
   const [isLoadingTools, setIsLoadingTools] = useState(false);
   const [toolsError, setToolsError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [expandedSections, setExpandedSections] = useState(new Set([0, 1, 2]));
+  const toggleSection = (index) =>
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      next.has(index) ? next.delete(index) : next.add(index);
+      return next;
+    });
 
   // Store the callback in a ref to avoid infinite loops
   const onAssetCategorySelectRef = useRef(onAssetCategorySelect);
@@ -649,7 +662,64 @@ export default function CometManagerSidebar({
     return filterAssetsByType(assets, selectedAssetCategory);
   }, [assets, selectedAssetCategory]);
 
-  // Filter source materials by search query
+  // Split source materials into uploaded files vs manually-linked URLs
+  const uploadedMaterials = useMemo(
+    () => sourceMaterials.filter((m) => m.type !== "link"),
+    [sourceMaterials],
+  );
+  const linkedMaterials = useMemo(() => {
+    const apiLinks = sourceMaterials.filter((m) => m.type === "link");
+    // Deduplicate: skip contentLinkedUrls entries already present in apiLinks
+    const apiUrls = new Set(apiLinks.map((m) => resolveSourceMaterialLinkUrl(m)).filter(Boolean));
+    const extra = (contentLinkedUrls || []).filter(
+      (m) => m.source_name && !apiUrls.has(m.source_name),
+    );
+    return [...apiLinks, ...extra];
+  }, [sourceMaterials, contentLinkedUrls]);
+
+  // Kyper-sourced entries: structured webpage_url entries
+  const kyperSourceEntries = useMemo(() => {
+    const entries = Array.isArray(webpageUrls) ? webpageUrls : [];
+    return entries.map((entry, i) => ({
+      id: `kyper-${i}`,
+      url: (entry.webpage_url || "").trim(),
+      title: entry.title || "",
+      comment: entry.comment || "",
+    })).filter((e) => e.url);
+  }, [webpageUrls]);
+
+  // Per-tab filtered lists
+  const filteredUploadedMaterials = useMemo(() => {
+    if (!searchQuery.trim()) return uploadedMaterials;
+    const q = searchQuery.toLowerCase().trim();
+    return uploadedMaterials.filter((m) =>
+      (m.source_name || "").toLowerCase().includes(q),
+    );
+  }, [uploadedMaterials, searchQuery]);
+
+  const filteredLinkedMaterials = useMemo(() => {
+    if (!searchQuery.trim()) return linkedMaterials;
+    const q = searchQuery.toLowerCase().trim();
+    return linkedMaterials.filter((m) => {
+      const url = resolveSourceMaterialLinkUrl(m) || "";
+      return (
+        url.toLowerCase().includes(q) ||
+        (m.source_name || "").toLowerCase().includes(q)
+      );
+    });
+  }, [linkedMaterials, searchQuery]);
+
+  const filteredKyperEntries = useMemo(() => {
+    if (!searchQuery.trim()) return kyperSourceEntries;
+    const q = searchQuery.toLowerCase().trim();
+    return kyperSourceEntries.filter(
+      (e) =>
+        e.url.toLowerCase().includes(q) ||
+        e.title.toLowerCase().includes(q),
+    );
+  }, [kyperSourceEntries, searchQuery]);
+
+  // Keep for backward compat (used nowhere else now but safe to keep)
   const filteredSourceMaterials = useMemo(() => {
     if (!searchQuery.trim()) return sourceMaterials;
     const query = searchQuery.toLowerCase().trim();
@@ -2177,229 +2247,237 @@ export default function CometManagerSidebar({
                   Try Again
                 </Button>
               </div>
-            ) : sourceMaterials && sourceMaterials.length > 0 ? (
+            ) : (
               <>
                 {/* Search Bar */}
-                <div
-                  className="flex items-center justify-between px-2 
-              bg-background rounded-md border border-gray-200 
-              hover:border-primary-500"
-                >
-                  <Search
-                    className="w-5 h-5 text-gray-400 ml-2 
-                hover:text-primary-400"
-                  />
+                <div className="flex items-center justify-between px-2 bg-background rounded-md border border-gray-200 hover:border-primary-500 shrink-0">
+                  <Search className="w-5 h-5 text-gray-400 ml-2 hover:text-primary-400" />
                   <input
                     type="search"
-                    className="w-full p-1 focus:outline-none 
-                  hover:border-primary-500"
+                    className="w-full p-1 focus:outline-none hover:border-primary-500"
                     placeholder="Search source materials..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-                {/* Categories */}
-                {organizeMaterialsByCategory(filteredSourceMaterials).length >
-                0 ? (
-                  organizeMaterialsByCategory(filteredSourceMaterials).map(
-                    (category, categoryIndex) => {
-                      const categoryId =
-                        category.id || `category-${categoryIndex}`;
-                      const isSelected = selectedCategory === categoryId;
-                      const isExpanded = expandedCategories.has(categoryId);
 
-                      return (
-                        <div
-                          key={categoryId}
-                          className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
-                            isSelected && isExpanded
-                              ? "bg-primary-100"
-                              : "bg-white"
+                {/* Uploaded accordion */}
+              
+
+                <div className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
+                          expandedSections.has(0) ? "bg-primary-100" : "bg-white" }`}>
+                  <button
+                    className="flex items-center gap-2 p-3 sm:p-4 transition-all cursor-pointer"
+                    onClick={() => toggleSection(0)}
+                  >
+                    <div
+                        className={`rounded-full p-1 ${
+                          expandedSections.has(0) ? "bg-primary" : "bg-primary-100"
+                        }`}
+                      >
+                        <ChevronDown
+                          size={16}
+                          className={`${
+                            expandedSections.has(0) ? "text-white" : "text-primary"
+                          } transition-transform ${
+                            expandedSections.has(0) ? "rotate-180" : ""
                           }`}
-                        >
-                          {/* Category Header */}
+                        />
+                      </div>
+                      <p className="text-sm sm:text-sm font-medium text-gray-900">Uploaded</p>
+                    
+                    {/* <ChevronDown className={`w-4 h-4 transition-transform ${expandedSections.has(0) ? "rotate-180" : ""}`} /> */}
+                  </button>
+                  {expandedSections.has(0) && (
+                    <div className="flex flex-col gap-1 p-1">
+                      {filteredUploadedMaterials.length > 0 ? filteredUploadedMaterials.map((material, materialIndex) => {
+                        const materialId = material.uuid
+                          ? `${material.uuid}-uploaded-${materialIndex}`
+                          : `uploaded-${materialIndex}`;
+                        const isMaterialSelected = selectedMaterial === materialId;
+                        const fileSize = getMaterialSize(material);
+                        return (
                           <div
-                            onClick={() => {
-                              setSelectedCategory(categoryId);
-                              toggleCategory(categoryId);
-                              // Clear material selection when clicking category
-                              setSelectedMaterial(null);
-                            }}
-                            className="flex items-center gap-2 p-3 sm:p-4 cursor-pointer transition-all"
+                            key={materialId}
+                            className={`flex flex-col rounded-sm transition-all ${isMaterialSelected ? "bg-primary-700" : "bg-gray-100"}`}
                           >
                             <div
-                              className={`rounded-full p-1 ${
-                                isSelected ? "bg-primary" : "bg-primary-100"
-                              }`}
+                              className={`flex items-center gap-2 p-2 cursor-pointer transition-all ${isMaterialSelected ? "text-white" : "hover:bg-gray-200"}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const newSelected = isMaterialSelected ? null : materialId;
+                                setSelectedMaterial(newSelected);
+                                if (newSelected && selectedAssetCategory) setSelectedAssetCategory(null);
+                                if (onMaterialSelect) onMaterialSelect(newSelected ? material : null);
+                              }}
                             >
-                              <ChevronDown
-                                size={16}
-                                className={`${
-                                  isSelected ? "text-white" : "text-primary"
-                                } transition-transform ${
-                                  isExpanded ? "rotate-180" : ""
-                                }`}
-                              />
-                            </div>
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <p
-                                className={`text-sm sm:text-sm font-medium ${
-                                  isSelected ? "text-gray-900" : "text-gray-900"
-                                }`}
-                              >
-                                {category.name}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Expanded Materials */}
-                          {isExpanded &&
-                            category.materials &&
-                            category.materials.length > 0 && (
-                              <div className="flex flex-col gap-2 px-3 pb-3">
-                                {category.materials.map(
-                                  (material, materialIndex) => {
-                                    const materialId = material.uuid
-                                      ? `${material.uuid}-${categoryId}-${materialIndex}`
-                                      : `material-${categoryId}-${materialIndex}`;
-                                    const isMaterialSelected =
-                                      selectedMaterial === materialId;
-                                    const fileSize = getMaterialSize(material);
-                                    const extension =
-                                      material.source_name
-                                        ?.split(".")
-                                        .pop()
-                                        ?.toLowerCase() || "";
-                                    const isLink = material.type === "link";
-
-                                    return (
-                                      <div
-                                        key={materialId}
-                                        className={`flex flex-col rounded-sm transition-all ${
-                                          isMaterialSelected
-                                            ? "bg-primary-700"
-                                            : "bg-gray-100"
-                                        }`}
-                                      >
-                                        {/* Material Header */}
-                                        <div
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            const newSelectedState =
-                                              isMaterialSelected
-                                                ? null
-                                                : materialId;
-                                            setSelectedMaterial(
-                                              newSelectedState,
-                                            );
-
-                                            if (
-                                              newSelectedState &&
-                                              selectedAssetCategory
-                                            ) {
-                                              setSelectedAssetCategory(null);
-                                            }
-
-                                            if (onMaterialSelect) {
-                                              onMaterialSelect(
-                                                newSelectedState
-                                                  ? material
-                                                  : null,
-                                              );
-                                            }
-                                          }}
-                                          className={`flex items-center gap-2 p-2 sm:p-3 cursor-pointer transition-all ${
-                                            isMaterialSelected
-                                              ? "text-white"
-                                              : "hover:bg-gray-200"
-                                          }`}
-                                        >
-                                          <div className="flex flex-col py-1 flex-1 min-w-0">
-                                            {/* <p
-                                            className={`text-xs sm:text-xs ${
-                                              isMaterialSelected
-                                                ? "text-white"
-                                                : "text-gray-900"
-                                            }`}
-                                          >
-                                            Document {categoryIndex + 1}.
-                                            {materialIndex + 1}
-                                          </p> */}
-                                            <p
-                                              className={`text-xs sm:text-sm font-semibold truncate ${
-                                                isMaterialSelected
-                                                  ? "text-white"
-                                                  : "text-gray-900"
-                                              }`}
-                                              title={
-                                                isLink
-                                                  ? resolveSourceMaterialLinkUrl(
-                                                      material,
-                                                    )
-                                                  : material.source_name ||
-                                                    `Document ${materialIndex + 1}`
-                                              }
-                                            >
-                                              {isLink
-                                                ? resolveSourceMaterialLinkUrl(
-                                                    material,
-                                                  ) || "Web link"
-                                                : material.source_name ||
-                                                  `Document ${materialIndex + 1}`}
-                                            </p>
-                                            {material.comment && (
-                                              <p
-                                                className={`text-xs mt-0.5 truncate ${
-                                                  isMaterialSelected
-                                                    ? "text-white/90"
-                                                    : "text-gray-500"
-                                                }`}
-                                                title={material.comment}
-                                              >
-                                                {material.comment}
-                                              </p>
-                                            )}
-                                            {!isLink && fileSize && (
-                                              <p
-                                                className={`text-xs mt-0.5 ${
-                                                  isMaterialSelected
-                                                    ? "text-white"
-                                                    : "text-gray-500"
-                                                }`}
-                                              >
-                                                {fileSize}
-                                              </p>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    );
-                                  },
+                              <div className="flex flex-col py-1 flex-1 min-w-0">
+                                <p className={`text-xs font-semibold truncate ${isMaterialSelected ? "text-white" : "text-gray-900"}`} title={material.source_name || `Document ${materialIndex + 1}`}>
+                                  {material.source_name || `Document ${materialIndex + 1}`}
+                                </p>
+                                {material.comment && (
+                                  <p className={`text-xs mt-0.5 truncate ${isMaterialSelected ? "text-white/90" : "text-gray-500"}`} title={material.comment}>
+                                    {material.comment}
+                                  </p>
+                                )}
+                                {fileSize && (
+                                  <p className={`text-xs mt-0.5 ${isMaterialSelected ? "text-white" : "text-gray-500"}`}>{fileSize}</p>
                                 )}
                               </div>
-                            )}
-                        </div>
-                      );
-                    },
-                  )
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                    <p className="text-sm text-gray-500">
-                      No source materials found matching "{searchQuery}"
-                    </p>
+                            </div>
+                          </div>
+                        );
+                      }) : (
+                        <p className="text-xs text-gray-400 text-center py-3">
+                          {searchQuery.trim() ? `No uploaded files matching "${searchQuery}"` : "No uploaded files"}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Linked accordion */}
+                <div className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
+                          expandedSections.has(1) ? "bg-primary-100" : "bg-white" }`}>
+                  <button
+                    className="flex items-center gap-2 p-3 sm:p-4 transition-all cursor-pointer"
+                    onClick={() => toggleSection(1)}
+                  >
+                    <div
+                        className={`rounded-full p-1 ${
+                          expandedSections.has(1) ? "bg-primary" : "bg-primary-100"
+                        }`}
+                      >
+                        <ChevronDown
+                          size={16}
+                          className={`${
+                            expandedSections.has(1) ? "text-white" : "text-primary"
+                          } transition-transform ${
+                            expandedSections.has(1) ? "rotate-180" : ""
+                          }`}
+                        />
+                      </div>
+                      <p className="text-sm sm:text-sm font-medium text-gray-900">Linked</p>
+                    {/* <ChevronDown className={`w-4 h-4 transition-transform ${expandedSections.has(1) ? "rotate-180" : ""}`} /> */}
+                  </button>
+                  {expandedSections.has(1) && (
+                    <div className="flex flex-col gap-1 p-1">
+                      {filteredLinkedMaterials.length > 0 ? filteredLinkedMaterials.map((material, materialIndex) => {
+                        const materialId = material.uuid
+                          ? `${material.uuid}-linked-${materialIndex}`
+                          : `linked-${materialIndex}`;
+                        const isMaterialSelected = selectedMaterial === materialId;
+                        const url = resolveSourceMaterialLinkUrl(material);
+                        return (
+                          <div
+                            key={materialId}
+                            className={`flex flex-col rounded-sm transition-all ${isMaterialSelected ? "bg-primary-700" : "bg-gray-100"}`}
+                          >
+                            <div
+                              className={`flex items-center gap-2 p-2 cursor-pointer transition-all ${isMaterialSelected ? "text-white" : "hover:bg-gray-200"}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const newSelected = isMaterialSelected ? null : materialId;
+                                setSelectedMaterial(newSelected);
+                                if (newSelected && selectedAssetCategory) setSelectedAssetCategory(null);
+                                if (onMaterialSelect) onMaterialSelect(newSelected ? material : null);
+                              }}
+                            >
+                              <div className="flex flex-col py-1 flex-1 min-w-0">
+                                <p className={`text-xs font-semibold truncate ${isMaterialSelected ? "text-white" : "text-gray-900"}`} title={url}>
+                                  {url || "Web link"}
+                                </p>
+                                {material.comment && (
+                                  <p className={`text-xs mt-0.5 truncate ${isMaterialSelected ? "text-white/90" : "text-gray-500"}`} title={material.comment}>
+                                    {material.comment}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }) : (
+                        <p className="text-xs text-gray-400 text-center py-3">
+                          {searchQuery.trim() ? `No linked URLs matching "${searchQuery}"` : "No linked URLs"}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Sourced by Kyper accordion */}
+                <div  className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
+                          expandedSections.has(2) ? "bg-primary-100" : "bg-white" }`}>
+                    <button
+                      className="flex items-center gap-2 p-3 sm:p-4 transition-all cursor-pointer"
+                      onClick={() => toggleSection(2)}
+                    >
+                       <div
+                        className={`rounded-full p-1 ${
+                          expandedSections.has(2) ? "bg-primary" : "bg-primary-100"
+                        }`}
+                      >
+                        <ChevronDown
+                          size={16}
+                          className={`${
+                            expandedSections.has(2) ? "text-white" : "text-primary"
+                          } transition-transform ${
+                            expandedSections.has(2) ? "rotate-180" : ""
+                          }`}
+                        />
+                      </div>
+                      <p className="text-sm sm:text-sm font-medium text-gray-900">Sourced by Kyper</p>
+                    </button>
+                    {expandedSections.has(2) && (
+                      <div className="flex flex-col gap-1 p-1">
+                        {filteredKyperEntries.length > 0 ? filteredKyperEntries.map((entry) => (
+                          <div
+                            key={entry.id}
+                            className="flex flex-col rounded-sm bg-gray-100"
+                          >
+                            <div
+                              className="flex items-center gap-2 p-2 hover:bg-gray-200 transition-all cursor-pointer"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (onMaterialSelect) {
+                                  onMaterialSelect({
+                                    type: "link",
+                                    source_name: entry.url,
+                                    comment: entry.comment,
+                                    _isKyper: true,
+                                  });
+                                }
+                              }}
+                            >
+                              <div className="flex flex-col py-1 flex-1 min-w-0">
+                                <p className="text-xs font-semibold truncate text-gray-900" title={entry.url}>
+                                  {entry.title || entry.url}
+                                </p>
+                                {entry.title && (
+                                  <p className="text-xs mt-0.5 truncate text-gray-500" title={entry.url}>
+                                    {entry.url}
+                                  </p>
+                                )}
+                                {entry.comment && (
+                                  <p className="text-xs mt-0.5 truncate text-gray-400" title={entry.comment}>
+                                    {entry.comment}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )) : (
+                          <p className="text-xs text-gray-400 text-center py-3">
+                            No Kyper sources matching "{searchQuery}"
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                )}
               </>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                <p className="text-sm text-gray-500">
-                  No source materials found
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Upload documents to see them here
-                </p>
-              </div>
             ))}
 
           {/* Assets Tab Content */}

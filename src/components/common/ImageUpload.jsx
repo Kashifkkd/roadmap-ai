@@ -32,6 +32,7 @@ import {
   setImageAttributes,
   getSuggestPrompt,
   unlinkScreenAssets,
+  unlinkAsset,
   linkAssetToScreen,
 } from "@/api/generateStepImages";
 import {
@@ -685,13 +686,18 @@ export default function ImageUpload({
       }
     }
 
-    // 3) DB operations (fire-and-forget after outline is saved)
+    // 3) DB operations — unlink old asset first, then link new one (sequential to avoid race)
     if (sessionId && screenUid) {
-      // Unlink old if replacing with a different image
+      // Unlink old asset by ID if replacing with a different image
       if (isReplacing && newUrl !== currentImageUrl) {
-        unlinkScreenAssets({ sessionId, screenUid }).catch((err) =>
-          console.error("Failed to unlink old screen assets:", err)
-        );
+        const oldAssetId = currentImageAsset?.asset_id || currentImageAsset?.id;
+        if (oldAssetId) {
+          try {
+            await unlinkAsset({ sessionId, assetId: oldAssetId, screenUid });
+          } catch (err) {
+            console.error("Failed to unlink old asset:", err);
+          }
+        }
       }
       // Link new asset
       if (selectedImageAsset.asset_id) {
@@ -763,16 +769,23 @@ export default function ImageUpload({
   };
 
   useEffect(() => {
-    if (
+    const isReplaceFlow = autoOpenForReplaceRef.current;
+    const isNormalFlow = autoOpenFilePickerRef.current && !previewImageUrl;
+    const shouldAutoOpen =
       isImageDialogOpen &&
       activeTab === "upload" &&
-      autoOpenFilePickerRef.current &&
-      !previewImageUrl &&
-      !isUploadingImage
-    ) {
+      !isUploadingImage &&
+      (isNormalFlow || isReplaceFlow);
+
+    if (shouldAutoOpen) {
       autoOpenFilePickerRef.current = false;
+      autoOpenForReplaceRef.current = false;
       const timer = setTimeout(() => {
-        dropZoneFileInputRef.current?.click();
+        if (isReplaceFlow) {
+          replaceFileInputRef.current?.click();
+        } else {
+          dropZoneFileInputRef.current?.click();
+        }
       }, 50);
       return () => clearTimeout(timer);
     }
@@ -820,6 +833,7 @@ export default function ImageUpload({
   const replaceFileInputRef = useRef(null);
   const dropZoneFileInputRef = useRef(null);
   const autoOpenFilePickerRef = useRef(false);
+  const autoOpenForReplaceRef = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = (e) => {
@@ -914,6 +928,7 @@ export default function ImageUpload({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          autoOpenForReplaceRef.current = true;
                           openImageDialog("upload");
                         }}
                         className="w-full rounded-md border border-primary bg-white px-5 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary-600 hover:border-none hover:text-white cursor-pointer"
@@ -1076,6 +1091,7 @@ export default function ImageUpload({
                                 />
                                 <button
                                   type="button"
+                                  onClick={() => replaceFileInputRef.current?.click()}
                                   className="rounded-md border border-primary bg-white px-5 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary-600 hover:border-none hover:text-white cursor-pointer"
                                 >
                                   Replace

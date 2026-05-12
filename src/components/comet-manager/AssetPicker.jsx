@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Loader2, ImageIcon, Check, X } from "lucide-react";
-import { getSessionAssets, linkAssetToScreen } from "@/api/generateStepImages";
+import { getSessionAssets, linkAssetToScreen, unlinkAsset } from "@/api/generateStepImages";
 import {
   Dialog,
   DialogContent,

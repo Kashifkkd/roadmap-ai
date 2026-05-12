@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import ForceRankForm from "./forms/ForceRankForm";
 import PollMcqForm from "./forms/PollMcqForm";
 import PollLinearForm from "./forms/PollLinearForm";
@@ -74,28 +74,6 @@ const stripHtmlToPlainText = (value) => {
     .trim();
 };
 
-const linkifyToAnchors = (value) => {
-  if (typeof value !== "string" || !value.trim()) return value;
-
-  // URL regex — matches http(s) URLs, avoids double-wrapping existing anchors
-  const URL_REGEX = /(?<!href=["'])(?<!\bsrc=["'])(https?:\/\/[^\s<>"']+)/g;
-
-  return value.replace(URL_REGEX, (url) => {
-    // Strip trailing punctuation that's unlikely part of the URL
-    const cleanUrl = url.replace(/[.,;:!?)]+$/, "");
-    const trailing = url.slice(cleanUrl.length);
-
-    // Friendly display label — strip protocol + www
-    const label = cleanUrl
-      .replace(/^https?:\/\/(www\.)?/, "")
-      .replace(/\/$/, "");
-
-    return (
-      `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="ql-link">${label}</a>` +
-      trailing
-    );
-  });
-};
 
 // Helper to get form values directly from screen content (no local state)
 // Uses actual keys from the structure as defined in temp2.js
@@ -109,7 +87,7 @@ const getFormValuesFromScreen = (screen) => {
 
   if (contentType === "content") {
     values.heading = content.heading || "";
-    values.body = linkifyToAnchors(content.body || "");
+    values.body = content.body || "";
     values.mediaUrl = content.media?.url || "";
     values.mediaType = content.media?.type || "";
     values.contentFullBleed = content.fullBleed ?? true;
@@ -118,7 +96,7 @@ const getFormValuesFromScreen = (screen) => {
 
   if (contentType === "mcq") {
     values.title = content.title || "";
-    values.question = stripHtmlToPlainText(content.question || "");
+    values.question = content.question || "";
     values.top_label = content.top_label || "";
     values.bottom_label = content.bottom_label || "";
     values.keyLearning = content.keyLearning || content.key_learning || "";
@@ -236,12 +214,12 @@ const getFormValuesFromScreen = (screen) => {
 
   if (contentType === "profile") {
     values.heading = content.heading || "";
-    values.body = linkifyToAnchors(content.body || "");
+    values.body = content.body || "";
   }
 
   if (contentType === "managerEmail" || contentType === "managerEmail") {
     values.heading = content.heading || "";
-    values.body = linkifyToAnchors(content.body || "");
+    values.body = content.body || "";
     values.email = content.email || "";
   }
   if (
@@ -249,7 +227,7 @@ const getFormValuesFromScreen = (screen) => {
     contentType === "accountabilityPartnerEmail"
   ) {
     values.heading = content.heading || "";
-    values.body = linkifyToAnchors(content.body || "");
+    values.body = content.body || "";
     values.emails = Array.isArray(content.emails) ? content.emails : [""];
   }
 
@@ -258,7 +236,7 @@ const getFormValuesFromScreen = (screen) => {
     contentType === "pathpersonalization"
   ) {
     values.heading = content.heading || "";
-    values.body = linkifyToAnchors(content.body || "");
+    values.body = content.body || "";
     values.mediaType = content.media?.type || "";
     values.mediaUrl = content.media?.url || "";
     values.mediaAlt = content.media?.alt || "";
@@ -299,6 +277,46 @@ export default function DynamicForm({
     if (typeof screen?.position === "number") return screen.position + 1;
     return 1;
   }, [screenNumberFromParent, screen]);
+
+  // On mount (screen opened), deduplicate image assets — keep only the last image.
+  useEffect(() => {
+    const screenId = screen?.id;
+    const screenUuid = screen?.uuid;
+    const assets = screen?.assets;
+    if (!screenId || !assets || assets.length <= 1) return;
+
+    const getUrl = (a) =>
+      a?.ImageUrl || a?.image_url || a?.url || a?.mediaUrl || a?.s3_url || null;
+    const isImage = (a) => Boolean(getUrl(a) && !a?.audioUrl && !a?.videoUrl);
+
+    const imageIndices = [];
+    assets.forEach((a, i) => { if (isImage(a)) imageIndices.push(i); });
+    if (imageIndices.length <= 1) return;
+
+    const indicesToRemove = new Set(imageIndices.slice(0, -1));
+
+    setOutline((prev) => {
+      if (!prev?.chapters) return prev;
+      const next = JSON.parse(JSON.stringify(prev));
+      for (const ch of next.chapters) {
+        for (const step of ch.steps || []) {
+          const si = step.screens?.findIndex(
+            (s) =>
+              (screenUuid && String(s?.uuid) === String(screenUuid)) ||
+              String(s?.id) === String(screenId),
+          );
+          if (si !== undefined && si >= 0) {
+            const scr = step.screens[si];
+            scr.assets = (scr.assets || []).filter((_, i) => !indicesToRemove.has(i));
+            step.screens[si] = { ...scr };
+            return next;
+          }
+        }
+      }
+      return prev;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen?.id]);
 
   const [focusedField, setFocusedField] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
@@ -403,8 +421,7 @@ export default function DynamicForm({
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
               else if (field === "question") {
-                currentScreen.screenContents.content.question =
-                  stripHtmlToPlainText(value);
+                currentScreen.screenContents.content.question = value;
               } else if (field === "top_label")
                 currentScreen.screenContents.content.top_label = value;
               else if (field === "bottom_label")
@@ -441,9 +458,6 @@ export default function DynamicForm({
 
               // Keep MCQ content aligned to backend schema (camelCase only).
               delete currentScreen.screenContents.content.key_learning;
-              currentScreen.screenContents.content.question = stripHtmlToPlainText(
-                currentScreen.screenContents.content.question || "",
-              );
             } else if (contentType === "force_rank") {
               if (field === "title")
                 currentScreen.screenContents.content.title = value;
@@ -837,6 +851,61 @@ export default function DynamicForm({
     }, 500);
   };
 
+  useEffect(() => {
+    if (!focusedField) return;
+
+    const isAskKyperPopupEvent = (event) => {
+      const target = event.target;
+      return target?.closest?.("[data-ask-kyper-popup]");
+    };
+
+    const shouldDismissOnKey = (event) => {
+      if (
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        event.isComposing ||
+        event.key === "Escape" ||
+        event.key === "Tab" ||
+        event.key.startsWith("Arrow")
+      ) {
+        return false;
+      }
+
+      return (
+        event.key.length === 1 ||
+        event.key === "Backspace" ||
+        event.key === "Delete" ||
+        event.key === "Enter"
+      );
+    };
+
+    const handleReplaceSelection = (event) => {
+      if (!shouldDismissOnKey(event)) return;
+
+      // Keys in the Ask Kyper popup (e.g. backspace/delete on query text) must not close it.
+      if (isAskKyperPopupEvent(event)) {
+        return;
+      }
+
+      // Typing or editing in the form again should dismiss the popup.
+      clearAskContext();
+    };
+
+    const handlePaste = (event) => {
+      if (isAskKyperPopupEvent(event)) return;
+
+      clearAskContext();
+    };
+
+    document.addEventListener("keydown", handleReplaceSelection, true);
+    document.addEventListener("paste", handlePaste, true);
+    return () => {
+      document.removeEventListener("keydown", handleReplaceSelection, true);
+      document.removeEventListener("paste", handlePaste, true);
+    };
+  }, [focusedField]);
+
   const handleTextFieldSelect = (fieldName, event, fieldValue) => {
     if (!event?.target) return;
 
@@ -1071,9 +1140,12 @@ export default function DynamicForm({
       }
     }
 
-    // Align with ImageUpload: one screen image slot — ImageUrl, no audio/video track.
+    // Align with ImageUpload's getAssetUrl: check all URL field variants.
+    const getAssetImageUrl = (asset) =>
+      asset?.ImageUrl || asset?.image_url || asset?.url || asset?.mediaUrl || asset?.s3_url || null;
+
     const isOutlineScreenImageAsset = (asset) =>
-      Boolean(asset?.ImageUrl && !asset?.audioUrl && !asset?.videoUrl);
+      Boolean(getAssetImageUrl(asset) && !asset?.audioUrl && !asset?.videoUrl);
 
     // Function to update screen asset
     const updateScreenAssets = (assets) => {
