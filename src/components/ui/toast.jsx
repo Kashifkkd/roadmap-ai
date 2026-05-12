@@ -59,13 +59,14 @@ export function Toaster() {
       offset={{ top: 80 }}
       gap={8}
       expand
+      closeButton
       visibleToasts={5}
       toastOptions={{
         duration: 3000,
         unstyled: true,
         classNames: {
           toast:
-            "universal-toast flex items-center gap-3 px-5 py-3 rounded-xl shadow-md border-4 font-medium text-[15px]",
+            "universal-toast pointer-events-auto flex items-center gap-3 px-5 py-3 rounded-xl shadow-md border-4 font-medium text-[15px]",
           title: "font-semibold",
           description: "text-[#717680]",
           success: "bg-white border-[#12B76A] text-[#027A48]",

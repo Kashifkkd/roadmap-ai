@@ -5,6 +5,10 @@ import ChatWindow from "@/components/chat/ChatWindow";
 import CometManager from "./CometManager";
 import { usePreviewMode } from "@/contexts/PreviewModeContext";
 import { graphqlClient } from "@/lib/graphql-client";
+import {
+  applyTombstonesToOutline,
+  useDeletionTombstones,
+} from "@/hooks/useDeletionTombstones";
 // import { sampleSessionData } from "@/hooks/sampleSessionData";
 // import { temp2 } from "@/hooks/temp2";
 
@@ -22,6 +26,8 @@ export default function CometManagerLayout() {
   const savePromiseRef = useRef(Promise.resolve());
   const outlineRef = useRef(null);
   const initializedSessionIdRef = useRef(null);
+  const { deletedUuidsRef, addPendingDeletion, getDeletedUuids } =
+    useDeletionTombstones(sessionData?.session_id);
 
   useEffect(() => {
     const currentSessionId = sessionData?.session_id;
@@ -35,7 +41,14 @@ export default function CometManagerLayout() {
     }
 
     if (sessionData?.response_path) {
-      const currentOutline = sessionData.response_path;
+      // Filter the incoming server outline by the tombstone set so that a
+      // backend response (or stale subscription update) carrying a deleted
+      // entity cannot bleed into outlineRef and resurface in the next
+      // auto-save / flushSave payload.
+      const currentOutline = applyTombstonesToOutline(
+        sessionData.response_path,
+        deletedUuidsRef.current,
+      );
       const outlineChanged =
         JSON.stringify(currentOutline) !== JSON.stringify(outlineRef.current);
 
@@ -153,6 +166,15 @@ export default function CometManagerLayout() {
             return false;
           }
 
+          // Send the FULL tombstone set on every save — never cleared during
+          // the session. This is intentional: if we cleared after each save,
+          // a stale outline queued before the delete-save completed could
+          // resurrect the deleted entity (the next save would have an empty
+          // tombstone list). The set is per-session and bounded by user
+          // deletions, so it's small. UUIDs are unique per crypto.randomUUID
+          // so old tombstones cannot collide with genuinely new entities.
+          const tombstoneSnapshot = getDeletedUuids();
+
           const cometJsonForSave = JSON.stringify({
             session_id: sessionId,
             input_type: "source_material_based_outliner",
@@ -162,6 +184,7 @@ export default function CometManagerLayout() {
             chatbot_conversation: sessionData?.chatbot_conversation || [],
             to_modify: sessionData?.to_modify || {},
             webpage_url: sessionData?.webpage_url || [],
+            deleted_uuids: tombstoneSnapshot,
           });
 
           const response = await graphqlClient.autoSaveComet(cometJsonForSave);
@@ -245,6 +268,7 @@ export default function CometManagerLayout() {
         chatbot_conversation: sessionData?.chatbot_conversation || [],
         to_modify: sessionData?.to_modify || {},
         webpage_url: sessionData?.webpage_url || [],
+        deleted_uuids: getDeletedUuids(),
       });
       await graphqlClient.autoSaveComet(cometJsonForSave);
       setPrevOutline(target);
@@ -335,6 +359,7 @@ export default function CometManagerLayout() {
             onOutlineChange={handleOutlineChange}
             saveOutlineImmediately={saveOutlineImmediately}
             onFlushSave={flushSave}
+            addPendingDeletion={addPendingDeletion}
             isAskingKyper={isAskingKyper}
             setIsAskingKyper={setIsAskingKyper}
           />

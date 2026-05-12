@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Loader2, Sparkles, X, CircleCheck, ImageIcon, RefreshCw } from "lucide-react";
+import { Loader2, Sparkles, X, CircleCheck, ImageIcon, RefreshCw, Info } from "lucide-react";
+import ManageStepImagesModal from "@/components/comet-manager/ManageStepImagesModal";
 import GradientLoader from "@/components/ui/GradientLoader";
 import {
   generateStepImages,
@@ -53,6 +54,7 @@ export default function GenerateStepImageButton({
   const [generateError, setGenerateError] = useState(null);
   const [isRehydrating, setIsRehydrating] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false);
 
   const handleRetryImages = async () => {
     if (isRetrying || !sessionId || !stepUid) return;
@@ -92,6 +94,7 @@ export default function GenerateStepImageButton({
     for (const source of sources) {
       const chapters = source.chapters ?? [];
       for (const chapter of Array.isArray(chapters) ? chapters : []) {
+        if (!chapter) continue;
         for (const item of chapter.steps || []) {
           const step = item?.step;
           if (!step) continue;
@@ -405,8 +408,8 @@ export default function GenerateStepImageButton({
       ...(sessionData?.response_outline?.chapters || []),
     ];
     
-    const hasAnyImage = allChapters.some(ch => 
-      ch.steps?.some(item => {
+    const hasAnyImage = allChapters.some((ch) =>
+      ch?.steps?.some((item) => {
         if (item?.step?.uuid !== stepUid) return false;
         
         // Check step wallpaper
@@ -455,7 +458,15 @@ export default function GenerateStepImageButton({
               Images Generated
             </span>
           </button>
-          
+          <button
+            type="button"
+            onClick={() => setIsManageModalOpen(true)}
+            title="Manage step images"
+            className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-200 text-primary-500 hover:bg-primary-50 transition-colors"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+
           {stepStatus?.images?.has_failures && (
             <button
               type="button"
@@ -500,7 +511,15 @@ export default function GenerateStepImageButton({
               {stepStatus?.images?.expected ?? 0}
             </span>
           </button>
-          
+          <button
+            type="button"
+            onClick={() => setIsManageModalOpen(true)}
+            title="Manage step images"
+            className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-200 text-primary-500 hover:bg-primary-50 transition-colors"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+
           {stepStatus?.images?.has_failures && (
             <button
               type="button"
@@ -515,26 +534,37 @@ export default function GenerateStepImageButton({
         </div>
       ) : (
         /* Generate Step Images state button */
-        <Button
-          type="button"
-          onClick={handleOpenDialog}
-          disabled={isDisabled}
-          variant="default"
-          size="sm"
-          className="bg-white hover:bg-primary-100 text-primary-400 border border-primary-400 flex items-center justify-center gap-2 px-4 py-3 w-full disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer sticky bottom-0"
-          title={
-            !sessionId
-              ? "Session ID is required"
-              : !chapterUid
-                ? "Chapter information is missing"
-                : !stepUid
-                  ? "Step information is missing"
-                  : "Generate step images"
-          }
-        >
-          <Sparkles className="w-3.5 h-3.5 text-primary-400" />
-          <span className="hidden sm:inline">Generate Step Images</span>
-        </Button>
+        <div className="w-full flex items-center gap-2 sticky bottom-0">
+          <Button
+            type="button"
+            onClick={handleOpenDialog}
+            disabled={isDisabled}
+            variant="default"
+            size="sm"
+            className="flex-1 bg-white hover:bg-primary-100 text-primary-400 border border-primary-400 flex items-center justify-center gap-2 px-4 py-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            title={
+              !sessionId
+                ? "Session ID is required"
+                : !chapterUid
+                  ? "Chapter information is missing"
+                  : !stepUid
+                    ? "Step information is missing"
+                    : "Generate step images"
+            }
+          >
+            <Sparkles className="w-3.5 h-3.5 text-primary-400" />
+            <span className="hidden sm:inline">Generate Step Images</span>
+          </Button>
+          <button
+            type="button"
+            onClick={() => setIsManageModalOpen(true)}
+            disabled={isDisabled}
+            title="Manage step images"
+            className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-200 text-primary-500 hover:bg-primary-50 transition-colors disabled:opacity-50"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+        </div>
       )}
 
       {/* Generate Step Images Dialog */}
@@ -755,6 +785,19 @@ export default function GenerateStepImageButton({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ManageStepImagesModal
+        open={isManageModalOpen}
+        onOpenChange={setIsManageModalOpen}
+        sessionId={sessionId}
+        chapterUid={chapterUid}
+        stepUid={stepUid}
+        onRegenerateStart={(uid) => {
+          setStepStatus(null);
+          onGeneratingStart?.(uid);
+          fetchStepStatusSilent();
+        }}
+      />
     </>
   );
 }

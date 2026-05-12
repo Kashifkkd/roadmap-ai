@@ -82,9 +82,7 @@ const PathPersonalizationPreview = ({ deviceView, content, assets = [] }) => {
 
             {description && (
               <div className="mt-4 bg-white p-4 rounded shadow-sm">
-                <p className="text-gray-800 text-base leading-relaxed">
-                  {description}
-                </p>
+                <div className="text-gray-800 text-base leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_li[data-list='bullet']]:list-disc [&_li[data-list='bullet']]:list-outside" dangerouslySetInnerHTML={{ __html: description }} />
               </div>
             )}
           </div>
@@ -149,8 +147,8 @@ const ManagerEmailScreenPreview = ({ deviceView, content, assets = [] }) => {
           )}
 
           {description && (
-            <div className="text-gray-700 leading-relaxed text-base">
-              <p className="whitespace-pre-wrap">{description}</p>
+            <div className="text-gray-700 leading-relaxed text-base [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_li[data-list='bullet']]:list-disc [&_li[data-list='bullet']]:list-outside">
+              <div dangerouslySetInnerHTML={{ __html: description }} />
             </div>
           )}
 
@@ -228,8 +226,8 @@ const AccountabilityPartnerEmailScreenPreview = ({
           )}
 
           {description && (
-            <div className="text-gray-700 leading-relaxed text-base">
-              <p className="whitespace-pre-wrap">{description}</p>
+            <div className="text-gray-700 leading-relaxed text-base [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_li[data-list='bullet']]:list-disc [&_li[data-list='bullet']]:list-outside">
+              <div dangerouslySetInnerHTML={{ __html: description }} />
             </div>
           )}
 
@@ -368,7 +366,7 @@ const ScreenContentTypePreview = ({
               {description && (
                 <div className="backdrop-blur-md bg-gray-200/80 px-4 py-3 rounded-sm shadow-lg">
                   <div
-                    className={`text-gray-800 ${descriptionSizeClass} leading-relaxed line-clamp-4 [&_p]:mb-2 [&_strong]:font-semibold`}
+                    className={`text-gray-800 ${descriptionSizeClass} leading-relaxed line-clamp-4 [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:pl-5 [&_li[data-list='bullet']]:list-disc [&_li[data-list='ordered']]:list-decimal [&_li]:mb-1`}
                     dangerouslySetInnerHTML={{ __html: description }}
                   />
                 </div>
@@ -414,9 +412,7 @@ const ScreenContentTypePreview = ({
 
               {subtitle && (
                 <div className="px-4">
-                  <p className="text-sm font-medium text-gray-600">
-                    {subtitle}
-                  </p>
+                  <div className="text-sm font-medium text-gray-600" dangerouslySetInnerHTML={{ __html: subtitle }} />
                 </div>
               )}
 
@@ -424,7 +420,7 @@ const ScreenContentTypePreview = ({
               {description && (
                 <div className="bg-gray-200/40 backdrop-blur-lg border-2 border-white/50 px-4 py-3 rounded-sm shadow-sm">
                   <div
-                    className={`text-gray-800 ${descriptionSizeClass} leading-relaxed [&_p]:mb-2 [&_strong]:font-semibold`}
+                    className={`text-gray-800 ${descriptionSizeClass} leading-relaxed [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:pl-5 [&_li[data-list='bullet']]:list-disc [&_li[data-list='ordered']]:list-decimal [&_li]:mb-1`}
                     dangerouslySetInnerHTML={{ __html: description }}
                   />
                 </div>
@@ -510,11 +506,10 @@ const MCQScreenPreview = ({ deviceView, content }) => {
           {/* Question */}
           {question && (
             <div className="space-y-4">
-              <p
-                className={`text-gray-800 text-sm ${questionSizeClass} leading-relaxed font-medium text-center`}
-              >
-                {question}
-              </p>
+              <div
+                className={`text-gray-800 text-sm ${questionSizeClass} leading-relaxed font-medium text-center [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:pl-5 [&_li[data-list='bullet']]:list-disc [&_li[data-list='ordered']]:list-decimal [&_li]:mb-1 [&_li]:text-left`}
+                dangerouslySetInnerHTML={{ __html: question }}
+              />
 
               {/* Options */}
               <div className="space-y-3">
@@ -683,9 +678,10 @@ const ForceRankScreenPreview = ({ deviceView, content }) => {
 
           {/* Question/Instructions */}
           {question && (
-            <p className={`text-gray-800 ${questionSizeClass} leading-relaxed`}>
-              {question}
-            </p>
+            <div
+              className={`text-gray-800 ${questionSizeClass} leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_li[data-list='bullet']]:list-disc [&_li[data-list='bullet']]:list-outside`}
+              dangerouslySetInnerHTML={{ __html: question }}
+            />
           )}
 
           {/* Ranking Labels */}
@@ -967,9 +963,7 @@ const ReflectionScreenPreview = ({ deviceView, content }) => {
 
           {/* Prompt/Question */}
           {prompt && (
-            <p className={`text-gray-800 ${textSizeClass} leading-relaxed`}>
-              {prompt}
-            </p>
+            <div className={`text-gray-800 ${textSizeClass} leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_li[data-list='bullet']]:list-disc [&_li[data-list='bullet']]:list-outside`} dangerouslySetInnerHTML={{ __html: prompt }} />
           )}
 
           {/* Textarea for reflection */}
@@ -1043,11 +1037,10 @@ const LinearPollScreenPreview = ({ deviceView, content }) => {
 
           {/* Question */}
           {question && (
-            <p
-              className={`text-gray-800 ${textSizeClass} leading-relaxed text-center`}
-            >
-              {question}
-            </p>
+            <div
+              className={`text-gray-800 ${textSizeClass} leading-relaxed text-center [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_li[data-list='bullet']]:list-disc [&_li[data-list='bullet']]:list-outside`}
+              dangerouslySetInnerHTML={{ __html: question }}
+            />
           )}
 
           {/* Slider Section */}
@@ -1183,9 +1176,10 @@ const ActionScreenPreview = ({ deviceView, content, assets = [] }) => {
           {/* Description */}
           {text && (
             <div className="px-6 py-4 rounded-sm ">
-              <p className={`text-gray-800 ${textSizeClass} leading-relaxed`}>
-                {text}
-              </p>
+              <div
+                className={`text-gray-800 ${textSizeClass} leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_li[data-list='bullet']]:list-disc [&_li[data-list='bullet']]:list-outside`}
+                dangerouslySetInnerHTML={{ __html: text }}
+              />
             </div>
           )}
 
@@ -1271,9 +1265,10 @@ const SocialDiscussionScreenPreview = ({ deviceView, content }) => {
           {/* Question/Prompt */}
           {question && (
             <div className="bg-gray-50 px-4 py-4 rounded-lg border border-gray-200">
-              <p className={`text-gray-800 ${textSizeClass} leading-relaxed`}>
-                {question}
-              </p>
+              <div
+                className={`text-gray-800 ${textSizeClass} leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_li[data-list='bullet']]:list-disc [&_li[data-list='bullet']]:list-outside`}
+                dangerouslySetInnerHTML={{ __html: question }}
+              />
             </div>
           )}
 
@@ -1387,9 +1382,10 @@ const NotificationPreview = ({ deviceView, content, selectedScreen }) => {
 
           <div className="flex-1 overflow-y-auto">
             <div className="mt-4 bg-white p-4 rounded shadow-sm">
-              <p className="text-gray-800 text-base leading-relaxed">
-                {message}
-              </p>
+              <div
+                className="text-gray-800 text-base leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_li[data-list='bullet']]:list-disc [&_li[data-list='bullet']]:list-outside"
+                dangerouslySetInnerHTML={{ __html: message }}
+              />
             </div>
 
             {/* Small toast preview for mobile */}
@@ -1397,7 +1393,7 @@ const NotificationPreview = ({ deviceView, content, selectedScreen }) => {
               <div className="mt-6 flex justify-center">
                 <div className="bg-white border rounded-lg px-3 py-2 shadow-lg max-w-xs w-full">
                   <p className="font-semibold text-sm">{title}</p>
-                  <p className="text-xs text-gray-600 truncate">{message}</p>
+                  <div className="text-xs text-gray-600 truncate" dangerouslySetInnerHTML={{ __html: message }} />
                 </div>
               </div>
             )}
@@ -1464,17 +1460,16 @@ const ContentBlock = ({ reverse = false, deviceView, section }) => {
           {section.title || "Details"}
         </h3>
         {section.description && (
-          <p
-            className={`text-gray-900 leading-relaxed font-sans ${
+          <div
+            className={`text-gray-900 leading-relaxed font-sans [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_li[data-list='bullet']]:list-disc [&_li[data-list='bullet']]:list-outside${
               deviceView === DEVICE_VIEWS.mobile
                 ? "text-sm"
                 : deviceView === DEVICE_VIEWS.tablet
                   ? "text-base"
                   : "text-base"
             }`}
-          >
-            {section.description}
-          </p>
+            dangerouslySetInnerHTML={{ __html: section.description }}
+          />
         )}
 
         {section.secondaryText && (

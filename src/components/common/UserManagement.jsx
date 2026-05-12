@@ -8,6 +8,9 @@ import {
   Plus,
   ArrowLeft,
   AlertTriangle,
+  CircleX,
+  PlusIcon,
+  XIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -27,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getUserById } from "@/api/User/getUserById";
 import { getPathUsers } from "@/api/comet/getPathUsers";
+import { getPathById } from "@/api/comet/getPathById";
 import { assignPathUsers } from "@/api/comet/assignPathUsers";
 import { registerClientUser } from "@/api/User/registerClientUser";
 import { updateClientUser } from "@/api/User/updateClientUser";
@@ -38,6 +42,9 @@ import { updateCohortPaths } from "@/api/cohort/updateCohortPaths";
 import { bulkUploadUsers } from "@/api/bulkUploadUsers";
 import { toast } from "@/components/ui/toast";
 import BulkUploadDialog from "./BulkUploadDialog";
+import { createCohort } from "@/api/cohort/createCohort";
+import { updateCohort } from "@/api/cohort/updateCohort";
+import { deleteCohort } from "@/api/cohort/deleteCohort";
 
 export default function UserManagement({
   clientId,
@@ -50,6 +57,7 @@ export default function UserManagement({
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState(null);
+  const [pathNamesMap, setPathNamesMap] = useState({});
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const isPathUsersMode = !!usePathUsers;
 
@@ -66,7 +74,9 @@ export default function UserManagement({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [cohort, setCohort] = useState("");
+  const [selectedCohorts, setSelectedCohorts] = useState([]);
+  const [openCohortDropdown, setOpenCohortDropdown] = useState(false);
+  const cohortDropdownRef = useRef(null);
   const [enableSSO, setEnableSSO] = useState(false);
   const [managerEmails, setManagerEmails] = useState(false);
   const [managerEmail, setManagerEmail] = useState("");
@@ -90,11 +100,24 @@ export default function UserManagement({
   const [updatingCohortPaths, setUpdatingCohortPaths] = useState(false);
   const [openAllPath, setOpenAllPath] = useState(false);
   const [pathUserEmails, setPathUserEmails] = useState([]);
+  const [currentCycleEmails, setCurrentCycleEmails] = useState(new Set());
+  const [savedCurrentCycleEmails, setSavedCurrentCycleEmails] = useState([]);
   const [emailOptions, setEmailOptions] = useState([]);
   const [emailOptionsLoading, setEmailOptionsLoading] = useState(false);
   const [assigningPathUsers, setAssigningPathUsers] = useState(false);
   const [pathUserEmailSearch, setPathUserEmailSearch] = useState("");
   const [showRegularAddForm, setShowRegularAddForm] = useState(false);
+  // Cohort management state
+  const [isCohortModalOpen, setIsCohortModalOpen] = useState(false);
+  const [editingCohortItem, setEditingCohortItem] = useState(null);
+  const [newCohortName, setNewCohortName] = useState("");
+  const [creatingCohort, setCreatingCohort] = useState(false);
+  const [deletingCohort, setDeletingCohort] = useState(false);
+  const [cohortManagementList, setCohortManagementList] = useState([]);
+  const [cohortModalSelectedPaths, setCohortModalSelectedPaths] = useState(new Set());
+  const cohortModalDropdownRef = useRef(null);
+  const [openCohortModalPath, setOpenCohortModalPath] = useState(false);
+  const [cohortCycleSearch, setCohortCycleSearch] = useState("");
 
   // ── Dynamic chip overflow ──────────────────────────────────────────────────
   const chipsContainerRef = useRef(null);
@@ -178,6 +201,17 @@ export default function UserManagement({
       })
       : users;
 
+  // Close cohort dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (cohortDropdownRef.current && !cohortDropdownRef.current.contains(e.target)) {
+        setOpenCohortDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   // Fetch users when component is active
   useEffect(() => {
     const fetchUsers = async () => {
@@ -203,7 +237,13 @@ export default function UserManagement({
           const res = await getPathUsers(sessionId);
           const raw = res?.response;
           const data = Array.isArray(raw?.users) ? raw.users : raw;
-          setUsers(Array.isArray(data) ? data : []);
+          const usersArr = Array.isArray(data) ? data : [];
+          setUsers(usersArr);
+          const cycleEmails = usersArr
+            .filter((u) => u.assignment_type === "active")
+            .map((u) => u.email)
+            .filter(Boolean);
+          setSavedCurrentCycleEmails(cycleEmails);
         } else {
           if (!clientId) return;
           const res = await getUserById({ clientId });
@@ -231,6 +271,53 @@ export default function UserManagement({
 
     fetchUsers();
   }, [open, isActive, clientId, isPathUsersMode]);
+
+  // Fetch all paths so cycle names resolve in the table (allPaths otherwise only loads when forms open)
+  useEffect(() => {
+    if (!open || !isActive || !clientId) return;
+    const fetchAllPathsForTable = async () => {
+      try {
+        const res = await getClientPaths(clientId);
+        const r = res?.response ?? res;
+        const arr = Array.isArray(r) ? r : Array.isArray(r?.results) ? r.results : Array.isArray(r?.data) ? r.data : [];
+        setAllPaths(arr);
+      } catch (error) {
+        console.error("Failed to fetch paths for table:", error);
+      }
+    };
+    fetchAllPathsForTable();
+  }, [open, isActive, clientId]);
+
+  // Fetch cycle names for users whose path isn't in allPaths (e.g. deactivated users)
+  useEffect(() => {
+    if (!users.length) return;
+    const collectPathIds = (usersArr) => {
+      const ids = new Set();
+      usersArr.forEach((u) => {
+        if (u.active_path_id) ids.add(Number(u.active_path_id));
+        if (Array.isArray(u.paths)) u.paths.forEach((id) => { if (id) ids.add(Number(id)); });
+      });
+      return ids;
+    };
+    const knownIds = new Set(allPaths.map((p) => Number(p.id)));
+    const missing = [...collectPathIds(users)].filter((id) => !knownIds.has(id));
+    if (!missing.length) return;
+    const fetchMissingPaths = async () => {
+      const entries = await Promise.all(
+        missing.map(async (id) => {
+          try {
+            const res = await getPathById(id);
+            const path = res?.response ?? res;
+            return [id, path?.name ?? null];
+          } catch {
+            return [id, null];
+          }
+        })
+      );
+      setPathNamesMap((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+    };
+    fetchMissingPaths();
+  }, [users, allPaths]);
 
   // Fetch  email for dropdown
   useEffect(() => {
@@ -263,7 +350,8 @@ export default function UserManagement({
     if (!showAddUserForm || !isPathUsersMode || !Array.isArray(users)) return;
     const emails = users.map((u) => u.email || u.Email).filter(Boolean);
     setPathUserEmails(emails);
-  }, [showAddUserForm, isPathUsersMode, users]);
+    setCurrentCycleEmails(new Set(savedCurrentCycleEmails));
+  }, [showAddUserForm, isPathUsersMode, users, savedCurrentCycleEmails]);
 
   // Fetch cohorts when Add User form is shown
   useEffect(() => {
@@ -305,27 +393,23 @@ export default function UserManagement({
         const pathById = new Map(allPathsArray.map((p) => [Number(p.id), p]));
 
         let baseOptionsForDropdown;
-        if (cohort) {
-          const cohortRes = await getCohortPaths({ cohortId: Number(cohort) });
-          const cohortPathObjects = toPaths(cohortRes);
+        if (selectedCohorts.length > 0) {
+          const results = await Promise.all(
+            selectedCohorts.map((c) => getCohortPaths({ cohortId: Number(c.id) }))
+          );
+          const merged = new Map();
+          results.forEach((res) => {
+            toPaths(res).forEach((p) => merged.set(Number(p.id), p));
+          });
+          const cohortPathObjects = Array.from(merged.values());
           setCometsAvailableTickedIds(new Set(cohortPathObjects.map((p) => Number(p.id))));
-          // Resolve names from allPaths (client paths) for cohort comets
           baseOptionsForDropdown = cohortPathObjects.map((p) => {
             const id = Number(p.id);
             return { id, name: pathById.get(id)?.name ?? p.name ?? `Path ${id}` };
           });
         } else {
-          // When editing a user with no cohort, auto-tick their existing paths into the pool
-          const autoTickedIds = new Set(cometsAvailableTickedIds);
-          if (editingUser?.paths) {
-            editingUser.paths.forEach((pid) => {
-              const id = Number(pid);
-              if (!Number.isNaN(id)) autoTickedIds.add(id);
-            });
-            setCometsAvailableTickedIds(autoTickedIds);
-          }
-          baseOptionsForDropdown =
-            allPathsArray.filter((p) => autoTickedIds.has(Number(p.id)));
+          // No cohort selected — show all client paths
+          baseOptionsForDropdown = allPathsArray;
         }
 
         const existingIds = new Set(baseOptionsForDropdown.map((p) => Number(p.id)));
@@ -344,7 +428,7 @@ export default function UserManagement({
       }
     };
     if (showAddUserForm) fetchPaths();
-  }, [open, showAddUserForm, cohort, editingUser?.paths]);
+  }, [open, showAddUserForm, selectedCohorts, editingUser?.paths]);
 
   const getUserInfoDetail = async (user) => {
     setEditingUser(user);
@@ -356,23 +440,18 @@ export default function UserManagement({
     }
   };
 
-  // Auto add comet assignments for each item in dropdown
+  // Auto add comet assignments only when a specific cohort is selected
   useEffect(() => {
-    // if (cohortPaths.length > 0 && !cohortPathsLoading) {
-    //   setCometAssignments((prev) => {
-    //     // Only auto-create if no assignments have values yet
-    //     const hasValues = prev?.some((a) => a.cometType);
-    //     if (hasValues) return prev;
-    //     const assignments = cohortPaths.map((path, index) => ({
-    //       id: index + 1,
-    //       isCurrent: index === 0,
-    //       cometType: String(path.id),
-    //     }));
-    //     setCurrentCometIndex(0);
-    //     return assignments;
-    //   });
-    // }
-  }, [cohortPaths, cohortPathsLoading]);
+    if (selectedCohorts.length > 0 && cohortPaths.length > 0 && !cohortPathsLoading) {
+      const assignments = cohortPaths.map((path, index) => ({
+        id: index + 1,
+        isCurrent: index === 0,
+        cometType: String(path.id),
+      }));
+      setCurrentCometIndex(0);
+      setCometAssignments(assignments);
+    }
+  }, [cohortPaths, cohortPathsLoading, selectedCohorts]);
 
   const handleEditUser = (user) => {
     setEditingUser(user);
@@ -382,7 +461,8 @@ export default function UserManagement({
     setEmail(user.email || "");
     setPassword("");
     setConfirmPassword("");
-    setCohort(user.cohort_id ? String(user.cohort_id) : "");
+    const matchedCohort = cohorts.find((c) => String(c.id) === String(user.cohort_id));
+    setSelectedCohorts(matchedCohort ? [{ id: matchedCohort.id, name: matchedCohort.name }] : []);
     setEnableSSO(user.is_sso || false);
     // Set manager email
     const managerEmailValue = user.manager_email || user.managerEmail || "";
@@ -466,7 +546,7 @@ export default function UserManagement({
     setEmail("");
     setPassword("");
     setConfirmPassword("");
-    setCohort("");
+    setSelectedCohorts([]);
     setEnableSSO(false);
     setManagerEmail("");
     setAccountabilityEmails([{ id: 1, value: "" }]);
@@ -474,6 +554,7 @@ export default function UserManagement({
     setCurrentCometIndex(0);
     setCohortPaths([]);
     setPathUserEmails([]);
+    setCurrentCycleEmails(new Set());
     setCometsAvailableTickedIds(new Set());
   };
 
@@ -492,6 +573,11 @@ export default function UserManagement({
 
   const handleRemovePathUserEmail = (emailToRemove) => {
     setPathUserEmails((prev) => prev.filter((e) => e !== emailToRemove));
+    setCurrentCycleEmails((prev) => {
+      const next = new Set(prev);
+      next.delete(emailToRemove);
+      return next;
+    });
   };
 
   const handleTogglePathUserEmail = (emailVal) => {
@@ -522,7 +608,7 @@ export default function UserManagement({
 
     setAssigningPathUsers(true);
     try {
-      const res = await assignPathUsers(sessionId, pathUserEmails);
+      const res = await assignPathUsers(sessionId, pathUserEmails, Array.from(currentCycleEmails));
 
       if (res?.success) {
         const message = pathUserEmails.length === 1 
@@ -535,7 +621,13 @@ export default function UserManagement({
           const listRes = await getPathUsers(sessionId);
           const raw = listRes?.response;
           const data = Array.isArray(raw?.users) ? raw.users : raw;
-          setUsers(Array.isArray(data) ? data : []);
+          const usersArr = Array.isArray(data) ? data : [];
+          setUsers(usersArr);
+          const cycleEmails = usersArr
+            .filter((u) => u.assignment_type === "active")
+            .map((u) => u.email)
+            .filter(Boolean);
+          setSavedCurrentCycleEmails(cycleEmails);
         } catch (err) {
           console.error("Failed to refresh path users after assignment:", err);
         }
@@ -623,7 +715,7 @@ export default function UserManagement({
       path_ids: pathIds,
       paths: pathIds,
       active_path_id: activePathId || null,
-      cohort_id: cohort ? Number(cohort) : null,
+      cohort_id: selectedCohorts.length > 0 ? Number(selectedCohorts[0].id) : null,
       adhoc_paths: pathIds,
       is_sso: enableSSO,
       enable_ai_notifications: false,
@@ -774,11 +866,134 @@ export default function UserManagement({
     }
   };
 
-  const handleSetCohort = (e) => {
-    setCohort(e);
-    setCometAssignments([{ id: 1, isCurrent: false, cometType: "" }]);
-    if (!e) setCometsAvailableTickedIds(new Set());
+  const handleToggleCohort = (cohortItem) => {
+    setSelectedCohorts((prev) => {
+      const exists = prev.some((c) => String(c.id) === String(cohortItem.id));
+      const next = exists
+        ? prev.filter((c) => String(c.id) !== String(cohortItem.id))
+        : [...prev, { id: cohortItem.id, name: cohortItem.name }];
+      if (next.length === 0) setCometsAvailableTickedIds(new Set());
+      setCometAssignments([{ id: 1, isCurrent: false, cometType: "" }]);
+      return next;
+    });
   };
+
+  const handleRemoveCohort = (cohortId) => {
+    setSelectedCohorts((prev) => {
+      const next = prev.filter((c) => String(c.id) !== String(cohortId));
+      if (next.length === 0) setCometsAvailableTickedIds(new Set());
+      setCometAssignments([{ id: 1, isCurrent: false, cometType: "" }]);
+      return next;
+    });
+  };
+
+    // cohort management helpers START
+    const refreshCohortManagementList = async () => {
+      if (!clientId) return;
+      try {
+        const res = await getCohorts({ clientId });
+        const data = res?.response || [];
+        setCohortManagementList(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to refresh cohorts:", error);
+        toast.error("Failed to refresh cohorts");
+      }
+    };
+
+    // Load cohorts list on mount / when clientId changes
+    useEffect(() => {
+      refreshCohortManagementList();
+    }, [clientId]);
+
+    const handleCreateCohortInUserMgmt = async () => {
+      if (!newCohortName.trim()) {
+        toast.error("Cohort name is required");
+        return;
+      }
+      if (!clientId) {
+        setCohortManagementList((prev) => [...prev, { name: newCohortName.trim() }]);
+        setNewCohortName("");
+        setEditingCohortItem(null);
+        setIsCohortModalOpen(false); // ← fixed
+        toast.success("Cohort created successfully");
+        return;
+      }
+      try {
+        setCreatingCohort(true);
+        await createCohort({ name: newCohortName.trim(), clientId });
+        toast.success("Cohort created successfully");
+        setNewCohortName("");
+        setEditingCohortItem(null);
+        setIsCohortModalOpen(false); // ← fixed
+        await refreshCohortManagementList();
+      } catch (error) {
+        const errorMessage = error?.message || error?.response?.data?.detail || "Failed to create cohort";
+        toast.error(errorMessage);
+      } finally {
+        setCreatingCohort(false);
+      }
+    };
+
+    const handleUpdateCohortInUserMgmt = async () => {
+      if (!editingCohortItem) return;
+      const cohortId = editingCohortItem.id || editingCohortItem.cohort_id;
+      if (!cohortId) { toast.error("Cohort ID is missing"); return; }
+      if (!newCohortName.trim()) { toast.error("Cohort name is required"); return; }
+      try {
+        setCreatingCohort(true);
+        await updateCohort({ cohortId, name: newCohortName.trim() });
+        toast.success("Cohort updated successfully");
+        setNewCohortName("");
+        setEditingCohortItem(null);
+        setIsCohortModalOpen(false); // ← fixed
+        await refreshCohortManagementList();
+      } catch (error) {
+        const errorMessage = error?.message || error?.response?.data?.detail || "Failed to update cohort";
+        toast.error(errorMessage);
+      } finally {
+        setCreatingCohort(false);
+      }
+    };
+
+    const handleDeleteCohortInUserMgmt = async (cohort) => {
+      const cohortId = cohort.id || cohort.cohort_id;
+      if (!cohortId) { toast.error("Cohort ID is missing"); return; }
+      try {
+        setDeletingCohort(true);
+        await deleteCohort({ cohortId });
+        toast.success("Cohort deleted successfully");
+        await refreshCohortManagementList();
+      } catch (error) {
+        const errorMessage = error?.message || error?.response?.data?.detail || "Failed to delete cohort";
+        toast.error(errorMessage);
+      } finally {
+        setDeletingCohort(false);
+      }
+    };
+
+    useEffect(() => {
+      if (!isCohortModalOpen || !clientId) return;
+      const fetchPathsForCohortModal = async () => {
+        try {
+          const res = await getClientPaths(clientId);
+          const r = res?.response ?? res;
+          const arr = Array.isArray(r)
+            ? r
+            : Array.isArray(r?.results)
+              ? r.results
+              : Array.isArray(r?.data)
+                ? r.data
+                : [];
+          setAllPaths(arr);
+        } catch (error) {
+          console.error("Failed to fetch paths for cohort modal:", error);
+          toast.error("Failed to load cycles");
+        }
+      };
+      fetchPathsForCohortModal();
+    }, [isCohortModalOpen, clientId]);
+
+    // cohort management helpers END
 
   const handleBulkUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -834,7 +1049,7 @@ export default function UserManagement({
     const pathId = Number(item?.id);
     if (Number.isNaN(pathId)) return;
 
-    if (cohort) {
+    if (selectedCohorts.length > 0) {
       const nextSet = new Set(cometsAvailableTickedIds);
       if (nextSet.has(pathId)) nextSet.delete(pathId);
       else nextSet.add(pathId);
@@ -842,13 +1057,13 @@ export default function UserManagement({
       setUpdatingCohortPaths(true);
       try {
         const res = await updateCohortPaths({
-          cohortId: Number(cohort),
+          cohortId: selectedCohorts.length > 0 ? Number(selectedCohorts[0].id) : null,
           pathIds,
           enabled: true,
         });
         if (res?.status === 200 || res?.success) {
           toast.success("Cohort cycles updated");
-          const cohortRes = await getCohortPaths({ cohortId: Number(cohort) });
+          const cohortRes = await getCohortPaths({ cohortId: selectedCohorts.length > 0 ? Number(selectedCohorts[0].id) : null });
           const r = cohortRes?.response ?? cohortRes;
           const arr = Array.isArray(r) ? r : Array.isArray(r?.results) ? r.results : Array.isArray(r?.data) ? r.data : [];
           setCometsAvailableTickedIds(new Set(arr.map((p) => Number(p.id))));
@@ -884,17 +1099,17 @@ export default function UserManagement({
   };
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpenAllPath(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  const handleClickOutside = (event) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setOpenAllPath(false);
+    }
+    if (cohortModalDropdownRef?.current && !cohortModalDropdownRef.current.contains(event.target)) {
+      setOpenCohortModalPath(false);
+    }
+  };
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
 
   // ── Derived chip values ────────────────────────────────────────────────────
   const visibleChips = pathUserEmails.slice(0, visibleChipCount);
@@ -915,7 +1130,7 @@ export default function UserManagement({
   return (
     <>
       <div className="h-full flex flex-col">
-        {!showAddUserForm ? (
+        {!showAddUserForm && !isCohortModalOpen ? (
           <div className="flex-1 overflow-y-auto overflow-x-auto">
             <div className="flex items-center justify-between mb-2">
               <span className="text-lg font-medium text-gray-700">
@@ -942,13 +1157,18 @@ export default function UserManagement({
                   {isPathUsersMode ? "Assign Users" : "Add User"}
                 </Button>
 
-                <Button
-                  size="md"
-                  variant="outline"
-                  className="text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer"
-                >
-                  Add Cohorts
-                </Button>
+               <Button
+                size="md"
+                variant="outline"
+                onClick={() => {
+                  setEditingCohortItem(null);
+                  setNewCohortName("");
+                  setIsCohortModalOpen(true); // open its own modal, nothing else touched
+                }}
+                className="text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer"
+              >
+                Add Cohorts
+              </Button>
 
                 {!isPathUsersMode && (
                   <>
@@ -1056,14 +1276,31 @@ export default function UserManagement({
                       <td className="px-4 py-3 text-[#181D27]">
                         {user.email || "-"}
                       </td>
-                      <td
-                        className="px-4 py-3 text-[#181D27] max-w-[200px] truncate"
-                        title={user.paths || ""}
-                      >
-                        {user.paths || "-"}
+                      <td className="px-4 py-3 max-w-[200px]">
+                        {(() => {
+                          const pathId = user.active_path_id ||
+                            (Array.isArray(user.paths) && user.paths.length > 0 ? user.paths[0] : null);
+                          const cycleName = user.active_path_name || user.activePathName ||
+                            (pathId ? (allPaths.find((p) => Number(p.id) === Number(pathId))?.name ?? pathNamesMap[Number(pathId)]) : null) || null;
+                          const isActive = user.assignment_type === "active";
+                          return cycleName ? (
+                            <span className="relative group inline-block max-w-full">
+                              <span
+                                className={`truncate w-full block text-sm cursor-pointer ${isActive ? "text-[#41B3A2] font-medium" : "text-[#181D27]"}`}
+                              >
+                                {cycleName}
+                              </span>
+                              <span className="absolute z-50 left-0 top-full mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-lg">
+                                {cycleName}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          );
+                        })()}
                       </td>
-                      <td className="px-4 py-3">
-                        {!isPathUsersMode && (
+                      <td className="px-4 py-3 text-right">
+                        {isPathUsersMode && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <button className="text-gray-400 hover:text-gray-600">
@@ -1101,7 +1338,7 @@ export default function UserManagement({
               </tbody>
             </table>
           </div>
-        ) : isPathUsersMode && !showRegularAddForm ? (
+        ) : isPathUsersMode && !showRegularAddForm && !isCohortModalOpen ? (
           <div className="flex-1 overflow-hidden flex flex-col">
             {/* Header: Back arrow + Title */}
             <div className="flex items-center gap-3 pb-1 border-b-2 border-gray-200">
@@ -1261,12 +1498,22 @@ export default function UserManagement({
                         .join(" ") || "User";
                     const emailVal = user.email || "";
                     const isSelected = pathUserEmails.includes(emailVal);
+                    const pathUser = users.find((u) => (u.email || u.Email) === emailVal);
+                    const cycleNameFromId = user.active_path_id
+                      ? allPaths.find((p) => Number(p.id) === Number(user.active_path_id))?.name
+                      : pathUser?.path_name || pathUser?.active_path_name || null;
+                    const assignmentLabel = user.active_path_name || user.activePathName || cycleNameFromId || null;
 
                     return (
                       <div
                         key={user.id || emailVal}
                         onClick={() => handleTogglePathUserEmail(emailVal)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-all ${isSelected ? "bg-primary-50/50" : "bg-gray-50"
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-all ${
+                        currentCycleEmails.has(emailVal)
+                          ? "bg-[#B3E1DA] "
+                          : isSelected
+                          ? "bg-[#E3E1FC]"
+                          : "bg-gray-50"
                           }`}
                       >
                         <div className="flex-1 min-w-0">
@@ -1276,7 +1523,48 @@ export default function UserManagement({
                           <p className="text-xs text-gray-500 truncate">
                             {emailVal}
                           </p>
+                          {/* {assignmentLabel && (
+                            <p className="text-xs text-primary-600 truncate">
+                              {assignmentLabel}
+                            </p>
+                          )} */}
                         </div>
+                        {isSelected && (
+                          <div className="flex gap-1.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCurrentCycleEmails((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(emailVal)) next.delete(emailVal);
+                                  else next.add(emailVal);
+                                  return next;
+                                });
+                              }}
+                              className={`flex items-center text-sm rounded-[8px] border px-3.5 py-1 gap-2 transition-colors bg-[#FFFFFF] ${
+                                currentCycleEmails.has(emailVal)
+                                  ? "text-[#41B3A2] border-[#41B3A2]"
+                                  : "text-[#7367F0] border-[#7367F0]"
+                              }`}
+                            >
+                            {currentCycleEmails.has(emailVal) ? (<XIcon size={16} />) : (<PlusIcon size={16} color={currentCycleEmails.has(emailVal) ? "white" : "#7367F0"} strokeWidth={1.5} />)}
+
+                              {currentCycleEmails.has(emailVal) ? "Remove as Current Cycle" : "Set as Current Cycle"}
+                            </button>
+
+
+
+                            <button
+                              type="button"
+                              className="rounded-full transition-colors cursor-pointer"
+                              onClick={(e) => { e.stopPropagation(); handleRemovePathUserEmail(emailVal); }}
+                            >
+                              <CircleX className="h-5 w-5 text-gray-500" color={currentCycleEmails.has(emailVal) ? "#41B3A2" : "#7367F0"} />
+                            </button>
+                          </div>
+                        )}
+                        
                       </div>
                     );
                   });
@@ -1297,7 +1585,282 @@ export default function UserManagement({
               </Button>
             </div>
           </div>
-        ) : (
+        )
+        : isCohortModalOpen ? (
+          <div className="flex-1 overflow-hidden flex flex-col">
+
+            {/* Header: Back arrow + Title */}
+            <div className="flex items-center gap-3 pb-1 border-b-2 border-gray-200">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCohortModalOpen(false);
+                  setNewCohortName("");
+                  setEditingCohortItem(null);
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-700" />
+              </button>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Add Cohort
+              </h2>
+            </div>
+
+
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto py-2 space-y-4">
+              
+              {/* Add form */}
+              <div className="space-y-3">
+                <span className="text-sm font-semibold text-gray-800">
+                  {editingCohortItem ? "Edit Cohort" : "New Cohort"}
+                </span>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-gray-700">
+                    Cohort Name<span className="text-red-500 ml-0.5">*</span>
+                  </Label>
+                  <Input
+                    value={newCohortName}
+                    onChange={(e) => setNewCohortName(e.target.value)}
+                    placeholder="Enter cohort name"
+                    className="h-9 bg-white"
+                  />
+                </div>
+
+                {/* Cycles Available */}
+                <div className="space-y-1.5" ref={cohortModalDropdownRef}>
+                  <Label className="text-xs font-medium text-gray-700">
+                    Assign Cycles
+                    {/* <span className="ml-1 text-gray-400 font-normal">
+                      ({cohortModalSelectedPaths.size} selected)
+                    </span> */}
+                  </Label>
+
+                   {/* Search box */}
+                  <label className="flex items-center gap-2 border border-[#D5D7DA] rounded-lg px-3 py-2 bg-white mt-2">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9.66602 2.58301C13.5778 2.58301 16.7496 5.7543 16.75 9.66602C16.75 11.3518 16.1593 12.8989 15.1758 14.1152L17.1963 16.1357C17.4892 16.4286 17.4892 16.9034 17.1963 17.1963C16.9034 17.4892 16.4286 17.4892 16.1357 17.1963L14.1152 15.1758C12.8989 16.1593 11.3518 16.75 9.66602 16.75C5.7543 16.7496 2.58301 13.5778 2.58301 9.66602C2.58336 5.75451 5.75451 2.58336 9.66602 2.58301ZM9.66602 4.08301C6.58294 4.08336 4.08336 6.58294 4.08301 9.66602C4.08301 12.7494 6.58273 15.2496 9.66602 15.25C12.7496 15.25 15.25 12.7496 15.25 9.66602C15.2496 6.58273 12.7494 4.08301 9.66602 4.08301ZM2.00977 2.00977H2V2H2.00977V2.00977Z" fill="#535862"/>
+                    </svg>
+                    <input
+                      type="search"
+                      placeholder="Search cycles..."
+                      value={cohortCycleSearch}
+                      onChange={(e) => setCohortCycleSearch(e.target.value)}
+                      className="flex-1 text-sm outline-none bg-transparent placeholder:text-gray-400"
+                    />
+                  </label>
+
+                  {/* {openCohortModalPath && ( */}
+                    <div className="border-t border-[#D5D7DA] bg-white pt-2">
+                      {allPaths.filter((p) =>
+                        (p.name ?? "").toLowerCase().includes(cohortCycleSearch.toLowerCase())
+                      ).length === 0 ? (
+                        <div className="px-4 py-2 text-sm text-gray-400">
+                          No cycles found
+                        </div>
+                      ) : (
+                        allPaths
+                        .filter((p) =>
+                          (p.name ?? "").toLowerCase().includes(cohortCycleSearch.toLowerCase())
+                        )
+                        .map((item, index) => {
+                          const pathId = Number(item.id);
+                          const isSelected = cohortModalSelectedPaths.has(pathId);
+                          return (
+                            <label
+                              onClick={() => {
+                                    setCohortModalSelectedPaths((prev) => {
+                                      const next = new Set(prev);
+                                      if (next.has(pathId)) next.delete(pathId);
+                                      else next.add(pathId);
+                                      return next;
+                                    });
+                                  }}
+                              key={item.id ?? index}
+                              className={`flex items-center gap-1.5 p-2 rounded-[8px] text-sm cursor-pointer transition-colors mb-2 ${
+                                isSelected
+                                  ? "bg-[#D1FADF] text-[#12B76A]"
+                                  : "bg-[#F5F5F5] text-[#181D27]"
+                              }`}
+                            >
+                              {/* <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {
+                                  setCohortModalSelectedPaths((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(pathId)) next.delete(pathId);
+                                    else next.add(pathId);
+                                    return next;
+                                  });
+                                }}
+                                className="accent-white rounded-full"
+                              /> */}
+                              {isSelected ? (
+                                <svg width="19" height="19" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <circle cx="8" cy="8" r="7" fill="white" stroke="#12B76A"/>
+                                  <circle cx="8" cy="8" r="4" fill="#12B76A"/>
+                                </svg>
+                              ) : (
+                                <svg width="19" height="19" viewBox="0 0 19 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <g filter="url(#filter0_d_40013027_99290)">
+                                    <circle cx="9.5" cy="8.5" r="7.5" fill="white"/>
+                                    <circle cx="9.5" cy="8.5" r="7" stroke="#D5D7DA"/>
+                                  </g>
+                                  <defs>
+                                    <filter id="filter0_d_40013027_99290" x="0" y="0" width="19" height="19" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                                      <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+                                      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                                      <feOffset dy="1"/>
+                                      <feGaussianBlur stdDeviation="1"/>
+                                      <feComposite in2="hardAlpha" operator="out"/>
+                                      <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.05 0"/>
+                                      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_40013027_99290"/>
+                                      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_40013027_99290" result="shape"/>
+                                    </filter>
+                                  </defs>
+                                </svg>
+                              )}
+
+
+                              
+
+                              <div className="flex flex-col">
+                                {/* <span className={isSelected ? "text-[#12B76A]" : "text-[#181D27]"}> */}
+                                <span className="text-sm">
+                                  {item.name ?? `Path ${item.id}`}
+                                </span>
+                                <span className="text-[10px]">
+                                  ID: {item.id}
+                                </span>
+                              </div>
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
+                  {/* )} */}
+                
+                </div>
+
+              </div>
+
+              {/* Cohort list */}
+              {/* <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="grid grid-cols-3 bg-gray-100 text-sm font-medium text-gray-700">
+                  <div className="px-4 py-2">Cohort Name</div>
+                  <div className="px-4 py-2">Cohort ID</div>
+                  <div className="px-4 py-2 text-right">Action</div>
+                </div>
+                {cohortManagementList.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-sm text-gray-400">
+                    No cohorts yet. Add your first cohort above.
+                  </div>
+                ) : (
+                  cohortManagementList.map((cohort, index) => (
+                    <div
+                      key={cohort.id || cohort.cohort_id || index}
+                      className={`grid grid-cols-3 text-sm ${
+                        index % 2 === 1 ? "bg-gray-50" : "bg-white"
+                      }`}
+                    >
+                      <div className="px-4 py-2 text-gray-700 truncate">
+                        {cohort.name || cohort.cohort_name || "N/A"}
+                      </div>
+                      <div className="px-4 py-2 text-gray-500 truncate">
+                        {cohort.id || cohort.cohort_id || "N/A"}
+                      </div>
+                      <div className="px-4 py-2 flex items-center justify-end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="text-gray-400 hover:text-gray-600">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="w-32 rounded-lg bg-white border border-gray-200 shadow-lg p-1"
+                          >
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingCohortItem(cohort);
+                                setNewCohortName(cohort.name || cohort.cohort_name || "");
+                              }}
+                              className="cursor-pointer px-3 py-2 text-sm text-gray-900 hover:bg-gray-50 rounded-md"
+                            >
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCohortInUserMgmt(cohort);
+                              }}
+                              disabled={deletingCohort}
+                              className="cursor-pointer px-3 py-2 text-sm text-black hover:bg-[#574EB6] hover:text-white rounded-md mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {deletingCohort ? "Deleting..." : "Delete"}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div> */}
+            </div>
+
+              {/* Footer */}
+              {/* <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsCohortModalOpen(false);
+                  setNewCohortName("");
+                  setEditingCohortItem(null);
+                }}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                Close
+              </Button> */}
+
+
+              <div className="flex justify-end pt-4 border-t border-gray-200 mt-2 gap-2">
+                {editingCohortItem && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-gray-600 hover:text-gray-800"
+                    onClick={() => {
+                      setEditingCohortItem(null);
+                      setNewCohortName("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  className="bg-primary hover:bg-primary-600 text-white px-8 py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  onClick={editingCohortItem ? handleUpdateCohortInUserMgmt : handleCreateCohortInUserMgmt}
+                  disabled={creatingCohort}
+                >
+                  {creatingCohort
+                    ? "Saving..."
+                    : editingCohortItem
+                      ? "Update"
+                      : "Save"}
+                </Button>
+
+
+              </div>
+
+          </div>
+
+        )
+        : (
           <div className="flex-1 min-h-0 flex flex-col">
             <div className="flex-1 min-h-0 overflow-y-auto space-y-6 pr-1">
               {/* Back Button */}
@@ -1483,50 +2046,83 @@ export default function UserManagement({
                     + Add Email
                   </Button>
                 </div>
-                <div>
+                <div ref={cohortDropdownRef}>
                   <Label className="text-sm font-medium text-gray-700 mb-2 block">
                     Cohort
                   </Label>
-                  <Select
-                    value={cohort}
-                    onValueChange={handleSetCohort}
-                    disabled={cohortsLoading || cohorts.length === 0}
-                  >
-                    <SelectTrigger className="w-full bg-white border border-gray-300">
-                      <SelectValue
-                        placeholder={
-                          cohortsLoading
-                            ? "Loading..."
-                            : cohorts.length === 0
-                              ? "No cohorts available"
-                              : "Select"
-                        }
-                      />
-                    </SelectTrigger>
-                    {!cohortsLoading && cohorts.length > 0 && (
-                      <SelectContent>
+
+                  {/* Selected cohort badges */}
+                  {selectedCohorts.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {selectedCohorts.map((c) => (
+                        <span
+                          key={c.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-100 text-xs font-medium text-primary-700 border border-primary-200"
+                        >
+                          {c.name}
+                          <button
+                            type="button"
+                            className="text-primary-500 hover:text-primary-800 transition-colors"
+                            onClick={() => handleRemoveCohort(c.id)}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Dropdown trigger */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setOpenCohortDropdown((prev) => !prev)}
+                      disabled={cohortsLoading || cohorts.length === 0}
+                      className="w-full flex justify-between items-center px-3 py-2 bg-white border border-gray-300 rounded-md text-sm text-gray-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span>
+                        {cohortsLoading
+                          ? "Loading..."
+                          : cohorts.length === 0
+                            ? "No cohorts available"
+                            : "Select cohort"}
+                      </span>
+                      <span className="text-gray-400">⌄</span>
+                    </button>
+
+                    {openCohortDropdown && !cohortsLoading && cohorts.length > 0 && (
+                      <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-md max-h-48 overflow-auto">
                         {cohorts.map((cohortItem) => {
-                          const value = cohortItem.id;
-                          const label = cohortItem.name;
+                          const isSelected = selectedCohorts.some(
+                            (c) => String(c.id) === String(cohortItem.id),
+                          );
                           return (
-                            <SelectItem key={value} value={String(value)}>
-                              {label}
-                            </SelectItem>
+                            <label
+                              key={cohortItem.id}
+                              className="flex items-center gap-2 px-4 py-2 text-sm cursor-pointer hover:bg-gray-100"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleToggleCohort(cohortItem)}
+                                className="accent-primary"
+                              />
+                              <span className="text-gray-700">{cohortItem.name}</span>
+                            </label>
                           );
                         })}
-                      </SelectContent>
+                      </div>
                     )}
-                  </Select>
+                  </div>
                 </div>
               </div>
 
-              <div ref={dropdownRef}>
+              {/* <div ref={dropdownRef}>
                 <Label className="text-sm font-medium text-gray-700 mb-2 block">
                   Cycles Available
                 </Label>
 
                 <div className="relative">
-                  {/* Trigger */}
                   <button
                     type="button"
                     onClick={() => setOpenAllPath(!openAllPath)}
@@ -1548,7 +2144,6 @@ export default function UserManagement({
                     <span className="text-gray-400">⌄</span>
                   </button>
 
-                  {/* Dropdown */}
                   {openAllPath && (
                     <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-md max-h-56 overflow-auto">
                       {allPaths?.length === 0 && (
@@ -1579,11 +2174,11 @@ export default function UserManagement({
                     </div>
                   )}
                 </div>
-              </div>
+              </div> */}
               {/* Current Comet Assignment */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-gray-700 mb-2 block">
-                  Assigned Cycles
+                  Current Cycles
                 </h3>
                 <div className="space-y-3">
                   {cometAssignments.map((assignment, index) => (
@@ -1625,55 +2220,52 @@ export default function UserManagement({
 
                       </button>
 
-                      {/* Comet Type Dropdown */}
-                      <Select
-                        value={assignment.cometType}
-                        onValueChange={(value) => {
-                          setCometAssignments((prev) =>
-                            prev.map((item) =>
-                              item.id === assignment.id
-                                ? { ...item, cometType: value }
-                                : item,
-                            ),
-                          );
-                        }}
-                      // disabled={
-                      //   cohortPathsLoading || !cohort || cohortPaths.length === 0
-                      // }
-                      >
-                        <SelectTrigger className="flex-1 bg-white border border-gray-300">
-                          <SelectValue
-                            placeholder={
-                              cohortPaths.filter(
-                                (path) =>
-                                  !cometAssignments.some(
-                                    (item, i) =>
-                                      i !== index && String(item.cometType) === String(path.id),
-                                  ),
-                              ).length === 0
-                                ? "No cycle available"
-                                : "Select"
-                            }
-                          />
-                        </SelectTrigger>
-                        {!cohortPathsLoading && cohortPaths.length > 0 && (
+                      {/* Cycle Name or Selector */}
+                      {assignment.cometType ? (
+                        <span className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm text-gray-700 truncate">
+                          {cohortPaths.find((p) => String(p.id) === String(assignment.cometType))?.name || "—"}
+                        </span>
+                      ) : (
+                        <Select
+                          value={assignment.cometType}
+                          onValueChange={(value) => {
+                            setCometAssignments((prev) =>
+                              prev.map((item) =>
+                                item.id === assignment.id
+                                  ? { ...item, cometType: value }
+                                  : item,
+                              ),
+                            );
+                          }}
+                        >
+                          <SelectTrigger className="flex-1 bg-white border border-gray-300">
+                            <SelectValue placeholder={cohortPathsLoading ? "Loading..." : "Select cycle"} />
+                          </SelectTrigger>
                           <SelectContent side="bottom" className="max-h-[150px]">
-                            {cohortPaths
-                              .filter(
-                                (path) =>
-                                  !cometAssignments.some(
-                                    (item, i) =>
-                                      i !== index && String(item.cometType) === String(path.id),
+                            {cohortPathsLoading ? (
+                              <div className="px-3 py-2 text-sm text-gray-400">Loading...</div>
+                            ) : cohortPaths.filter(
+                                (path) => !cometAssignments.some(
+                                  (item) => String(item.cometType) === String(path.id),
+                                ),
+                              ).length === 0 ? (
+                              <div className="px-3 py-2 text-sm text-gray-400">No cycle available</div>
+                            ) : (
+                              cohortPaths
+                                .filter(
+                                  (path) => !cometAssignments.some(
+                                    (item) => String(item.cometType) === String(path.id),
                                   ),
-                              )
-                              .map((path) => (
-                                <SelectItem key={path.id} value={String(path.id)}>
-                                  {path.name}
-                                </SelectItem>
-                              ))}
+                                )
+                                .map((path) => (
+                                  <SelectItem key={path.id} value={String(path.id)}>
+                                    {path.name}
+                                  </SelectItem>
+                                ))
+                            )}
                           </SelectContent>
-                        )}
-                      </Select>
+                        </Select>
+                      )}
 
                       {/* Delete Button */}
                       <button
@@ -1689,8 +2281,8 @@ export default function UserManagement({
                             ]);
                           }
                         }}
-                        className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0"
-                      // disabled={cometAssignments.length === 1}
+                        disabled={selectedCohorts.length > 0}
+                        className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Trash2 className="w-4 h-4 text-white" />
                       </button>
@@ -1699,22 +2291,24 @@ export default function UserManagement({
                 </div>
 
                 {/* Assign Comet Button */}
-                <Button
-                  type="button"
-                  onClick={() => {
-                    const newId =
-                      Math.max(...cometAssignments.map((a) => a.id)) + 1;
-                    setCometAssignments((prev) => [
-                      ...prev,
-                      { id: newId, isCurrent: false, cometType: "" },
-                    ]);
-                  }}
-                  variant="outline"
-                  className="w-full border-purple-300 text-primary-700 hover:bg-purple-50 flex items-center justify-center gap-2 py-2"
-                >
-                  <Plus className="w-4 h-4 text-blue-500" />
-                  Assign Cycles
-                </Button>
+                {selectedCohorts.length === 0 && (
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const newId =
+                        Math.max(...cometAssignments.map((a) => a.id)) + 1;
+                      setCometAssignments((prev) => [
+                        ...prev,
+                        { id: newId, isCurrent: false, cometType: "" },
+                      ]);
+                    }}
+                    variant="outline"
+                    className="w-full border-purple-300 text-primary-700 hover:bg-purple-50 flex items-center justify-center gap-2 py-2"
+                  >
+                    <Plus className="w-4 h-4 text-blue-500" />
+                    Assign Cycles
+                  </Button>
+                )}
               </div>
             </div>
 

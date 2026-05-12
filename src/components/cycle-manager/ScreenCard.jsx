@@ -103,6 +103,15 @@ function getScreenCardContentSnippet(screen) {
     );
   }
 
+  if (contentType === "miniApp" || contentType === "miniapp") {
+    return (
+      content.heading ||
+      formData.title ||
+      screen.title ||
+      ""
+    );
+  }
+
   const generic =
     content.body ||
     formData.body ||

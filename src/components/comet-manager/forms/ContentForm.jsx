@@ -101,6 +101,8 @@ export default function ContentForm({
     const mediaType = formData.mediaType;
     if (mediaUrl && mediaType && mediaType !== "link") {
       setUploadedMedia(
+        formData.mediaName ||
+        formData.media?.title ||
         formData.contentMediaFile?.title ||
         mediaUrl.split("/").pop() ||
         "Uploaded media"
@@ -108,7 +110,13 @@ export default function ContentForm({
     } else {
       setUploadedMedia(null);
     }
-  }, [formData.mediaUrl, formData.mediaType, formData.contentMediaFile]);
+  }, [
+    formData.mediaUrl,
+    formData.mediaType,
+    formData.mediaName,
+    formData.media?.title,
+    formData.contentMediaFile,
+  ]);
 
   // Get user-friendly error message from API response or error object
   const getUploadErrorMessage = (uploadResponse, error) => {
@@ -489,6 +497,17 @@ export default function ContentForm({
               </div>
             </div>
           </div>
+
+          <TextField
+            label="Media Title"
+            value={formData.mediaName || formData.media?.title || ""}
+            onChange={(value) => updateField("mediaName", value)}
+            inputProps={{
+              onSelect: (event) =>
+                onTextFieldSelect?.("mediaName", event, formData.mediaName),
+              onBlur: onFieldBlur,
+            }}
+          />
         </div>
       </div>
     </>

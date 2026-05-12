@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import ForceRankForm from "./forms/ForceRankForm";
 import PollMcqForm from "./forms/PollMcqForm";
 import PollLinearForm from "./forms/PollLinearForm";
@@ -232,6 +232,47 @@ export default function DynamicForm({
     // });
     return values;
   }, [screen]);
+
+  // On mount (screen opened), deduplicate image assets — keep only the last image.
+  useEffect(() => {
+    const screenId = screen?.id;
+    const screenUuid = screen?.uuid;
+    const assets = screen?.assets;
+    if (!screenId || !assets || assets.length <= 1) return;
+
+    const getUrl = (a) =>
+      a?.ImageUrl || a?.image_url || a?.url || a?.mediaUrl || a?.s3_url || null;
+    const isImage = (a) => Boolean(getUrl(a) && !a?.audioUrl && !a?.videoUrl);
+
+    const imageIndices = [];
+    assets.forEach((a, i) => { if (isImage(a)) imageIndices.push(i); });
+    if (imageIndices.length <= 1) return;
+
+    // Keep the last image, remove earlier duplicates
+    const indicesToRemove = new Set(imageIndices.slice(0, -1));
+
+    setOutline((prev) => {
+      if (!prev?.chapters) return prev;
+      const next = JSON.parse(JSON.stringify(prev));
+      for (const ch of next.chapters) {
+        for (const step of ch.steps || []) {
+          const si = step.screens?.findIndex(
+            (s) =>
+              (screenUuid && String(s?.uuid) === String(screenUuid)) ||
+              String(s?.id) === String(screenId),
+          );
+          if (si !== undefined && si >= 0) {
+            const scr = step.screens[si];
+            scr.assets = (scr.assets || []).filter((_, i) => !indicesToRemove.has(i));
+            step.screens[si] = { ...scr };
+            return next;
+          }
+        }
+      }
+      return prev;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen?.id]);
 
   const [focusedField, setFocusedField] = useState(null);
   const [fieldPosition, setFieldPosition] = useState(null);
@@ -714,6 +755,49 @@ export default function DynamicForm({
     }, 500);
   };
 
+  useEffect(() => {
+    if (!focusedField) return;
+
+    const shouldDismissOnKey = (event) => {
+      if (
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        event.isComposing ||
+        event.key === "Escape" ||
+        event.key === "Tab" ||
+        event.key.startsWith("Arrow")
+      ) {
+        return false;
+      }
+
+      return (
+        event.key.length === 1 ||
+        event.key === "Backspace" ||
+        event.key === "Delete" ||
+        event.key === "Enter"
+      );
+    };
+
+    const handleReplaceSelection = (event) => {
+      if (!shouldDismissOnKey(event)) return;
+
+      const activeElement = document.activeElement;
+      if (!activeElement) return;
+
+      if (activeElement.closest?.("[data-ask-kyper-popup]")) {
+        return;
+      }
+
+      clearAskContext();
+    };
+
+    document.addEventListener("keydown", handleReplaceSelection, true);
+    return () => {
+      document.removeEventListener("keydown", handleReplaceSelection, true);
+    };
+  }, [focusedField]);
+
   const handleTextFieldSelect = (fieldName, event, fieldValue) => {
     if (!event?.target) return;
 
@@ -955,9 +1039,12 @@ export default function DynamicForm({
       }
     }
 
-    // Align with ImageUpload: one screen image slot — ImageUrl, no audio/video track.
+    // Align with ImageUpload's getAssetUrl: check all URL field variants.
+    const getAssetImageUrl = (asset) =>
+      asset?.ImageUrl || asset?.image_url || asset?.url || asset?.mediaUrl || asset?.s3_url || null;
+
     const isOutlineScreenImageAsset = (asset) =>
-      Boolean(asset?.ImageUrl && !asset?.audioUrl && !asset?.videoUrl);
+      Boolean(getAssetImageUrl(asset) && !asset?.audioUrl && !asset?.videoUrl);
 
     // Function to update screen assets
     const updateScreenAssets = (assets) => {

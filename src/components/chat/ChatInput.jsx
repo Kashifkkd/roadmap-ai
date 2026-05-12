@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   ArrowUp,
   Loader2,
@@ -38,17 +38,10 @@ export default function ChatInput({
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploadingSource, setIsUploadingSource] = useState(false);
   const [uploadedSourceMaterials, setUploadedSourceMaterials] = useState([]);
-  const textareaRef = useRef(null);
   const sourceFileInputRef = useRef(null);
 
   const currentValue = value !== undefined ? value : text;
 
-  // Auto scroll to bottom in textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
-    }
-  }, [currentValue]);
   const setCurrentValue = onChange || setText;
 
   const resetSourceUploadDialog = () => {
@@ -156,13 +149,12 @@ export default function ChatInput({
       <div className="relative w-full h-full rounded-xl  text-[#717680]">
         <Search className="absolute top-3 left-2 w-4 h-4 text-[#717680]" />
         <Textarea
-          ref={textareaRef}
           placeholder={placeholder || "Ask me anything"}
           value={currentValue}
           onChange={(e) => setCurrentValue(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          className={`pl-[30px] pt-2 pb-12 pr-2 text-sm text-gray-900 placeholder:text-[#717680] shadow-none border-0 rounded-xl bg-background w-full min-h-full focus-visible:ring-primary-300 focus-visible:ring-1 focus-visible:ring-offset-2 leading-5 resize-none ${
+          className={`pl-[30px] pt-2 pb-12 pr-2 text-sm text-gray-900 placeholder:text-[#717680] shadow-none border-0 rounded-xl bg-background w-full min-h-full max-h-full overflow-y-auto focus-visible:ring-primary-300 focus-visible:ring-1 focus-visible:ring-offset-2 leading-6 break-words resize-none ${
             disabled ? " cursor-not-allowed" : ""
           }`}
         />

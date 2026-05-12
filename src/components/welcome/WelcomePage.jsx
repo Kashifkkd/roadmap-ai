@@ -19,6 +19,8 @@ import {
   deriveTitleFromUrl,
   extractFetchedPageTitleFromJson,
   extractLinkTitleFromRecord,
+  getFetchedTitleFromLocalStorage,
+  saveFetchedTitleToLocalStorage,
 } from "@/lib/linkTitleFromUrl";
 import { mergeWebpageUrlTitlesFromPreviousSession } from "@/lib/mergeWebpageUrlTitles";
 
@@ -523,9 +525,14 @@ export default function WelcomePage() {
         console.log("Web link uploaded successfully:", result.response);
         const payload = result.response;
         const unwrapped = Array.isArray(payload) ? (payload[0] ?? null) : payload;
+        const apiTitle =
+          extractLinkTitleFromRecord(unwrapped) || getFetchedTitleFromLocalStorage(url);
+        if (apiTitle) {
+          saveFetchedTitleToLocalStorage(url, apiTitle);
+        }
         return {
           success: true,
-          title: extractLinkTitleFromRecord(unwrapped) || deriveTitleFromUrl(url),
+          title: apiTitle || deriveTitleFromUrl(url),
         };
       } catch (error) {
         console.error("Error uploading web link:", error);
@@ -790,6 +797,9 @@ export default function WelcomePage() {
         if (!res.ok) continue;
         const data = await res.json();
         pageTitle = extractFetchedPageTitleFromJson(data);
+        if (pageTitle) {
+          saveFetchedTitleToLocalStorage(url, pageTitle);
+        }
         if (pageTitle) break;
       } catch {
         // try next endpoint
@@ -805,7 +815,11 @@ export default function WelcomePage() {
         ...prev,
         {
           url,
-          title: pageTitle || deriveTitleFromUrl(url),
+          title:
+            pageTitle ||
+            uploaded?.title ||
+            getFetchedTitleFromLocalStorage(url) ||
+            deriveTitleFromUrl(url),
           comment,
         },
       ]);

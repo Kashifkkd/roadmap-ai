@@ -40,6 +40,7 @@ import {
   ArrowLeft,
   Sparkles,
   Trash2,
+  AppWindow,
 } from "lucide-react";
 import { graphqlClient } from "@/lib/graphql-client";
 import { useSessionSubscription } from "@/hooks/useSessionSubscription";
@@ -122,6 +123,13 @@ const SCREEN_TYPE_GROUPS = [
         icon: <Bell size={20} />,
         color: "bg-cyan-100 border-cyan-300",
         description: "Let learners choose helpful reminder notifications.",
+      },
+      {
+        id: "mini_app",
+        name: "HTML Mini App",
+        icon: <AppWindow size={20} />,
+        color: "bg-emerald-100 border-emerald-300",
+        description: "Interactive HTML in an iframe; paste or upload a file.",
       },
     ],
   },
@@ -223,6 +231,7 @@ export default function CometManager({
   onOutlineChange,
   saveOutlineImmediately,
   onFlushSave,
+  addPendingDeletion = () => {},
   isAskingKyper = false,
   setIsAskingKyper = () => {},
 }) {
@@ -411,6 +420,8 @@ export default function CometManager({
         return (step.uuid || step.id) === stepId;
       });
       if (stepIndex !== -1) {
+        const deletedStepObj = chapterSteps[stepIndex]?.step || {};
+        addPendingDeletion(deletedStepObj.uuid || deletedStepObj.uid || deletedStepObj.id);
         chapterSteps.splice(stepIndex, 1);
         chapter.steps = chapterSteps;
         stepWasDeleted = true;
@@ -473,6 +484,8 @@ export default function CometManager({
       const fallbackStep = fallbackChapter?.steps?.[0]?.step || null;
       nextSelectedStepId = fallbackStep?.uuid || fallbackStep?.id || null;
     }
+
+    addPendingDeletion(deletedChapter?.uuid || deletedChapter?.uid || deletedChapter?.id);
 
     nextOutline.chapters.splice(chapterIndex, 1);
 
@@ -818,6 +831,29 @@ export default function CometManager({
     if (id == null) return;
     setScreenDeleteConfirmId(null);
     setDeletingScreenId(id);
+
+    // Resolve the deleted screen's uuid before mutating the outline so the
+    // backend can tombstone it during the auto-save merge (otherwise an
+    // in-flight `path_updated` could re-add a screen the user just deleted).
+    const targetStr = String(id);
+    let deletedUuid = null;
+    for (const ch of outline?.chapters || []) {
+      for (const stepItem of ch.steps || []) {
+        for (const sc of stepItem.screens || []) {
+          const candidates = [sc.uuid, sc.uid, sc.id]
+            .filter((v) => v !== undefined && v !== null)
+            .map(String);
+          if (candidates.includes(targetStr)) {
+            deletedUuid = sc.uuid || sc.uid || sc.id;
+            break;
+          }
+        }
+        if (deletedUuid) break;
+      }
+      if (deletedUuid) break;
+    }
+    addPendingDeletion(deletedUuid);
+
     const nextOutline = applyScreenDeleteToOutline(outline, id);
     try {
       if (saveOutlineImmediately) {
@@ -838,6 +874,7 @@ export default function CometManager({
     saveOutlineImmediately,
     deleteScreenData,
     onFlushSave,
+    addPendingDeletion,
   ]);
 
   // Select first screen by default when screens are first loaded
@@ -1028,6 +1065,7 @@ export default function CometManager({
       accountabilityPartnerEmail: "accountabilityPartnerEmail",
       path_personalization: "pathPersonalization",
       notifications: "notifications",
+      mini_app: "miniApp",
     };
 
     const contentType = contentTypeMap[screenType.id] || screenType.id;
@@ -1519,6 +1557,33 @@ export default function CometManager({
         assessment: null,
         order: allScreens.length,
       };
+    } else if (screenType.id === "mini_app") {
+      newScreen = {
+        id: screenId,
+        uuid: screenUuid,
+        screenType: "miniApp",
+        position: position,
+        screenContents: {
+          id: screenContentId,
+          contentType: "miniApp",
+          content: {
+            heading: "",
+            html: "",
+          },
+        },
+        assets: [],
+        imageStatus: "pending",
+        chapterId: targetChapterId,
+        stepId: targetStepId,
+        thumbnail: "",
+        title: "",
+        formData: {
+          title: "",
+          htmlContent: "",
+        },
+        assessment: null,
+        order: allScreens.length,
+      };
     } else {
       // Default structure for unknown screen types (fallback)
       newScreen = {
@@ -1625,13 +1690,19 @@ export default function CometManager({
                 selectedScreen={selectedScreen}
                 onAddScreen={handleAddScreen}
                 chapters={chapters}
-                onReorderChapters={(...args) => {
+                onReorderChapters={async (...args) => {
                   reorderChapters(...args);
-                  setTimeout(() => onFlushSave?.(), 0);
+                  const autoSaveOk = await requestAutoSaveAfterOutlineCommit();
+                  if (autoSaveOk === false) {
+                    console.error("Auto-save failed while reordering chapters.");
+                  }
                 }}
-                onReorderSteps={(...args) => {
+                onReorderSteps={async (...args) => {
                   reorderSteps(...args);
-                  setTimeout(() => onFlushSave?.(), 0);
+                  const autoSaveOk = await requestAutoSaveAfterOutlineCommit();
+                  if (autoSaveOk === false) {
+                    console.error("Auto-save failed while reordering steps.");
+                  }
                 }}
                 onDeleteChapter={handleDeleteChapter}
                 onEditChapter={handleEditChapter}
@@ -2697,6 +2768,29 @@ export default function CometManager({
         })()}
         sessionData={sessionData}
         setSessionData={setSessionData}
+        onImageUpdated={(stepUid, newImageUrl) => {
+          // Patch the local outline directly so the `<img>` re-renders even if
+          // the sessionData → outline sync path stalls (e.g. JSON-equality cache
+          // or timing with auto-save).
+          if (!stepUid || !newImageUrl) return;
+          setOutline?.((prev) => {
+            if (!prev?.chapters) return prev;
+            const next = JSON.parse(JSON.stringify(prev));
+            for (const ch of next.chapters || []) {
+              for (const stepItem of ch.steps || []) {
+                const step = stepItem.step;
+                if (
+                  step &&
+                  (String(step.uuid ?? "") === String(stepUid) ||
+                    String(step.id ?? "") === String(stepUid))
+                ) {
+                  step.image = newImageUrl;
+                }
+              }
+            }
+            return next;
+          });
+        }}
         onSuccess={(response) => {
           console.log("Step image uploaded:", response);
           // Flush save immediately so auto-save doesn't overwrite with stale outline

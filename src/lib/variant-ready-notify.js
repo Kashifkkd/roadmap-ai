@@ -96,37 +96,11 @@ export function subscribeToVariantReadyWithToast(sessionId, cycleName) {
       }
 
       toast.success("Variant is ready", {
-        description: `Your remix has finished processing.`,
+        description: cycleName
+          ? `Cycle "${cycleName}" remixed successfully`
+          : "Cycle remixed successfully",
         duration: Infinity,
-        ...(variantSessionId
-          ? {
-              action: {
-                label: "Open Remix",
-                onClick: async () => {
-                  try {
-                    if (typeof window !== "undefined") {
-                      localStorage.setItem("sessionId", variantSessionId);
-                      
-                      try {
-                        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
-                        const response = await fetch(`${apiUrl}/api/comet/session_details/${variantSessionId}`);
-                        if (response.ok) {
-                          const result = await response.json();
-                          localStorage.setItem("sessionData", JSON.stringify(result));
-                        }
-                      } catch (fetchErr) {
-                        console.error("Failed to fetch variant session data:", fetchErr);
-                      }
-                      
-                      window.location.assign("/cycle-manager");
-                    }
-                  } catch (error) {
-                    console.error("Failed to process remix redirect:", error);
-                  }
-                },
-              },
-            }
-          : {}),
+        closeButton: true,
       });
 
       removePendingSubscription(sessionId);

@@ -1,3 +1,8 @@
+import {
+  getFetchedTitleFromLocalStorage,
+  saveFetchedTitleToLocalStorage,
+} from "@/lib/linkTitleFromUrl";
+
 const urlKey = (url = "") => (url || "").trim().toLowerCase().replace(/\/+$/, "");
 
 function entryUrl(e) {
@@ -52,13 +57,17 @@ export function mergeWebpageUrlTitlesFromPreviousSession(
     const u = entryUrl(entry);
     const key = urlKey(u);
     const title = entryTitle(entry);
-    if (key && hasRealTitle(title, u)) titleByKey.set(key, title);
+    if (key && hasRealTitle(title, u)) {
+      titleByKey.set(key, title);
+      saveFetchedTitleToLocalStorage(u, title);
+    }
   });
 
   const merged = incoming.map((entry) => {
     if (typeof entry === "string") {
       const key = urlKey(entry);
-      const recovered = key ? titleByKey.get(key) : "";
+      const recovered =
+        (key ? titleByKey.get(key) : "") || getFetchedTitleFromLocalStorage(entry);
       if (recovered) {
         return { webpage_url: entry.trim(), title: recovered, comment: "" };
       }
@@ -68,7 +77,11 @@ export function mergeWebpageUrlTitlesFromPreviousSession(
     const key = urlKey(u);
     const rawTitle = entryTitle(entry);
     const hasTitle = hasRealTitle(rawTitle, u);
-    const recovered = key ? titleByKey.get(key) : "";
+    if (hasTitle) {
+      saveFetchedTitleToLocalStorage(u, rawTitle);
+    }
+    const recovered =
+      (key ? titleByKey.get(key) : "") || getFetchedTitleFromLocalStorage(u);
     if (!hasTitle && recovered) {
       return { ...entry, title: recovered };
     }

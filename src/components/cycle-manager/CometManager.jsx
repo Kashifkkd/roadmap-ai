@@ -38,6 +38,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Sparkles,
+  AppWindow,
 } from "lucide-react";
 import { graphqlClient } from "@/lib/graphql-client";
 import {
@@ -160,6 +161,13 @@ const SCREEN_TYPE_GROUPS = [
         color: "bg-cyan-100 border-cyan-300",
         description: "Let learners choose helpful reminder notifications.",
       },
+      // {
+      //   id: "mini_app",
+      //   name: "HTML Mini App",
+      //   icon: <AppWindow size={20} />,
+      //   color: "bg-emerald-100 border-emerald-300",
+      //   description: "Interactive HTML in an iframe; paste or upload a file.",
+      // },
     ],
   },
   {
@@ -260,6 +268,7 @@ export default function CometManager({
   onOutlineChange,
   saveOutlineImmediately,
   onFlushSave,
+  addPendingDeletion = () => {},
   isAskingKyper = false,
   setIsAskingKyper = () => { },
 }) {
@@ -287,6 +296,88 @@ export default function CometManager({
   useEffect(() => {
     outlineRef.current = outline;
   }, [outline]);
+
+  const allWebpageUrls = useMemo(() => {
+    return Array.isArray(sessionData?.webpage_url) ? sessionData.webpage_url : [];
+  }, [sessionData?.webpage_url]);
+
+  // Collect all image assets from content screens in response_path
+  const contentImageAssets = useMemo(() => {
+    const images = [];
+    const seen = new Set();
+
+    const add = (url, name = "") => {
+      const clean = (url || "").trim();
+      if (!clean || seen.has(clean)) return;
+      seen.add(clean);
+      images.push({ url: clean, name: name || clean.split("/").pop() || "image" });
+    };
+
+    (sessionData?.response_path?.chapters || []).forEach((chapter) => {
+      const chapterSteps = Array.isArray(chapter?.steps) ? chapter.steps : [];
+      chapterSteps.forEach((stepItem) => {
+        const step = stepItem.step || {};
+        if (step.image) add(step.image, `${step.title || "Step"} image`);
+
+        (stepItem.screens || []).forEach((screen) => {
+          (screen.assets || []).forEach((asset) => {
+            if (asset.type === "image") {
+              add(asset.url || asset.ImageUrl, asset.name || "");
+            }
+          });
+          const media = screen.screenContents?.content?.media;
+          if (media?.type === "image" && media?.url) add(media.url);
+
+          const content = screen.screenContents?.content || {};
+          if (content.mediaType === "image" && content.mediaUrl) add(content.mediaUrl);
+        });
+      });
+    });
+
+    return images;
+  }, [sessionData?.response_path]);
+
+  // Collect links from WelcomePage (sessionData.webpage_url) and content screens (mediaType === "link")
+  const contentLinkedUrls = useMemo(() => {
+    const seen = new Set();
+    const items = [];
+
+    const add = (url, comment = "") => {
+      const clean = (url || "").trim();
+      if (!clean || seen.has(clean)) return;
+      seen.add(clean);
+      items.push({ type: "link", source_name: clean, comment });
+    };
+
+    (sessionData?.webpage_url || []).forEach((entry) => {
+      add(entry.webpage_url, entry.comment || entry.title || "");
+    });
+
+    const walkChapters = (chapters) => {
+      (chapters || []).forEach((chapter) => {
+        const chapterSteps = Array.isArray(chapter?.steps) ? chapter.steps : [];
+        chapterSteps.forEach((stepItem) => {
+          (stepItem.screens || []).forEach((screen) => {
+            const content = screen.screenContents?.content || {};
+            // DynamicForm stores mediaUrl under content.media.url / content.media.type
+            if (content.media?.type === "link" && content.media?.url) {
+              add(content.media.url);
+            }
+            // Also handle flat fields for other screen types
+            if (content.mediaType === "link" && content.mediaUrl) {
+              add(content.mediaUrl);
+            }
+          });
+        });
+      });
+    };
+
+    // Use live outline (updated by DynamicForm) rather than sessionData.response_path
+    walkChapters(outline?.chapters);
+    walkChapters(sessionData?.response_path?.remaining_chapters);
+
+    return items;
+  }, [sessionData?.webpage_url, outline, sessionData?.response_path?.remaining_chapters]);
 
   const requestAutoSaveAfterOutlineCommit = useCallback(async () => {
     if (!saveOutlineImmediately) return;
@@ -448,6 +539,10 @@ export default function CometManager({
         return (step.uuid || step.id) === stepId;
       });
       if (stepIndex !== -1) {
+        const deletedStepObj = chapterSteps[stepIndex]?.step || {};
+        addPendingDeletion(
+          deletedStepObj.uuid || deletedStepObj.uid || deletedStepObj.id,
+        );
         chapterSteps.splice(stepIndex, 1);
         chapter.steps = chapterSteps;
         stepWasDeleted = true;
@@ -510,6 +605,10 @@ export default function CometManager({
       const fallbackStep = fallbackChapter?.steps?.[0]?.step || null;
       nextSelectedStepId = fallbackStep?.uuid || fallbackStep?.id || null;
     }
+
+    addPendingDeletion(
+      deletedChapter?.uuid || deletedChapter?.uid || deletedChapter?.id,
+    );
 
     nextOutline.chapters.splice(chapterIndex, 1);
 
@@ -594,7 +693,6 @@ export default function CometManager({
   const [nextChapterError, setNextChapterError] = useState(null);
   const [isAnalyzingTextCollapsed, setIsAnalyzingTextCollapsed] =
     useState(false);
-  const [showNextChapter, setShowNextChapter] = useState(true);
   const [hasClickedGenerateRemaining, setHasClickedGenerateRemaining] =
     useState(false);
 
@@ -620,36 +718,6 @@ export default function CometManager({
       }
     } catch { }
   }, [setIsCometSettingsOpen]);
-  useEffect(() => {
-    const outline = sessionData?.response_outline;
-    const path = sessionData?.response_path;
-
-    let outlineCount = 0;
-    let pathCount = 0;
-
-    // outline count
-    if (Array.isArray(outline)) {
-      outlineCount = outline.length;
-    } else if (Array.isArray(outline?.chapters)) {
-      outlineCount = outline.chapters.length;
-    } else if (outline && typeof outline === "object") {
-      outlineCount = Object.keys(outline).length;
-    }
-
-    // path count
-    if (Array.isArray(path?.chapters)) {
-      pathCount = path.chapters.length;
-    } else if (Array.isArray(path)) {
-      pathCount = path.length;
-    }
-
-    // disable button if path >= outline (never hide, only disable)
-    if (outlineCount > 0 && pathCount >= outlineCount) {
-      setShowNextChapter(false);
-    } else {
-      setShowNextChapter(true);
-    }
-  }, [sessionData]);
 
   // Subscribe to session updates - persistent subscription for comet-manager
   // This will reuse the existing subscription if one exists
@@ -783,11 +851,6 @@ export default function CometManager({
   }, [selectedScreenId, screens]);
   console.log("selectedScreen", selectedScreen);
 
-  const selectedLinkUrl = useMemo(() => {
-    if (selectedMaterial?.type !== "link") return "";
-    return resolveSourceMaterialLinkUrl(selectedMaterial);
-  }, [selectedMaterial]);
-
   const handleRequestDeleteScreen = useCallback((screenId) => {
     setScreenDeleteConfirmId(screenId);
   }, []);
@@ -797,6 +860,25 @@ export default function CometManager({
     if (id == null) return;
     setScreenDeleteConfirmId(null);
     setDeletingScreenId(id);
+    // Resolve UUID before mutating outline so backend receives tombstone.
+    const targetStr = String(id);
+    let deletedUuid = null;
+    for (const ch of outline?.chapters || []) {
+      for (const stepItem of ch.steps || []) {
+        for (const sc of stepItem.screens || []) {
+          const candidates = [sc.uuid, sc.uid, sc.id]
+            .filter((v) => v !== undefined && v !== null)
+            .map(String);
+          if (candidates.includes(targetStr)) {
+            deletedUuid = sc.uuid || sc.uid || sc.id;
+            break;
+          }
+        }
+        if (deletedUuid) break;
+      }
+      if (deletedUuid) break;
+    }
+    addPendingDeletion(deletedUuid);
     const nextOutline = applyScreenDeleteToOutline(outline, id);
     try {
       if (saveOutlineImmediately) {
@@ -817,6 +899,7 @@ export default function CometManager({
     saveOutlineImmediately,
     deleteScreenData,
     onFlushSave,
+    addPendingDeletion,
   ]);
 
   // Select first screen by default when screens are first loaded
@@ -1041,6 +1124,7 @@ export default function CometManager({
         accountabilityPartnerEmail: "accountabilityPartnerEmail",
         path_personalization: "pathPersonalization",
         notifications: "notifications",
+        mini_app: "miniApp",
       };
 
       const contentType = contentTypeMap[screenType.id] || screenType.id;
@@ -1600,6 +1684,33 @@ export default function CometManager({
           assessment: null,
           order: allScreens.length,
         };
+      } else if (screenType.id === "mini_app") {
+        newScreen = {
+          id: screenId,
+          uuid: screenUuid,
+          screenType: "miniApp",
+          position: position,
+          screenContents: {
+            id: screenContentId,
+            contentType: "miniApp",
+            content: {
+              heading: "",
+              html: "",
+            },
+          },
+          assets: [],
+          imageStatus: "pending",
+          chapterId: targetChapterId,
+          stepId: targetStepId,
+          thumbnail: "",
+          title: "",
+          formData: {
+            title: "",
+            htmlContent: "",
+          },
+          assessment: null,
+          order: allScreens.length,
+        };
       } else {
         // Default structure for unknown screen types (fallback)
         newScreen = {
@@ -1732,13 +1843,19 @@ export default function CometManager({
                 isCyclePublished={isCyclePublished}
                 onAddScreen={handleAddScreen}
                 chapters={chapters}
-                onReorderChapters={(...args) => {
+                onReorderChapters={async (...args) => {
                   reorderChapters(...args);
-                  setTimeout(() => onFlushSave?.(), 0);
+                  const autoSaveOk = await requestAutoSaveAfterOutlineCommit();
+                  if (autoSaveOk === false) {
+                    console.error("Auto-save failed while reordering chapters.");
+                  }
                 }}
-                onReorderSteps={(...args) => {
+                onReorderSteps={async (...args) => {
                   reorderSteps(...args);
-                  setTimeout(() => onFlushSave?.(), 0);
+                  const autoSaveOk = await requestAutoSaveAfterOutlineCommit();
+                  if (autoSaveOk === false) {
+                    console.error("Auto-save failed while reordering steps.");
+                  }
                 }}
                 onDeleteChapter={handleDeleteChapter}
                 onEditChapter={handleEditChapter}
@@ -1750,6 +1867,9 @@ export default function CometManager({
                 sessionId={sessionId}
                 selectedStepId={selectedStepId}
                 setSelectedStep={setSelectedStep}
+                webpageUrls={allWebpageUrls}
+                contentImageAssets={contentImageAssets}
+                contentLinkedUrls={contentLinkedUrls}
                 externalTab={activeTab}
                 onMaterialSelect={(material) => {
                   setSelectedMaterial(material);
@@ -2187,16 +2307,16 @@ export default function CometManager({
                       )}
                     </div>
                   </div>
-                ) : selectedMaterial?.type === "link" ? (
+                ) : selectedMaterial?._isKyper ? (
                   <div className="flex-1 overflow-hidden p-4">
                     <div className="flex flex-col h-full w-full bg-white rounded-lg overflow-hidden shadow-md">
                       <div className="shrink-0 p-4 border-b border-gray-200 bg-white flex justify-between items-start">
                         <div className="flex-1 min-w-0">
                           <h2
                             className="text-lg font-bold text-gray-900 break-all mb-1"
-                            title={selectedLinkUrl || undefined}
+                            title={selectedMaterial.source_name || undefined}
                           >
-                            {selectedLinkUrl || "Web link"}
+                            {selectedMaterial.source_name || "Web link"}
                           </h2>
                           {selectedMaterial.comment && (
                             <p className="text-sm text-gray-500 mt-2">
@@ -2206,7 +2326,7 @@ export default function CometManager({
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <a
-                            href={selectedLinkUrl || "#"}
+                            href={selectedMaterial.source_name || "#"}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-600 text-sm font-medium"
@@ -2225,57 +2345,24 @@ export default function CometManager({
                       </div>
                       <div className="flex-1 min-h-[200px] overflow-hidden flex flex-col bg-gray-50">
                         <div className="shrink-0 px-3 py-2 text-xs text-amber-900 bg-amber-50 border-b border-amber-100">
-                          Preview only loads here if the site allows embedding
-                          (many apps, SPAs, and food-ordering sites block it for
-                          security). PDFs open in the viewer below when the file
-                          allows it—otherwise use{" "}
-                          <span className="font-semibold">Open link</span>.
+                          Preview only loads if the site allows embedding. Use <span className="font-semibold">Open link</span> if the panel is blank.
                         </div>
-                        {isDirectPdfUrl(selectedLinkUrl) ? (
+                        {isDirectPdfUrl(selectedMaterial.source_name) ? (
                           <embed
-                            key={selectedLinkUrl}
-                            src={selectedLinkUrl}
+                            key={selectedMaterial.source_name}
+                            src={selectedMaterial.source_name}
                             type="application/pdf"
-                            title={selectedLinkUrl || "PDF preview"}
                             className="flex-1 w-full min-h-[320px] border-0 bg-white"
                           />
                         ) : (
                           <iframe
-                            key={selectedLinkUrl}
-                            src={selectedLinkUrl || undefined}
-                            title={selectedLinkUrl || "Link preview"}
+                            key={selectedMaterial.source_name}
+                            src={selectedMaterial.source_name || undefined}
+                            title={selectedMaterial.source_name || "Link preview"}
                             className="flex-1 w-full min-h-[320px] border-0 bg-white"
-                            // No sandbox: sandbox breaks many embeds (incl. PDF
-                            // in iframe) and does not bypass X-Frame-Options anyway.
                             referrerPolicy="strict-origin-when-cross-origin"
                           />
                         )}
-                        <div className="shrink-0 px-4 py-2 bg-gray-100 border-t border-gray-200 flex items-center justify-between gap-2 flex-wrap">
-                          <div className="flex flex-col gap-1 min-w-0">
-                            <p className="text-xs text-gray-500">
-                              Blank panel = the site refused an embedded frame
-                              (not a Kyper bug). Open in a new tab to view.
-                            </p>
-                            {isDirectPdfUrl(selectedLinkUrl) && (
-                              <a
-                                href={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedLinkUrl)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-primary-600 hover:underline w-fit"
-                              >
-                                PDF still blank? Open in Google Viewer (new tab)
-                              </a>
-                            )}
-                          </div>
-                          <a
-                            href={selectedLinkUrl || "#"}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-600 text-sm font-medium shrink-0"
-                          >
-                            Open link
-                          </a>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -2707,7 +2794,7 @@ export default function CometManager({
                           disabled={
                             sessionData?.is_initial_chapter_created == false ||
                             isGeneratingNextChapter ||
-                            !showNextChapter
+                            !(Array.isArray(sessionData?.response_path?.remaining_chapters) && sessionData.response_path.remaining_chapters.length > 0)
                           }
                         >
                           <span>Create Remaining Phases</span>
@@ -2827,6 +2914,29 @@ export default function CometManager({
         })()}
         sessionData={sessionData}
         setSessionData={setSessionData}
+        onImageUpdated={(stepUid, newImageUrl) => {
+          // Patch the local outline directly so the `<img>` re-renders even if
+          // the sessionData → outline sync path stalls (e.g. JSON-equality cache
+          // or timing with auto-save).
+          if (!stepUid || !newImageUrl) return;
+          setOutline?.((prev) => {
+            if (!prev?.chapters) return prev;
+            const next = JSON.parse(JSON.stringify(prev));
+            for (const ch of next.chapters || []) {
+              for (const stepItem of ch.steps || []) {
+                const step = stepItem.step;
+                if (
+                  step &&
+                  (String(step.uuid ?? "") === String(stepUid) ||
+                    String(step.id ?? "") === String(stepUid))
+                ) {
+                  step.image = newImageUrl;
+                }
+              }
+            }
+            return next;
+          });
+        }}
         onSuccess={(response) => {
           console.log("Step image uploaded:", response);
           // Flush save immediately so auto-save doesn't overwrite with stale outline

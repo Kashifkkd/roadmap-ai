@@ -108,6 +108,7 @@ export default function AskKyperPopup({
   return (
     <div
       ref={popupRef}
+      data-ask-kyper-popup=""
       className="fixed z-50 animate-in slide-in-from-bottom-4"
       style={position}
       onMouseEnter={(e) => {

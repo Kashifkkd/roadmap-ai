@@ -31,6 +31,8 @@ import {
   deriveTitleFromUrl,
   extractFetchedPageTitleFromJson,
   extractLinkTitleFromRecord,
+  getFetchedTitleFromLocalStorage,
+  saveFetchedTitleToLocalStorage,
 } from "@/lib/linkTitleFromUrl";
 
 const extractLinkTitle = extractLinkTitleFromRecord;
@@ -53,7 +55,10 @@ function normalizeWebLink(item, defaultUploaded = false) {
     id: item?.id ?? item?.material_id ?? item?.source_material_id,
     url: urlValue,
     comment: item?.comment ?? "",
-    title: extractLinkTitle(item) || deriveTitleFromUrl(urlValue),
+    title:
+      extractLinkTitle(item) ||
+      getFetchedTitleFromLocalStorage(urlValue) ||
+      deriveTitleFromUrl(urlValue),
     isUploaded:
       typeof item?.isUploaded === "boolean" ? item.isUploaded : defaultUploaded,
     linkType: item?.linkType ?? inferredPreviewMeta.linkType,
@@ -260,8 +265,10 @@ export default function SourceMaterialCard({
   webpageUrls = [],
   setWebpageUrls = () => {},
   onUploadingChange = () => {},
+  sessionId: sessionIdProp = null,
+  localDeleteOnly = false,
 }) {
-  const [sessionId, setSessionId] = useState(null);
+  const [sessionId, setSessionId] = useState(sessionIdProp);
   const [isUploading, setIsUploading] = useState(false);
   const [isCheckingLinkPreview, setIsCheckingLinkPreview] = useState(false);
   const [linkDraft, setLinkDraft] = useState({ url: "" });
@@ -313,7 +320,14 @@ export default function SourceMaterialCard({
     setPendingScrollTargetKey(null);
   }, [pendingScrollTargetKey, files, webpageUrls, scrollToSourceItem]);
 
+  // Keep internal state in sync when the prop changes
   useEffect(() => {
+    if (sessionIdProp) setSessionId(sessionIdProp);
+  }, [sessionIdProp]);
+
+  useEffect(() => {
+    // When a sessionId prop is provided, skip localStorage / event listener
+    if (sessionIdProp) return;
     if (typeof window === "undefined") return;
 
     const updateSessionId = () => {
@@ -529,11 +543,14 @@ export default function SourceMaterialCard({
         if (!res.ok) continue;
         const data = await res.json();
         const title = extractFetchedPageTitleFromJson(data);
-        if (title) return title;
+        if (title) {
+          saveFetchedTitleToLocalStorage(url, title);
+          return title;
+        }
       } catch {}
     }
 
-    return "";
+    return getFetchedTitleFromLocalStorage(url);
   }, []);
 
   const webpageUrlsKey = useMemo(
@@ -934,7 +951,7 @@ export default function SourceMaterialCard({
     const removeLocally = () =>
       setWebpageUrls((prev) => prev.filter((_, i) => i !== index));
 
-    if (!linkToRemove.isUploaded || !linkToRemove.id) {
+    if (localDeleteOnly || !linkToRemove.isUploaded || !linkToRemove.id) {
       removeLocally();
       return;
     }
@@ -951,7 +968,7 @@ export default function SourceMaterialCard({
       const removeLocally = () =>
         setFiles((prev) => prev.filter((_, i) => i !== index));
 
-      if (!fileToRemove?.isUploaded || !fileToRemove?.id) {
+      if (localDeleteOnly || !fileToRemove?.isUploaded || !fileToRemove?.id) {
         removeLocally();
         return;
       }
@@ -962,7 +979,7 @@ export default function SourceMaterialCard({
         toast.success("File source material deleted");
       });
     },
-    [setFiles, deleteSourceMaterialById],
+    [setFiles, deleteSourceMaterialById, localDeleteOnly],
   );
 
   const handleLinkChange = (index, field, value) => {
