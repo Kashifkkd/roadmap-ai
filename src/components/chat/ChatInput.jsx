@@ -267,7 +267,9 @@ export default function ChatInput({
     };
 
     try {
-      const response = await graphqlClient.autoSaveComet(JSON.stringify(payload));
+      const response = await graphqlClient.autoSaveComet(
+        JSON.stringify(payload),
+      );
       console.log("autoSaveComet (uploaded assets) →", response);
       localStorage.setItem(
         "sessionData",
@@ -473,8 +475,7 @@ export default function ChatInput({
     }
   };
 
-  const hasPreviews =
-    uploadedSourceMaterials.length > 0 || uploadedWebLinks.length > 0;
+  const hasPreviews = uploadedWebLinks.length > 0;
 
   return (
     <div
@@ -514,83 +515,86 @@ export default function ChatInput({
                 className="flex items-center gap-1 overflow-x-auto flex-nowrap pr-8"
                 style={{ scrollbarWidth: "none" }}
               >
+                {/*
                 {uploadedSourceMaterials.map((item, index) => (
-                <div
-                  key={`file-${item.source_name}-${index}`}
-                  className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-primary-200/60 shrink-0"
-                  title={
-                    item.source_name +
-                    (item.comment ? ` — ${item.comment}` : "")
-                  }
-                >
-                  <FileText className="w-3 h-3 shrink-0 mt-0.5 self-start" />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="truncate font-medium">
-                      {(item.source_name ?? "").slice(0, 20)}
-                      {(item.source_name ?? "").length > 20 ? "…" : ""}
-                    </span>
-                    {item.comment ? (
-                      <span
-                        className="flex items-start truncate text-gray-600 mt-0.5"
-                        title={item.comment}
-                      >
-                        {item.comment.slice(0, 20)}
-                        {item.comment.length > 20 ? "…" : ""}
-                      </span>
-                    ) : null}
-                  </div>
-                  <button
-                    type="button"
-                    className="hover:text-red-500 transition-colors shrink-0 p-0.5 rounded-full hover:bg-primary-100"
-                    onClick={() =>
-                      setUploadedSourceMaterials((prev) =>
-                        prev.filter((_, i) => i !== index),
-                      )
+                  <div
+                    key={`file-${item.source_name}-${index}`}
+                    className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-primary-200/60 shrink-0"
+                    title={
+                      item.source_name +
+                      (item.comment ? ` — ${item.comment}` : "")
                     }
-                    aria-label="Remove uploaded file"
                   >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-              {uploadedWebLinks.map((entry, index) => (
-                <div
-                  key={`link-${entry.url}-${index}`}
-                  className="flex items-center gap-1.5 bg-gray-50 text-gray-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-gray-200 shrink-0"
-                  title={
-                    entry.url + (entry.comment ? ` — ${entry.comment}` : "")
-                  }
-                >
-                  <Link2 className="w-3 h-3 shrink-0 mt-0.5 self-start text-gray-500" />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="truncate font-medium">
-                      {(entry.title || entry.url).slice(0, 22)}
-                      {(entry.title || entry.url).length > 22 ? "…" : ""}
-                    </span>
-                    {entry.comment ? (
-                      <span
-                        className="flex items-start truncate text-gray-500 mt-0.5"
-                        title={entry.comment}
-                      >
-                        {entry.comment.slice(0, 22)}
-                        {entry.comment.length > 22 ? "…" : ""}
+                    <FileText className="w-3 h-3 shrink-0 mt-0.5 self-start" />
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="truncate font-medium">
+                        {(item.source_name ?? "").slice(0, 20)}
+                        {(item.source_name ?? "").length > 20 ? "…" : ""}
                       </span>
-                    ) : null}
+                      {item.comment ? (
+                        <span
+                          className="flex items-start truncate text-gray-600 mt-0.5"
+                          title={item.comment}
+                        >
+                          {item.comment.slice(0, 20)}
+                          {item.comment.length > 20 ? "…" : ""}
+                        </span>
+                      ) : null}
+                    </div>
+                    <button
+                      type="button"
+                      className="hover:text-red-500 transition-colors shrink-0 p-0.5 rounded-full hover:bg-primary-100"
+                      onClick={() =>
+                        setUploadedSourceMaterials((prev) =>
+                          prev.filter((_, i) => i !== index),
+                        )
+                      }
+                      aria-label="Remove uploaded file"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="hover:text-red-500 transition-colors shrink-0 p-0.5 rounded-full hover:bg-gray-200 text-gray-400"
-                    onClick={() =>
-                      setUploadedWebLinks((prev) =>
-                        prev.filter((_, i) => i !== index),
-                      )
+                ))}
+                
+                {uploadedWebLinks.map((entry, index) => (
+                  <div
+                    key={`link-${entry.url}-${index}`}
+                    className="flex items-center gap-1.5 bg-gray-50 text-gray-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-gray-200 shrink-0"
+                    title={
+                      entry.url + (entry.comment ? ` — ${entry.comment}` : "")
                     }
-                    aria-label="Remove uploaded link"
                   >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
+                    <Link2 className="w-3 h-3 shrink-0 mt-0.5 self-start text-gray-500" />
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="truncate font-medium">
+                        {(entry.title || entry.url).slice(0, 22)}
+                        {(entry.title || entry.url).length > 22 ? "…" : ""}
+                      </span>
+                      {entry.comment ? (
+                        <span
+                          className="flex items-start truncate text-gray-500 mt-0.5"
+                          title={entry.comment}
+                        >
+                          {entry.comment.slice(0, 22)}
+                          {entry.comment.length > 22 ? "…" : ""}
+                        </span>
+                      ) : null}
+                    </div>
+                    <button
+                      type="button"
+                      className="hover:text-red-500 transition-colors shrink-0 p-0.5 rounded-full hover:bg-gray-200 text-gray-400"
+                      onClick={() =>
+                        setUploadedWebLinks((prev) =>
+                          prev.filter((_, i) => i !== index),
+                        )
+                      }
+                      aria-label="Remove uploaded link"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                  */}
               </div>
               <div
                 aria-hidden
