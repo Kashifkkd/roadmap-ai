@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Info } from "lucide-react";
 import UploadTool from "@/components/common/UploadTool";
 
-// Toggle Switch Component
+
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
   <div className="flex items-center justify-between py-2">
     <div className="flex items-center gap-2">
