@@ -105,16 +105,6 @@ export default function MiniAppForm({
             <Upload className="h-4 w-4 text-indigo-600" />
             Upload HTML file
           </button>
-          <span className="text-xs text-gray-500">
-            Or paste HTML below — saved as{" "}
-            <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-[11px]">
-              content.heading
-            </code>{" "}
-            +{" "}
-            <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-[11px]">
-              content.html
-            </code>
-          </span>
         </div>
         <TextArea
           label="HTML"

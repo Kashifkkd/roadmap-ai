@@ -29,10 +29,7 @@ export default function HabitOptInForm({
     onRichTextBlur,
   } = askKyperHandlers;
 
-  console.log("formData habit Description>>>>>>>>>>", formData.habitDescription);
   const habits = formData.habits || [];
-
-  // Get existing assets from screen
   const existingAssets = screen?.assets || [];
 
   const handleRemoveAsset = (index) => {
@@ -42,7 +39,21 @@ export default function HabitOptInForm({
   };
 
   const addHabit = () => {
-    const next = [...habits, { title: "", text: "", reps: "" }];
+    const maxId = habits.reduce(
+      (m, h) => Math.max(m, Number(h?.id) || 0),
+      0,
+    );
+    const nextId = maxId + 1;
+    const next = [
+      ...habits,
+      {
+        id: nextId,
+        level: nextId,
+        title: "",
+        text: "",
+        reps: "",
+      },
+    ];
     updateField("habits", next);
   };
 
@@ -51,9 +62,6 @@ export default function HabitOptInForm({
     next[index] = { ...next[index], [key]: value };
     updateField("habits", next);
   };
-
-  // console.log("updateHabitField>>>>>>>>>>", updateHabitField);
-  console.log("habits>>>>>>>>>>", habits);
 
   const removeHabit = (index) => {
     updateField(

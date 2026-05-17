@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Chat from "./Chat";
 import Loader from "@/components/loader2";
 import { graphqlClient } from "@/lib/graphql-client";
@@ -43,6 +43,67 @@ const messagesFromConversation = (conversation) => {
   });
   return out;
 };
+
+const materialKey = (m) =>
+  `${m?.id ?? ""}|${m?.source_name ?? ""}|${m?.s3_path ?? ""}`;
+
+function mergeUniqueMaterials(existing, additions) {
+  const base = Array.isArray(existing) ? [...existing] : [];
+  const seen = new Set(base.map(materialKey));
+  for (const a of additions) {
+    const k = materialKey(a);
+    if (k === "||") continue;
+    if (!seen.has(k)) {
+      seen.add(k);
+      base.push(a);
+    }
+  }
+  return base;
+}
+
+function mergeUniqueWebLinks(existing, additions) {
+  const base = Array.isArray(existing) ? [...existing] : [];
+  const seen = new Set(
+    base
+      .map((l) =>
+        (l?.webpage_url ?? l?.url ?? "").trim().toLowerCase().replace(/\/+$/, ""),
+      )
+      .filter(Boolean),
+  );
+  for (const raw of additions) {
+    const w = {
+      webpage_url: raw?.webpage_url ?? raw?.url ?? "",
+      title: raw?.title ?? "",
+      comment: raw?.comment ?? "",
+      ...(raw?.id ? { id: raw.id } : {}),
+    };
+    const k = (w.webpage_url || "").trim().toLowerCase().replace(/\/+$/, "");
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    base.push(w);
+  }
+  return base;
+}
+
+function formatUploadedDocumentUserLine(m) {
+  return [
+    "[Uploaded document]",
+    m?.source_name ?? "Document",
+    m?.id != null && m?.id !== "" && `id: ${m.id}`,
+    m?.s3_path && `s3_path: ${m.s3_path}`,
+    m?.comment && `comment: ${m.comment}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function formatUploadedLinkUserLine(w) {
+  const url = w?.webpage_url ?? w?.url ?? "";
+  const title = w?.title || url || "Link";
+  return ["[Added link]", title, url, w?.comment && `comment: ${w.comment}`]
+    .filter(Boolean)
+    .join("\n");
+}
 
 export default function ChatWindow({
   initialInput = null,
@@ -308,6 +369,90 @@ export default function ChatWindow({
     setInputValue(value);
   };
 
+  const recordUploadInConversation = useCallback(
+    async ({ sourceMaterial, webLink }) => {
+      if (!sourceMaterial && !webLink) return;
+      try {
+        let sid = sessionId || localStorage.getItem("sessionId");
+        if (!sid) {
+          const sessionResponse = await graphqlClient.createSession();
+          sid = sessionResponse.createSession.sessionId;
+          localStorage.setItem("sessionId", sid);
+          window.dispatchEvent(new Event("sessionIdChanged"));
+          setSessionId(sid);
+        }
+        let stored = {};
+        try {
+          stored = JSON.parse(localStorage.getItem("sessionData") || "{}");
+        } catch {
+          stored = {};
+        }
+        const baseSession = {
+          ...stored,
+          ...(sessionData && typeof sessionData === "object" ? sessionData : {}),
+          session_id: sid,
+        };
+        const prevConv = Array.isArray(baseSession.chatbot_conversation)
+          ? [...baseSession.chatbot_conversation]
+          : [];
+        let userLine = "";
+        let nextMaterials = mergeUniqueMaterials(
+          baseSession.source_material,
+          [],
+        );
+        let nextLinks = mergeUniqueWebLinks(baseSession.webpage_url, []);
+
+        if (sourceMaterial) {
+          userLine = formatUploadedDocumentUserLine(sourceMaterial);
+          nextMaterials = mergeUniqueMaterials(baseSession.source_material, [
+            sourceMaterial,
+          ]);
+        } else if (webLink) {
+          const w = {
+            webpage_url: webLink.webpage_url ?? webLink.url ?? "",
+            title: webLink.title ?? "",
+            comment: webLink.comment ?? "",
+            ...(webLink.id ? { id: webLink.id } : {}),
+          };
+          userLine = formatUploadedLinkUserLine(w);
+          nextLinks = mergeUniqueWebLinks(baseSession.webpage_url, [w]);
+        }
+
+        const chatbot_conversation = [...prevConv, { user: userLine }];
+        const updated = {
+          ...baseSession,
+          chatbot_conversation,
+          source_material: nextMaterials,
+          webpage_url: nextLinks,
+        };
+
+        localStorage.setItem("sessionData", JSON.stringify(updated));
+        onResponseReceived?.(updated);
+        window.dispatchEvent(new Event("chatConversationUpdated"));
+
+        graphqlClient
+          .autoSaveComet(
+            JSON.stringify({
+              session_id: sid,
+              input_type: updated.input_type || inputType,
+              cycle_creation_data: updated.cycle_creation_data ?? {},
+              comet_creation_data: updated.comet_creation_data ?? {},
+              response_outline: updated.response_outline ?? {},
+              response_path: updated.response_path ?? {},
+              chatbot_conversation,
+              to_modify: updated.to_modify ?? {},
+              webpage_url: nextLinks,
+              source_material: nextMaterials,
+            }),
+          )
+          .catch(() => {});
+      } catch (e) {
+        console.error("recordUploadInConversation failed:", e);
+      }
+    },
+    [sessionId, sessionData, inputType, onResponseReceived],
+  );
+
   const handleSubmit = async (input) => {
     try {
       setIsLoading(true);
@@ -318,18 +463,10 @@ export default function ChatWindow({
         ? input.sourceMaterials
         : [];
       const webLinks = Array.isArray(input?.webLinks) ? input.webLinks : [];
-      const mergedWebpageUrls = [
-        ...(Array.isArray(sessionData?.webpage_url)
-          ? sessionData.webpage_url
-          : []),
-        ...webLinks.map((entry) => ({
-          webpage_url: entry?.url ?? entry?.webpage_url ?? "",
-          title: entry?.title ?? "",
-          comment: entry?.comment ?? "",
-          ...(entry?.id ? { id: entry.id } : {}),
-          ...(entry?.s3_path ? { s3_path: entry.s3_path } : {}),
-        })),
-      ];
+      const mergedWebpageUrls = mergeUniqueWebLinks(
+        sessionData?.webpage_url,
+        webLinks,
+      );
 
       if (!currentSessionId) {
         currentSessionId = localStorage.getItem("sessionId");
@@ -375,7 +512,7 @@ export default function ChatWindow({
           ? `\n\n[Attached links]\n${webLinks
               .map((item, index) => {
                 const title = item?.title || `link_${index + 1}`;
-                const url = item?.url || "";
+                const url = item?.webpage_url ?? item?.url ?? "";
                 const comment = item?.comment || "";
                 return `- title: ${title}, url: ${url}${comment ? `, comment: ${comment}` : ""}`;
               })
@@ -468,7 +605,10 @@ export default function ChatWindow({
         },
         chatbot_conversation: chatbotConversation,
         to_modify: sessionData?.to_modify ?? {},
-        source_material: sourceMaterials,
+        source_material: mergeUniqueMaterials(
+          sessionData?.source_material,
+          sourceMaterials,
+        ),
         webpage_url: mergedWebpageUrls,
         execution_id: executionId,
         retry_count: 0,
@@ -520,7 +660,7 @@ export default function ChatWindow({
       const linksLabel =
         webLinks.length > 0
           ? `\n\nLinks: ${webLinks
-              .map((item) => item?.title || item?.url)
+              .map((item) => item?.title || item?.webpage_url || item?.url)
               .filter(Boolean)
               .join(", ")}`
           : "";
@@ -613,6 +753,7 @@ export default function ChatWindow({
         inputValue={inputValue}
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}
+        onUploadRecorded={recordUploadInConversation}
         error={error}
         pageIdentifier={pageIdentifier}
       />

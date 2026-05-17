@@ -29,7 +29,6 @@ import {
 import { shareComet } from "@/api/shareComet";
 import { publishComet } from "@/api/publishComet";
 import { downloadDocument } from "@/api/downloadDocument";
-import { sendFeedback } from "@/api/sendFeedback";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -153,22 +152,22 @@ export default function Header() {
   const feedbackButtonRef = useRef(null);
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
-  const handleFloatingFeedbackClick = (e) => {
-    // Prevent click after drag
-    if (isDraggingRef.current) return;
-
+  const openFeedbackMailto = () => {
     const to = "hello@1st90.com";
     const subject = "Kyper Feedback";
-    window.location.href = `mailto:${to}?subject=${encodeURIComponent(
-      subject
-    )}`;
+    window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}`;
+  };
+  const handleFloatingFeedbackClick = () => {
+    if (isDraggingRef.current) return;
+    openFeedbackMailto();
   };
 
   // Floating Feedback Button Component
   const FloatingFeedbackButton = () => {
     const handlePointerDown = (e) => {
       e.preventDefault();
-      isDraggingRef.current = true;
+      // Don't set dragging yet – only set on actual move so click still works
+      isDraggingRef.current = false;
 
       const rect = feedbackButtonRef.current?.getBoundingClientRect();
       if (rect) {
@@ -183,7 +182,10 @@ export default function Header() {
     };
 
     const handlePointerMove = (e) => {
-      if (!isDraggingRef.current) return;
+      // Start dragging only when user actually moves the pointer
+      if (!isDraggingRef.current) {
+        isDraggingRef.current = true;
+      }
 
       const BUTTON_SIZE = 56;
 
@@ -200,7 +202,6 @@ export default function Header() {
     };
 
     const handlePointerUp = () => {
-      // Small delay to prevent click from firing immediately after drag
       setTimeout(() => {
         isDraggingRef.current = false;
       }, 100);
@@ -262,12 +263,8 @@ export default function Header() {
   const [isInviting, setIsInviting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [activeModeButton, setActiveModeButton] = useState("editor");
-  const [isFeedbackActive, setIsFeedbackActive] = useState(false);
   const [isDownloadActive, setIsDownloadActive] = useState(false);
   const [isInviteButtonActive, setIsInviteButtonActive] = useState(false);
-  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState("");
-  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
   const [loginButtonPosition, setLoginButtonPosition] = useState(null);
@@ -291,8 +288,6 @@ export default function Header() {
     }
   });
 
-  const [subject, setSubject] = useState("Kyper Feedback");
-  const to = "hello@1st90.com";
 
   // Check if user is super admin
   const isSuperAdmin = () => {
@@ -528,16 +523,6 @@ export default function Header() {
     setIsHomeButtonActive(false);
     router.push("/");
   };
-  const handleMailto = () => {
-    const to = "hello@1st90.com";
-    const subject = "Kyper Feedback";
-
-    const mailto = `mailto:${to}?subject=${encodeURIComponent(subject)}`;
-
-    // Most reliable way to open mail client
-    window.location.href = mailto;
-  };
-
   const handleFeedbackClick = () => {
     handleMailto();
     setIsFeedbackActive(!isFeedbackActive);
@@ -890,7 +875,7 @@ export default function Header() {
   //     ))}
   //   </div>
   // );
-
+// console.log("isPublishing", isPublishing);
   const InviteButton = () => (
     <button
       onClick={handleInviteClick}
@@ -1648,91 +1633,6 @@ export default function Header() {
             </DialogContent>
           </Dialog>
 
-          <Dialog
-            open={isFeedbackDialogOpen}
-            onOpenChange={(open) => {
-              setIsFeedbackDialogOpen(open);
-              if (!open) {
-                setFeedbackMessage("");
-                setIsFeedbackActive(false);
-
-                // clear new fields when dialog closes
-                setSubject("Kyper Feedback");
-                // setCc("");
-              }
-            }}
-          >
-            <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
-              <DialogHeader>
-                <DialogTitle>Send Feedback</DialogTitle>
-              </DialogHeader>
-
-              <form onSubmit={handleFeedbackSubmit} className="space-y-4">
-                <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-1">
-                    To
-                  </Label>
-                  <input
-                    value={to}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 focus:outline-none focus:ring-1 focus:ring-primary-300 focus:border-transparent"
-                  />
-                </div>
-
-                {/* Subject */}
-                <div className="mb-4">
-                  <Label className="block text-sm font-medium text-gray-700 mb-1">
-                    Subject
-                  </Label>
-                  <input
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    placeholder="Subject"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-300 focus:border-transparent"
-                    required
-                    disabled={isSubmittingFeedback}
-                  />
-                </div>
-
-                {/* Message (body) */}
-                <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-1">
-                    Message
-                  </Label>
-                  <textarea
-                    value={feedbackMessage}
-                    onChange={(e) => setFeedbackMessage(e.target.value)}
-                    placeholder="Write your message..."
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-300 focus:border-transparent resize-none min-h-[140px]"
-                    disabled={isSubmittingFeedback}
-                  />
-                </div>
-
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleFeedbackClose}
-                    disabled={isSubmittingFeedback}
-                  >
-                    Cancel
-                  </Button>
-
-                  <Button
-                    type="submit"
-                    disabled={
-                      isSubmittingFeedback ||
-                      feedbackMessage.trim() === "" ||
-                      subject.trim() === ""
-                    }
-                  >
-                    {isSubmittingFeedback ? "Sending..." : "Send Feedback"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
         </div>
       </header>
       <MyAccountDialog

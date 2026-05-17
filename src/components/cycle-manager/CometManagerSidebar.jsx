@@ -57,6 +57,8 @@ import { endpoints } from "@/api/endpoint";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
 import { resolveSourceMaterialLinkUrl } from "@/lib/sourceMaterialLinkUrl";
 import CreatePhaseVariantModal from "@/components/cycle-manager/CreatePhaseVariantModal";
+import CreateRemixPhaseModal from "@/components/cycle-manager/CreateRemixPhaseModal";
+import CreateRemixStepModal from "@/components/cycle-manager/CreateRemixStepModal";
 import CreateStepVariantModal from "@/components/cycle-manager/CreateStepVariantModal";
 import { toast } from "@/components/ui/toast";
 
@@ -173,7 +175,7 @@ export default function CometManagerSidebar({
   const stepDescriptionEditInputRef = useRef(null);
   const menuRef = useRef(null);
 
-  // Create Phase / Step Variant modals — "phase" | "step"
+  // Create Phase / Step Variant modals — "phase" | "step" | "remix-phase" | "remix-step"
   const [createVariantDialogOpen, setCreateVariantDialogOpen] = useState(false);
   const [createVariantKind, setCreateVariantKind] = useState(null);
   const [createVariantSourceChapter, setCreateVariantSourceChapter] =
@@ -196,9 +198,10 @@ export default function CometManagerSidebar({
     createVariantSourceChapter?.name ||
     "Foundations of People Leadership";
   const sourceChapterUid =
-    (typeof createVariantSourceChapter?.id === "string" &&
-    createVariantSourceChapter.id.trim()
-      ? createVariantSourceChapter.id.trim()
+    createVariantSourceChapter?.chapterUuid ||
+    (typeof createVariantSourceChapter?.uuid === "string" &&
+    createVariantSourceChapter.uuid.trim()
+      ? createVariantSourceChapter.uuid.trim()
       : "") ||
     createVariantSourceChapter?.uid ||
     createVariantSourceChapter?.chapter_uid ||
@@ -295,6 +298,19 @@ export default function CometManagerSidebar({
     setCreateVariantDialogOpen(true);
   };
 
+  const handleCreateRemixPhaseClick = (e, chapter) => {
+    e.stopPropagation();
+    setOpenChapterMenuId(null);
+    if (!isCyclePublished) {
+      toast.error("Please publish cycle first to remix.");
+      return;
+    }
+    setCreateVariantSourceChapter(chapter);
+    setCreateVariantSourceStep(null);
+    setCreateVariantKind("remix-phase");
+    setCreateVariantDialogOpen(true);
+  };
+
   const handleCreateStepVariantClick = (e, chapter, step) => {
     e.stopPropagation();
     setOpenStepHeaderMenuId(null);
@@ -305,6 +321,19 @@ export default function CometManagerSidebar({
     setCreateVariantSourceChapter(chapter);
     setCreateVariantSourceStep(step);
     setCreateVariantKind("step");
+    setCreateVariantDialogOpen(true);
+  };
+
+  const handleCreateRemixStepClick = (e, chapter, step) => {
+    e.stopPropagation();
+    setOpenStepHeaderMenuId(null);
+    if (!isCyclePublished) {
+      toast.error("Please publish cycle first to remix.");
+      return;
+    }
+    setCreateVariantSourceChapter(chapter);
+    setCreateVariantSourceStep(step);
+    setCreateVariantKind("remix-step");
     setCreateVariantDialogOpen(true);
   };
 
@@ -1375,7 +1404,7 @@ export default function CometManagerSidebar({
                                       <MoreHorizontal className="h-4 w-4 text-gray-500" />
                                     </button>
                                     {openChapterMenuId === chapterId && (
-                                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                                      <div className="absolute right-0 top-full mt-1 min-w-[8.5rem] w-max max-w-[11rem] bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
                                         <button
                                           onClick={(e) =>
                                             handleEditChapterClick(
@@ -1397,6 +1426,17 @@ export default function CometManagerSidebar({
                                         >
                                           {/* <Plus className="w-3.5 h-3.5" /> */}
                                           Copy Phase
+                                        </button>
+                                        <button
+                                          onClick={(e) =>
+                                            handleCreateRemixPhaseClick(
+                                              e,
+                                              chapter,
+                                            )
+                                          }
+                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-800 hover:bg-primary-50 transition-colors whitespace-nowrap"
+                                        >
+                                          Remix Phase
                                         </button>
                                         <button
                                           onClick={(e) =>
@@ -1736,6 +1776,18 @@ export default function CometManagerSidebar({
                                                     >
                                                       <Copy className="w-3.5 h-3.5" />
                                                       Copy Step
+                                                    </button>
+                                                    <button
+                                                      onClick={(e) =>
+                                                        handleCreateRemixStepClick(
+                                                          e,
+                                                          chapter,
+                                                          step,
+                                                        )
+                                                      }
+                                                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                                                    >
+                                                      Remix Step
                                                     </button>
                                                     <button
                                                       onClick={(e) =>
@@ -2602,6 +2654,42 @@ export default function CometManagerSidebar({
           sessionId={sessionId || ""}
           currentCycleName={currentCycleName}
           sourcePhaseName={sourcePhaseName}
+        />
+      )}
+      {createVariantKind === "remix-phase" && (
+        <CreateRemixPhaseModal
+          open={createVariantDialogOpen}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) {
+              setCreateVariantDialogOpen(false);
+              setCreateVariantKind(null);
+              setCreateVariantSourceChapter(null);
+              setCreateVariantSourceStep(null);
+            }
+          }}
+          numericChapterId={createVariantSourceChapter?.numericChapterId ?? null}
+          sessionId={sessionId || ""}
+          currentCycleName={currentCycleName}
+          sourcePhaseName={sourcePhaseName}
+        />
+      )}
+      {createVariantKind === "remix-step" && (
+        <CreateRemixStepModal
+          open={createVariantDialogOpen}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) {
+              setCreateVariantDialogOpen(false);
+              setCreateVariantKind(null);
+              setCreateVariantSourceChapter(null);
+              setCreateVariantSourceStep(null);
+            }
+          }}
+          numericStepId={createVariantSourceStep?.numericStepId ?? null}
+          sessionId={sessionId || ""}
+          sourceChapterUid={sourceChapterUid}
+          currentCycleName={currentCycleName}
+          sourcePhaseName={sourcePhaseName}
+          sourceStepName={sourceStepName || ""}
         />
       )}
       {createVariantKind === "step" && (

@@ -244,22 +244,22 @@ export default function ActionsForm({
               showInfo={true}
             />
           </div>
-          {/* {formData.hasReflectionQuestion && (
-            <div className="mb-4 mt-4 ml-6">
-              <Label className="block text-sm font-medium text-gray-700 mb-2">
-                Reflection Question
-              </Label>
-              <Input
-                type="text"
-                value={formData.reflection_question || ""}
-                onChange={(e) =>
-                  updateField("reflection_question", e.target.value)
-                }
+          {formData.hasReflectionQuestion && (
+            <div className="mt-4 ml-6">
+              <TextField
+                label="Reflection Question"
+                value={formData.reflectionPrompt || ""}
+                onChange={(value) => updateField("reflectionPrompt", value)}
                 placeholder="Enter reflection question..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-white"
+                onRequestAutoSave={onRequestAutoSave}
+                inputProps={{
+                  onSelect: (event) =>
+                    onTextFieldSelect?.("actionReflectionPrompt", event, formData.reflectionPrompt),
+                  onBlur: onFieldBlur,
+                }}
               />
             </div>
-          )} */}
+          )}
         </div>
       </div>
     </div>

@@ -352,6 +352,7 @@ export const RichTextArea = ({
   const blurCallbackRef = useRef(onBlur);
   const changeCallbackRef = useRef(onChange);
   const blurHandlerRef = useRef(null);
+  const pasteHandlerRef = useRef(null);
   const valueFormatRef = useRef(valueFormat);
 
   useEffect(() => {
@@ -611,6 +612,40 @@ export const RichTextArea = ({
       editorRoot.addEventListener("focus", handleEditorFocus);
       editorRoot.addEventListener("blur", handleEditorBlur);
 
+      // Paste from Word/browsers carries styled HTML; insert plain text only so editor styles apply.
+      const handlePasteAsPlainText = (e) => {
+        const clip = e.clipboardData;
+        if (!clip) return;
+
+        let text = clip.getData("text/plain");
+        if (text == null || text === "") {
+          const html = clip.getData("text/html");
+          if (html) {
+            const tmp = document.createElement("div");
+            tmp.innerHTML = html;
+            text = tmp.innerText || tmp.textContent || "";
+          } else {
+            text = "";
+          }
+        }
+
+        const hasFiles = clip.files && clip.files.length > 0;
+        if (!text && hasFiles && !clip.getData("text/html")) {
+          return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const range = editor.getSelection(true);
+        if (!range) return;
+        editor.deleteText(range.index, range.length, "user");
+        editor.insertText(range.index, text, "user");
+        editor.setSelection(range.index + text.length, "silent");
+      };
+
+      pasteHandlerRef.current = handlePasteAsPlainText;
+      editorRoot.addEventListener("paste", pasteHandlerRef.current, true);
       quillEditorRef.current = editor;
     };
 
@@ -620,10 +655,16 @@ export const RichTextArea = ({
     return () => {
       const editor = quillEditorRef.current;
 
-      if (editor && blurHandlerRef.current) {
+      if (editor) {
         const editorRoot = editor.root;
-        editorRoot.removeEventListener("blur", blurHandlerRef.current);
-        blurHandlerRef.current = null;
+        if (blurHandlerRef.current) {
+          editorRoot.removeEventListener("blur", blurHandlerRef.current);
+          blurHandlerRef.current = null;
+        }
+        if (pasteHandlerRef.current) {
+          editorRoot.removeEventListener("paste", pasteHandlerRef.current, true);
+          pasteHandlerRef.current = null;
+        }
         quillEditorRef.current = null;
       }
 

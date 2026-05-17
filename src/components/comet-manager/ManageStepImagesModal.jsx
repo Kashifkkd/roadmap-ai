@@ -147,6 +147,20 @@ export default function ManageStepImagesModal({
     }
   };
 
+  /** Refresh details without showing the full loading spinner (for polling). */
+  const fetchDetailsSilent = async () => {
+    if (!sessionId || !chapterUid || !stepUid) return;
+    try {
+      const res = await getStepImageDetails({ sessionId, chapterUid, stepUid });
+      const data = res?.response ?? res;
+      if (data && !res?.error) {
+        setDetails(data);
+      }
+    } catch {
+      // silently ignore — next poll will retry
+    }
+  };
+
   useEffect(() => {
     if (open) {
       fetchDetails();
@@ -154,6 +168,14 @@ export default function ManageStepImagesModal({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, sessionId, chapterUid, stepUid]);
+
+  // Poll for live status updates while the modal is open and images are pending
+  useEffect(() => {
+    if (!open || !hasPending) return;
+    const interval = setInterval(fetchDetailsSilent, 10000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, hasPending, sessionId, chapterUid, stepUid]);
 
   const toggle = (id) => {
     setSelected((prev) => {

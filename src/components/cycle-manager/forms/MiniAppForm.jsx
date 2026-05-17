@@ -1,6 +1,6 @@
-import React, { useMemo, useState /* , useRef */ } from "react";
-import { AppWindow, Code2, FileCode /* , Upload */ } from "lucide-react";
-import { TextField /* , TextArea */ } from "./FormFields";
+import React, { useMemo, useRef, useState } from "react";
+import { AppWindow, Code2, FileCode, Upload } from "lucide-react";
+import { TextArea, TextField } from "./FormFields";
 
 export default function MiniAppForm({
   formData,
@@ -11,20 +11,19 @@ export default function MiniAppForm({
 }) {
   const { onTextFieldSelect, onFieldBlur } = askKyperHandlers;
   const [isLoading, setIsLoading] = useState(true);
-  // Restore with upload / paste HTML UI below
-  // const htmlFileInputRef = useRef(null);
-  // const handleHtmlFile = (e) => {
-  //   const file = e.target.files?.[0];
-  //   if (!file) return;
-  //   const reader = new FileReader();
-  //   reader.onload = () => {
-  //     const text = typeof reader.result === "string" ? reader.result : "";
-  //     updateField("htmlContent", text);
-  //     onRequestAutoSave?.();
-  //   };
-  //   reader.readAsText(file);
-  //   e.target.value = "";
-  // };
+  const htmlFileInputRef = useRef(null);
+  const handleHtmlFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = typeof reader.result === "string" ? reader.result : "";
+      updateField("htmlContent", text);
+      onRequestAutoSave?.();
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
 
   // Get HTML content from screen or formData
   const htmlContent = useMemo(() => {
@@ -85,6 +84,40 @@ export default function MiniAppForm({
             onSelect: (event) =>
               onTextFieldSelect?.("title", event, formData.title),
             onBlur: onFieldBlur,
+          }}
+        />
+      </div>
+
+      <div className="mb-6 space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            ref={htmlFileInputRef}
+            type="file"
+            accept=".html,.htm,text/html"
+            className="hidden"
+            onChange={handleHtmlFile}
+          />
+          <button
+            type="button"
+            onClick={() => htmlFileInputRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <Upload className="h-4 w-4 text-indigo-600" />
+            Upload HTML file
+          </button>
+        </div>
+        <TextArea
+          label="HTML"
+          value={formData.htmlContent ?? ""}
+          onChange={(value) => updateField("htmlContent", value)}
+          placeholder='<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>...</body></html>'
+          rows={14}
+          onRequestAutoSave={onRequestAutoSave}
+          inputProps={{
+            className:
+              "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs leading-relaxed",
+            onBlur: onFieldBlur,
+            spellCheck: false,
           }}
         />
       </div>
@@ -183,52 +216,6 @@ export default function MiniAppForm({
       </div>
     </div>
       )}
-
-      {/* Upload HTML file + paste HTML (re-enable with useRef/handleHtmlFile + imports above)
-      <div className="mt-6 mb-6 space-y-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            ref={htmlFileInputRef}
-            type="file"
-            accept=".html,.htm,text/html"
-            className="hidden"
-            onChange={handleHtmlFile}
-          />
-          <button
-            type="button"
-            onClick={() => htmlFileInputRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <Upload className="h-4 w-4 text-indigo-600" />
-            Upload HTML file
-          </button>
-          <span className="text-xs text-gray-500">
-            Or paste HTML below — saved as{" "}
-            <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-[11px]">
-              content.heading
-            </code>{" "}
-            +{" "}
-            <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-[11px]">
-              content.html
-            </code>
-          </span>
-        </div>
-        <TextArea
-          label="HTML"
-          value={formData.htmlContent ?? ""}
-          onChange={(value) => updateField("htmlContent", value)}
-          placeholder='<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>...</body></html>'
-          rows={14}
-          onRequestAutoSave={onRequestAutoSave}
-          inputProps={{
-            className:
-              "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs leading-relaxed",
-            onBlur: onFieldBlur,
-            spellCheck: false,
-          }}
-        />
-      </div>
-      */}
     </>
   );
 }

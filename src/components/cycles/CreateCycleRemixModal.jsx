@@ -24,9 +24,11 @@ import { endpoints } from "@/api/endpoint";
 import { getClients } from "@/api/client";
 import { toast } from "@/components/ui/toast";
 import SourceMaterialCard from "@/components/create-comet/SourceMaterialCard";
-import { getSourceMaterials } from "@/api/getSourceMaterials";
-import { resolveSourceMaterialLinkUrl } from "@/lib/sourceMaterialLinkUrl";
 import { subscribeToVariantReadyWithToast } from "@/lib/variant-ready-notify";
+import {
+  preloadRemixSourceMaterials,
+  uploadPendingRemixSourceMaterials,
+} from "@/lib/remixSourceMaterialsPreload";
 
 function isValidPathId(n) {
   return typeof n === "number" && Number.isFinite(n) && n >= 0;
@@ -71,37 +73,10 @@ export default function CreateCycleRemixModal({
 
     const preloadSourceMaterials = async () => {
       try {
-        const materials = await getSourceMaterials(currentSessionId);
-        if (!Array.isArray(materials) || materials.length === 0) return;
-
-        const preloadedFiles = [];
-        const preloadedLinks = [];
-
-        materials.forEach((material) => {
-          if (material?.type === "link") {
-            const linkUrl = resolveSourceMaterialLinkUrl(material);
-            if (!linkUrl) return;
-            preloadedLinks.push({
-              id: material?.id ?? material?.material_id ?? null,
-              url: linkUrl.trim(),
-              title: material?.source_name || "",
-              comment: material?.comment ?? "",
-              isUploaded: true,
-            });
-            return;
-          }
-
-          preloadedFiles.push({
-            id: material?.id ?? material?.material_id ?? null,
-            name: material?.source_name || "Unknown File",
-            comment: material?.comment ?? "",
-            isUploaded: true,
-            output_presigned_url: material?.output_presigned_url,
-          });
-        });
-
-        if (preloadedFiles.length > 0) setSourceFiles(preloadedFiles);
-        if (preloadedLinks.length > 0) setWebpageUrls(preloadedLinks);
+        const { files, links } =
+          await preloadRemixSourceMaterials(currentSessionId);
+        if (files.length > 0) setSourceFiles(files);
+        if (links.length > 0) setWebpageUrls(links);
       } catch (error) {
         console.error("Failed to preload source materials for remix:", error);
       }
@@ -170,18 +145,7 @@ export default function CreateCycleRemixModal({
       const trimmedTitle = title.trim();
       const trimmedInstructions = instructions.trim();
 
-      // 1. Upload source materials to the pre-generated remix session_id
-      if (
-        typeof window !== "undefined" &&
-        typeof window.uploadAllFiles === "function"
-      ) {
-        setIsUploadingSources(true);
-        try {
-          await window.uploadAllFiles();
-        } finally {
-          setIsUploadingSources(false);
-        }
-      }
+      await uploadPendingRemixSourceMaterials(setIsUploadingSources);
 
       // 2. Create the variant, telling the backend to use our remix session_id
       //    Collect IDs of preloaded (original) sources the user kept in the list.

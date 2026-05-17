@@ -96,6 +96,39 @@ export default function ContentForm({
     );
   }, [existingAssets, formData.mediaUrl, formData.media]);
 
+  const getYouTubeEmbedUrl = (url) => {
+    if (typeof url !== "string" || !url.trim()) return null;
+    const raw = url.trim();
+    const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    try {
+      const parsed = new URL(normalized);
+      const host = parsed.hostname.replace(/^www\./i, "").toLowerCase();
+      let videoId = "";
+      if (host === "youtube.com" || host === "m.youtube.com") {
+        videoId = parsed.searchParams.get("v") || "";
+      } else if (host === "youtu.be") {
+        videoId = parsed.pathname.split("/").filter(Boolean)[0] || "";
+      }
+      if (!videoId) return null;
+      return `https://www.youtube.com/embed/${videoId}`;
+    } catch {
+      return null;
+    }
+  };
+
+  const getNormalizedPreviewUrl = (url) => {
+    if (typeof url !== "string" || !url.trim()) return "";
+    const raw = url.trim();
+    return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  };
+
+  const isLinkMediaPreview =
+    formData.mediaType === "link" &&
+    typeof formData.mediaUrl === "string" &&
+    formData.mediaUrl.trim() !== "";
+  const linkPreviewUrl =
+    getYouTubeEmbedUrl(formData.mediaUrl) || getNormalizedPreviewUrl(formData.mediaUrl);
+
   useEffect(() => {
     const mediaUrl = formData.mediaUrl;
     const mediaType = formData.mediaType;
@@ -277,15 +310,25 @@ export default function ContentForm({
             </Label>
             <div className="relative p-2 bg-gray-100 rounded-lg hover:border-primary transition-colors mb-4">
               {/* Show preview or upload area */}
-              {existingMediaAsset || uploadedMedia ? (
+              {existingMediaAsset || uploadedMedia || isLinkMediaPreview ? (
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-0 mb-2 bg-white overflow-hidden">
                   <div className="relative w-full h-[120px] group/media">
                     {/* Media preview based on type */}
                     {formData.mediaType === "link" ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 gap-2 px-4">
-                        <LinkIcon className="w-10 h-10 text-blue-400 shrink-0" />
-                        <span className="text-xs text-gray-500 truncate max-w-full">{formData.mediaUrl}</span>
-                      </div>
+                      linkPreviewUrl ? (
+                        <iframe
+                          src={linkPreviewUrl}
+                          title="Media preview"
+                          className="w-full h-full border-0 bg-black"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 gap-2 px-4">
+                          <LinkIcon className="w-10 h-10 text-blue-400 shrink-0" />
+                          <span className="text-xs text-gray-500 truncate max-w-full">{formData.mediaUrl}</span>
+                        </div>
+                      )
                     ) : formData.mediaType === "video" || existingMediaAsset?.type === "video" ? (
                       <div className="w-full h-full flex items-center justify-center bg-gray-50">
                         <video

@@ -3,6 +3,7 @@
 import React, {
   useState,
   useEffect,
+  useLayoutEffect,
   useRef,
   useMemo,
   useCallback,
@@ -161,13 +162,13 @@ const SCREEN_TYPE_GROUPS = [
         color: "bg-cyan-100 border-cyan-300",
         description: "Let learners choose helpful reminder notifications.",
       },
-      // {
-      //   id: "mini_app",
-      //   name: "HTML Mini App",
-      //   icon: <AppWindow size={20} />,
-      //   color: "bg-emerald-100 border-emerald-300",
-      //   description: "Interactive HTML in an iframe; paste or upload a file.",
-      // },
+      {
+        id: "mini_app",
+        name: "HTML Mini App",
+        icon: <AppWindow size={20} />,
+        color: "bg-emerald-100 border-emerald-300",
+        description: "Interactive HTML in an iframe; paste or upload a file.",
+      },
     ],
   },
   {
@@ -293,7 +294,9 @@ export default function CometManager({
   console.log("screens >>>>>>>>>>>>>>>>>>>>>>>", screens);
 
   const outlineRef = useRef(outline);
-  useEffect(() => {
+  // Keep ref in sync before the next macrotask so requestAutoSaveAfterOutlineCommit
+  // (setTimeout(0) after updateField) reads the outline that just committed — e.g. HTML file upload.
+  useLayoutEffect(() => {
     outlineRef.current = outline;
   }, [outline]);
 
@@ -641,6 +644,7 @@ export default function CometManager({
   const [addAtIndex, setAddAtIndex] = useState(null);
   const [isAddingScreen, setIsAddingScreen] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
   const [isMaximized, setIsMaximized] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [selectedAssetCategory, setSelectedAssetCategory] = useState(null);
@@ -727,6 +731,8 @@ export default function CometManager({
       try {
         localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
         setSessionData(updatedSessionData);
+        // Fragment remix (phase/step): meta.state is processing_variant while n8n
+        // runs, then ready with updated response_path.chapters (same channel as cycle remix).
         const hasPathUpdate = Boolean(
           updatedSessionData?.response_path?.chapters?.length,
         );
@@ -968,32 +974,55 @@ export default function CometManager({
 
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
+    setDragOverIndex(null);
     e.dataTransfer.effectAllowed = "move";
   };
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e, index) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDragOverIndex(e.clientX < rect.left + rect.width / 2 ? index : index + 1);
   };
 
-  const handleDrop = (e, dropIndex) => {
+  const handleDrop = (e) => {
     e.preventDefault();
-    if (draggedIndex === null) return;
-
-    const newScreens = [...screens];
-    const draggedScreen = newScreens[draggedIndex];
-    newScreens.splice(draggedIndex, 1);
-    newScreens.splice(dropIndex, 0, draggedScreen);
-
-    reorderScreensList(newScreens);
+    if (draggedIndex === null || dragOverIndex === null) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    const insertAt = dragOverIndex > draggedIndex ? dragOverIndex - 1 : dragOverIndex;
+    if (insertAt !== draggedIndex) {
+      const newScreens = [...screens];
+      const draggedScreen = newScreens[draggedIndex];
+      newScreens.splice(draggedIndex, 1);
+      newScreens.splice(insertAt, 0, draggedScreen);
+      reorderScreensList(newScreens);
+      // setSelectedScreenId(draggedScreen?.id ?? draggedScreen?.uuid ?? null);
+      setTimeout(() => onFlushSave?.(), 0);
+    }
     setDraggedIndex(null);
-    // Flush save immediately so Redis reflects the reorder
-    setTimeout(() => onFlushSave?.(), 0);
+    setDragOverIndex(null);
   };
+
+  // Cancel drag on Escape
+  React.useEffect(() => {
+    if (draggedIndex === null) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setDraggedIndex(null);
+        setDragOverIndex(null);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [draggedIndex]);
 
   const currentChapter =
     chapters?.find((ch) =>
@@ -1151,11 +1180,12 @@ export default function CometManager({
               text: actionText,
               canSchedule: true,
               canCompleteNow: true,
+              hasReflectionQuestion: true,
               replyCount: 0,
               votesCount: 0,
               toolLink: "",
               ImageUrl: "",
-              reflectionPrompt: "",
+              reflectionPrompt: "What impact do you expect—or have you already seen—as a result of this micro-action?",
             },
           },
           assets: [],
@@ -1170,7 +1200,7 @@ export default function CometManager({
             actionDescription: actionText,
             actionCanSchedule: true,
             actionCanCompleteImmediately: true,
-            actionHasReflectionQuestion: false,
+            actionHasReflectionQuestion: true,
             actionToolLink: "",
             actionToolPrompt: "",
           },
@@ -1488,8 +1518,29 @@ export default function CometManager({
           order: allScreens.length,
         };
       } else if (screenType.id === "habits") {
-        // Habits screen structure
+        // Habits screen structure — align with backend screen_schemas (habitImage, etc.)
         const habitsTitle = "";
+        const defaultHabitsContent = {
+          title: habitsTitle,
+          habitDescription: "",
+          habitImage: "",
+          habits: [
+            {
+              id: 1,
+              level: 1,
+              title: "",
+              text: "",
+              reps: 3,
+            },
+            {
+              id: 2,
+              level: 2,
+              title: "",
+              text: "",
+              reps: 4,
+            },
+          ],
+        };
         newScreen = {
           id: screenId,
           uuid: screenUuid,
@@ -1498,15 +1549,7 @@ export default function CometManager({
           screenContents: {
             id: screenContentId,
             contentType: "habits",
-            content: {
-              title: habitsTitle,
-              habit_image: {
-                url: "",
-                description: "",
-              },
-              enabled: false,
-              habits: [],
-            },
+            content: { ...defaultHabitsContent },
           },
           assets: [],
           imageStatus: "pending",
@@ -1514,13 +1557,7 @@ export default function CometManager({
           stepId: targetStepId,
           thumbnail: "",
           title: habitsTitle,
-          formData: {
-            title: habitsTitle,
-            description: "",
-            url: "",
-            habitsIsMandatory: false,
-            habits: [],
-          },
+          formData: { ...defaultHabitsContent },
           assessment: null,
           order: allScreens.length,
         };
@@ -1703,11 +1740,6 @@ export default function CometManager({
           chapterId: targetChapterId,
           stepId: targetStepId,
           thumbnail: "",
-          title: "",
-          formData: {
-            title: "",
-            htmlContent: "",
-          },
           assessment: null,
           order: allScreens.length,
         };
@@ -1744,7 +1776,7 @@ export default function CometManager({
       if (!newScreen.screenContents) {
         newScreen.screenContents = {};
       }
-      if (!newScreen.screenContents.uuid) {
+      if (newScreen.screenType !== "miniApp" && !newScreen.screenContents.uuid) {
         newScreen.screenContents.uuid = globalThis.crypto
           .getRandomValues(new Uint8Array(16))
           .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
@@ -2640,55 +2672,70 @@ export default function CometManager({
                       {/* Navigation - Screens */}
                       <div className="bg-background rounded-md p-2 sm:p-3 shrink-0 mb-2">
                         <div className="flex flex-col gap-3 w-full">
-                          <div className="flex items-start gap-2 w-full h-fit overflow-x-auto no-scrollbar -mx-2 px-2">
-                            <div className="flex items-start gap-2 sm:gap-2 px-1">
+                          <div
+                            className="flex items-start gap-2 w-full h-fit overflow-x-auto no-scrollbar -mx-2 px-2"
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={handleDrop}
+                          >
+                            <div className="flex items-start px-1">
+                              {/* always-rendered drop slot before first card */}
+                              <div className={`overflow-hidden transition-all duration-150 ease-out shrink-0 self-center flex items-center justify-center ${draggedIndex !== null && dragOverIndex === 0 ? "w-8" : "w-0"}`}>
+                                <div className="w-0.5 min-h-[180px] bg-primary-600 rounded-full" />
+                              </div>
                               {screens.map((screen, index) => (
-                                <div
-                                  key={screen.uuid || `${screen.id}-${index}`}
-                                  ref={
-                                    index === currentScreen
-                                      ? selectedScreenRef
-                                      : null
-                                  }
-                                >
-                                  <ScreenCard
-                                    screen={screen}
-                                    chapter={currentChapter}
-                                    selectedScreen={selectedScreen}
-                                    index={index}
-                                    isGeneratingImages={generatingStepUids.has(screen.stepUid)}
-                                    onDragStart={handleDragStart}
-                                    onDragEnd={handleDragEnd}
-                                    onDragOver={handleDragOver}
-                                    onDrop={handleDrop}
-                                    onClick={handleScreenClick}
-                                    onAddScreen={(insertIndex) =>
-                                      handleAddScreen(insertIndex)
+                                <React.Fragment key={screen.uuid || `${screen.id}-${index}`}>
+                                  <div
+                                    className="mx-1"
+                                    ref={
+                                      index === currentScreen
+                                        ? selectedScreenRef
+                                        : null
                                     }
-                                    onRequestDeleteScreen={
-                                      handleRequestDeleteScreen
-                                    }
-                                    isDeleting={
-                                      deletingScreenId != null &&
-                                      String(deletingScreenId) ===
-                                      String(screen.id)
-                                    }
-                                    sessionId={sessionId}
-                                    onAssetLinked={(screenId, asset) => {
-                                      // Replace old image assets, keep non-image assets
-                                      const existingAssets = screens.find(s => s.id === screenId)?.assets || [];
-                                      const isImageAsset = (a) => Boolean((a?.ImageUrl || a?.url || a?.image_url) && !a?.audioUrl && !a?.videoUrl);
-                                      updateScreenData(screenId, {
-                                        assets: [
-                                          ...existingAssets.filter(a => !isImageAsset(a)),
-                                          asset,
-                                        ],
-                                        imageStatus: "completed",
-                                      });
-                                      setTimeout(() => onFlushSave?.(), 0);
-                                    }}
-                                  />
-                                </div>
+                                  >
+                                    <ScreenCard
+                                      screen={screen}
+                                      chapter={currentChapter}
+                                      selectedScreen={selectedScreen}
+                                      index={index}
+                                      draggedIndex={draggedIndex}
+                                      isGeneratingImages={generatingStepUids.has(screen.stepUid)}
+                                      onDragStart={handleDragStart}
+                                      onDragEnd={handleDragEnd}
+                                      onDragOver={handleDragOver}
+                                      onDrop={handleDrop}
+                                      onClick={handleScreenClick}
+                                      onAddScreen={(insertIndex) =>
+                                        handleAddScreen(insertIndex)
+                                      }
+                                      onRequestDeleteScreen={
+                                        handleRequestDeleteScreen
+                                      }
+                                      isDeleting={
+                                        deletingScreenId != null &&
+                                        String(deletingScreenId) ===
+                                        String(screen.id)
+                                      }
+                                      sessionId={sessionId}
+                                      onAssetLinked={(screenId, asset) => {
+                                        // Replace old image assets, keep non-image assets
+                                        const existingAssets = screens.find(s => s.id === screenId)?.assets || [];
+                                        const isImageAsset = (a) => Boolean((a?.ImageUrl || a?.url || a?.image_url) && !a?.audioUrl && !a?.videoUrl);
+                                        updateScreenData(screenId, {
+                                          assets: [
+                                            ...existingAssets.filter(a => !isImageAsset(a)),
+                                            asset,
+                                          ],
+                                          imageStatus: "completed",
+                                        });
+                                        setTimeout(() => onFlushSave?.(), 0);
+                                      }}
+                                    />
+                                  </div>
+                                  {/* always-rendered drop slot after each card */}
+                                  <div className={`overflow-hidden transition-all duration-150 ease-out shrink-0 self-center flex items-center justify-center ${draggedIndex !== null && dragOverIndex === index + 1 ? "w-8" : "w-0"}`}>
+                                    <div className="w-0.5 min-h-[180px] bg-primary-600 rounded-full" />
+                                  </div>
+                                </React.Fragment>
                               ))}
                             </div>
                           </div>
@@ -2919,23 +2966,27 @@ export default function CometManager({
           // the sessionData → outline sync path stalls (e.g. JSON-equality cache
           // or timing with auto-save).
           if (!stepUid || !newImageUrl) return;
-          setOutline?.((prev) => {
-            if (!prev?.chapters) return prev;
-            const next = JSON.parse(JSON.stringify(prev));
-            for (const ch of next.chapters || []) {
-              for (const stepItem of ch.steps || []) {
-                const step = stepItem.step;
-                if (
-                  step &&
-                  (String(step.uuid ?? "") === String(stepUid) ||
-                    String(step.id ?? "") === String(stepUid))
-                ) {
-                  step.image = newImageUrl;
-                }
+          const currentOutline = outlineRef.current || outline;
+          if (!currentOutline?.chapters) return;
+          const next = JSON.parse(JSON.stringify(currentOutline));
+          for (const ch of next.chapters || []) {
+            for (const stepItem of ch.steps || []) {
+              const step = stepItem.step;
+              if (
+                step &&
+                (String(step.uuid ?? "") === String(stepUid) ||
+                  String(step.id ?? "") === String(stepUid))
+              ) {
+                step.image = newImageUrl;
               }
             }
-            return next;
-          });
+          }
+          setOutline?.(next);
+          // Flush to parent immediately so CometManagerLayout's outlineRef
+          // is updated synchronously — prevents the 5s auto-save timer from
+          // reading the stale outline (with the old image) and sending it to
+          // the backend, which would revert the upload via session_merge.
+          onOutlineChange?.(next);
         }}
         onSuccess={(response) => {
           console.log("Step image uploaded:", response);
