@@ -54,6 +54,14 @@ export const endpoints = {
   getCohortPaths: (cohortId) => `api/clients/v1/cohorts/${cohortId}/paths`,
   getClientPaths: (clientId) => `api/clients/v1/clients/${clientId}/paths`,
   getPathById: (pathId) => `api/clients/v1/paths/${pathId}`,
+  getManagerEmailConfig: (pathId) =>
+    `api/clients/v1/paths/${pathId}/manager_email`,
+  updateManagerEmailConfig: (pathId) =>
+    `api/clients/v1/paths/${pathId}/manager_email`,
+  getAccountabilityEmailConfig: (pathId) =>
+    `api/clients/v1/paths/${pathId}/accountability_email`,
+  updateAccountabilityEmailConfig: (pathId) =>
+    `api/clients/v1/paths/${pathId}/accountability_email`,
   createCohort: "api/clients/v1/cohorts",
   updateCohort: (cohortId) => `api/clients/v1/cohorts/${cohortId}`,
   deleteCohort: (cohortId) => `api/clients/v1/cohorts/${cohortId}`,

@@ -18,6 +18,9 @@ import {
   EyeOff,
   Pencil,
   X,
+  Bell,
+  UsersRound,
+  UserCheck,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/Button";
@@ -41,6 +44,8 @@ import {
   ART_STYLE_KEYS,
   normalizeArtStyleFromApi,
 } from "@/constants/artStyles";
+import { toast } from "@/components/ui/toast";
+import PathEmailSettingsPanel from "@/components/cycle-manager/PathEmailSettingsPanel";
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
@@ -108,7 +113,6 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
     sendTime: "",
   });
   const [adHocNotifications, setAdHocNotifications] = useState([]);
-  console.log("shdfhgsh");
 
   // Toggles (all available from backend)
   const [habitEnabled, setHabitEnabled] = useState(false);
@@ -136,6 +140,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [pathVersion, setPathVersion] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
+
+  const [resolvedPathId, setResolvedPathId] = useState(null);
 
   // Users tab state
   const [selectedUser, setSelectedUser] = useState(null);
@@ -406,6 +412,33 @@ const cancelColor = (index) => {
 
     // Do NOT override with cometSettings localStorage - enabled_attributes is the source of truth
   }, [open]); // Reload data when dialog open
+
+  useEffect(() => {
+    if (!open || typeof window === "undefined") {
+      setResolvedPathId(null);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem("sessionData");
+      if (!raw) {
+        setResolvedPathId(null);
+        return;
+      }
+      const id = JSON.parse(raw)?.response_path?.id;
+      if (typeof id === "number" && Number.isFinite(id)) {
+        setResolvedPathId(id);
+        return;
+      }
+      if (typeof id === "string" && id.trim() !== "") {
+        const n = Number(id);
+        setResolvedPathId(Number.isFinite(n) ? n : null);
+        return;
+      }
+      setResolvedPathId(null);
+    } catch {
+      setResolvedPathId(null);
+    }
+  }, [open]);
 
   useEffect(() => {
     return () => {
@@ -847,6 +880,76 @@ const cancelColor = (index) => {
 
               <button
                 onClick={() => {
+                  setActiveTab("notification");
+                  setSelectedUser(null);
+                  setShowAddUserForm(false);
+                }}
+                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
+                  activeTab === "notification"
+                    ? "bg-primary text-white shadow-md"
+                    : "text-gray-800 hover:bg-white/60"
+                }`}
+              >
+                <Bell
+                  size={18}
+                  className={`lg:w-5 lg:h-5 ${
+                    activeTab === "notification" ? "text-white" : "text-gray-500"
+                  }`}
+                />
+                <span className="hidden md:inline">Notification</span>
+                <span className="md:hidden">Notify</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab("manager-emails");
+                  setSelectedUser(null);
+                  setShowAddUserForm(false);
+                }}
+                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
+                  activeTab === "manager-emails"
+                    ? "bg-primary text-white shadow-md"
+                    : "text-gray-800 hover:bg-white/60"
+                }`}
+              >
+                <UsersRound
+                  size={18}
+                  className={`lg:w-5 lg:h-5 ${
+                    activeTab === "manager-emails"
+                      ? "text-white"
+                      : "text-gray-500"
+                  }`}
+                />
+                <span className="hidden md:inline">Manager emails</span>
+                <span className="md:hidden">Manager</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab("accountability-emails");
+                  setSelectedUser(null);
+                  setShowAddUserForm(false);
+                }}
+                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
+                  activeTab === "accountability-emails"
+                    ? "bg-primary text-white shadow-md"
+                    : "text-gray-800 hover:bg-white/60"
+                }`}
+              >
+                <UserCheck
+                  size={18}
+                  className={`lg:w-5 lg:h-5 ${
+                    activeTab === "accountability-emails"
+                      ? "text-white"
+                      : "text-gray-500"
+                  }`}
+                />
+                <span className="hidden md:inline">Accountability</span>
+                <span className="md:hidden">Account.</span>
+              </button>
+
+              <button
+                onClick={() => {
                   setActiveTab("analytics");
                   setSelectedUser(null);
                   setShowAddUserForm(false);
@@ -869,7 +972,7 @@ const cancelColor = (index) => {
           </div>
 
           {/* Content Area - Right Side */}
-          <div className="flex-1 bg-white rounded-lg flex flex-col overflow-hidden">
+          <div className="flex-1 bg-white rounded-lg flex flex-col overflow-hidden min-h-0">
             {activeTab === "comet-info" && (
               <div className="h-full flex flex-col">
                 <div className="flex-1 overflow-y-auto p-2">
@@ -1736,11 +1839,49 @@ const cancelColor = (index) => {
               </div>
             )}
 
+            {activeTab === "notification" && (
+              <div className="h-full flex flex-col min-h-0">
+                <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
+                  <div className="mx-auto max-w-lg space-y-4">
+                    <h3 className="text-lg font-semibold text-primary sm:text-xl">
+                      Notification
+                    </h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Push and in-app email toggles for this cycle live in{" "}
+                      <span className="font-medium text-gray-800">Cycle Info</span> under{" "}
+                      <span className="font-medium text-gray-800">Feature Settings</span>{" "}
+                      (Enable Push Notifications, Enable Email Notifications).
+                    </p>
+                    <div className="rounded-xl border border-primary/20 bg-primary/[0.06] px-4 py-3 text-sm text-gray-700">
+                      Reminder cadence (daily / weekly / monthly) and related options are in{" "}
+                      <span className="font-medium text-primary">Experience Design</span> on the
+                      same tab.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeTab === "analytics" && (
               <div className="h-full flex flex-col">
                 <div className="flex-1 flex items-center justify-center px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-3 sm:py-4 md:py-6 lg:py-8 text-center text-gray-500">
                   Analytics content will be displayed here
                 </div>
+              </div>
+            )}
+
+            {activeTab === "manager-emails" && (
+              <div className="h-full flex flex-col min-h-0">
+                <PathEmailSettingsPanel pathId={resolvedPathId} variant="manager" />
+              </div>
+            )}
+
+            {activeTab === "accountability-emails" && (
+              <div className="h-full flex flex-col min-h-0">
+                <PathEmailSettingsPanel
+                  pathId={resolvedPathId}
+                  variant="accountability"
+                />
               </div>
             )}
           </div>

@@ -55,7 +55,7 @@ export default function CreateRemixPhaseModal({
   const titleInputRef = useRef(null);
 
   const materialUploadSessionId =
-    typeof sessionId === "string" ? sessionId.trim() : "";
+    copyCycleValue.trim() || (typeof sessionId === "string" ? sessionId.trim() : "");
 
   useEffect(() => {
     if (!open) return;
@@ -65,13 +65,16 @@ export default function CreateRemixPhaseModal({
   }, [open, sourcePhaseName]);
 
   useEffect(() => {
-    if (!open || !materialUploadSessionId) return;
+    if (!open) return;
+    const targetId =
+      copyCycleValue.trim() ||
+      (typeof sessionId === "string" ? sessionId.trim() : "");
+    if (!targetId) return;
 
     let cancelled = false;
     const load = async () => {
       try {
-        const { files, links } =
-          await preloadRemixSourceMaterials(materialUploadSessionId);
+        const { files, links } = await preloadRemixSourceMaterials(targetId);
         if (!cancelled) {
           setSourceFiles(files);
           setWebpageUrls(links);
@@ -84,7 +87,7 @@ export default function CreateRemixPhaseModal({
     return () => {
       cancelled = true;
     };
-  }, [open, materialUploadSessionId]);
+  }, [open, sessionId, copyCycleValue]);
 
   useEffect(() => {
     if (!open) return;
@@ -197,10 +200,10 @@ export default function CreateRemixPhaseModal({
   };
 
   const handleSave = async () => {
-    const trimmedSessionId = typeof sessionId === "string" ? sessionId.trim() : "";
+    const trimmedSessionId = copyCycleValue.trim();
     if (!trimmedSessionId) {
       toast.error("Cannot remix phase", {
-        description: "No active session. Open this cycle from the dashboard again.",
+        description: "Select client and cycle to remix into.",
       });
       return;
     }
@@ -266,11 +269,13 @@ export default function CreateRemixPhaseModal({
     }
   };
 
+  const areAllDropdownsSelected = Boolean(copyClientValue && copyCycleValue);
   const isSaveDisabled =
     isSubmitting ||
     isUploadingSources ||
     isLoadingCycles ||
     !instructions.trim() ||
+    !areAllDropdownsSelected ||
     !materialUploadSessionId;
 
   return (
@@ -324,7 +329,7 @@ export default function CreateRemixPhaseModal({
               </div>
 
               <div className="flex flex-col gap-2 rounded-2xl bg-[#F5F5F5] p-4">
-                <div className="flex flex-col gap-2">
+                {/* <div className="flex flex-col gap-2">
                   <Label
                     htmlFor="remix-phase-title"
                     className="text-sm font-medium leading-5 text-[#181D27]"
@@ -340,7 +345,7 @@ export default function CreateRemixPhaseModal({
                     disabled={isSubmitting}
                     className="h-9 min-h-9 rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
                   />
-                </div>
+                </div> */}
                 <div className="flex flex-col gap-2">
                   <Label
                     htmlFor="remix-phase-instructions"

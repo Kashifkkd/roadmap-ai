@@ -422,7 +422,7 @@ export default function CreateRemixStepModal({
               </div>
 
               <div className="flex flex-col gap-2 rounded-2xl bg-[#F5F5F5] p-4">
-                <div className="flex flex-col gap-2">
+                {/* <div className="flex flex-col gap-2">
                   <Label
                     htmlFor="remix-step-title"
                     className="text-sm font-medium leading-5 text-[#181D27]"
@@ -438,7 +438,7 @@ export default function CreateRemixStepModal({
                     disabled={isSubmitting}
                     className="h-9 min-h-9 rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
                   />
-                </div>
+                </div> */}
                 <div className="flex flex-col gap-2">
                   <Label
                     htmlFor="remix-step-instructions"
