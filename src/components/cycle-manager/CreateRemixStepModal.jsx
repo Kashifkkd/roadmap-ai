@@ -24,6 +24,7 @@ import { getClients } from "@/api/client";
 import { endpoints } from "@/api/endpoint";
 import { toast } from "@/components/ui/toast";
 import SourceMaterialCard from "@/components/create-comet/SourceMaterialCard";
+import { subscribeToVariantReadyWithToast } from "@/lib/variant-ready-notify";
 import {
   preloadRemixSourceMaterials,
   uploadPendingRemixSourceMaterials,
@@ -336,7 +337,12 @@ export default function CreateRemixStepModal({
       }
 
       toast.success(
-        "Step remix has started. This step will update when processing finishes.",
+        "Step remix has started. You'll receive a notification once the remix is complete.",
+      );
+      subscribeToVariantReadyWithToast(
+        trimmedSessionId,
+        title.trim() || sourceStepName,
+        { type: "step" },
       );
       handleClose();
     } catch (e) {
@@ -463,7 +469,7 @@ export default function CreateRemixStepModal({
                 </p>
                 <div className="h-px w-full bg-[#D5D7DA]" aria-hidden />
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  <div className="flex flex-col gap-2">
+                  <div className="flex min-w-0 flex-col gap-2">
                     <p className="text-sm font-medium leading-5 text-[#181D27]">
                       Client
                     </p>
@@ -472,7 +478,7 @@ export default function CreateRemixStepModal({
                       onValueChange={setCopyClientValue}
                       disabled={isSubmitting}
                     >
-                      <SelectTrigger className="h-9 min-h-9 w-full rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                      <SelectTrigger className="h-9 w-full min-w-0 overflow-hidden rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)] [&>span]:block [&>span]:min-w-0 [&>span]:truncate">
                         <SelectValue placeholder="Select a client" />
                       </SelectTrigger>
                       <SelectContent>
@@ -488,7 +494,7 @@ export default function CreateRemixStepModal({
                     </Select>
                   </div>
 
-                  <div className="flex flex-col gap-2">
+                  <div className="flex min-w-0 flex-col gap-2">
                     <p className="text-sm font-medium leading-5 text-[#181D27]">
                       Cycle
                     </p>
@@ -499,7 +505,7 @@ export default function CreateRemixStepModal({
                         isSubmitting || isLoadingCycles || !copyClientValue
                       }
                     >
-                      <SelectTrigger className="h-9 min-h-9 w-full rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                      <SelectTrigger className="h-9 w-full min-w-0 overflow-hidden rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)] [&>span]:block [&>span]:min-w-0 [&>span]:truncate">
                         <SelectValue placeholder="Select a cycle" />
                       </SelectTrigger>
                       <SelectContent>
@@ -515,7 +521,7 @@ export default function CreateRemixStepModal({
                     </Select>
                   </div>
 
-                  <div className="flex flex-col gap-2">
+                  <div className="flex min-w-0 flex-col gap-2">
                     <p className="text-sm font-medium leading-5 text-[#181D27]">
                       Phase
                     </p>
@@ -529,7 +535,7 @@ export default function CreateRemixStepModal({
                         selectedCycleHasNoPhases
                       }
                     >
-                      <SelectTrigger className="h-9 min-h-9 w-full rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                      <SelectTrigger className="h-9 w-full min-w-0 overflow-hidden rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)] [&>span]:block [&>span]:min-w-0 [&>span]:truncate">
                         <SelectValue placeholder="Select a phase" />
                       </SelectTrigger>
                       <SelectContent>

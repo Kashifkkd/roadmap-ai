@@ -9,6 +9,8 @@ import {
   GripVertical,
   Check,
   X,
+  CircleCheck,
+  CircleX,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -33,66 +35,135 @@ import {
 } from "@/api/pathEmailConfig";
 import { collectHabitLevelOptionsFromResponsePath } from "@/lib/pathEmailHabitOptions";
 
-const PLACEHOLDER_TOKENS = "@user_name, @first_name, @path_name, @user_activity, @leaderboard";
+const PLACEHOLDER_TOKENS =
+  "@user_name, @first_name, @path_name, @user_activity, @leaderboard";
 
+const pathEmailInputClass =
+  "h-9 min-h-9 rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)] focus-visible:ring-2 focus-visible:ring-primary/30";
+
+const pathEmailLabelClass = "text-sm font-medium leading-5 text-[#181D27]";
+
+const pathEmailDeleteBtnClass =
+  "inline-flex h-9 w-9 min-h-9 min-w-9 shrink-0 items-center justify-center rounded-lg bg-[#F04438] text-white transition-colors hover:bg-[#F04438]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F04438]/40";
+
+const pathEmailOutlineButtonClass =
+  "h-7 rounded-lg border border-[#7367F0] bg-white px-4 text-sm font-medium leading-5 text-[#7367F0] shadow-none hover:bg-white/90";
+
+const pathEmailSurveyCardClass =
+  "rounded-lg bg-[#F5F5F5] shadow-[0_1px_2px_rgba(16,24,40,0.04)]";
+
+function PathEmailOutlineFullButton({ onClick, children, className = "" }) {
+  return (
+    <button
+      type="button"
+      className={`flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-[#7367F0] bg-white text-sm font-medium leading-5 text-[#7367F0] transition-colors hover:bg-[#F8F7FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7367F0]/30 ${className}`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PathEmailDeleteButton({ onClick, label, size = 16 }) {
+  return (
+    <button
+      type="button"
+      className={pathEmailDeleteBtnClass}
+      onClick={onClick}
+      aria-label={label}
+    >
+      <Trash2 size={size} strokeWidth={1.75} />
+    </button>
+  );
+}
+
+/** Scoped Figma styles for RichTextArea — does not modify shared FormFields. */
+function PathEmailRichText(props) {
+  return (
+    <div className="path-email-rich-text">
+      <RichTextArea {...props} />
+    </div>
+  );
+}
 const TRIGGER_SECTIONS = [
   {
     key: "days_after_completion",
-    label: "Days after completing step",
+    label: "Trigger for completion of steps",
     fieldGroup: "days_step",
-    helper:
-      "Maps to `days` + `step_no`. Other trigger fields are stored as null. Survey block is manager-only.",
   },
+
   {
     key: "inactive_days",
-    label: "After days inactive",
+    label: "Trigger for inactive days",
     fieldGroup: "inactive_only",
-    helper: "Maps to `inactive_days` only (inactive streak).",
   },
+
   {
     key: "active_days",
-    label: "After straight active days",
+    label: "Trigger for straight active days",
     fieldGroup: "active_only",
-    helper: "Maps to `active_days` only (active streak).",
   },
+
   {
     key: "after_action_commit",
-    label: "After committing to action",
+    label: "Trigger for committing to an action",
     fieldGroup: "step_only",
-    helper: "Maps to `step_no` (step number where the action lives).",
   },
+
   {
     key: "after_action_complete",
-    label: "After completing action",
+    label: "Trigger for completing action",
     fieldGroup: "step_only",
-    helper: "Maps to `step_no` (step number when the action is completed).",
   },
+
   {
     key: "after_habit_commit",
-    label: "After committing to a habit level",
+    label: "Trigger for committing to habit level",
     fieldGroup: "habit_pair",
-    helper:
-      "Maps to `routine_info_id` + `level_id` (same as 1st90-admin habit select). Persisted from the dropdown when habits exist on the path.",
   },
+
   {
     key: "after_habit_complete",
-    label: "After completing a habit level",
+    label: "Trigger for completing habit level",
     fieldGroup: "habit_pair",
-    helper: "Same as habit commit, but fires when the habit level is completed.",
   },
 ];
+
+function TriggerTypePicker({ value, onValueChange }) {
+  return (
+    <div className="rounded-lg border border-[#D5D7DA] bg-[#F5F5F5] p-2">
+      <div className="flex flex-col gap-2 bg-white p-2 rounded-lg">
+        <Label className="mb-2 block text-sm font-normal leading-5 text-[#535862]">
+          Trigger
+        </Label>
+        <Select value={value || undefined} onValueChange={onValueChange}>
+          <SelectTrigger className={`w-full ${pathEmailInputClass}`}>
+            <SelectValue placeholder="Select" />
+          </SelectTrigger>
+          <SelectContent>
+            {TRIGGER_SECTIONS.map((s) => (
+              <SelectItem key={s.key} value={s.key}>
+                {s.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+}
 
 function TriggerNumberField({ label, hint, value, onChange }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm font-medium text-gray-800">{label}</Label>
-      {hint ? <p className="text-xs text-gray-500">{hint}</p> : null}
+      <Label className={pathEmailLabelClass}>{label}</Label>
+      {hint ? <p className="text-xs leading-4 text-[#717680]">{hint}</p> : null}
       <Input
         type="number"
         value={value ?? ""}
         onChange={onChange}
         placeholder="—"
-        className="rounded-lg border-2 border-gray-200"
+        className={pathEmailInputClass}
       />
     </div>
   );
@@ -121,26 +192,20 @@ function HabitRoutineLevelField({ entry, onChange, habitLevelOptions }) {
   };
 
   const knownPair =
-    composite &&
-    habitLevelOptions.some((o) => o.value === composite);
+    composite && habitLevelOptions.some((o) => o.value === composite);
 
   if (habitLevelOptions.length === 0) {
     return (
       <div className="space-y-3">
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          No <strong>habits</strong> screens were found on this path outline. Enter IDs manually, or
-          add habits to the cycle and reopen settings.
-        </p>
+        
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <TriggerNumberField
-            label="Routine / habit ID"
-            hint="Saved as routine_info_id"
+            label="Habit routine number"
             value={entry.routine_info_id}
             onChange={(e) => updateManual("routine_info_id", e.target.value)}
           />
           <TriggerNumberField
-            label="Habit level ID"
-            hint="Saved as level_id"
+            label="Habit level number"
             value={entry.level_id}
             onChange={(e) => updateManual("level_id", e.target.value)}
           />
@@ -152,7 +217,7 @@ function HabitRoutineLevelField({ entry, onChange, habitLevelOptions }) {
   return (
     <div className="space-y-2">
       <div className="space-y-1.5 max-w-xl">
-        <Label className="text-sm font-medium text-gray-800">Select habit level</Label>
+        <Label className={pathEmailLabelClass}>Select habit level</Label>
         <p className="text-xs text-gray-500">
           One option per habit row on a habits screen (Routine title : Level N).
         </p>
@@ -163,7 +228,7 @@ function HabitRoutineLevelField({ entry, onChange, habitLevelOptions }) {
             setPair(parseOptionalInt(a), parseOptionalInt(b));
           }}
         >
-          <SelectTrigger className="h-10 border-gray-200 bg-white">
+          <SelectTrigger className={`w-full ${pathEmailInputClass}`}>
             <SelectValue placeholder="Choose routine & level…" />
           </SelectTrigger>
           <SelectContent>
@@ -177,12 +242,14 @@ function HabitRoutineLevelField({ entry, onChange, habitLevelOptions }) {
       </div>
       {composite && !knownPair ? (
         <p className="text-xs text-amber-800">
-          Current routine_info_id / level_id are not on the path outline anymore. Pick a new pair
-          or use manual IDs below.
+          Current routine_info_id / level_id are not on the path outline
+          anymore. Pick a new pair or use manual IDs below.
         </p>
       ) : null}
       <details className="rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2 text-xs text-gray-600">
-        <summary className="cursor-pointer font-medium text-gray-800">Manual IDs</summary>
+        <summary className="cursor-pointer font-medium text-gray-800">
+          Manual IDs
+        </summary>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <TriggerNumberField
             label="routine_info_id"
@@ -202,7 +269,12 @@ function HabitRoutineLevelField({ entry, onChange, habitLevelOptions }) {
   );
 }
 
-function TriggerDynamicFields({ fieldGroup, entry, onChange, habitLevelOptions }) {
+function TriggerDynamicFields({
+  fieldGroup,
+  entry,
+  onChange,
+  habitLevelOptions,
+}) {
   const upd = (field, raw) => {
     const v = parseOptionalInt(raw);
     onChange({ ...entry, [field]: v });
@@ -213,14 +285,12 @@ function TriggerDynamicFields({ fieldGroup, entry, onChange, habitLevelOptions }
       return (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <TriggerNumberField
-            label="Enter # days"
-            hint="Saved as `days` — send N days after the step below is completed."
+            label="Number of days"
             value={entry.days}
             onChange={(e) => upd("days", e.target.value)}
           />
           <TriggerNumberField
-            label="After completing step #"
-            hint="Saved as `step_no` — which step completion starts the timer."
+            label="After completing step"
             value={entry.step_no}
             onChange={(e) => upd("step_no", e.target.value)}
           />
@@ -230,8 +300,7 @@ function TriggerDynamicFields({ fieldGroup, entry, onChange, habitLevelOptions }
       return (
         <div className="max-w-md">
           <TriggerNumberField
-            label="After # days inactive"
-            hint="Saved as `inactive_days` — consecutive days without login."
+            label="Days after inactive Days"
             value={entry.inactive_days}
             onChange={(e) => upd("inactive_days", e.target.value)}
           />
@@ -241,8 +310,7 @@ function TriggerDynamicFields({ fieldGroup, entry, onChange, habitLevelOptions }
       return (
         <div className="max-w-md">
           <TriggerNumberField
-            label="After # straight active days"
-            hint="Saved as `active_days` — consecutive active days."
+            label="Days After Straight Active Days"
             value={entry.active_days}
             onChange={(e) => upd("active_days", e.target.value)}
           />
@@ -252,8 +320,7 @@ function TriggerDynamicFields({ fieldGroup, entry, onChange, habitLevelOptions }
       return (
         <div className="max-w-md">
           <TriggerNumberField
-            label="Step #"
-            hint="Saved as `step_no` — action step index for this trigger type."
+            label="Action Number"
             value={entry.step_no}
             onChange={(e) => upd("step_no", e.target.value)}
           />
@@ -279,8 +346,8 @@ function ToggleSwitch({ checked, onChange, label }) {
       <button
         type="button"
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-          checked ? "bg-primary" : "bg-gray-300"
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#7367F0] focus:ring-offset-2 ${
+          checked ? "bg-[#7367F0]" : "bg-[#D5D7DA]"
         }`}
         role="switch"
         aria-checked={checked}
@@ -303,22 +370,27 @@ function parseOptionalInt(value) {
 
 function HintBanners({ onCopyUserName }) {
   return (
-    <div className="space-y-2">
-      <div className="rounded-lg border border-primary/20 bg-primary/[0.06] px-3 py-2.5 text-sm text-gray-800">
-        <span className="font-medium text-primary">Email content — </span>
-        Type <code className="rounded bg-white/80 px-1 py-0.5 text-xs">@user_name</code>{" "}
-        to insert the learner&apos;s name. You can also use {PLACEHOLDER_TOKENS}.
+    <div className="flex flex-col gap-2">
+      <div className="rounded-lg bg-[#F1F0FE] px-4 py-4 text-sm font-medium leading-5 text-[#181D27]">
+        <span className="text-[#7367F0]">Email content — </span>
+        Type{" "}
+        <code className="rounded bg-white/80 px-1 py-0.5 text-xs">
+          @user_name
+        </code>{" "}
+        to insert the learner&apos;s name. You can also use {PLACEHOLDER_TOKENS}
+        .
       </div>
-      <div className="flex flex-col gap-2 rounded-lg border border-primary/20 bg-primary/[0.06] px-3 py-2.5 text-sm text-gray-800 sm:flex-row sm:items-center sm:justify-between">
-        <span>
-          <span className="font-medium text-primary">Note — </span>
-          use placeholder tokens in the rich text fields so emails stay personalized.
+      <div className="flex flex-col gap-2.5 rounded-lg bg-[#F1F0FE] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-sm font-medium leading-5 text-[#181D27]">
+          <span className="text-[#7367F0]">Note — </span>
+          use placeholder tokens in the rich text fields so emails stay
+          personalized.
         </span>
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="shrink-0 border-primary/30 text-primary hover:bg-primary/10"
+          className={`shrink-0 ${pathEmailOutlineButtonClass}`}
           onClick={onCopyUserName}
         >
           <Copy size={14} className="mr-1.5" />
@@ -381,126 +453,124 @@ function SurveyQuestionsEditor({ questions, onChange }) {
 
   if (questions.length === 0) {
     return (
-      <div className="mt-4 rounded-xl border border-dashed border-primary/25 bg-gray-50/80 px-4 py-6 text-center">
-        <p className="text-sm text-gray-600">No survey questions for this trigger.</p>
-        <Button type="button" variant="outline" size="sm" className="mt-3" onClick={addQuestion}>
-          <Plus size={14} className="mr-1" />
-          Add survey question
-        </Button>
-      </div>
+      <PathEmailOutlineFullButton onClick={addQuestion}>
+        <Plus size={14} strokeWidth={2} />
+        Add Question
+      </PathEmailOutlineFullButton>
     );
   }
 
   return (
-    <div className="mt-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-primary">Survey questions</span>
-        <Button type="button" variant="outline" size="sm" onClick={addQuestion}>
-          <Plus size={14} className="mr-1" />
-          Add question
-        </Button>
-      </div>
+    <div className="flex flex-col gap-3">
       {questions.map((q, qIndex) => (
-        <div
-          key={qIndex}
-          className="overflow-hidden rounded-xl border-2 border-primary/15 bg-gradient-to-b from-primary/[0.04] to-white shadow-sm"
-        >
-          <div className="flex items-center justify-between gap-2 border-b border-primary/10 bg-white/60 px-3 py-2">
-            <div className="flex min-w-0 flex-1 items-center gap-2">
-              <GripVertical
-                size={18}
-                className="shrink-0 text-gray-400"
-                aria-hidden
-              />
-              <span className="truncate text-sm font-semibold text-primary">
-                Survey question {qIndex + 1}
-              </span>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="shrink-0 text-red-600 hover:bg-red-50"
-              onClick={() => removeQuestion(qIndex)}
-              aria-label="Remove survey question"
-            >
-              <Trash2 size={16} />
-            </Button>
-          </div>
-          <div className="space-y-3 p-3 sm:p-4">
-            <RichTextArea
-              label="Question text"
-              value={q.text || ""}
-              onChange={(html) => updateQuestion(qIndex, { text: html })}
-              valueFormat="html"
-            />
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Options
-                </Label>
-                <Button type="button" variant="outline" size="sm" onClick={() => addOption(qIndex)}>
-                  <Plus size={14} className="mr-1" />
-                  Add option
-                </Button>
-              </div>
-              {(q.options || []).map((opt, oIndex) => (
-                <div
-                  key={opt.id ?? oIndex}
-                  className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white p-2"
-                >
-                  <GripVertical size={16} className="text-gray-300" aria-hidden />
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                    {oIndex + 1}
-                  </span>
-                  <div className="flex shrink-0 items-center gap-0.5 rounded-md border border-gray-200 p-0.5">
-                    <button
-                      type="button"
-                      title="Mark as correct"
-                      className={`rounded p-1.5 ${
-                        opt.isCorrect
-                          ? "bg-primary text-white"
-                          : "text-gray-400 hover:bg-gray-100"
-                      }`}
-                      onClick={() => updateOption(qIndex, oIndex, { isCorrect: true })}
-                    >
-                      <Check size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      title="Not correct"
-                      className={`rounded p-1.5 ${
-                        !opt.isCorrect
-                          ? "bg-gray-200 text-gray-800"
-                          : "text-gray-400 hover:bg-gray-100"
-                      }`}
-                      onClick={() => updateOption(qIndex, oIndex, { isCorrect: false })}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                  <Input
-                    value={opt.text || ""}
-                    onChange={(e) => updateOption(qIndex, oIndex, { text: e.target.value })}
-                    placeholder="Option text"
-                    className="min-w-[120px] flex-1 border-gray-200"
+        <div key={qIndex} className={pathEmailSurveyCardClass}>
+          <div className="flex flex-col gap-4 bg-white p-2 rounded-lg">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label className={pathEmailLabelClass}>Question</Label>
+                {questions.length > 1 ? (
+                  <PathEmailDeleteButton
+                    onClick={() => removeQuestion(qIndex)}
+                    label="Remove question"
+                    size={14}
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="ml-auto text-red-600 hover:bg-red-50"
-                    onClick={() => removeOption(qIndex, oIndex)}
-                    aria-label="Remove option"
+                ) : null}
+              </div>
+              <div className="path-email-survey-question">
+                <PathEmailRichText
+                  label=""
+                  value={q.text || ""}
+                  onChange={(html) => updateQuestion(qIndex, { text: html })}
+                  valueFormat="html"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <Label className={pathEmailLabelClass}>Options</Label>
+
+              <div className="flex flex-col gap-2.5">
+                {(q.options || []).map((opt, oIndex) => (
+                  <div
+                    key={opt.id ?? oIndex}
+                    className="flex items-center gap-2"
                   >
-                    <Trash2 size={14} />
-                  </Button>
-                </div>
-              ))}
+                    <GripVertical
+                      size={18}
+                      className="shrink-0 cursor-grab text-[#A4A7AE]"
+                      aria-hidden
+                    />
+                    <span className="inline-flex h-9 w-[52px] shrink-0 items-center justify-center rounded-lg bg-[#F5F5F5] text-sm font-medium text-[#717680]">
+                      {oIndex + 1}
+                    </span>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <button
+                        type="button"
+                        title="Mark as correct"
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#F5F5F5] cursor-pointer ${
+                          opt.isCorrect ? "bg-green-200" : ""
+                        }`}
+                        onClick={() =>
+                          updateOption(qIndex, oIndex, { isCorrect: true })
+                        }
+                      >
+                        <CircleCheck
+                          size={14}
+                          className={
+                            opt.isCorrect ? "text-green-500" : "text-[#A4A7AE]"
+                          }
+                          strokeWidth={1.75}
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        title="Not correct"
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#F5F5F5] cursor-pointer ${
+                          !opt.isCorrect ? "bg-red-200" : ""
+                        }`}
+                        onClick={() =>
+                          updateOption(qIndex, oIndex, { isCorrect: false })
+                        }
+                      >
+                        <CircleX
+                          size={14}
+                          className={
+                            !opt.isCorrect ? "text-red-500" : "text-[#A4A7AE]"
+                          }
+                          strokeWidth={1.75}
+                        />
+                      </button>
+                    </div>
+                    <Input
+                      value={opt.text || ""}
+                      onChange={(e) =>
+                        updateOption(qIndex, oIndex, { text: e.target.value })
+                      }
+                      placeholder=""
+                      className={`min-w-0 flex-1 ${pathEmailInputClass}`}
+                    />
+                    <PathEmailDeleteButton
+                      onClick={() => removeOption(qIndex, oIndex)}
+                      label="Remove option"
+                      size={14}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <PathEmailOutlineFullButton onClick={() => addOption(qIndex)}>
+                <Plus size={14} strokeWidth={2} />
+                Add Option
+              </PathEmailOutlineFullButton>
             </div>
           </div>
         </div>
       ))}
+
+      <PathEmailOutlineFullButton onClick={addQuestion} className="mt-1">
+        <Plus size={14} strokeWidth={2} />
+        Add Question
+      </PathEmailOutlineFullButton>
     </div>
   );
 }
@@ -520,90 +590,88 @@ function TriggerEntryCard({
   const surveyQuestions = entry.survey_questions || [];
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className="h-1 w-full bg-primary" aria-hidden />
-      <div className="flex flex-col gap-3 border-b border-gray-100 bg-primary/[0.04] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0 flex-1 space-y-1">
-          <Label className="text-xs font-medium uppercase tracking-wide text-gray-500">
-            Trigger
-          </Label>
-          <Select
-            value={sectionKey}
-            onValueChange={(nextKey) => {
-              if (nextKey !== sectionKey) onChangeTriggerType(nextKey);
-            }}
-          >
-            <SelectTrigger className="h-10 w-full border-gray-200 bg-white sm:max-w-md">
-              <SelectValue placeholder="Select" />
-            </SelectTrigger>
-            <SelectContent>
-              {TRIGGER_SECTIONS.map((s) => (
-                <SelectItem key={s.key} value={s.key}>
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {sectionMeta.helper ? (
-            <p className="text-xs leading-relaxed text-gray-600">{sectionMeta.helper}</p>
-          ) : null}
+    <div className="flex flex-col gap-2">
+      <div className="rounded-2xl bg-[#F5F5F5]">
+        <div className="flex flex-col gap-2 rounded-lg bg-white p-4">
+          <Label className={pathEmailLabelClass}>Trigger</Label>
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1 space-y-2">
+              <Select
+                value={sectionKey}
+                onValueChange={(nextKey) => {
+                  if (nextKey !== sectionKey) onChangeTriggerType(nextKey);
+                }}
+              >
+                <SelectTrigger className={`w-full ${pathEmailInputClass}`}>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TRIGGER_SECTIONS.map((s) => (
+                    <SelectItem key={s.key} value={s.key}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {sectionMeta.helper ? (
+                <p className="text-xs leading-5 text-[#717680]">
+                  {sectionMeta.helper}
+                </p>
+              ) : null}
+            </div>
+            <PathEmailDeleteButton
+              onClick={onRemove}
+              label="Delete trigger"
+              size={16}
+            />
+          </div>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="shrink-0 self-end text-red-600 hover:bg-red-50 sm:self-center"
-          onClick={onRemove}
-          aria-label="Delete trigger"
-        >
-          <Trash2 size={18} />
-        </Button>
       </div>
 
-      <div className="space-y-4 p-4 sm:p-5">
-        <TriggerDynamicFields
-          fieldGroup={sectionMeta.fieldGroup}
-          entry={entry}
-          onChange={onChange}
-          habitLevelOptions={habitLevelOptions}
-        />
+      <div className="rounded-2xl bg-[#F1F0FE] ">
+        <div className="flex flex-col gap-4 rounded-lg bg-white p-4">
+          <TriggerDynamicFields
+            fieldGroup={sectionMeta.fieldGroup}
+            entry={entry}
+            onChange={onChange}
+            habitLevelOptions={habitLevelOptions}
+          />
 
-        <RichTextArea
-          label="Sub-header text"
-          value={entry.subheader || ""}
-          onChange={setSubheader}
-          valueFormat="html"
-        />
+          <PathEmailRichText
+            label="Sub-header text"
+            value={entry.subheader || ""}
+            onChange={setSubheader}
+            valueFormat="html"
+          />
 
-        <RichTextArea
-          label="Body text"
-          value={entry.text || ""}
-          onChange={setText}
-          valueFormat="html"
-        />
+          <PathEmailRichText
+            label="Body text"
+            value={entry.text || ""}
+            onChange={setText}
+            valueFormat="html"
+          />
+        </div>
 
-        {includeSurveyQuestions && (
-          <>
-            <div className="rounded-lg border border-primary/15 bg-primary/[0.04] px-3 py-2 text-xs text-gray-700">
-              <span className="font-medium text-primary">Survey questions — </span>
-              Nested on this trigger only (manager). Each question has Quill <code className="mx-0.5 rounded bg-white/90 px-1">text</code> and{" "}
-              <code className="mx-0.5 rounded bg-white/90 px-1">options[]</code> with{" "}
-              <code className="mx-0.5 rounded bg-white/90 px-1">id</code>,{" "}
-              <code className="mx-0.5 rounded bg-white/90 px-1">text</code>,{" "}
-              <code className="mx-0.5 rounded bg-white/90 px-1">isCorrect</code>.
-            </div>
+        {includeSurveyQuestions ? (
+          <div className="mt-2">
             <SurveyQuestionsEditor
               questions={surveyQuestions}
-              onChange={(next) => onChange({ ...entry, survey_questions: next })}
+              onChange={(next) =>
+                onChange({ ...entry, survey_questions: next })
+              }
             />
-          </>
-        )}
+          </div>
+        ) : null}
       </div>
     </div>
   );
 }
 
-export default function PathEmailSettingsPanel({ pathId, variant }) {
+export default function PathEmailSettingsPanel({
+  pathId,
+  variant,
+  onSaveSuccess,
+}) {
   const includeSurveyQuestions = variant === "manager";
   const [config, setConfig] = useState(() => createEmptyPathEmailConfig());
   const [loading, setLoading] = useState(false);
@@ -624,6 +692,7 @@ export default function PathEmailSettingsPanel({ pathId, variant }) {
     }
   }, [pathId]);
 
+  /** GET /paths/{path_id}/manager_email or accountability_email — full config including all seven trigger arrays. */
   const load = useCallback(async () => {
     if (!pathId) return;
     setLoading(true);
@@ -640,7 +709,7 @@ export default function PathEmailSettingsPanel({ pathId, variant }) {
     } finally {
       setLoading(false);
     }
-  }, [pathId, variant, includeSurveyQuestions]);
+  }, [pathId, variant]);
 
   useEffect(() => {
     load();
@@ -671,8 +740,11 @@ export default function PathEmailSettingsPanel({ pathId, variant }) {
         variant === "manager"
           ? await updateManagerEmailConfig(pathId, config)
           : await updateAccountabilityEmailConfig(pathId, config);
+      // PUT returns the same shape as GET; keep triggers visible (do not reset to empty).
       setConfig(saved);
-      toast.success("Saved");
+      setTriggerKindToAdd("");
+      toast.success("Email settings saved successfully");
+      onSaveSuccess?.();
     } catch (e) {
       console.error(e);
       toast.error(e?.message || "Save failed");
@@ -712,7 +784,11 @@ export default function PathEmailSettingsPanel({ pathId, variant }) {
       } else {
         delete merged.survey_questions;
       }
-      const sanitized = sanitizeTriggerEntryForApi(merged, toKey, includeSurveyQuestions);
+      const sanitized = sanitizeTriggerEntryForApi(
+        merged,
+        toKey,
+        includeSurveyQuestions,
+      );
       const toArr = [...(prev[toKey] || []), sanitized];
       return {
         ...prev,
@@ -738,10 +814,12 @@ export default function PathEmailSettingsPanel({ pathId, variant }) {
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
         <div className="max-w-sm rounded-xl border border-primary/20 bg-primary/[0.04] p-6">
           <Info className="mx-auto mb-3 h-10 w-10 text-primary" />
-          <p className="text-sm font-medium text-gray-900">Published path required</p>
+          <p className="text-sm font-medium text-gray-900">
+            Published path required
+          </p>
           <p className="mt-2 text-sm text-gray-600">
-            Email triggers are stored on the published cycle. Publish this cycle first, then open
-            this tab again.
+            Email triggers are stored on the published cycle. Publish this cycle
+            first, then open this tab again.
           </p>
         </div>
       </div>
@@ -749,57 +827,107 @@ export default function PathEmailSettingsPanel({ pathId, variant }) {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-white">
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-5">
-        <div className="mx-auto max-w-3xl space-y-6">
+    <div className="path-email-settings flex h-full min-h-0 flex-col bg-white">
+      <style>{`
+        .path-email-settings .path-email-rich-text > .mb-4 { margin-bottom: 0; }
+        .path-email-settings .path-email-rich-text > .mb-4 > .mb-2 {
+          margin-bottom: 0;
+          padding: 4px 4px 0;
+          gap: 6px;
+        }
+        .path-email-settings .path-email-rich-text label {
+          font-size: 14px;
+          font-weight: 500;
+          line-height: 20px;
+          color: #181D27;
+        }
+        .path-email-settings .path-email-rich-text .bg-gray-100 {
+          border-radius: 12px;
+          background: #F5F5F5;
+          padding: 4px;
+        }
+        .path-email-settings .path-email-rich-text .bg-gray-100 > div:first-child {
+          min-height: 76px;
+          height: 76px;
+          border: 1px solid #D5D7DA;
+          border-radius: 8px;
+          background: #fff;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        .path-email-settings .path-email-rich-text .bg-gray-100 > div:first-child .ql-editor {
+          min-height: 76px;
+          font-size: 14px;
+          line-height: 20px;
+          color: #181D27;
+        }
+        .path-email-settings .path-email-rich-text .rich-text-toolbar {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          padding: 8px !important;
+          gap: 16px !important;
+          border: none !important;
+        }
+        .path-email-settings .path-email-rich-text .rich-text-toolbar button {
+          color: #1C274C;
+          width: 14px;
+          height: 14px;
+          padding: 0;
+        }
+        .path-email-settings .path-email-rich-text .rich-text-toolbar .ql-heading1,
+        .path-email-settings .path-email-rich-text .rich-text-toolbar .ql-heading2,
+        .path-email-settings .path-email-rich-text .rich-text-toolbar .ql-heading3 {
+          width: auto;
+          height: auto;
+          min-width: 14px;
+          min-height: 14px;
+          font-size: 12px;
+          line-height: 14px;
+          color: #1C274C;
+        }
+        .path-email-settings .path-email-rich-text .rich-text-toolbar .ql-stroke { stroke: #1C274C; }
+        .path-email-settings .path-email-rich-text .rich-text-toolbar .ql-fill { fill: #1C274C; }
+        .path-email-settings .path-email-survey-question .path-email-rich-text > .mb-4 > .mb-2 {
+          display: none;
+        }
+        .path-email-settings .path-email-survey-question .path-email-rich-text > .mb-4 {
+          margin-bottom: 0;
+        }
+      `}</style>
+      <div className="min-h-0 flex-1 overflow-y-auto p-2">
+        <div className="max-w-4xl space-y-6 bg-[#F5F5F5] p-2 rounded-lg">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h3 className="text-lg font-semibold tracking-tight text-primary sm:text-xl">
                 {title}
               </h3>
-              <p className="mt-1 max-w-xl text-xs text-gray-500 sm:text-sm">
+              {/* <p className="mt-1 max-w-xl text-xs text-gray-500 sm:text-sm">
                 PUT replaces the whole JSONB blob: all seven trigger arrays,{" "}
                 <code className="text-[11px]">enabled</code>,{" "}
                 <code className="text-[11px]">notification_time</code>,{" "}
                 <code className="text-[11px]">close_out_text</code>. Unused fields per trigger are
                 sent as <code className="text-[11px]">null</code>.
-              </p>
+              </p> */}
             </div>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[240px]">
-              <Select
-                value={triggerKindToAdd || undefined}
-                onValueChange={setTriggerKindToAdd}
-              >
-                <SelectTrigger className="h-10 w-full border-gray-200 bg-white">
-                  <SelectValue placeholder="Select trigger type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TRIGGER_SECTIONS.map((s) => (
-                    <SelectItem key={s.key} value={s.key}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                type="button"
-                className="w-full bg-primary hover:bg-primary/90"
-                onClick={() => addTrigger(triggerKindToAdd)}
-                disabled={!triggerKindToAdd}
-              >
-                <Plus size={16} className="mr-1.5" />
-                Add trigger
-              </Button>
-            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className={`h-9 w-full shrink-0 border-[#7367F0] text-[#7367F0] sm:w-auto sm:min-w-[140px]`}
+              onClick={() => addTrigger(triggerKindToAdd)}
+              disabled={!triggerKindToAdd}
+            >
+              <Plus size={16} className="mr-1.5" />
+              Add trigger
+            </Button>
           </div>
+          <div className="flex flex-col gap-2 bg-white p-2 rounded-lg">
+            <HintBanners onCopyUserName={copyUserName} />
 
-          <HintBanners onCopyUserName={copyUserName} />
-
-          {loading ? (
-            <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
-          ) : (
-            <>
-              <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 sm:p-5">
+            {loading ? (
+              <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
+            ) : (
+              <>
+                {/* <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 sm:p-5">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-primary">
                   Schedule
                 </p>
@@ -810,7 +938,7 @@ export default function PathEmailSettingsPanel({ pathId, variant }) {
                     label="Emails enabled"
                   />
                   <div className="max-w-xs space-y-1.5">
-                    <Label className="text-sm font-medium text-gray-800">
+                    <Label className={pathEmailLabelClass}>
                       Notification time (UTC)
                     </Label>
                     <Input
@@ -822,70 +950,92 @@ export default function PathEmailSettingsPanel({ pathId, variant }) {
                           notification_time: e.target.value || null,
                         }))
                       }
-                      className="rounded-lg border-2 border-gray-200"
+                      className={pathEmailInputClass}
                     />
                   </div>
                 </div>
-              </div>
+              </div> */}
 
-              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-                <Label className="text-base font-semibold text-primary">Close out text</Label>
-                <p className="mt-1 text-xs text-gray-500">
-                  Sent when the learner completes the path (single close-out email).
-                </p>
-                <div className="mt-3">
-                  <RichTextArea
-                    label="Content"
-                    value={config.close_out_text || ""}
-                    onChange={(html) => setConfig((p) => ({ ...p, close_out_text: html }))}
-                    valueFormat="html"
-                  />
-                </div>
-              </div>
+                <TriggerTypePicker
+                  value={triggerKindToAdd}
+                  onValueChange={setTriggerKindToAdd}
+                />
+                <div className="flex flex-col">
+                  <Label className={pathEmailLabelClass}>Close out text</Label>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-sm font-semibold text-gray-900">Triggers</h4>
-                  <span className="text-xs text-gray-500">
-                    {triggerBlocks.length} configured
-                  </span>
+                  <div className="mt-3">
+                    <PathEmailRichText
+                      value={config.close_out_text || ""}
+                      onChange={(html) =>
+                        setConfig((p) => ({ ...p, close_out_text: html }))
+                      }
+                      valueFormat="html"
+                    />
+                  </div>
                 </div>
-                {triggerBlocks.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50/80 px-4 py-10 text-center">
-                    <p className="text-sm text-gray-600">
-                      No triggers yet. Choose a type above and click{" "}
-                      <span className="font-medium text-primary">Add trigger</span>.
-                    </p>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-sm font-semibold text-gray-900">
+                      Triggers
+                    </h4>
+                    <span className="text-xs text-gray-500">
+                      {triggerBlocks.length} configured
+                    </span>
                   </div>
-                ) : (
-                  <div className="space-y-6">
-                    {triggerBlocks.map(({ section, entry, index }) => (
-                      <TriggerEntryCard
-                        key={`${section.key}-${index}`}
-                        sectionKey={section.key}
-                        sectionMeta={section}
-                        entry={entry}
-                        includeSurveyQuestions={includeSurveyQuestions}
-                        habitLevelOptions={habitLevelOptions}
-                        onChange={(next) => {
-                          const arr = [...(config[section.key] || [])];
-                          arr[index] = next;
-                          updateTriggerArray(section.key, arr);
-                        }}
-                        onRemove={() => {
-                          const arr = (config[section.key] || []).filter((_, i) => i !== index);
-                          updateTriggerArray(section.key, arr);
-                        }}
-                        onChangeTriggerType={(nextKey) =>
-                          moveTriggerToSection(section.key, index, nextKey)
-                        }
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+                  {triggerBlocks.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50/80 px-4 py-10 text-center">
+                      <p className="text-sm text-gray-600">
+                        No triggers yet. Choose a trigger type and click{" "}
+                        <span className="font-medium text-primary">
+                          Add trigger
+                        </span>
+                        .
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2.5">
+                      {triggerBlocks.map(({ section, entry, index }) => (
+                        <React.Fragment key={`${section.key}-${index}`}>
+                          <div
+                            className="h-[23px] w-full shrink-0  bg-[#7367F0]"
+                            aria-hidden
+                          />
+                          <div className="flex flex-col gap-2 overflow-hidden rounded-2xl bg-[#F5F5F5] p-2">
+                            <TriggerEntryCard
+                              sectionKey={section.key}
+                              sectionMeta={section}
+                              entry={entry}
+                              includeSurveyQuestions={includeSurveyQuestions}
+                              habitLevelOptions={habitLevelOptions}
+                              onChange={(next) => {
+                                const arr = [...(config[section.key] || [])];
+                                arr[index] = next;
+                                updateTriggerArray(section.key, arr);
+                              }}
+                              onRemove={() => {
+                                const arr = (config[section.key] || []).filter(
+                                  (_, i) => i !== index,
+                                );
+                                updateTriggerArray(section.key, arr);
+                              }}
+                              onChangeTriggerType={(nextKey) =>
+                                moveTriggerToSection(
+                                  section.key,
+                                  index,
+                                  nextKey,
+                                )
+                              }
+                            />
+                          </div>
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

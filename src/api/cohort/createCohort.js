@@ -1,7 +1,7 @@
 import { apiService } from "../apiService";
 import { endpoints } from "../endpoint";
 
-export const createCohort = async ({ name, description, clientId }) => {
+export const createCohort = async ({ name, description, clientId, pathIds }) => {
   if (!name) {
     throw new Error("name is required");
   }
@@ -17,6 +17,7 @@ export const createCohort = async ({ name, description, clientId }) => {
       name,
       description: description || "",
       client_id: clientId,
+      ...(Array.isArray(pathIds) && pathIds.length > 0 && { path_ids: pathIds }),
     },
   });
 };

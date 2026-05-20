@@ -18,12 +18,28 @@ const messagesFromConversation = (conversation) => {
       const names = Array.isArray(entry.source_material)
         ? entry.source_material.map((i) => i?.source_name).filter(Boolean)
         : [];
+      const attachParts = Array.isArray(entry.source_material)
+        ? entry.source_material
+            .map((i) => {
+              const n = i?.source_name;
+              if (!n) return null;
+              const c = (i?.comment ?? "").trim();
+              return c ? `${n} — ${c}` : n;
+            })
+            .filter(Boolean)
+        : [];
       const titles = Array.isArray(entry.webpage_url)
         ? entry.webpage_url
             .map((i) => i?.title || i?.webpage_url || i?.url)
             .filter(Boolean)
         : [];
-      const attach = names.length ? `\n\nAttached: ${names.join(", ")}` : "";
+      const attachSummary =
+        attachParts.length > 0
+          ? attachParts
+          : names;
+      const attach = attachSummary.length
+        ? `\n\nAttached: ${attachSummary.join(", ")}`
+        : "";
       const links = titles.length ? `\n\nLinks: ${titles.join(", ")}` : "";
       out.push({
         from: "user",
@@ -85,12 +101,44 @@ function mergeUniqueWebLinks(existing, additions) {
   return base;
 }
 
+/** Avoid losing pending rows: stale React session or lagging autosave can be shorter than localStorage. */
+function pickChatbotConversation(storedSession, incomingSession) {
+  const a = Array.isArray(storedSession?.chatbot_conversation)
+    ? storedSession.chatbot_conversation
+    : [];
+  const b = Array.isArray(incomingSession?.chatbot_conversation)
+    ? incomingSession.chatbot_conversation
+    : [];
+  if (a.length > b.length) return [...a];
+  if (b.length > a.length) return [...b];
+  return [...a];
+}
+
+function mergedSessionAttachments(storedSession, incomingSession) {
+  return {
+    source_material: mergeUniqueMaterials(
+      Array.isArray(incomingSession?.source_material)
+        ? incomingSession.source_material
+        : [],
+      Array.isArray(storedSession?.source_material)
+        ? storedSession.source_material
+        : [],
+    ),
+    webpage_url: mergeUniqueWebLinks(
+      Array.isArray(incomingSession?.webpage_url)
+        ? incomingSession.webpage_url
+        : [],
+      Array.isArray(storedSession?.webpage_url) ? storedSession.webpage_url : [],
+    ),
+  };
+}
+
 function formatUploadedDocumentUserLine(m) {
   return [
     "[Uploaded document]",
     m?.source_name ?? "Document",
-    m?.id != null && m?.id !== "" && `id: ${m.id}`,
-    m?.s3_path && `s3_path: ${m.s3_path}`,
+    // m?.id != null && m?.id !== "" && `id: ${m.id}`,
+    // m?.s3_path && `s3_path: ${m.s3_path}`,
     m?.comment && `comment: ${m.comment}`,
   ]
     .filter(Boolean)
@@ -100,7 +148,7 @@ function formatUploadedDocumentUserLine(m) {
 function formatUploadedLinkUserLine(w) {
   const url = w?.webpage_url ?? w?.url ?? "";
   const title = w?.title || url || "Link";
-  return ["[Added link]", title, url, w?.comment && `comment: ${w.comment}`]
+  return ["[Added link]", url, w?.comment && `comment: ${w.comment}`]
     .filter(Boolean)
     .join("\n");
 }
@@ -387,10 +435,16 @@ export default function ChatWindow({
         } catch {
           stored = {};
         }
+        const fromProps =
+          sessionData && typeof sessionData === "object" ? sessionData : {};
+        const mergedAttach = mergedSessionAttachments(stored, fromProps);
         const baseSession = {
           ...stored,
-          ...(sessionData && typeof sessionData === "object" ? sessionData : {}),
+          ...fromProps,
           session_id: sid,
+          chatbot_conversation: pickChatbotConversation(stored, fromProps),
+          source_material: mergedAttach.source_material,
+          webpage_url: mergedAttach.webpage_url,
         };
         const prevConv = Array.isArray(baseSession.chatbot_conversation)
           ? [...baseSession.chatbot_conversation]
@@ -503,7 +557,8 @@ export default function ChatWindow({
                 const name = item?.source_name || `file_${index + 1}`;
                 const id = item?.id ?? "n/a";
                 const s3Path = item?.s3_path || "n/a";
-                return `- source_name: ${name}, id: ${id}, s3_path: ${s3Path}`;
+                const comment = (item?.comment ?? "").trim();
+                return `- source_name: ${name}, id: ${id}, s3_path: ${s3Path}${comment ? `, comment: ${comment}` : ""}`;
               })
               .join("\n")}`
           : "";
@@ -653,7 +708,12 @@ export default function ChatWindow({
       const attachmentLabel =
         sourceMaterials.length > 0
           ? `\n\nAttached: ${sourceMaterials
-              .map((item) => item?.source_name)
+              .map((item) => {
+                const n = item?.source_name;
+                if (!n) return null;
+                const c = (item?.comment ?? "").trim();
+                return c ? `${n} — ${c}` : n;
+              })
               .filter(Boolean)
               .join(", ")}`
           : "";
@@ -685,25 +745,33 @@ export default function ChatWindow({
     (sessionData) => {
       console.log("Session update received:", sessionData);
 
-      // Preserve enabled_attributes from current session if server didn't return them
+      // Preserve longer chat + merged attachments so lagging autosave/subscription
+      // does not wipe pending "[Uploaded document]" rows from localStorage.
       let dataToStore = sessionData;
-      if (
-        !sessionData?.response_path?.enabled_attributes &&
-        typeof window !== "undefined"
-      ) {
+      if (typeof window !== "undefined") {
         try {
-          const stored = localStorage.getItem("sessionData");
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            if (parsed?.response_path?.enabled_attributes) {
-              dataToStore = {
-                ...sessionData,
-                response_path: {
-                  ...sessionData?.response_path,
-                  enabled_attributes: parsed.response_path.enabled_attributes,
-                },
-              };
-            }
+          const raw = localStorage.getItem("sessionData");
+          const parsed = raw ? JSON.parse(raw) : null;
+          if (parsed) {
+            const attach = mergedSessionAttachments(parsed, sessionData);
+            dataToStore = {
+              ...sessionData,
+              chatbot_conversation: pickChatbotConversation(parsed, sessionData),
+              source_material: attach.source_material,
+              webpage_url: attach.webpage_url,
+            };
+          }
+          if (
+            !dataToStore?.response_path?.enabled_attributes &&
+            parsed?.response_path?.enabled_attributes
+          ) {
+            dataToStore = {
+              ...dataToStore,
+              response_path: {
+                ...dataToStore?.response_path,
+                enabled_attributes: parsed.response_path.enabled_attributes,
+              },
+            };
           }
         } catch (e) {}
       }
@@ -712,18 +780,18 @@ export default function ChatWindow({
       }
       localStorage.setItem("sessionData", JSON.stringify(dataToStore));
 
-      if (sessionData.chatbot_conversation) {
-        const conversation = sessionData.chatbot_conversation;
+      const conversation = dataToStore?.chatbot_conversation;
+      if (conversation) {
         const agentMessageCount = Array.isArray(conversation)
           ? conversation.filter((entry) => entry?.agent).length
           : 0;
-        const allMessages = messagesFromConversation(conversation);
+        const rebuilt = messagesFromConversation(conversation);
 
         const shouldStopLoading =
           !awaitingConversationRef.current ||
           agentMessageCount >= minAgentMessageCountRef.current;
 
-        if (allMessages.length > 0) setAllMessages(allMessages);
+        if (rebuilt.length > 0) setAllMessages(rebuilt);
         if (shouldStopLoading) {
           setIsLoading(false);
           awaitingConversationRef.current = false;

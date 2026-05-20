@@ -300,9 +300,46 @@ export default function CometManager({
     outlineRef.current = outline;
   }, [outline]);
 
+  // Extract links embedded in rich text (HTML) content fields across all screens
+  const richTextLinks = useMemo(() => {
+    const seen = new Set();
+    const links = [];
+
+    const extractFromHtml = (html) => {
+      if (!html || typeof html !== "string" || !html.includes("<a ")) return;
+      const regex = /<a\s[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+      let match;
+      while ((match = regex.exec(html)) !== null) {
+        const url = (match[1] || "").trim();
+        const text = (match[2] || "").replace(/<[^>]+>/g, "").trim();
+        if (!url || !/^https?:\/\//i.test(url) || seen.has(url)) continue;
+        seen.add(url);
+        links.push({ webpage_url: url, title: text || url, comment: "" });
+      }
+    };
+
+    const walkChapters = (chapters) => {
+      (chapters || []).forEach((chapter) => {
+        (chapter.steps || []).forEach((stepItem) => {
+          (stepItem.screens || []).forEach((screen) => {
+            const content = screen.screenContents?.content || {};
+            Object.values(content).forEach((val) => {
+              if (typeof val === "string") extractFromHtml(val);
+            });
+          });
+        });
+      });
+    };
+
+    walkChapters(outline?.chapters);
+    walkChapters(sessionData?.response_path?.remaining_chapters);
+    return links;
+  }, [outline, sessionData?.response_path?.remaining_chapters]);
+
   const allWebpageUrls = useMemo(() => {
-    return Array.isArray(sessionData?.webpage_url) ? sessionData.webpage_url : [];
-  }, [sessionData?.webpage_url]);
+    const base = Array.isArray(sessionData?.webpage_url) ? sessionData.webpage_url : [];
+    return [...base, ...richTextLinks];
+  }, [sessionData?.webpage_url, richTextLinks]);
 
   // Collect all image assets from content screens in response_path
   const contentImageAssets = useMemo(() => {
@@ -2577,14 +2614,15 @@ export default function CometManager({
                           </h2>
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-medium text-primary text-truncate">
-                              {(
-                                currentChapter?.steps?.find(
+                              {(() => {
+                                const raw = currentChapter?.steps?.find(
                                   (step) =>
                                     String(step.id) ===
                                     String(selectedScreen?.stepId),
-                                )?.description || "Untitled Step"
-                              ).slice(0, 80)}
-                              ...
+                                )?.description || "Untitled Step";
+                                const plain = raw.replace(/<[^>]+>/g, "").trim() || "Untitled Step";
+                                return plain.length > 80 ? plain.slice(0, 80) + "..." : plain;
+                              })()}
                             </span>
                             {/* <span className="text-xs text-primary truncate">
                               {selectedScreen.name || "Untitled Step"}

@@ -97,7 +97,11 @@ export default function ChatInput({
       }
       if (uploaded.length) {
         setFiles((prev) => [...prev, ...uploaded]);
-        uploaded.forEach((item) => onUploadRecorded?.({ sourceMaterial: item }));
+        // Await each record so localStorage read-modify-write in ChatWindow does not race
+        // (parallel calls would share the same prevConv and drop earlier uploads).
+        for (const item of uploaded) {
+          await onUploadRecorded?.({ sourceMaterial: item });
+        }
         toast.success(uploaded.length === 1 ? "File attached." : `${uploaded.length} files attached.`);
       }
     } finally {

@@ -30,6 +30,7 @@ import {
   MoreVertical,
   MoreHorizontal,
   Copy,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import {
@@ -61,6 +62,7 @@ import CreateRemixPhaseModal from "@/components/cycle-manager/CreateRemixPhaseMo
 import CreateRemixStepModal from "@/components/cycle-manager/CreateRemixStepModal";
 import CreateStepVariantModal from "@/components/cycle-manager/CreateStepVariantModal";
 import { toast } from "@/components/ui/toast";
+import { RichTextArea } from "@/components/cycle-manager/forms/FormFields";
 
 // Asset category buttons
 const ASSET_CATEGORIES = [
@@ -706,16 +708,20 @@ export default function CometManagerSidebar({
     return [...apiLinks, ...extra];
   }, [sourceMaterials, contentLinkedUrls]);
 
-  // Kyper-sourced entries: structured webpage_url entries
+  // Kyper-sourced entries: only show items not already in the Linked tab
   const kyperSourceEntries = useMemo(() => {
-    const entries = Array.isArray(webpageUrls) ? webpageUrls : [];
-    return entries.map((entry, i) => ({
-      id: `kyper-${i}`,
-      url: (entry.webpage_url || "").trim(),
-      title: entry.title || "",
-      comment: entry.comment || "",
-    })).filter((e) => e.url);
-  }, [webpageUrls]);
+    const linkedUrlSet = new Set(
+      (contentLinkedUrls || []).map((m) => m.source_name).filter(Boolean),
+    );
+    return (Array.isArray(webpageUrls) ? webpageUrls : [])
+      .map((entry, i) => ({
+        id: `kyper-${i}`,
+        url: (entry.webpage_url || "").trim(),
+        title: entry.title || "",
+        comment: entry.comment || "",
+      }))
+      .filter((e) => e.url && !linkedUrlSet.has(e.url));
+  }, [webpageUrls, contentLinkedUrls]);
 
   // Per-tab filtered lists
   const filteredUploadedMaterials = useMemo(() => {
@@ -1787,6 +1793,7 @@ export default function CometManagerSidebar({
                                                       }
                                                       className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
                                                     >
+                                                      <Sparkles className="w-3.5 h-3.5" />
                                                       Remix Step
                                                     </button>
                                                     <button
@@ -1839,29 +1846,10 @@ export default function CometManagerSidebar({
                                                       `Step ${stepIndex + 1}`}
                                                   </h4> */}
                                                   <div className="border border-gray-300 rounded-md p-2 bg-white">
-                                                    <textarea
-                                                      ref={
-                                                        stepDescriptionEditInputRef
-                                                      }
-                                                      value={
-                                                        editStepDescription
-                                                      }
-                                                      onChange={(e) =>
-                                                        setEditStepDescription(
-                                                          e.target.value,
-                                                        )
-                                                      }
-                                                      onKeyDown={(e) =>
-                                                        handleStepDescriptionEditKeyDown(
-                                                          e,
-                                                          chapterId,
-                                                          stepId,
-                                                          step.name,
-                                                        )
-                                                      }
-                                                      className="w-full px-2 text-xs focus:outline-none resize-none overflow-y-auto"
-                                                      rows={3}
-                                                      placeholder="Step description"
+                                                    <RichTextArea
+                                                      value={editStepDescription}
+                                                      onChange={(value) => setEditStepDescription(value)}
+                                                      valueFormat="html"
                                                     />
                                                     <div className="border-t border-gray-300 mb-2"></div>
 
@@ -1892,16 +1880,20 @@ export default function CometManagerSidebar({
                                                 </div>
                                               ) : (
                                                 <div className="relative flex items-start justify-between gap-2">
-                                                  <p
-                                                    className={`text-xs leading-relaxed ${
-                                                      step.description
-                                                        ? "text-black"
-                                                        : "text-gray-400"
-                                                    }`}
-                                                  >
-                                                    {step.description ||
-                                                      "Add step description"}
-                                                  </p>
+                                                  {step.description ? (
+                                                    <div
+                                                      className="text-xs leading-relaxed text-black [&_p]:mb-1 [&_ol[data-list='bullet']]:list-disc [&_ol[data-list='bullet']]:pl-4 [&_ol[data-list='ordered']]:list-decimal [&_ol[data-list='ordered']]:pl-4 [&_li[data-list='bullet']]:list-disc [&_li[data-list='bullet']]:ml-4 [&_li[data-list='ordered']]:list-decimal [&_li[data-list='ordered']]:ml-4"
+                                                      dangerouslySetInnerHTML={{
+                                                        __html: step.description.includes("<")
+                                                          ? step.description
+                                                          : `<p className="mb-0">${step.description.replace(/\n/g, "</p><p className='mb-0'>")}</p>`,
+                                                      }}
+                                                    />
+                                                  ) : (
+                                                    <p className="text-xs leading-relaxed text-gray-400">
+                                                      Add step description
+                                                    </p>
+                                                  )}
                                                   <div
                                                     className="relative flex items-start justify-end shrink-0"
                                                     ref={

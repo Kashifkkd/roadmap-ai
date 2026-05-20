@@ -80,6 +80,7 @@ const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
 
 export default function CometSettingsDialog({ open, onOpenChange }) {
   const [activeTab, setActiveTab] = useState("users");
+  const [cometStatus, setCometStatus] = useState("");
   const [cometTitle, setCometTitle] = useState("");
   const [description, setDescription] = useState("");
   const [coverImage, setCoverImage] = useState(null);
@@ -207,6 +208,8 @@ const cancelColor = (index) => {
 
   useEffect(() => {
     if (!open) return;
+
+    setCometStatus(localStorage.getItem("cometStatus") || "");
 
     const data = localStorage.getItem("sessionData");
     if (data) {
@@ -1834,6 +1837,7 @@ const cancelColor = (index) => {
                     open={open}
                     isActive={activeTab === "users"}
                     usePathUsers
+                    cometStatus={cometStatus}
                   />
                 </div>
               </div>
@@ -1872,7 +1876,11 @@ const cancelColor = (index) => {
 
             {activeTab === "manager-emails" && (
               <div className="h-full flex flex-col min-h-0">
-                <PathEmailSettingsPanel pathId={resolvedPathId} variant="manager" />
+                <PathEmailSettingsPanel
+                  pathId={resolvedPathId}
+                  variant="manager"
+                  onSaveSuccess={() => onOpenChange(false)}
+                />
               </div>
             )}
 
@@ -1881,6 +1889,7 @@ const cancelColor = (index) => {
                 <PathEmailSettingsPanel
                   pathId={resolvedPathId}
                   variant="accountability"
+                  onSaveSuccess={() => onOpenChange(false)}
                 />
               </div>
             )}

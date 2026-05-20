@@ -74,6 +74,7 @@ const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
 
 export default function CometSettingsDialog({ open, onOpenChange }) {
   const [activeTab, setActiveTab] = useState("users");
+  const [cometStatus, setCometStatus] = useState("");
   const [cometTitle, setCometTitle] = useState("");
   const [description, setDescription] = useState("");
   const [coverImage, setCoverImage] = useState(null);
@@ -160,6 +161,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
   useEffect(() => {
     if (!open) return;
+
+    setCometStatus(localStorage.getItem("cometStatus") || "");
 
     const data = localStorage.getItem("sessionData");
     if (data) {
@@ -1659,6 +1662,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                     open={open}
                     isActive={activeTab === "users"}
                     usePathUsers
+                    cometStatus={cometStatus}
                   />
                 </div>
               </div>

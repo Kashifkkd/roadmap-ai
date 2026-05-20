@@ -73,6 +73,7 @@ export function Toaster() {
           error: "bg-white border-[#F04438] text-[#D92D20]",
           warning: "bg-white border-[#DEC029] text-[#C2A724]",
           info: "bg-white border-blue-500 text-blue-500",
+          closeButton: "absolute top-2 right-2 cursor-pointer",
         },
       }}
       icons={{

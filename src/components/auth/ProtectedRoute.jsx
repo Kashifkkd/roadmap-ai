@@ -18,12 +18,22 @@ export function ProtectedRoute({ children }) {
       setIsLoading(false);
 
       if (!auth) {
-        const redirectPath = encodeURIComponent(pathname);
-        router.push(`/login?redirect=${redirectPath}`);
+        // Send to the main welcome page (not /login's dark full-screen view).
+        // Optionally remember where they were so Header login can return them after sign-in.
+        if (pathname && pathname !== "/") {
+          try {
+            window.sessionStorage.setItem("postLoginRedirect", pathname);
+          } catch {
+            // ignore storage errors
+          }
+        }
+        router.replace("/");
       }
     };
 
     checkAuth();
+    window.addEventListener("auth-changed", checkAuth);
+    return () => window.removeEventListener("auth-changed", checkAuth);
   }, [router, pathname]);
   if (isLoading) {
     return (

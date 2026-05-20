@@ -51,6 +51,7 @@ export default function UserManagement({
   open,
   isActive,
   usePathUsers = false,
+  cometStatus,
 }) {
   const dropdownRef = useRef(null);
   // User list state
@@ -87,6 +88,7 @@ export default function UserManagement({
   const [currentCometIndex, setCurrentCometIndex] = useState(0);
   const [savingUser, setSavingUser] = useState(false);
   const [wipingUserActions, setWipingUserActions] = useState(false);
+  const initialFormSnapshot = useRef(null);
   const [cohorts, setCohorts] = useState([]);
   const [cohortsLoading, setCohortsLoading] = useState(false);
   const [cohortPaths, setCohortPaths] = useState([]);
@@ -258,6 +260,35 @@ export default function UserManagement({
 
     fetchUsers();
   }, [open, isActive, clientId, isPathUsersMode]);
+
+  // Reusable refresh that picks the right fetch based on mode
+  const refreshUserList = async () => {
+    try {
+      if (isPathUsersMode) {
+        const sessionDataRaw = localStorage.getItem("sessionData");
+        const sessionData = sessionDataRaw ? JSON.parse(sessionDataRaw) : null;
+        const sessionId = sessionData?.session_id || localStorage.getItem("sessionId");
+        if (sessionId) {
+          const res = await getPathUsers(sessionId);
+          const raw = res?.response;
+          const data = Array.isArray(raw?.users) ? raw.users : raw;
+          const usersArr = Array.isArray(data) ? data : [];
+          setUsers(usersArr);
+          const cycleEmails = usersArr
+            .filter((u) => u.assignment_type === "active")
+            .map((u) => u.email)
+            .filter(Boolean);
+          setSavedCurrentCycleEmails(cycleEmails);
+        }
+      } else if (clientId) {
+        const listRes = await getUserById({ clientId });
+        const data = listRes?.response || [];
+        setUsers(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("Failed to refresh user list:", err);
+    }
+  };
 
   // Fetch all paths so cycle names resolve in the table (allPaths otherwise only loads when forms open)
   useEffect(() => {
@@ -580,6 +611,19 @@ export default function UserManagement({
         : 0,
     );
 
+    // Snapshot initial values for dirty-tracking
+    initialFormSnapshot.current = JSON.stringify({
+      firstName: user.first_name || user.firstName || "",
+      lastName: user.last_name || user.lastName || "",
+      email: user.email || "",
+      password: "",
+      cohortId: String(user.cohort_id || ""),
+      enableSSO: user.is_sso || false,
+      managerEmail: user.manager_email || user.managerEmail || "",
+      accountabilityEmails: (user.accountability_emails || user.accountability_partner_emails || []).filter(Boolean).sort().join(","),
+      assignments: assignments.map((a) => `${a.cometType}:${a.isCurrent}`).sort().join("|"),
+    });
+
     setShowAddUserForm(true);
     if (isPathUsersMode) setShowRegularAddForm(true);
   };
@@ -587,6 +631,7 @@ export default function UserManagement({
   const resetUserForm = () => {
     setEditingUser(null);
     setShowRegularAddForm(false);
+    initialFormSnapshot.current = null;
     setFirstName("");
     setLastName("");
     setEmail("");
@@ -602,6 +647,22 @@ export default function UserManagement({
     setPathUserEmails([]);
     setCurrentCycleEmails(new Set());
     setCometsAvailableTickedIds(new Set());
+  };
+
+  const hasFormChanged = () => {
+    if (!editingUser || !initialFormSnapshot.current) return true; // new user — always allow save
+    const current = JSON.stringify({
+      firstName,
+      lastName,
+      email,
+      password,
+      cohortId: String(selectedCohort?.id || ""),
+      enableSSO,
+      managerEmail,
+      accountabilityEmails: accountabilityEmails.map((a) => a.value.trim()).filter(Boolean).sort().join(","),
+      assignments: cometAssignments.filter((a) => a.cometType).map((a) => `${a.cometType}:${a.isCurrent}`).sort().join("|"),
+    });
+    return current !== initialFormSnapshot.current;
   };
 
   const handleAddPathUserEmail = (rawEmail) => {
@@ -802,14 +863,8 @@ export default function UserManagement({
           editingUser ? "User updated successfully" : "User added successfully",
         );
 
-        // Refresh user list
-        try {
-          const listRes = await getUserById({ clientId });
-          const data = listRes?.response || [];
-          setUsers(Array.isArray(data) ? data : []);
-        } catch (err) {
-          console.error("Failed to refresh users after saving user:", err);
-        }
+        // Refresh user list (scoped to path or client based on mode)
+        await refreshUserList();
 
         // Reset form and close
         setShowAddUserForm(false);
@@ -888,16 +943,8 @@ export default function UserManagement({
       if (res?.success || res?.response) {
         toast.success("User deleted successfully");
 
-        // Refresh user list
-        if (clientId) {
-          try {
-            const listRes = await getUserById({ clientId });
-            const data = listRes?.response || [];
-            setUsers(Array.isArray(data) ? data : []);
-          } catch (err) {
-            console.error("Failed to refresh users after deleting user:", err);
-          }
-        }
+        // Refresh user list (scoped to path or client based on mode)
+        await refreshUserList();
       } else {
         const errorMessage =
           res?.detail ||
@@ -956,17 +1003,23 @@ export default function UserManagement({
         setCohortManagementList((prev) => [...prev, { name: newCohortName.trim() }]);
         setNewCohortName("");
         setEditingCohortItem(null);
-        setIsCohortModalOpen(false); // ← fixed
+        setCohortModalSelectedPaths(new Set());
+        setIsCohortModalOpen(false);
         toast.success("Cohort created successfully");
         return;
       }
       try {
         setCreatingCohort(true);
-        await createCohort({ name: newCohortName.trim(), clientId });
+        const res = await createCohort({
+          name: newCohortName.trim(),
+          clientId,
+          pathIds: Array.from(cohortModalSelectedPaths),
+        });
         toast.success("Cohort created successfully");
         setNewCohortName("");
         setEditingCohortItem(null);
-        setIsCohortModalOpen(false); // ← fixed
+        setCohortModalSelectedPaths(new Set());
+        setIsCohortModalOpen(false);
         await refreshCohortManagementList();
       } catch (error) {
         const errorMessage = error?.message || error?.response?.data?.detail || "Failed to create cohort";
@@ -983,11 +1036,16 @@ export default function UserManagement({
       if (!newCohortName.trim()) { toast.error("Cohort name is required"); return; }
       try {
         setCreatingCohort(true);
-        await updateCohort({ cohortId, name: newCohortName.trim() });
+        await updateCohort({
+          cohortId,
+          name: newCohortName.trim(),
+          pathIds: Array.from(cohortModalSelectedPaths),
+        });
         toast.success("Cohort updated successfully");
         setNewCohortName("");
         setEditingCohortItem(null);
-        setIsCohortModalOpen(false); // ← fixed
+        setCohortModalSelectedPaths(new Set());
+        setIsCohortModalOpen(false);
         await refreshCohortManagementList();
       } catch (error) {
         const errorMessage = error?.message || error?.response?.data?.detail || "Failed to update cohort";
@@ -1034,6 +1092,24 @@ export default function UserManagement({
       };
       fetchPathsForCohortModal();
     }, [isCohortModalOpen, clientId]);
+
+    useEffect(() => {
+      if (!editingCohortItem) {
+        setCohortModalSelectedPaths(new Set());
+        return;
+      }
+      const cohortId = editingCohortItem.id || editingCohortItem.cohort_id;
+      if (!cohortId) return;
+      getCohortPaths({ cohortId: Number(cohortId) })
+        .then((res) => {
+          const r = res?.response ?? res;
+          const arr = Array.isArray(r) ? r : Array.isArray(r?.results) ? r.results : Array.isArray(r?.data) ? r.data : [];
+          setCohortModalSelectedPaths(new Set(arr.map((p) => Number(p.id))));
+        })
+        .catch((err) => {
+          console.error("Failed to load cohort paths for editing:", err);
+        });
+    }, [editingCohortItem]);
 
     // cohort management helpers END
 
@@ -1207,6 +1283,7 @@ export default function UserManagement({
                   setNewCohortName("");
                   setIsCohortModalOpen(true); // open its own modal, nothing else touched
                 }}
+                disabled={!!cometStatus && cometStatus.toLowerCase() !== "published"}
                 className="text-primary-700 hover:text-primary-800 px-4 py-2 rounded-lg font-medium disabled:opacity-50 cursor-pointer"
               >
                 Add Cohorts
@@ -1320,16 +1397,32 @@ export default function UserManagement({
                       </td>
                       <td className="px-4 py-3 max-w-[200px]">
                         {(() => {
+                          if (isPathUsersMode) {
+                            const isActive = user.assignment_type === "active";
+                            const activePathId = user.active_path_id;
+                            const activeCycleName = activePathId
+                              ? (allPaths.find((p) => Number(p.id) === Number(activePathId))?.name ?? pathNamesMap[Number(activePathId)] ?? null)
+                              : null;
+                            return activeCycleName ? (
+                              <span className="relative group inline-block max-w-full">
+                                <span className={`truncate w-full block text-sm font-medium ${isActive ? "text-[#41B3A2]" : "text-[#181D27]"}`}>
+                                  {activeCycleName}
+                                </span>
+                                <span className="absolute z-50 left-0 top-full mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-lg">
+                                  {activeCycleName}
+                                </span>
+                              </span>
+                            ) : (
+                              <span className="text-sm text-gray-400">-</span>
+                            );
+                          }
                           const pathId = user.active_path_id ||
                             (Array.isArray(user.paths) && user.paths.length > 0 ? user.paths[0] : null);
                           const cycleName = user.active_path_name || user.activePathName ||
                             (pathId ? (allPaths.find((p) => Number(p.id) === Number(pathId))?.name ?? pathNamesMap[Number(pathId)]) : null) || null;
-                          const isActive = user.assignment_type === "active";
                           return cycleName ? (
                             <span className="relative group inline-block max-w-full">
-                              <span
-                                className={`truncate w-full block text-sm cursor-pointer ${isActive ? "text-[#41B3A2] font-medium" : "text-[#181D27]"}`}
-                              >
+                              <span className="truncate w-full block text-sm text-[#181D27]">
                                 {cycleName}
                               </span>
                               <span className="absolute z-50 left-0 top-full mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-lg">
@@ -1573,14 +1666,49 @@ export default function UserManagement({
                           <div className="flex gap-1.5">
                             <button
                               type="button"
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
-                                setCurrentCycleEmails((prev) => {
-                                  const next = new Set(prev);
-                                  if (next.has(emailVal)) next.delete(emailVal);
-                                  else next.add(emailVal);
-                                  return next;
-                                });
+                                const isRemoving = currentCycleEmails.has(emailVal);
+                                const nextSet = new Set(currentCycleEmails);
+                                if (isRemoving) nextSet.delete(emailVal);
+                                else nextSet.add(emailVal);
+                                setCurrentCycleEmails(nextSet);
+
+                                const sessionDataRaw = localStorage.getItem("sessionData");
+                                const sessionData = sessionDataRaw ? JSON.parse(sessionDataRaw) : null;
+                                const sessionId = sessionData?.session_id || localStorage.getItem("sessionId");
+                                if (!sessionId) {
+                                  toast.error("Session ID not found");
+                                  return;
+                                }
+
+                                try {
+                                  const res = await assignPathUsers(sessionId, pathUserEmails, Array.from(nextSet));
+                                  if (res?.success) {
+                                    try {
+                                      const listRes = await getPathUsers(sessionId);
+                                      const raw = listRes?.response;
+                                      const data = Array.isArray(raw?.users) ? raw.users : raw;
+                                      const usersArr = Array.isArray(data) ? data : [];
+                                      setUsers(usersArr);
+                                      const cycleEmails = usersArr
+                                        .filter((u) => u.assignment_type === "active")
+                                        .map((u) => u.email)
+                                        .filter(Boolean);
+                                      setSavedCurrentCycleEmails(cycleEmails);
+                                    } catch (refreshErr) {
+                                      console.error("Failed to refresh users after cycle update:", refreshErr);
+                                    }
+                                    toast.success(isRemoving ? "User removed from current cycle successfully" : "User assigned to current cycle successfully");
+                                  } else {
+                                    setCurrentCycleEmails(currentCycleEmails);
+                                    const msg = res?.response?.detail || res?.response?.message || res?.message || "Failed to update current cycle";
+                                    toast.error(msg);
+                                  }
+                                } catch (err) {
+                                  setCurrentCycleEmails(currentCycleEmails);
+                                  toast.error(err?.message || "Failed to update current cycle");
+                                }
                               }}
                               className={`flex items-center text-sm rounded-[8px] border px-3.5 py-1 gap-2 transition-colors bg-[#FFFFFF] ${
                                 currentCycleEmails.has(emailVal)
@@ -2196,11 +2324,10 @@ export default function UserManagement({
                       <button
                         type="button"
                         onClick={() => {
-                          setCurrentCometIndex(index);
                           setCometAssignments((prev) =>
-                            prev.map((item, idx) => ({
+                            prev.map((item) => ({
                               ...item,
-                              isCurrent: idx === index,
+                              isCurrent: item.id === assignment.id,
                             })),
                           );
                         }}
@@ -2329,7 +2456,7 @@ export default function UserManagement({
               <Button
                 type="button"
                 onClick={handleSaveUser}
-                disabled={savingUser || wipingUserActions || !firstName || !lastName || !email || (!editingUser && (!password || !confirmPassword || password !== confirmPassword))}
+                disabled={savingUser || wipingUserActions || !firstName || !lastName || !email || (!editingUser && (!password || !confirmPassword || password !== confirmPassword)) || (editingUser && !hasFormChanged())}
                 className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {savingUser

@@ -24,6 +24,7 @@ import { getClients } from "@/api/client";
 import { endpoints } from "@/api/endpoint";
 import { toast } from "@/components/ui/toast";
 import SourceMaterialCard from "@/components/create-comet/SourceMaterialCard";
+import { subscribeToVariantReadyWithToast } from "@/lib/variant-ready-notify";
 import {
   preloadRemixSourceMaterials,
   uploadPendingRemixSourceMaterials,
@@ -257,7 +258,12 @@ export default function CreateRemixPhaseModal({
       }
 
       toast.success(
-        "Phase remix has started. This phase will update when processing finishes.",
+        "Phase remix has started. You'll receive a notification once the remix is complete.",
+      );
+      subscribeToVariantReadyWithToast(
+        trimmedSessionId,
+        title.trim() || sourcePhaseName,
+        { type: "phase" },
       );
       handleClose();
     } catch (e) {
@@ -370,7 +376,7 @@ export default function CreateRemixPhaseModal({
                 </p>
                 <div className="h-px w-full bg-[#D5D7DA]" aria-hidden />
                 <div className="flex flex-row items-start gap-2">
-                  <div className="flex flex-1 flex-col gap-2">
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
                     <p className="text-sm font-medium leading-5 text-[#181D27]">
                       Client
                     </p>
@@ -379,7 +385,7 @@ export default function CreateRemixPhaseModal({
                       onValueChange={setCopyClientValue}
                       disabled={isSubmitting}
                     >
-                      <SelectTrigger className="h-9 min-h-9 w-full rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                      <SelectTrigger className="h-9 w-full min-w-0 overflow-hidden rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)] [&>span]:block [&>span]:min-w-0 [&>span]:truncate">
                         <SelectValue placeholder="Select a client" />
                       </SelectTrigger>
                       <SelectContent>
@@ -395,7 +401,7 @@ export default function CreateRemixPhaseModal({
                     </Select>
                   </div>
 
-                  <div className="flex flex-1 flex-col gap-2">
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
                     <p className="text-sm font-medium leading-5 text-[#181D27]">
                       Cycle
                     </p>
@@ -406,7 +412,7 @@ export default function CreateRemixPhaseModal({
                         isSubmitting || isLoadingCycles || !copyClientValue
                       }
                     >
-                      <SelectTrigger className="h-9 min-h-9 w-full rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                      <SelectTrigger className="h-9 w-full min-w-0 overflow-hidden rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)] [&>span]:block [&>span]:min-w-0 [&>span]:truncate">
                         <SelectValue placeholder="Select a cycle" />
                       </SelectTrigger>
                       <SelectContent>

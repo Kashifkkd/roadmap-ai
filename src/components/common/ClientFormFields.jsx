@@ -736,16 +736,16 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
     },
   }));
   const colorCodes = [
-    { code: "#7367F0", name: "Stat1", key: "stat1" },
-    { code: "#41B3A2", name: "Stat2", key: "stat2" },
-    { code: "#CF1662", name: "Stat3", key: "stat3" },
-    { code: "#FFDC2F", name: "Stat4", key: "stat4" },
-    { code: "#00A885", name: "Stat5", key: "stat5" },
     { code: "#006C55", name: "Theme", key: "theme" },
     { code: "#006C57", name: "Header", key: "header" },
     { code: "#006C58", name: "Highlight", key: "highlight" },
     { code: "#006C59", name: "Theme Header", key: "themeheader" },
     { code: "#006C56", name: "Highlight Header", key: "highlightheader" },
+    { code: "#7367F0", name: "Stat1", key: "stat1" },
+    { code: "#41B3A2", name: "Stat2", key: "stat2" },
+    { code: "#CF1662", name: "Stat3", key: "stat3" },
+    { code: "#FFDC2F", name: "Stat4", key: "stat4" },
+    { code: "#00A885", name: "Stat5", key: "stat5" },
   ];
 
   // Determine which preview to show (pending or existing)
@@ -953,7 +953,8 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
             return (
               <div
                 key={color.key}
-                className={`flex items-center gap-2 border rounded-lg p-2 cursor-pointer transition-all ${selectedColorCode === color.key
+                className={`flex items-center gap-2 border rounded-lg p-2 cursor-pointer transition-all relative ${
+                  selectedColorCode === color.key
                     ? "border-primary-700 border-2 shadow-md"
                     : "border-gray-200 hover:border-gray-300"
                   }`}
@@ -1000,7 +1001,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                         e.stopPropagation();
                         saveColor(color.key);
                       }}
-                      className="cursor-pointer border border-primary text-primary hover:bg-white h-6 leading-1 px-2 text-xs"
+                      className="cursor-pointer border border-primary text-primary hover:bg-white h-6 leading-1 px-2 text-xs z-10"
                     >
                       Save
                     </Button>
@@ -1010,12 +1011,34 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                         e.stopPropagation();
                         cancelColor(color.key);
                       }}
-                      className="cursor-pointer border border-primary text-primary hover:bg-white h-6 w-6 leading-1 px-0 text-xs"
+                      className="cursor-pointer border border-primary text-primary hover:bg-white h-6 w-6 leading-1 px-0 text-xs z-10"
                     >
                       <X size={10} />
                     </Button>
                   </div>
                 )}
+                <div className="absolute group/tooltip top-2 right-2">
+                  <button type="button" className="focus:outline-none">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <g clipPath="url(#clip0_40012362_125304)">
+                      <circle cx="8.00004" cy="8.00065" r="6.66667" stroke="#535862" strokeWidth="1.5"/>
+                      <path d="M8 11.334V7.33398" stroke="#535862" strokeWidth="1.5" strokeLinecap="round"/>
+                      <circle cx="0.666667" cy="0.666667" r="0.666667" transform="matrix(1 0 0 -1 7.33337 6)" fill="#535862"/>
+                      </g>
+                      <defs>
+                      <clipPath id="clip0_40012362_125304">
+                      <rect width="16" height="16" fill="white"/>
+                      </clipPath>
+                      </defs>
+                    </svg>
+                  </button>
+                  {/* <div className="absolute z-10 invisible opacity-0 group-hover/tooltip:visible group-hover/tooltip:opacity-100 transition-opacity duration-200 bottom-full right-0  mb-2 px-3 py-2 text-sm font-medium text-white bg-gray-800 rounded shadow-sm whitespace-nowrap pointer-events-none">
+                    Tooltip content
+                    <div className="absolute top-full right-1 border-4 border-transparent border-t-gray-800" />
+                  </div> */}
+                </div>
+
+
               </div>
             );
           })}
@@ -1345,7 +1368,7 @@ const ClientFormFields = forwardRef(({ initialValues, resetKey }, ref) => {
                     onClick={handleSavePaths}
                     disabled={savingPaths || pathsLoading}
                   >
-                    {savingPaths ? "Saving..." : "Update Comets"}
+                    {savingPaths ? "Saving..." : "Update Cycle"}
                   </Button>
                 </div>
               </div>
