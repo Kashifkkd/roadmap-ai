@@ -96,11 +96,14 @@ export default function ChatInput({
         }
       }
       if (uploaded.length) {
-        setFiles((prev) => [...prev, ...uploaded]);
-        // Await each record so localStorage read-modify-write in ChatWindow does not race
-        // (parallel calls would share the same prevConv and drop earlier uploads).
-        for (const item of uploaded) {
-          await onUploadRecorded?.({ sourceMaterial: item });
+        // When parent records each upload as its own chat row, do not keep files in composer
+        // state — they would be sent again on the next message (text-only or otherwise).
+        if (onUploadRecorded) {
+          for (const item of uploaded) {
+            await onUploadRecorded({ sourceMaterial: item });
+          }
+        } else {
+          setFiles((prev) => [...prev, ...uploaded]);
         }
         toast.success(uploaded.length === 1 ? "File attached." : `${uploaded.length} files attached.`);
       }
@@ -120,8 +123,11 @@ export default function ChatInput({
     try {
       const sessionId = await ensureSessionId();
       const link = await uploadLink({ url, sessionId, comment: linkComment.trim() });
-      setLinks((prev) => [...prev, link]);
-      onUploadRecorded?.({ webLink: link });
+      if (onUploadRecorded) {
+        await onUploadRecorded({ webLink: link });
+      } else {
+        setLinks((prev) => [...prev, link]);
+      }
       toast.success("Link attached.");
       closeLink();
     } catch (err) {
@@ -142,14 +148,28 @@ export default function ChatInput({
     if (value === undefined) setInternalText("");
   };
 
+  /** Avoid mixing typed prompts with attach/link flows (parent-controlled or internal). */
+  const clearComposerText = () => {
+    setText("");
+  };
+
   const toggleAttach = () => {
     setLinkOpen(false);
-    setAttachOpen((p) => { if (p) setPending([]); return !p; });
+    setAttachOpen((p) => {
+      if (p) setPending([]);
+      else clearComposerText();
+      return !p;
+    });
   };
   const toggleLink = () => {
     setAttachOpen(false);
-    setLinkOpen((p) => !p);
-    setLinkUrl(""); setLinkComment("");
+    setLinkOpen((p) => {
+      const opening = !p;
+      if (opening) clearComposerText();
+      return opening;
+    });
+    setLinkUrl("");
+    setLinkComment("");
     setTimeout(() => linkInputRef.current?.focus(), 50);
   };
 
