@@ -291,3 +291,30 @@ export const retryFailedStepImages = async ({ sessionId, stepUid }) => {
   });
   return response;
 };
+
+/**
+ * DELETE a tool from the library by its ID.
+ */
+export const deleteTool = async ({ toolId }) => {
+  const endpoint =
+    typeof endpoints.deleteTool === "function"
+      ? endpoints.deleteTool(toolId)
+      : endpoints.deleteTool;
+  const response = await apiService({
+    endpoint,
+    method: "DELETE",
+  });
+  return response;
+};
+
+/**
+ * DELETE a tool from the library by its URL (fallback when ID is not available).
+ */
+export const deleteToolByUrl = async ({ toolUrl }) => {
+  const response = await apiService({
+    endpoint: endpoints.deleteToolByUrl,
+    method: "DELETE",
+    params: { tool_url: toolUrl },
+  });
+  return response;
+};

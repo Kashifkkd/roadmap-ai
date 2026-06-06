@@ -7,8 +7,6 @@ import {
   Info,
   Copy,
   GripVertical,
-  Check,
-  X,
   CircleCheck,
   CircleX,
 } from "lucide-react";
@@ -34,6 +32,7 @@ import {
   updateManagerEmailConfig,
 } from "@/api/pathEmailConfig";
 import { collectHabitLevelOptionsFromResponsePath } from "@/lib/pathEmailHabitOptions";
+import { collectStepOptionsFromResponsePath } from "@/lib/pathEmailStepOptions";
 
 const PLACEHOLDER_TOKENS =
   "@user_name, @first_name, @path_name, @user_activity, @leaderboard";
@@ -131,9 +130,9 @@ const TRIGGER_SECTIONS = [
 
 function TriggerTypePicker({ value, onValueChange }) {
   return (
-    <div className="rounded-lg border border-[#D5D7DA] bg-[#F5F5F5] p-2">
+    <div className="rounded-lg  bg-[#F5F5F5] p-2">
       <div className="flex flex-col gap-2 bg-white p-2 rounded-lg">
-        <Label className="mb-2 block text-sm font-normal leading-5 text-[#535862]">
+        <Label className="mb-1 block text-sm font-medium leading-5 text-[#181D27]">
           Trigger
         </Label>
         <Select value={value || undefined} onValueChange={onValueChange}>
@@ -162,54 +161,143 @@ function TriggerNumberField({ label, hint, value, onChange }) {
         type="number"
         value={value ?? ""}
         onChange={onChange}
-        placeholder="—"
+        placeholder=""
         className={pathEmailInputClass}
       />
     </div>
   );
 }
 
-function HabitRoutineLevelField({ entry, onChange, habitLevelOptions }) {
-  const composite =
-    entry.routine_info_id != null &&
-    entry.level_id != null &&
-    Number.isFinite(Number(entry.routine_info_id)) &&
-    Number.isFinite(Number(entry.level_id))
-      ? `${Number(entry.routine_info_id)}::${Number(entry.level_id)}`
-      : "";
+/**
+ * Step dropdown for `days_after_completion` and `after_action_*` triggers.
+ *
+ * - `field` is the key on the entry to read/write ("step_no" or "step_id").
+ * - `optionField` is the corresponding key on each step option ("step_no" or
+ *   "step_id").
+ *
+ * Stores a single number (no composite key).
+ */
+function StepPickerField({
+  label,
+  helper,
+  entry,
+  field,
+  optionField,
+  steps,
+  onChange,
+}) {
+  const current = entry[field];
+  const currentValue =
+    current != null && Number.isFinite(Number(current)) ? String(current) : "";
+  const knownStep =
+    currentValue !== "" &&
+    steps.some((s) => s.published && String(s[optionField]) === currentValue);
 
-  const setPair = (routineId, levelId) => {
-    onChange({
-      ...entry,
-      routine_info_id: routineId,
-      level_id: levelId,
-    });
+  const setValue = (raw) => {
+    const n = parseOptionalInt(raw);
+    // When a step is selected, store both step_id and step_no so the
+    // backend has the stable DB id alongside the positional number.
+    const matched = steps.find((s) => String(s[optionField]) === raw);
+    if (matched) {
+      onChange({
+        ...entry,
+        step_id: matched.step_id,
+        step_no: matched.step_no,
+      });
+    } else {
+      onChange({ ...entry, [field]: n });
+    }
   };
 
-  const updateManual = (field, raw) => {
-    const v = parseOptionalInt(raw);
-    onChange({ ...entry, [field]: v });
-  };
+  if (steps.length === 0) {
+    return (
+      <div className="space-y-1.5 max-w-md">
+        <Label className={pathEmailLabelClass}>{label}</Label>
+        <Select disabled value={undefined}>
+          <SelectTrigger className={`w-full ${pathEmailInputClass}`}>
+            <SelectValue placeholder="No steps found on this cycle" />
+          </SelectTrigger>
+        </Select>
+        <p className="text-xs text-amber-800">
+          Add at least one step to the cycle outline, then return here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5 max-w-md">
+      <Label className={pathEmailLabelClass}>{label}</Label>
+      {helper ? (
+        <p className="text-xs leading-4 text-[#717680]">{helper}</p>
+      ) : null}
+      <Select
+        value={knownStep ? currentValue : undefined}
+        onValueChange={setValue}
+      >
+        <SelectTrigger className={`w-full ${pathEmailInputClass}`}>
+          <SelectValue placeholder="Choose a step…" />
+        </SelectTrigger>
+        <SelectContent>
+          {steps.map((s) => (
+            <SelectItem
+              key={s.uuid || `step-${s.step_no}`}
+              value={String(s[optionField])}
+              disabled={!s.published}
+            >
+              {`Step ${s.step_no}${s.title ? `: ${s.title}` : ""}${!s.published ? " (unpublished)" : ""}`}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {currentValue !== "" && !knownStep ? (
+        <p className="text-xs text-amber-800">
+          The previously saved step isn&apos;t on this cycle anymore. Pick a
+          step from the list above.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function HabitPickerField({ entry, onChange, habitLevelOptions }) {
+  const screenId = Number(entry.screen_id);
+  const screenContentId = Number(entry.screen_content_id);
+  const habitId = Number(entry.habit_id);
+  const allFinite =
+    Number.isFinite(screenId) &&
+    Number.isFinite(screenContentId) &&
+    Number.isFinite(habitId);
+
+  const composite = allFinite
+    ? `${screenId}::${screenContentId}::${habitId}`
+    : "";
 
   const knownPair =
     composite && habitLevelOptions.some((o) => o.value === composite);
 
+  const setTriple = (sId, scId, hId) => {
+    onChange({
+      ...entry,
+      screen_id: sId,
+      screen_content_id: scId,
+      habit_id: hId,
+    });
+  };
+
   if (habitLevelOptions.length === 0) {
     return (
-      <div className="space-y-3">
-        
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <TriggerNumberField
-            label="Habit routine number"
-            value={entry.routine_info_id}
-            onChange={(e) => updateManual("routine_info_id", e.target.value)}
-          />
-          <TriggerNumberField
-            label="Habit level number"
-            value={entry.level_id}
-            onChange={(e) => updateManual("level_id", e.target.value)}
-          />
-        </div>
+      <div className="space-y-1.5 max-w-xl">
+        <Label className={pathEmailLabelClass}>Select habit</Label>
+        <Select disabled value={undefined}>
+          <SelectTrigger className={`w-full ${pathEmailInputClass}`}>
+            <SelectValue placeholder="No habits found on this path — open the path outline first" />
+          </SelectTrigger>
+        </Select>
+        <p className="text-xs text-amber-800">
+          Add at least one habits screen to the path outline, then return here
+          to pick a habit.
+        </p>
       </div>
     );
   }
@@ -217,19 +305,23 @@ function HabitRoutineLevelField({ entry, onChange, habitLevelOptions }) {
   return (
     <div className="space-y-2">
       <div className="space-y-1.5 max-w-xl">
-        <Label className={pathEmailLabelClass}>Select habit level</Label>
+        <Label className={pathEmailLabelClass}>Select habit</Label>
         <p className="text-xs text-gray-500">
-          One option per habit row on a habits screen (Routine title : Level N).
+          One option per habit level on a habits screen.
         </p>
         <Select
           value={knownPair ? composite : undefined}
           onValueChange={(v) => {
-            const [a, b] = String(v).split("::");
-            setPair(parseOptionalInt(a), parseOptionalInt(b));
+            const [a, b, c] = String(v).split("::");
+            setTriple(
+              parseOptionalInt(a),
+              parseOptionalInt(b),
+              parseOptionalInt(c),
+            );
           }}
         >
           <SelectTrigger className={`w-full ${pathEmailInputClass}`}>
-            <SelectValue placeholder="Choose routine & level…" />
+            <SelectValue placeholder="Choose habit…" />
           </SelectTrigger>
           <SelectContent>
             {habitLevelOptions.map((o) => (
@@ -242,29 +334,10 @@ function HabitRoutineLevelField({ entry, onChange, habitLevelOptions }) {
       </div>
       {composite && !knownPair ? (
         <p className="text-xs text-amber-800">
-          Current routine_info_id / level_id are not on the path outline
-          anymore. Pick a new pair or use manual IDs below.
+          The previously selected habit isn&apos;t on the path outline anymore.
+          Pick a new habit from the list above.
         </p>
       ) : null}
-      <details className="rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2 text-xs text-gray-600">
-        <summary className="cursor-pointer font-medium text-gray-800">
-          Manual IDs
-        </summary>
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <TriggerNumberField
-            label="routine_info_id"
-            hint="Override if needed"
-            value={entry.routine_info_id}
-            onChange={(e) => updateManual("routine_info_id", e.target.value)}
-          />
-          <TriggerNumberField
-            label="level_id"
-            hint="Override if needed"
-            value={entry.level_id}
-            onChange={(e) => updateManual("level_id", e.target.value)}
-          />
-        </div>
-      </details>
     </div>
   );
 }
@@ -274,6 +347,7 @@ function TriggerDynamicFields({
   entry,
   onChange,
   habitLevelOptions,
+  stepOptions,
 }) {
   const upd = (field, raw) => {
     const v = parseOptionalInt(raw);
@@ -289,10 +363,13 @@ function TriggerDynamicFields({
             value={entry.days}
             onChange={(e) => upd("days", e.target.value)}
           />
-          <TriggerNumberField
+          <StepPickerField
             label="After completing step"
-            value={entry.step_no}
-            onChange={(e) => upd("step_no", e.target.value)}
+            entry={entry}
+            field="step_no"
+            optionField="step_no"
+            steps={stepOptions}
+            onChange={onChange}
           />
         </div>
       );
@@ -300,7 +377,7 @@ function TriggerDynamicFields({
       return (
         <div className="max-w-md">
           <TriggerNumberField
-            label="Days after inactive Days"
+            label="Days inactive"
             value={entry.inactive_days}
             onChange={(e) => upd("inactive_days", e.target.value)}
           />
@@ -310,7 +387,7 @@ function TriggerDynamicFields({
       return (
         <div className="max-w-md">
           <TriggerNumberField
-            label="Days After Straight Active Days"
+            label="Straight active days"
             value={entry.active_days}
             onChange={(e) => upd("active_days", e.target.value)}
           />
@@ -318,17 +395,18 @@ function TriggerDynamicFields({
       );
     case "step_only":
       return (
-        <div className="max-w-md">
-          <TriggerNumberField
-            label="Action Number"
-            value={entry.step_no}
-            onChange={(e) => upd("step_no", e.target.value)}
-          />
-        </div>
+        <StepPickerField
+          label="Action step"
+          entry={entry}
+          field="step_no"
+          optionField="step_no"
+          steps={stepOptions}
+          onChange={onChange}
+        />
       );
     case "habit_pair":
       return (
-        <HabitRoutineLevelField
+        <HabitPickerField
           entry={entry}
           onChange={onChange}
           habitLevelOptions={habitLevelOptions}
@@ -337,29 +415,6 @@ function TriggerDynamicFields({
     default:
       return null;
   }
-}
-
-function ToggleSwitch({ checked, onChange, label }) {
-  return (
-    <div className="flex items-center justify-between py-1">
-      <Label className="text-sm font-medium text-gray-800">{label}</Label>
-      <button
-        type="button"
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#7367F0] focus:ring-offset-2 ${
-          checked ? "bg-[#7367F0]" : "bg-[#D5D7DA]"
-        }`}
-        role="switch"
-        aria-checked={checked}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
-            checked ? "translate-x-6" : "translate-x-1"
-          }`}
-        />
-      </button>
-    </div>
-  );
 }
 
 function parseOptionalInt(value) {
@@ -372,19 +427,13 @@ function HintBanners({ onCopyUserName }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="rounded-lg bg-[#F1F0FE] px-4 py-4 text-sm font-medium leading-5 text-[#181D27]">
-        <span className="text-[#7367F0]">Email content — </span>
-        Type{" "}
-        <code className="rounded bg-white/80 px-1 py-0.5 text-xs">
-          @user_name
-        </code>{" "}
-        to insert the learner&apos;s name. You can also use {PLACEHOLDER_TOKENS}
-        .
+        <span className="text-black">Email content - </span>
+        Type @user_name to insert the learner&apos;s name.
       </div>
       <div className="flex flex-col gap-2.5 rounded-lg bg-[#F1F0FE] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-sm font-medium leading-5 text-[#181D27]">
-          <span className="text-[#7367F0]">Note — </span>
-          use placeholder tokens in the rich text fields so emails stay
-          personalized.
+          <span className="text-black">Note: </span>
+          use @user_name text in textbox to define user in manager emails
         </span>
         <Button
           type="button"
@@ -468,7 +517,7 @@ function SurveyQuestionsEditor({ questions, onChange }) {
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-2">
                 <Label className={pathEmailLabelClass}>Question</Label>
-                {questions.length > 1 ? (
+                {questions.length >= 1 ? (
                   <PathEmailDeleteButton
                     onClick={() => removeQuestion(qIndex)}
                     label="Remove question"
@@ -581,13 +630,16 @@ function TriggerEntryCard({
   entry,
   includeSurveyQuestions,
   habitLevelOptions,
+  stepOptions,
   onChange,
   onRemove,
   onChangeTriggerType,
 }) {
   const setText = (html) => onChange({ ...entry, text: html });
   const setSubheader = (html) => onChange({ ...entry, subheader: html });
-  const surveyQuestions = entry.survey_questions || [];
+  const surveyQuestions = Array.isArray(entry.survey_questions)
+    ? entry.survey_questions
+    : [];
 
   return (
     <div className="flex flex-col gap-2">
@@ -635,6 +687,7 @@ function TriggerEntryCard({
             entry={entry}
             onChange={onChange}
             habitLevelOptions={habitLevelOptions}
+            stepOptions={stepOptions}
           />
 
           <PathEmailRichText
@@ -680,15 +733,25 @@ export default function PathEmailSettingsPanel({
 
   const pathVariant = includeSurveyQuestions ? "manager" : "accountability";
 
-  const habitLevelOptions = useMemo(() => {
-    if (typeof window === "undefined") return [];
+  // Both pickers source from the same path-outline blob in localStorage:
+  // habits read screens with content_type='habits'; steps read the current
+  // chapter.steps[] list. The outline only contains the current step set,
+  // so we don't surface orphaned DB rows here.
+  const { habitLevelOptions, stepOptions } = useMemo(() => {
+    if (typeof window === "undefined") {
+      return { habitLevelOptions: [], stepOptions: [] };
+    }
     try {
       const raw = localStorage.getItem("sessionData");
-      if (!raw) return [];
+      if (!raw) return { habitLevelOptions: [], stepOptions: [] };
       const responsePath = JSON.parse(raw)?.response_path;
-      return collectHabitLevelOptionsFromResponsePath(responsePath);
+      return {
+        habitLevelOptions:
+          collectHabitLevelOptionsFromResponsePath(responsePath),
+        stepOptions: collectStepOptionsFromResponsePath(responsePath),
+      };
     } catch {
-      return [];
+      return { habitLevelOptions: [], stepOptions: [] };
     }
   }, [pathId]);
 
@@ -765,6 +828,11 @@ export default function PathEmailSettingsPanel({
       [key]: [...(prev[key] || []), empty],
     }));
     setTriggerKindToAdd("");
+    toast.success(
+      variant === "manager"
+        ? "Manager email added"
+        : "Accountability email added",
+    );
   };
 
   const moveTriggerToSection = (fromKey, index, toKey) => {
@@ -808,23 +876,6 @@ export default function PathEmailSettingsPanel({
     });
     return blocks;
   }, [config]);
-
-  if (!pathId) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
-        <div className="max-w-sm rounded-xl border border-primary/20 bg-primary/[0.04] p-6">
-          <Info className="mx-auto mb-3 h-10 w-10 text-primary" />
-          <p className="text-sm font-medium text-gray-900">
-            Published path required
-          </p>
-          <p className="mt-2 text-sm text-gray-600">
-            Email triggers are stored on the published cycle. Publish this cycle
-            first, then open this tab again.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="path-email-settings flex h-full min-h-0 flex-col bg-white">
@@ -896,30 +947,29 @@ export default function PathEmailSettingsPanel({
       `}</style>
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
         <div className="max-w-4xl space-y-6 bg-[#F5F5F5] p-2 rounded-lg">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h3 className="text-lg font-semibold tracking-tight text-primary sm:text-xl">
-                {title}
-              </h3>
-              {/* <p className="mt-1 max-w-xl text-xs text-gray-500 sm:text-sm">
-                PUT replaces the whole JSONB blob: all seven trigger arrays,{" "}
-                <code className="text-[11px]">enabled</code>,{" "}
-                <code className="text-[11px]">notification_time</code>,{" "}
-                <code className="text-[11px]">close_out_text</code>. Unused fields per trigger are
-                sent as <code className="text-[11px]">null</code>.
-              </p> */}
-            </div>
+          <div className="flex items-center justify-between px-4 pt-4">
+            <h3 className="text-md font-semibold tracking-tight text-primary sm:text-xl">
+              {title}
+            </h3>
             <Button
               type="button"
               variant="outline"
-              className={`h-9 w-full shrink-0 border-[#7367F0] text-[#7367F0] sm:w-auto sm:min-w-[140px]`}
+              className="h-9 border-[#7367F0] text-[#7367F0] hover:bg-[#F8F7FF] px-4 rounded-lg flex items-center gap-1.5"
               onClick={() => addTrigger(triggerKindToAdd)}
               disabled={!triggerKindToAdd}
             >
-              <Plus size={16} className="mr-1.5" />
-              Add trigger
+              <Plus size={16} />
+              Add Email
             </Button>
           </div>
+          {!pathId && (
+            <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5">
+              <Info className="h-4 w-4 shrink-0 text-amber-600" />
+              <p className="text-sm text-amber-800">
+                Publish this cycle to save email trigger settings.
+              </p>
+            </div>
+          )}
           <div className="flex flex-col gap-2 bg-white p-2 rounded-lg">
             <HintBanners onCopyUserName={copyUserName} />
 
@@ -927,43 +977,34 @@ export default function PathEmailSettingsPanel({
               <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
             ) : (
               <>
-                {/* <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 sm:p-5">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-primary">
-                  Schedule
-                </p>
-                <div className="space-y-4">
-                  <ToggleSwitch
-                    checked={!!config.enabled}
-                    onChange={(v) => setConfig((p) => ({ ...p, enabled: v }))}
-                    label="Emails enabled"
-                  />
-                  <div className="max-w-xs space-y-1.5">
-                    <Label className={pathEmailLabelClass}>
-                      Notification time (UTC)
-                    </Label>
-                    <Input
-                      type="time"
-                      value={config.notification_time || ""}
-                      onChange={(e) =>
-                        setConfig((p) => ({
-                          ...p,
-                          notification_time: e.target.value || null,
-                        }))
-                      }
-                      className={pathEmailInputClass}
-                    />
-                  </div>
-                </div>
-              </div> */}
-
                 <TriggerTypePicker
                   value={triggerKindToAdd}
                   onValueChange={setTriggerKindToAdd}
                 />
-                <div className="flex flex-col">
-                  <Label className={pathEmailLabelClass}>Close out text</Label>
+                {/* <div className="flex flex-col gap-1.5 max-w-xs">
+                  <Label className={pathEmailLabelClass}>
+                    Notification time (UTC)
+                  </Label>
+                  <p className="text-xs leading-4 text-[#717680]">
+                    When emails go out each day. Format <code>HH:MM</code>, UTC.
+                  </p>
+                  <Input
+                    type="time"
+                    value={config.notification_time || ""}
+                    onChange={(e) =>
+                      setConfig((p) => ({
+                        ...p,
+                        notification_time: e.target.value || null,
+                      }))
+                    }
+                    className={pathEmailInputClass}
+                  />
+                </div> */}
 
-                  <div className="mt-3">
+                <div className="flex flex-col">
+                  <Label className={pathEmailLabelClass}>Close Out Text</Label>
+
+                  <div className="mt-2">
                     <PathEmailRichText
                       value={config.close_out_text || ""}
                       onChange={(html) =>
@@ -997,17 +1038,18 @@ export default function PathEmailSettingsPanel({
                     <div className="flex flex-col gap-2.5">
                       {triggerBlocks.map(({ section, entry, index }) => (
                         <React.Fragment key={`${section.key}-${index}`}>
-                          <div
+                          {/* <div
                             className="h-[23px] w-full shrink-0  bg-[#7367F0]"
                             aria-hidden
-                          />
-                          <div className="flex flex-col gap-2 overflow-hidden rounded-2xl bg-[#F5F5F5] p-2">
+                          /> */}
+                          <div className="flex flex-col gap-2 overflow-hidden rounded-2xl bg-[#F1F0FE] p-2">
                             <TriggerEntryCard
                               sectionKey={section.key}
                               sectionMeta={section}
                               entry={entry}
                               includeSurveyQuestions={includeSurveyQuestions}
                               habitLevelOptions={habitLevelOptions}
+                              stepOptions={stepOptions}
                               onChange={(next) => {
                                 const arr = [...(config[section.key] || [])];
                                 arr[index] = next;
@@ -1043,7 +1085,7 @@ export default function PathEmailSettingsPanel({
       <div className="flex shrink-0 justify-end border-t border-gray-100 bg-white px-4 py-3 sm:px-6">
         <Button
           onClick={handleSave}
-          disabled={loading || saving}
+          disabled={loading || saving || !pathId}
           className="min-w-[120px] bg-primary px-8 hover:bg-primary/90"
         >
           {saving ? "Saving…" : "Save"}

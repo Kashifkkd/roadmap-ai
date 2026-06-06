@@ -44,6 +44,8 @@ import { toast } from "@/components/ui/toast";
 import LoginForm from "@/components/auth/LoginForm";
 import MyAccountDialog from "@/components/header/MyAccountDialog";
 import ClientSettingsDialog from "@/components/header/ClientSettingsDialog";
+import EditableCycleTitle from "@/components/common/EditableCycleTitle";
+import { getCycleDisplayTitle } from "@/lib/cycleTitle";
 
 // ---------- Helper: Safe avatar renderer ----------
 const UserAvatar = ({ user }) => {
@@ -121,18 +123,6 @@ const DUMMY_CLIENTS = [
     role: "Member",
   },
 ];
-
-/** Cycle Manager header + download: title field renamed from "Comet Title" → "Cycle Title" in settings. */
-function getCycleDisplayTitle(sessionData) {
-  if (!sessionData || typeof sessionData !== "object") return "";
-  const basic = sessionData.cycle_creation_data?.["Basic Information"];
-  return (
-    basic?.["Cycle Title"] ||
-    basic?.["Comet Title"] ||
-    (typeof sessionData.cometTitle === "string" ? sessionData.cometTitle : "") ||
-    ""
-  );
-}
 
 export default function Header() {
   const pathname = usePathname();
@@ -278,7 +268,6 @@ export default function Header() {
   const isCometManager = pathname?.startsWith("/cycle-manager");
   const isAllComets = pathname === "/cycles";
   const showUserProfile = isHome || isAllComets;
-  const [text, setText] = useState("");
   const [session, setSession] = useState(() => {
     if (typeof window === "undefined") return null;
     try {
@@ -678,16 +667,6 @@ export default function Header() {
 
     router.push("/cycles");
   };
-
-  // TODO: Re-enable BE publish flag guard once `is_publish_enabled` is consistently provided.
-  useEffect(() => {
-    try {
-      const sessionData = JSON.parse(session || "{}");
-      setText(getCycleDisplayTitle(sessionData));
-    } catch {
-      setText("");
-    }
-  }, [session]);
 
   useEffect(() => {
     if (!isPreviewMode && activeModeButton === "preview") {
@@ -1326,15 +1305,8 @@ export default function Header() {
             </div>
 
             {isCometManager && (
-              <div className="hidden lg:flex flex-1 items-center min-w-0 px-2 sm:px-4">
-                <span
-                  className="text-[#574EB6] select-none truncate text-xl sm:text-2xl font-medium"
-                  style={{
-                    fontFamily: "Noto Serif",
-                  }}
-                >
-                  {text}
-                </span>
+              <div className="flex flex-1 items-center min-w-0 px-1 sm:px-4 overflow-hidden">
+                <EditableCycleTitle variant="header" />
               </div>
             )}
 

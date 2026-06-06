@@ -313,22 +313,22 @@ export default function CreateRemixPhaseModal({
 
         <div className="flex flex-col items-stretch gap-[2px] rounded-2xl bg-[#F5F5F5] p-2">
           <div className="flex max-h-[calc(85vh-150px)] min-h-[280px] flex-col overflow-hidden rounded-t-lg bg-white p-2 md:min-h-[320px]">
-            <div className="flex min-h-0 flex-1 flex-col gap-0 divide-y divide-[#E9EAEB] md:flex-row md:divide-x md:divide-y-0">
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-2 md:max-w-[50%] md:pr-3">
-              <div className="flex flex-row items-start gap-4">
-                <div className="flex flex-1 flex-col gap-1">
+            <div className="grid min-h-0 min-w-0 max-h-full flex-1 grid-cols-1 items-start overflow-y-auto md:grid-cols-2 md:grid-rows-[minmax(0,1fr)] md:items-start md:overflow-hidden">
+              <div className="flex min-h-0 max-h-full min-w-0 flex-col gap-3 overflow-x-hidden overflow-y-auto border-[#E9EAEB] p-2 md:border-r md:pr-3">
+              <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex min-w-0 flex-col gap-1">
                   <p className="text-sm font-medium leading-5 text-[#181D27]">
                     Current Cycle Name
                   </p>
-                  <p className="text-base font-semibold leading-6 text-[#181D27]">
+                  <p className="break-words text-base font-semibold leading-6 text-[#181D27]">
                     {currentCycleName || "—"}
                   </p>
                 </div>
-                <div className="flex flex-1 flex-col gap-1">
+                <div className="flex min-w-0 flex-col gap-1">
                   <p className="text-sm font-medium leading-5 text-[#181D27]">
                     Phase Name
                   </p>
-                  <p className="text-base font-semibold leading-6 text-[#181D27]">
+                  <p className="break-words text-base font-semibold leading-6 text-[#181D27]">
                     {sourcePhaseName || "—"}
                   </p>
                 </div>
@@ -375,8 +375,8 @@ export default function CreateRemixPhaseModal({
                   Copy to
                 </p>
                 <div className="h-px w-full bg-[#D5D7DA]" aria-hidden />
-                <div className="flex flex-row items-start gap-2">
-                  <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+                  <div className="min-w-0 space-y-1">
                     <p className="text-sm font-medium leading-5 text-[#181D27]">
                       Client
                     </p>
@@ -385,7 +385,7 @@ export default function CreateRemixPhaseModal({
                       onValueChange={setCopyClientValue}
                       disabled={isSubmitting}
                     >
-                      <SelectTrigger className="h-9 w-full min-w-0 overflow-hidden rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)] [&>span]:block [&>span]:min-w-0 [&>span]:truncate">
+                      <SelectTrigger className="h-9 w-full overflow-hidden rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)] [&>span]:block [&>span]:truncate">
                         <SelectValue placeholder="Select a client" />
                       </SelectTrigger>
                       <SelectContent>
@@ -401,7 +401,7 @@ export default function CreateRemixPhaseModal({
                     </Select>
                   </div>
 
-                  <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <div className="min-w-0 space-y-1">
                     <p className="text-sm font-medium leading-5 text-[#181D27]">
                       Cycle
                     </p>
@@ -412,13 +412,11 @@ export default function CreateRemixPhaseModal({
                         isSubmitting || isLoadingCycles || !copyClientValue
                       }
                     >
-                      <SelectTrigger className="h-9 w-full min-w-0 overflow-hidden rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)] [&>span]:block [&>span]:min-w-0 [&>span]:truncate">
+                      <SelectTrigger className="h-9 w-full overflow-hidden rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)] [&>span]:block [&>span]:truncate">
                         <SelectValue placeholder="Select a cycle" />
                       </SelectTrigger>
                       <SelectContent>
-                        {cycles
-                          .filter((cycle) => cycle.sessionId !== sessionId)
-                          .map((cycle) => (
+                        {cycles.map((cycle) => (
                             <SelectItem
                               key={cycle.sessionId}
                               value={cycle.sessionId}
@@ -433,10 +431,15 @@ export default function CreateRemixPhaseModal({
               </div>
               </div>
 
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-2 pt-3 md:max-w-[50%] md:pl-3 md:pt-2">
-                <div className="min-h-0 flex-1 rounded-2xl bg-[#F5F5F5] p-3">
+              <div className="flex min-h-0 max-h-full min-w-0 flex-col gap-3 overflow-x-hidden overflow-y-auto p-2 md:pl-3">
+                <p className="shrink-0 text-sm font-medium leading-5 text-[#181D27]">
+                  Add New Sources
+                </p>
+                <div className="min-h-0 w-full min-w-0 max-w-full flex-1 rounded-2xl bg-[#F5F5F5] p-4">
                   {materialUploadSessionId ? (
                     <SourceMaterialCard
+                      compact
+                      hideTitle
                       sessionId={materialUploadSessionId}
                       files={sourceFiles}
                       setFiles={setSourceFiles}
@@ -447,9 +450,9 @@ export default function CreateRemixPhaseModal({
                       localDeleteOnly
                     />
                   ) : (
-                    <p className="text-sm text-gray-500">
-                      Open this cycle from the dashboard to add source materials
-                      and web links.
+                    <p className="text-sm text-[#535862]">
+                      Select a client and cycle to add source materials and web
+                      links.
                     </p>
                   )}
                 </div>

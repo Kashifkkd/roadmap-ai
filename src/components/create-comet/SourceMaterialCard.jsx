@@ -267,6 +267,10 @@ export default function SourceMaterialCard({
   onUploadingChange = () => {},
   sessionId: sessionIdProp = null,
   localDeleteOnly = false,
+  compact = false,
+  className,
+  title = "Source Materials",
+  hideTitle = false,
 }) {
   const [sessionId, setSessionId] = useState(sessionIdProp);
   const [isUploading, setIsUploading] = useState(false);
@@ -1026,18 +1030,33 @@ export default function SourceMaterialCard({
   );
 
   return (
-    <Card className="border-none shadow-none p-0">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold text-primary">
-          Source Materials
-        </CardTitle>
-      </CardHeader>
+    <Card
+      className={cn(
+        "w-full min-w-0 max-w-full border-none p-0 shadow-none",
+        hideTitle ? "gap-0" : compact ? "gap-3" : "gap-6",
+        className,
+      )}
+    >
+      {!hideTitle ? (
+        <CardHeader className="min-w-0 max-w-full space-y-0 px-0 pb-0">
+          <CardTitle
+            className={cn(
+              compact
+                ? "text-sm font-medium leading-5 text-[#181D27]"
+                : "text-lg font-semibold text-primary",
+            )}
+          >
+            {title}
+          </CardTitle>
+        </CardHeader>
+      ) : null}
 
-      <CardContent>
-        <div className="flex flex-col w-full border-2 border-gray-200 rounded-xl bg-gray-100 p-2 sm:p-2 gap-2">
+      <CardContent className={cn("min-w-0 max-w-full", hideTitle && "pt-0")}>
+        <div className="flex w-full min-w-0 max-w-full flex-col gap-2 rounded-xl border-2 border-gray-200 bg-gray-100 p-1.5 sm:p-2">
           <div
             className={cn(
-              "border-2 border-dashed rounded-lg p-6 text-center transition-colors bg-white",
+              "box-border w-full min-w-0 max-w-full rounded-lg border-2 border-dashed text-center transition-colors bg-white",
+              compact ? "p-4" : "p-6",
               isDragOver
                 ? "border-primary bg-primary/5"
                 : "border-gray-300",
@@ -1057,13 +1076,20 @@ export default function SourceMaterialCard({
             />
             <label
               htmlFor="file-upload"
-              className="cursor-pointer flex flex-col items-center gap-2"
+              className="flex w-full min-w-0 max-w-full cursor-pointer flex-col items-center gap-2"
             >
-              <div className="flex size-[42px] items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <div className="flex size-[42px] shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                 <Image src="/upload.svg" alt="Icon" width={42} height={42} />
               </div>
-              <span className="text-sm font-medium">Drag files here or click to upload</span>
-              <span className="text-xs text-muted-foreground">
+              <span
+                className={cn(
+                  "max-w-full break-words px-1 text-center font-medium",
+                  compact ? "text-xs" : "text-sm",
+                )}
+              >
+                Drag files here or click to upload
+              </span>
+              <span className="max-w-full break-words px-1 text-center text-xs text-muted-foreground">
                 Image, Document, Video & Audio Formats{" "}
                 <span className="group relative inline-flex items-center align-middle">
                   <button
@@ -1096,14 +1122,14 @@ export default function SourceMaterialCard({
               <Button
                 variant="outline"
                 className={cn(
-                  "flex items-center gap-2 border-primary text-primary cursor-pointer",
+                  "flex w-full max-w-full items-center justify-center gap-2 border-primary text-primary cursor-pointer",
                 )}
                 onClick={(e) => {
                   e.preventDefault();
                   document.getElementById("file-upload").click();
                 }}
               >
-                <Plus />
+                <Plus className="shrink-0" />
                 <span>Upload File</span>
               </Button>
             </label>
@@ -1114,10 +1140,15 @@ export default function SourceMaterialCard({
               </div>
             )}
           </div>
-          <div className="flex flex-col gap-3 bg-white p-3 rounded-xl">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-[#F4F4F5] shrink-0">
-                <Link2 className="w-5 h-5 text-gray-500 rotate-[-45deg]" />
+          <div className="flex w-full min-w-0 max-w-full flex-col gap-3 rounded-xl bg-white p-2 sm:p-3">
+            <div
+              className={cn(
+                "flex w-full min-w-0 max-w-full items-center",
+                compact ? "gap-2" : "gap-3",
+              )}
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F4F4F5]">
+                <Link2 className="h-5 w-5 rotate-[-45deg] text-gray-500" />
               </div>
               <input
                 type="url"
@@ -1131,7 +1162,10 @@ export default function SourceMaterialCard({
                     handleAddLink();
                   }
                 }}
-                className="flex-1 bg-white text-base border border-gray-200 rounded-xl px-4 h-11 outline-none placeholder:text-gray-400 focus:border-primary-400 min-w-0"
+                className={cn(
+                  "h-11 min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-3 outline-none placeholder:text-gray-400 focus:border-primary-400 sm:px-4",
+                  compact ? "text-sm" : "text-base",
+                )}
               />
               <button
                 type="button"
@@ -1159,7 +1193,7 @@ export default function SourceMaterialCard({
                 </>
               )}
             </Button>
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <p className="break-words rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
               Note: Some websites do not allow in-app preview. If preview is
               blank, use Open link to view it in a new tab.
             </p>
@@ -1173,7 +1207,7 @@ export default function SourceMaterialCard({
         )) && (
         <CardContent
           ref={sourcesListRef}
-          className="mt-2 text-sm space-y-2 overflow-auto no-scrollbar"
+          className="mt-2 min-w-0 max-w-full space-y-2 overflow-auto text-sm no-scrollbar"
         >
           {files.map((file, index) => {
             const fileKey = `file-${getFileKey(file?.name ?? "")}`;

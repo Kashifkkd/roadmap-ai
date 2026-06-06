@@ -107,6 +107,9 @@ export function subscribeToVariantReadyWithToast(sessionId, cycleName, options =
 
       removePendingSubscription(sessionId);
       activeSubscriptions.delete(sessionId);
+      if (variantSessionId) {
+        seenVariantSessions.delete(variantSessionId);
+      }
 
       if (typeof unsubscribe === "function") {
         unsubscribe();

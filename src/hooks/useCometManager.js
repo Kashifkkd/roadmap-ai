@@ -79,8 +79,8 @@ function screenMatchesInteractionId(screen, targetScreenId) {
   return candidateIds.includes(target);
 }
 
-/** Integer for POST …/chapters/{id}/variant — from session chapter fields only. */
-function pathChapterIdFromChapter(chapter) {
+/** Plain numeric chapter_id / id only — excludes #chapter_N alias strings. */
+function strictPathChapterIdFromChapter(chapter) {
   if (!chapter || typeof chapter !== "object") return null;
   const cid = chapter.chapter_id ?? chapter.chapterId;
   if (typeof cid === "number" && Number.isFinite(cid) && cid >= 0) {
@@ -95,7 +95,14 @@ function pathChapterIdFromChapter(chapter) {
   if (typeof chapter.id === "string" && /^\d+$/.test(chapter.id.trim())) {
     return parseInt(chapter.id.trim(), 10);
   }
-  if (typeof chapter.id === "string") {
+  return null;
+}
+
+/** Integer for POST …/chapters/{id}/variant — from session chapter fields only. */
+function pathChapterIdFromChapter(chapter) {
+  const strictId = strictPathChapterIdFromChapter(chapter);
+  if (strictId !== null) return strictId;
+  if (typeof chapter?.id === "string") {
     const t = chapter.id.trim();
     const m = /^#chapter_(\d+)$/i.exec(t) || /^chapter_(\d+)$/i.exec(t);
     if (m) return parseInt(m[1], 10);
@@ -103,8 +110,8 @@ function pathChapterIdFromChapter(chapter) {
   return null;
 }
 
-/** Integer for POST …/steps/{id}/variant — from session step / stepItem fields. */
-function pathStepIdFromStep(stepItem, step) {
+/** Plain numeric step_id / id only — excludes #step_N and screen* alias strings. */
+function strictPathStepIdFromStep(stepItem, step) {
   const s = step && typeof step === "object" ? step : {};
   const sid = s.step_id ?? s.stepId;
   if (typeof sid === "number" && Number.isFinite(sid) && sid >= 0) {
@@ -133,6 +140,14 @@ function pathStepIdFromStep(stepItem, step) {
   if (typeof stepItemId === "string" && /^\d+$/.test(stepItemId.trim())) {
     return parseInt(stepItemId.trim(), 10);
   }
+  return null;
+}
+
+/** Integer for POST …/steps/{id}/variant — from session step / stepItem fields. */
+function pathStepIdFromStep(stepItem, step) {
+  const strictId = strictPathStepIdFromStep(stepItem, step);
+  if (strictId !== null) return strictId;
+  const s = step && typeof step === "object" ? step : {};
   if (typeof s.id === "string") {
     const t = s.id.trim();
     const m =
@@ -297,6 +312,7 @@ export function useCometManager(sessionData = null) {
           description: stepDescription,
           contentTypes: Array.from(contentTypes),
           numericStepId: pathStepIdFromStep(stepItem, step),
+          strictNumericStepId: strictPathStepIdFromStep(stepItem, step),
         });
       });
 
@@ -311,6 +327,7 @@ export function useCometManager(sessionData = null) {
         order: chapter?.position ? chapter.position - 1 : chapterIndex,
         steps: transformedSteps,
         numericChapterId: pathChapterIdFromChapter(chapter),
+        strictNumericChapterId: strictPathChapterIdFromChapter(chapter),
         chapterUuid,
       };
     });

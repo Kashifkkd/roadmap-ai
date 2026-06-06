@@ -62,10 +62,13 @@ export const endpoints = {
     `api/clients/v1/paths/${pathId}/accountability_email`,
   updateAccountabilityEmailConfig: (pathId) =>
     `api/clients/v1/paths/${pathId}/accountability_email`,
+  getPathSteps: (pathId) => `api/clients/v1/paths/${pathId}/steps`,
   createCohort: "api/clients/v1/cohorts",
   updateCohort: (cohortId) => `api/clients/v1/cohorts/${cohortId}`,
   deleteCohort: (cohortId) => `api/clients/v1/cohorts/${cohortId}`,
   uploadTool: "api/n8n/upload_tool_file",
+  deleteTool: (toolId) => `api/n8n/tools/${toolId}`,
+  deleteToolByUrl: "api/n8n/tools",
   generateStepImages: "api/generative-ai/v2/generate-step-images",
   generateStepImagesAndWait: "api/generative-ai/v2/generate-step-images-and-wait",
   getImageAttributes: "api/generative-ai/v2/get-image-attributes",

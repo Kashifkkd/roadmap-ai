@@ -341,10 +341,12 @@ export const RichTextArea = ({
   onBlur,
   onRequestAutoSave,
   valueFormat = "delta",
+  spellCheck = true,
 }) => {
   const [saveState, setSaveState] = useState("idle");
   const onRequestAutoSaveRef = useRef(onRequestAutoSave);
   const isFocusedRef = useRef(false);
+  const isToolbarActiveRef = useRef(false);
   const quillEditorRef = useRef(null);
   const editorRef = useRef(null);
   const toolbarRef = useRef(null);
@@ -450,6 +452,13 @@ export const RichTextArea = ({
           },
         },
       });
+
+      const { enableQuillSpellcheck } = await import("@/lib/spellcheck/utils");
+      if (spellCheck) {
+        enableQuillSpellcheck(editor);
+      } else if (editor.root) {
+        editor.root.setAttribute("spellcheck", "false");
+      }
 
       // Normalize old span-based heading styles to h1/h2/h3 for backward compatibility
       const normalizeHeadingHtml = (html) => {
@@ -680,7 +689,7 @@ export const RichTextArea = ({
   // Skip while the editor is focused — the user is actively typing and their local state is the source of truth.
   useEffect(() => {
     if (valueFormat !== "html" || !quillEditorRef.current) return;
-    if (isFocusedRef.current) return;
+    if (isFocusedRef.current || isToolbarActiveRef.current) return;
     const editor = quillEditorRef.current;
     const raw = typeof value === "string" ? value : "";
     if (!raw.trim()) return;
@@ -786,7 +795,11 @@ export const RichTextArea = ({
           ref={toolbarRef}
           className="rich-text-toolbar ql-toolbar ql-snow p-1 flex gap-1 items-center flex-wrap border-0"
           style={{ border: "none" }}
-          onMouseDown={(e) => e.preventDefault()}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            isToolbarActiveRef.current = true;
+            setTimeout(() => { isToolbarActiveRef.current = false; }, 300);
+          }}
         >
           <button type="button" className="ql-bold" title="Bold" />
           <button type="button" className="ql-italic" title="Italic" />

@@ -274,7 +274,7 @@ export default function CometManagerLayout() {
       return;
     }
 
-    // Auto-save functionality - check every 30 seconds if data changed
+    // Auto-save functionality - check every 5 seconds if data changed
     autoSaveTimerRef.current = setInterval(async () => {
       if (isSavingRef.current) {
         return;

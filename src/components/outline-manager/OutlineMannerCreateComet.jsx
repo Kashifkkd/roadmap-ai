@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import { isArrayWithValues } from "@/utils/isArrayWithValues";
 import SectionHeader from "@/components/section-header";
+import EditableCycleTitle from "@/components/common/EditableCycleTitle";
 import OutlineMannerFooter from "./OutlineMannerFooter";
 import StepsDisplay from "./StepsDisplay";
 import { Label } from "@/components/ui/Label";
@@ -83,7 +84,6 @@ export default function OutlineMannerCreateComet({
 
   const [expandedChapters, setExpandedChapters] = useState({});
 
-  const [text, setText] = useState("Untitled Cycle");
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [selectedChapterNumber, setSelectedChapterNumber] = useState(null);
   const [selectedStep, setSelectedStep] = useState(null);
@@ -616,21 +616,6 @@ export default function OutlineMannerCreateComet({
     }
   };
 
-  useEffect(() => {
-    try {
-      const sessionData = JSON.parse(
-        localStorage.getItem("sessionData") || "{}",
-      );
-      setText(
-        sessionData?.cycle_creation_data?.["Basic Information"]?.[
-          "Cycle Title"
-        ] || "Untitled Cycle",
-      );
-    } catch {
-      setText("Untitled Cycle");
-    }
-  }, []);
-
   // if (isGenerating) {
   //   return (
   //     <div className="fixed  left-0 right-0 h-full">
@@ -642,7 +627,7 @@ export default function OutlineMannerCreateComet({
   return (
     <div className="flex flex-col flex-1 w-full h-full bg-background rounded-xl overflow-hidden ">
       <div className="w-full p-2 shrink-0">
-        <SectionHeader title={text} />
+        <SectionHeader titleSlot={<EditableCycleTitle variant="section" />} />
       </div>
       <div className="p-2 w-full flex-1 overflow-hidden">
         <div className="flex flex-col sm:flex-row gap-4 bg-accent rounded-md h-full p-2">

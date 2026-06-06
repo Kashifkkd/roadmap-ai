@@ -503,16 +503,15 @@ export default function CreateStepVariantModal({
                           <SelectValue placeholder="Select a cycle" />
                         </SelectTrigger>
                         <SelectContent>
-                          {cycles
-                            .filter((cycle) => cycle.sessionId !== sessionId)
-                            .map((cycle) => (
-                              <SelectItem
-                                key={cycle.sessionId}
-                                value={cycle.sessionId}
-                              >
-                                {cycle.name}
-                              </SelectItem>
-                            ))}
+                          {cycles.map((cycle) => (
+                            <SelectItem
+                              key={cycle.sessionId}
+                              value={cycle.sessionId}
+                            >
+                              {cycle.name}
+                              {cycle.sessionId === sessionId ? " (current)" : ""}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>

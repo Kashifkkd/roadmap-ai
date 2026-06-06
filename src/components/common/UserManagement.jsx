@@ -179,6 +179,58 @@ export default function UserManagement({
   const normalizeSearchTerm = (term) => term.trim().toLowerCase();
   const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value);
 
+  const ADD_USER_SUCCESS_TOAST = "User added successfully";
+  const ADD_USER_FAILED_TOAST = "Failed to add user. Please try again";
+  const UPDATE_USER_SUCCESS_TOAST = "User updated successfully";
+  const UPDATE_USER_FAILED_TOAST = "Failed to update user. Please try again";
+  const DUPLICATE_EMAIL_TOAST = "User with this email already exists";
+  const PASSWORD_MISMATCH_TOAST =
+    "Password and Confirm Password do not match";
+  const CONFIRM_PASSWORD_REQUIRED_TOAST = "Confirm Password is required";
+  const PASSWORD_LENGTH_TOAST = "Password must be more than 7 characters";
+  const INVALID_MANAGER_EMAIL_TOAST = "Please enter a valid manager email address";
+  const INVALID_ACCOUNTABILITY_EMAIL_TOAST =
+    "Please enter valid accountability partner email addresses";
+  const normalizeEmail = (value) => (value || "").trim().toLowerCase();
+
+  const getApiErrorMessage = (res, error) => {
+    const data = res?.response;
+    if (typeof data === "string") return data;
+    if (data?.detail) {
+      return typeof data.detail === "string"
+        ? data.detail
+        : Array.isArray(data.detail)
+          ? data.detail.map((d) => d?.msg || d).join(", ")
+          : JSON.stringify(data.detail);
+    }
+    if (Array.isArray(data?.message)) return data.message.join(", ");
+    if (data?.message) return data.message;
+    if (res?.message) return res.message;
+    if (error?.response?.data?.message) return error.response.data.message;
+    if (error?.response?.data?.detail) return error.response.data.detail;
+    if (error?.message) return error.message;
+    return "";
+  };
+
+  const isDuplicateEmailError = (message) => {
+    if (!message) return false;
+    const lower = String(message).toLowerCase();
+    return (
+      lower.includes("user with this email") ||
+      (lower.includes("email") &&
+        (lower.includes("exist") ||
+          lower.includes("already") ||
+          lower.includes("duplicate")))
+    );
+  };
+
+  const resolveSaveUserErrorToast = (res, error, isEdit) => {
+    const raw = getApiErrorMessage(res, error);
+    if (isDuplicateEmailError(raw)) return DUPLICATE_EMAIL_TOAST;
+    if (raw) return raw;
+    return isEdit ? UPDATE_USER_FAILED_TOAST : ADD_USER_FAILED_TOAST;
+  };
+
   const textIncludesSearch = (text, search) =>
     text && search ? text.toLowerCase().includes(search) : false;
 
@@ -665,6 +717,41 @@ export default function UserManagement({
     return current !== initialFormSnapshot.current;
   };
 
+  const isAddUserMandatoryFilled =
+    !!firstName.trim() &&
+    !!lastName.trim() &&
+    !!email.trim() &&
+    isValidEmail(email.trim()) &&
+    !!password &&
+    !!confirmPassword;
+
+  const isEditUserMandatoryFilled =
+    !!firstName.trim() && !!lastName.trim() && !!email.trim() && isValidEmail(email.trim());
+
+  const isSaveUserDisabled =
+    savingUser ||
+    wipingUserActions ||
+    (editingUser
+      ? !isEditUserMandatoryFilled || !hasFormChanged()
+      : !isAddUserMandatoryFilled);
+
+  const getEditingUserId = () =>
+    Number(editingUser?.id || editingUser?.user_id || 0) || null;
+
+  const hasDuplicateUserEmail = (emailValue) => {
+    const targetEmail = normalizeEmail(emailValue);
+    if (!targetEmail || !Array.isArray(users)) return false;
+
+    const editingId = getEditingUserId();
+    return users.some((u) => {
+      const userEmail = normalizeEmail(u?.email);
+      if (!userEmail || userEmail !== targetEmail) return false;
+      if (!editingId) return true;
+      const rowId = Number(u?.id || u?.user_id || 0) || null;
+      return rowId !== editingId;
+    });
+  };
+
   const handleAddPathUserEmail = (rawEmail) => {
     const value = (rawEmail || "").trim();
     if (!value) return;
@@ -763,23 +850,32 @@ export default function UserManagement({
   };
 
   const handleSaveUser = async () => {
+    const trimmedFirstName = firstName.trim();
+    const trimmedLastName = lastName.trim();
+    const trimmedEmail = email.trim();
+
     if (!clientId) {
       toast.error("Client ID not found");
       return;
     }
 
-    if (!firstName || !lastName) {
+    if (!trimmedFirstName || !trimmedLastName) {
       toast.error("First name and last name are required");
       return;
     }
 
-    if (!email) {
+    if (!trimmedEmail) {
       toast.error("Email is required");
       return;
     }
 
-    if (!isValidEmail(email)) {
+    if (!isValidEmail(trimmedEmail)) {
       toast.error("Please enter a valid email address");
+      return;
+    }
+
+    if (hasDuplicateUserEmail(trimmedEmail)) {
+      toast.error(DUPLICATE_EMAIL_TOAST);
       return;
     }
 
@@ -788,12 +884,16 @@ export default function UserManagement({
         toast.error("Password is required");
         return;
       }
+      if (!confirmPassword) {
+        toast.error(CONFIRM_PASSWORD_REQUIRED_TOAST);
+        return;
+      }
       if (password.length <= 7) {
-        toast.error("Password must be more than 7 characters");
+        toast.error(PASSWORD_LENGTH_TOAST);
         return;
       }
       if (password !== confirmPassword) {
-        toast.error("Passwords do not match");
+        toast.error(PASSWORD_MISMATCH_TOAST);
         return;
       }
     }
@@ -820,9 +920,9 @@ export default function UserManagement({
     const userData = {
       client_id: Number(clientId),
       access_level: 0,
-      first_name: firstName,
-      last_name: lastName || "",
-      email,
+      first_name: trimmedFirstName,
+      last_name: trimmedLastName || "",
+      email: trimmedEmail,
       path_ids: pathIds,
       paths: pathIds,
       active_path_id: activePathId || null,
@@ -843,6 +943,15 @@ export default function UserManagement({
       .map((a) => a.value.trim())
       .filter((e) => e);
 
+    if (trimmedManagerEmail && !isValidEmail(trimmedManagerEmail)) {
+      toast.error(INVALID_MANAGER_EMAIL_TOAST);
+      return;
+    }
+    if (accountabilityEmailsList.some((address) => !isValidEmail(address))) {
+      toast.error(INVALID_ACCOUNTABILITY_EMAIL_TOAST);
+      return;
+    }
+
     if (trimmedManagerEmail) {
       userData.manager_email = trimmedManagerEmail;
     }
@@ -858,9 +967,9 @@ export default function UserManagement({
         ? await updateClientUser(editingUser.id || editingUser.user_id, payload)
         : await registerClientUser(payload);
 
-      if (res?.response) {
+      if (res?.success) {
         toast.success(
-          editingUser ? "User updated successfully" : "User added successfully",
+          editingUser ? UPDATE_USER_SUCCESS_TOAST : ADD_USER_SUCCESS_TOAST,
         );
 
         // Refresh user list (scoped to path or client based on mode)
@@ -871,20 +980,11 @@ export default function UserManagement({
         setShowRegularAddForm(false);
         resetUserForm();
       } else {
-        const errorMessage =
-          res?.detail ||
-          res?.message ||
-          (editingUser ? "Failed to update user" : "Failed to add user");
-        toast.error(errorMessage);
+        toast.error(resolveSaveUserErrorToast(res, null, !!editingUser));
       }
     } catch (error) {
       console.error("Failed to save user:", error);
-      const errorMessage =
-        error?.message ||
-        error?.response?.data?.detail ||
-        error?.response?.detail ||
-        (editingUser ? "Failed to update user" : "Failed to add user");
-      toast.error(errorMessage);
+      toast.error(resolveSaveUserErrorToast(null, error, !!editingUser));
     } finally {
       setSavingUser(false);
     }
@@ -2456,7 +2556,7 @@ export default function UserManagement({
               <Button
                 type="button"
                 onClick={handleSaveUser}
-                disabled={savingUser || wipingUserActions || !firstName || !lastName || !email || (!editingUser && (!password || !confirmPassword || password !== confirmPassword)) || (editingUser && !hasFormChanged())}
+                disabled={isSaveUserDisabled}
                 className="bg-[#645AD1] hover:bg-[#574EB6] text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {savingUser

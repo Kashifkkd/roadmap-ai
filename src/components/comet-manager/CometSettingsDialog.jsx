@@ -17,6 +17,10 @@ import {
   Eye,
   EyeOff,
   Pencil,
+  X,
+  Bell,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/Button";
@@ -90,25 +94,30 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [sourceAlignment, setSourceAlignment] = useState("");
   const [duration, setDuration] = useState("");
 
+  // Welcome Email
+  const [welcomeEmailEnabled, setWelcomeEmailEnabled] = useState(false);
+  const [welcomeEmailText, setWelcomeEmailText] = useState("");
+
   // Kick Off
   const [kickOffDates, setKickOffDates] = useState([]);
   const [newKickOffDate, setNewKickOffDate] = useState("");
   const [newKickOffTime, setNewKickOffTime] = useState("");
 
   // Ad Hoc Notifications
-  const [adHocChannelRows, setAdHocChannelRows] = useState([
-    { id: 1, name: "" },
-  ]);
   const [adHocDraft, setAdHocDraft] = useState({
-    channel: "",
-    emailSubject: "",
-    emailHeader: "",
-    emailBody: "",
-    sendDate: "",
-    sendTime: "",
+    type: "",
+    header: "",
+    subject: "",
+    mailContent: "",
+    pushContent: "",
+    emailSendDate: "",
+    emailSendTime: "",
+    pushSendDate: "",
+    pushSendTime: "",
   });
-  const [adHocNotifications, setAdHocNotifications] = useState([]);
-  console.log("shdfhgsh");
+  const [sendViaEmailList, setSendViaEmailList] = useState([]);
+  const [sendViaPushList, setSendViaPushList] = useState([]);
+  const [expandedNotification, setExpandedNotification] = useState(null);
 
   // Toggles (all available from backend)
   const [habitEnabled, setHabitEnabled] = useState(false);
@@ -364,6 +373,46 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
           validSources.find((s) => source.includes(s)) || "";
         setSourceAlignment(normalizedSource);
       }
+
+      // Load welcome email settings from response_path
+      // Toggle is derived from whether welcome_email_text has content
+      const responsePath = sessionData?.response_path;
+      if (responsePath?.welcome_email_text) {
+        setWelcomeEmailEnabled(true);
+        setWelcomeEmailText(responsePath.welcome_email_text);
+      } else {
+        setWelcomeEmailEnabled(false);
+        setWelcomeEmailText("");
+      }
+
+      // Load kick-off dates from response_path
+      const savedKickOffDates = sessionData?.response_path?.all_kickoff_dates;
+      if (Array.isArray(savedKickOffDates) && savedKickOffDates.length > 0) {
+        // Parse "YYYY-MM-DD HH:MM" strings back into {date, time} objects
+        const parsed = savedKickOffDates.map((entry) => {
+          if (typeof entry === "string" && entry.includes(" ")) {
+            const [date, time] = entry.split(" ");
+            return { date, time };
+          }
+          if (typeof entry === "object" && entry.date) {
+            return entry;
+          }
+          return { date: entry, time: "" };
+        });
+        setKickOffDates(parsed);
+      } else {
+        setKickOffDates([]);
+      }
+
+      // Load ad-hoc notifications from notification_settings
+      const notificationSettings = sessionData?.response_path?.notification_settings;
+      if (notificationSettings) {
+        setSendViaEmailList(Array.isArray(notificationSettings.send_via_email) ? notificationSettings.send_via_email : []);
+        setSendViaPushList(Array.isArray(notificationSettings.send_via_push) ? notificationSettings.send_via_push : []);
+      } else {
+        setSendViaEmailList([]);
+        setSendViaPushList([]);
+      }
     }
 
     // Do NOT override with cometSettings localStorage - enabled_attributes is the source of truth
@@ -492,10 +541,22 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         return acc;
       }, {});
 
+      // Format kick-off dates as "YYYY-MM-DD HH:MM" strings for the backend
+      const formattedKickOffDates = kickOffDates.map(
+        (item) => `${item.date} ${item.time}`,
+      );
+
       const updatedResponsePath = {
         ...currentResponsePath,
         enabled_attributes: updatedEnabledAttributes,
         colours: coloursObject,
+        all_kickoff_dates: formattedKickOffDates,
+        welcome_email_text: welcomeEmailEnabled ? welcomeEmailText : null,
+        notification_settings: {
+          ...(currentResponsePath.notification_settings || {}),
+          send_via_push: sendViaPushList,
+          send_via_email: sendViaEmailList,
+        },
         ...(uploadedImageUrl && !uploadedImageUrl.startsWith("blob:")
           ? { path_image: uploadedImageUrl }
           : pathImageUrl && !pathImageUrl.startsWith("blob:")
@@ -583,55 +644,50 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
     setKickOffDates(kickOffDates.filter((_, i) => i !== index));
   };
 
-  const addAdHocChannelRow = () => {
-    setAdHocChannelRows((rows) => {
-      const nextId = rows.reduce((max, r) => Math.max(max, r.id), 0) + 1;
-      return [...rows, { id: nextId, name: "" }];
-    });
-  };
-
-  const updateAdHocChannelRowName = (id, name) => {
-    setAdHocChannelRows((rows) =>
-      rows.map((r) => (r.id === id ? { ...r, name } : r)),
-    );
-  };
-
-  const removeAdHocChannelRow = (id) => {
-    setAdHocChannelRows((rows) => {
-      const next = rows.filter((r) => r.id !== id);
-      return next.length ? next : [{ id: 1, name: "" }];
-    });
-  };
-
-  const getAdHocChannels = () => {
-    const seen = new Set();
-    return adHocChannelRows
-      .map((r) => String(r.name || "").trim())
-      .filter(Boolean)
-      .filter((name) => {
-        const key = name.toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-  };
-
   const resetAdHocDraft = () => {
     setAdHocDraft({
-      channel: "",
-      emailSubject: "",
-      emailHeader: "",
-      emailBody: "",
-      sendDate: "",
-      sendTime: "",
+      type: "",
+      header: "",
+      subject: "",
+      mailContent: "",
+      pushContent: "",
+      emailSendDate: "",
+      emailSendTime: "",
+      pushSendDate: "",
+      pushSendTime: "",
     });
   };
 
   const handleSaveAdHocNotification = () => {
-    setAdHocNotifications((prev) => [
-      ...prev,
-      { ...adHocDraft, id: Date.now() },
-    ]);
+    if (adHocDraft.type === "send_via_email") {
+      setSendViaEmailList((prev) => [
+        ...prev,
+        {
+          header: adHocDraft.header || null,
+          subject: adHocDraft.subject || null,
+          mail_content: adHocDraft.mailContent || null,
+          push_content: null,
+          push_send_date: null,
+          push_send_time: null,
+          email_send_date: adHocDraft.emailSendDate || null,
+          email_send_time: adHocDraft.emailSendTime || null,
+        },
+      ]);
+    } else if (adHocDraft.type === "send_via_push") {
+      setSendViaPushList((prev) => [
+        ...prev,
+        {
+          header: null,
+          subject: null,
+          mail_content: null,
+          push_content: adHocDraft.pushContent || null,
+          push_send_date: adHocDraft.pushSendDate || null,
+          push_send_time: adHocDraft.pushSendTime || null,
+          email_send_date: null,
+          email_send_time: null,
+        },
+      ]);
+    }
     resetAdHocDraft();
   };
 
@@ -1270,6 +1326,30 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       </div>
                     </div>
 
+                    {/* Welcome Email Section */}
+                    <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
+                      <p className="font-bold mb-4 px-2 text-gray-800">Welcome Email</p>
+                      <div className="space-y-4 bg-white p-2 rounded-lg">
+                        <ToggleSwitch
+                          checked={welcomeEmailEnabled}
+                          onChange={setWelcomeEmailEnabled}
+                          label="Welcome Email"
+                        />
+                        {welcomeEmailEnabled && (
+                          <div className="pt-2">
+                            <RichTextArea
+                              label="Welcome Email Content"
+                              value={welcomeEmailText}
+                              onChange={(value) => setWelcomeEmailText(value)}
+                              valueFormat="html"
+                              showToolbar={true}
+                              minHeight={120}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     {/* Kick Off Section */}
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
@@ -1378,196 +1458,257 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                       </div>
 
                       <div className="border-2 border-gray-200 rounded-lg p-2 space-y-2">
-                        {/* Select Channel */}
                         <div className="space-y-2">
                           <Label className="text-sm font-medium text-gray-800">
-                            Select Channel
+                            Notification Type
                           </Label>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 min-w-0">
-                              <Select
-                                value={adHocDraft.channel || undefined}
-                                onValueChange={(value) =>
-                                  setAdHocDraft((d) => ({
-                                    ...d,
-                                    channel: value,
-                                  }))
-                                }
-                              >
-                                <SelectTrigger className="w-full border-2 rounded-lg bg-gray-50 border-gray-300">
-                                  <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {getAdHocChannels().map((name) => (
-                                    <SelectItem key={name} value={name}>
-                                      {name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setAdHocDraft((d) => ({ ...d, channel: "" }))
-                              }
-                              className="shrink-0 w-9 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
-                              title="Clear selected channel"
-                              aria-label="Clear selected channel"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Email Subject */}
-                        <RichTextArea
-                          label="Email Subject"
-                          value={adHocDraft.emailSubject}
-                          onChange={(value) =>
-                            setAdHocDraft((d) => ({
-                              ...d,
-                              emailSubject: value,
-                            }))
-                          }
-                          showToolbar={true}
-                          minHeight={64}
-                        />
-
-                        {/* Email Header */}
-                        <RichTextArea
-                          label="Email Header"
-                          value={adHocDraft.emailHeader}
-                          onChange={(value) =>
-                            setAdHocDraft((d) => ({ ...d, emailHeader: value }))
-                          }
-                          showToolbar={true}
-                          minHeight={64}
-                        />
-
-                        {/* Email Body Text */}
-                        <RichTextArea
-                          label="Email Body Text"
-                          value={adHocDraft.emailBody}
-                          onChange={(value) =>
-                            setAdHocDraft((d) => ({ ...d, emailBody: value }))
-                          }
-                          showToolbar={true}
-                          minHeight={120}
-                        />
-
-                        {/* Send Date/Time + Save */}
-                        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
-                          <div className=" flex flex-col space-y-2">
-                            <Label className="text-sm font-medium text-gray-800">
-                              Notification Send Date
-                            </Label>
-                            <div className="relative">
-                              <Input
-                                type="date"
-                                value={adHocDraft.sendDate}
-                                onChange={(e) =>
-                                  setAdHocDraft((d) => ({
-                                    ...d,
-                                    sendDate: e.target.value,
-                                  }))
-                                }
-                                className="w-full rounded-lg pr-10 border-2 border-gray-200"
-                              />
-                              <Calendar
-                                size={18}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                              />
-                            </div>
-                          </div>
-                          <div className=" flex flex-col space-y-2">
-                            <Label className="text-sm font-medium text-gray-800">
-                              Notification Send Time (UTC)
-                            </Label>
-                            <div className="relative">
-                              <Input
-                                type="time"
-                                value={adHocDraft.sendTime}
-                                onChange={(e) =>
-                                  setAdHocDraft((d) => ({
-                                    ...d,
-                                    sendTime: e.target.value,
-                                  }))
-                                }
-                                className="w-full border-2 border-gray-200 rounded-lg pr-10"
-                              />
-                              <Clock
-                                size={18}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex justify-end">
-                            <Button
-                              type="button"
-                              onClick={handleSaveAdHocNotification}
-                              className="bg-primary hover:bg-primary-dark px-6 py-2 rounded-lg text-sm font-medium"
-                            >
-                              Save
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Channel Names */}
-                      <div className="space-y-3">
-                        {adHocChannelRows.map((row) => (
-                          <div
-                            key={row.id}
-                            className="border-2 border-purple-100 rounded-lg bg-[#F1F0FE] p-3"
+                          <Select
+                            value={adHocDraft.type || undefined}
+                            onValueChange={(value) =>
+                              setAdHocDraft((d) => ({ ...d, type: value }))
+                            }
                           >
-                            <div className="flex items-center justify-between mb-2 ">
-                              <Label className="text-sm font-medium text-gray-800">
-                                Channel Name
-                              </Label>
-                              <button
-                                type="button"
-                                onClick={addAdHocChannelRow}
-                                className="w-6 h-6 rounded flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors"
-                                title="Add channel"
-                                aria-label="Add channel"
-                              >
-                                <div className="flex items-center justify-center bg-white rounded-lg">
-                                  <Plus size={18} className="text-gray-800" />
+                            <SelectTrigger className="w-full border-2 rounded-lg bg-gray-50 border-gray-300">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="send_via_email">Send via Email</SelectItem>
+                              <SelectItem value="send_via_push">Send via Push</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {adHocDraft.type === "send_via_email" && (
+                          <>
+                            <RichTextArea
+                              label="Subject"
+                              value={adHocDraft.subject}
+                              onChange={(value) =>
+                                setAdHocDraft((d) => ({ ...d, subject: value }))
+                              }
+                              showToolbar={true}
+                              minHeight={64}
+                            />
+                            <RichTextArea
+                              label="Header"
+                              value={adHocDraft.header}
+                              onChange={(value) =>
+                                setAdHocDraft((d) => ({ ...d, header: value }))
+                              }
+                              showToolbar={true}
+                              minHeight={64}
+                            />
+                            <RichTextArea
+                              label="Email Body"
+                              value={adHocDraft.mailContent}
+                              onChange={(value) =>
+                                setAdHocDraft((d) => ({ ...d, mailContent: value }))
+                              }
+                              showToolbar={true}
+                              minHeight={120}
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
+                              <div className="flex flex-col space-y-2">
+                                <Label className="text-sm font-medium text-gray-800">
+                                  Email Send Date
+                                </Label>
+                                <div className="relative">
+                                  <Input
+                                    type="date"
+                                    value={adHocDraft.emailSendDate}
+                                    onChange={(e) =>
+                                      setAdHocDraft((d) => ({
+                                        ...d,
+                                        emailSendDate: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full rounded-lg pr-10 border-2 border-gray-200"
+                                  />
+                                  <Calendar
+                                    size={18}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                                  />
                                 </div>
-                              </button>
+                              </div>
+                              <div className="flex flex-col space-y-2">
+                                <Label className="text-sm font-medium text-gray-800">
+                                  Email Send Time (UTC)
+                                </Label>
+                                <div className="relative">
+                                  <Input
+                                    type="time"
+                                    value={adHocDraft.emailSendTime}
+                                    onChange={(e) =>
+                                      setAdHocDraft((d) => ({
+                                        ...d,
+                                        emailSendTime: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full border-2 border-gray-200 rounded-lg pr-10"
+                                  />
+                                  <Clock
+                                    size={18}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex justify-end">
+                                <Button
+                                  type="button"
+                                  onClick={handleSaveAdHocNotification}
+                                  className="bg-primary hover:bg-primary-dark px-6 py-2 rounded-lg text-sm font-medium"
+                                >
+                                  Save
+                                </Button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                value={row.name}
-                                onChange={(e) =>
-                                  updateAdHocChannelRowName(
-                                    row.id,
-                                    e.target.value,
-                                  )
-                                }
-                                placeholder="Channel Name"
-                                className="w-full border-2 border-gray-200 rounded-lg bg-white"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeAdHocChannelRow(row.id)}
-                                className="shrink-0 w-9 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
-                                title="Remove channel"
-                                aria-label="Remove channel"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                          </>
+                        )}
+
+                        {adHocDraft.type === "send_via_push" && (
+                          <>
+                            <RichTextArea
+                              label="Push Content"
+                              value={adHocDraft.pushContent}
+                              onChange={(value) =>
+                                setAdHocDraft((d) => ({ ...d, pushContent: value }))
+                              }
+                              showToolbar={true}
+                              minHeight={120}
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
+                              <div className="flex flex-col space-y-2">
+                                <Label className="text-sm font-medium text-gray-800">
+                                  Push Send Date
+                                </Label>
+                                <div className="relative">
+                                  <Input
+                                    type="date"
+                                    value={adHocDraft.pushSendDate}
+                                    onChange={(e) =>
+                                      setAdHocDraft((d) => ({
+                                        ...d,
+                                        pushSendDate: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full rounded-lg pr-10 border-2 border-gray-200"
+                                  />
+                                  <Calendar
+                                    size={18}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex flex-col space-y-2">
+                                <Label className="text-sm font-medium text-gray-800">
+                                  Push Send Time (UTC)
+                                </Label>
+                                <div className="relative">
+                                  <Input
+                                    type="time"
+                                    value={adHocDraft.pushSendTime}
+                                    onChange={(e) =>
+                                      setAdHocDraft((d) => ({
+                                        ...d,
+                                        pushSendTime: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full border-2 border-gray-200 rounded-lg pr-10"
+                                  />
+                                  <Clock
+                                    size={18}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex justify-end">
+                                <Button
+                                  type="button"
+                                  onClick={handleSaveAdHocNotification}
+                                  className="bg-primary hover:bg-primary-dark px-6 py-2 rounded-lg text-sm font-medium"
+                                >
+                                  Save
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          </>
+                        )}
                       </div>
 
-                      <input
-                        type="hidden"
-                        value={adHocNotifications.length}
-                        readOnly
-                      />
+                      {(sendViaEmailList.length > 0 || sendViaPushList.length > 0) && (
+                        <div className="space-y-2">
+                          {sendViaEmailList.map((item, index) => {
+                            const key = `email-${index}`;
+                            const isExpanded = expandedNotification === key;
+                            return (
+                              <div key={key} className="border border-gray-200 rounded-lg bg-gray-50 overflow-hidden">
+                                <div
+                                  className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-100 transition-colors"
+                                  onClick={() => setExpandedNotification(isExpanded ? null : key)}
+                                >
+                                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                    <span className="text-base">&#9993;</span>
+                                    <span className="font-medium">Email</span>
+                                    <span className="text-gray-400">|</span>
+                                    <span>{item.email_send_date || "\u2014"} {item.email_send_time || ""}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setSendViaEmailList((prev) => prev.filter((_, i) => i !== index)); }}
+                                    className="shrink-0 w-7 h-7 rounded bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
+                                    title="Remove notification"
+                                    aria-label="Remove notification"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                                {isExpanded && (
+                                  <div className="px-4 pb-3 pt-1 border-t border-gray-200 text-sm text-gray-600 space-y-1">
+                                    {item.subject && <div><span className="font-medium text-gray-700">Subject:</span> <span dangerouslySetInnerHTML={{ __html: item.subject }} /></div>}
+                                    {item.header && <div><span className="font-medium text-gray-700">Header:</span> <span dangerouslySetInnerHTML={{ __html: item.header }} /></div>}
+                                    {item.mail_content && <div><span className="font-medium text-gray-700">Body:</span> <span dangerouslySetInnerHTML={{ __html: item.mail_content }} /></div>}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {sendViaPushList.map((item, index) => {
+                            const key = `push-${index}`;
+                            const isExpanded = expandedNotification === key;
+                            return (
+                              <div key={key} className="border border-gray-200 rounded-lg bg-gray-50 overflow-hidden">
+                                <div
+                                  className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-100 transition-colors"
+                                  onClick={() => setExpandedNotification(isExpanded ? null : key)}
+                                >
+                                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                    <Bell size={16} />
+                                    <span className="font-medium">Push</span>
+                                    <span className="text-gray-400">|</span>
+                                    <span>{item.push_send_date || "\u2014"} {item.push_send_time || ""}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setSendViaPushList((prev) => prev.filter((_, i) => i !== index)); }}
+                                    className="shrink-0 w-7 h-7 rounded bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
+                                    title="Remove notification"
+                                    aria-label="Remove notification"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                                {isExpanded && (
+                                  <div className="px-4 pb-3 pt-1 border-t border-gray-200 text-sm text-gray-600 space-y-1">
+                                    {item.push_content && <div><span className="font-medium text-gray-700">Content:</span> <span dangerouslySetInnerHTML={{ __html: item.push_content }} /></div>}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     {/* Path Colors Section */}

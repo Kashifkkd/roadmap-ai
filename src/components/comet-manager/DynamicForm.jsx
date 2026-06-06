@@ -1070,7 +1070,10 @@ export default function DynamicForm({
       asset?.ImageUrl || asset?.image_url || asset?.url || asset?.mediaUrl || asset?.s3_url || null;
 
     const isOutlineScreenImageAsset = (asset) =>
-      Boolean(getAssetImageUrl(asset) && !asset?.audioUrl && !asset?.videoUrl);
+      Boolean(
+        (asset?.type === "image" || asset?.asset_type === "image") &&
+        getAssetImageUrl(asset)
+      );
 
     // Function to update screen assets
     const updateScreenAssets = (assets) => {

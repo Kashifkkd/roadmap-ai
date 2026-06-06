@@ -33,7 +33,12 @@ export const createEmptyPathEmailConfig = () => ({
 });
 
 /**
- * New trigger row template (1st90-admin newTrigger).
+ * New trigger row template. Mirrors the legacy 1st90 admin shape: every entry
+ * carries all fields with nulls for the ones the chosen trigger doesn't use.
+ *
+ * The only divergence from the old shape is on habit triggers:
+ *   - `routine_info_id`/`level_id` (old) → `screen_id`/`screen_content_id`/`habit_id` (new)
+ *
  * Accountability entries must not include `survey_questions`.
  */
 export function createEmptyTriggerEntry(
@@ -48,11 +53,14 @@ export function createEmptyTriggerEntry(
   return {
     days: null,
     step_no: null,
+    step_id: null,
     inactive_days: null,
     active_days: null,
     text: "",
-    routine_info_id: null,
-    level_id: null,
+    // New Kyper habit IDs (used by after_habit_commit / after_habit_complete)
+    screen_id: null,
+    screen_content_id: null,
+    habit_id: null,
     subheader: defaultSubheader,
     ...(includeSurveyQuestions ? { survey_questions: [] } : {}),
   };
@@ -65,6 +73,13 @@ function coerceIntOrNull(v) {
 }
 
 export function normalizeSurveyQuestions(questions) {
+  // Accept legacy array shape AND a tolerant string shape (just in case the
+  // backend ever sent the brief "string" version). Either way we end up with
+  // an array of { text, options: [{ id, text, isCorrect }] }.
+  if (typeof questions === "string") {
+    const trimmed = questions.trim();
+    return trimmed ? [{ text: questions, options: [] }] : [];
+  }
   if (!Array.isArray(questions)) return [];
   const baseId = Date.now();
   return questions.map((q, qi) => {
@@ -94,26 +109,31 @@ export function sanitizeTriggerEntryForApi(
   includeSurveyQuestions,
 ) {
   const e = entry || {};
-  const text = typeof e.text === "string" ? e.text : e.text == null ? "" : String(e.text);
+  const text =
+    typeof e.text === "string" ? e.text : e.text == null ? "" : String(e.text);
   let subheader = e.subheader;
   if (subheader === undefined || subheader === "") subheader = null;
   else if (typeof subheader !== "string") subheader = String(subheader);
 
+  // All-nullable shape — only the relevant fields are populated below.
   const out = {
     days: null,
     step_no: null,
+    step_id: null,
     text,
     subheader,
-    level_id: null,
     active_days: null,
     inactive_days: null,
-    routine_info_id: null,
+    screen_id: null,
+    screen_content_id: null,
+    habit_id: null,
   };
 
   switch (triggerArrayKey) {
     case "days_after_completion":
       out.days = coerceIntOrNull(e.days);
       out.step_no = coerceIntOrNull(e.step_no);
+      out.step_id = coerceIntOrNull(e.step_id);
       break;
     case "inactive_days":
       out.inactive_days = coerceIntOrNull(e.inactive_days);
@@ -124,11 +144,13 @@ export function sanitizeTriggerEntryForApi(
     case "after_action_commit":
     case "after_action_complete":
       out.step_no = coerceIntOrNull(e.step_no);
+      out.step_id = coerceIntOrNull(e.step_id);
       break;
     case "after_habit_commit":
     case "after_habit_complete":
-      out.routine_info_id = coerceIntOrNull(e.routine_info_id);
-      out.level_id = coerceIntOrNull(e.level_id);
+      out.screen_id = coerceIntOrNull(e.screen_id);
+      out.screen_content_id = coerceIntOrNull(e.screen_content_id);
+      out.habit_id = coerceIntOrNull(e.habit_id);
       break;
     default:
       break;

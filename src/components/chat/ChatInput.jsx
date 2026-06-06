@@ -96,8 +96,6 @@ export default function ChatInput({
         }
       }
       if (uploaded.length) {
-        // When parent records each upload as its own chat row, do not keep files in composer
-        // state — they would be sent again on the next message (text-only or otherwise).
         if (onUploadRecorded) {
           for (const item of uploaded) {
             await onUploadRecorded({ sourceMaterial: item });
@@ -148,7 +146,6 @@ export default function ChatInput({
     if (value === undefined) setInternalText("");
   };
 
-  /** Avoid mixing typed prompts with attach/link flows (parent-controlled or internal). */
   const clearComposerText = () => {
     setText("");
   };
@@ -176,20 +173,29 @@ export default function ChatInput({
   const toolbarDisabled = disabled || isLoading;
 
   return (
-    <div className="w-full p-2 bg-accent flex flex-col items-center gap-2 rounded-xl h-[100px] sm:h-[130px]">
-      <div className="relative w-full h-full rounded-xl text-[#717680]">
-        <Search className="absolute top-3 left-2 w-4 h-4 text-[#717680]" />
+    <div className="flex h-[100px] w-full flex-col items-center gap-2 rounded-xl bg-accent p-2 sm:h-[130px]">
+      <div className="relative h-full w-full overflow-visible rounded-xl text-[#717680]">
+        <Search className="pointer-events-none absolute left-2 top-3 z-10 h-4 w-4 text-[#717680]" />
         <Textarea
           placeholder={placeholder || "Ask me anything"}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); }
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSubmit();
+            }
           }}
           disabled={disabled}
-          className={`pl-[30px] pt-2 pb-12 pr-2 text-sm text-gray-900 placeholder:text-[#717680] shadow-none border-0 rounded-xl bg-background w-full min-h-full max-h-full overflow-y-auto focus-visible:ring-primary-300 focus-visible:ring-1 focus-visible:ring-offset-2 leading-6 break-words resize-none ${disabled ? "cursor-not-allowed" : ""}`}
+          spellCheck={false}
+          className={`min-h-full max-h-full w-full resize-none overflow-y-auto rounded-xl border-0 bg-background pb-12 pl-[30px] pr-2 pt-2 text-sm leading-6 break-words text-gray-900 shadow-none placeholder:text-[#717680] focus-visible:ring-1 focus-visible:ring-primary-300 focus-visible:ring-offset-2 ${disabled ? "cursor-not-allowed" : ""}`}
         />
-        <div className="absolute bottom-0 left-0 right-0 h-10 rounded-b-xl" />
+
+        {/* Solid footer strip so attach/link are not clipped by rounded corners */}
+        <div
+          className="pointer-events-none absolute bottom-0 left-0 right-0 z-[1] h-11 rounded-b-xl bg-background"
+          aria-hidden
+        />
 
         <input
           ref={fileInputRef}
@@ -197,13 +203,16 @@ export default function ChatInput({
           accept={ACCEPT}
           multiple
           className="hidden"
-          onChange={(e) => { stageFiles(e.target.files); e.target.value = ""; }}
+          onChange={(e) => {
+            stageFiles(e.target.files);
+            e.target.value = "";
+          }}
         />
 
-        <div className="absolute bottom-2 left-2 flex items-center gap-1">
+        <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1.5">
           <div className="relative" ref={attachRef}>
             <TriggerBtn
-              icon={<Paperclip className="w-3 h-3" />}
+              icon={<Paperclip className="h-3 w-3 shrink-0" />}
               label="Attach"
               active={attachOpen}
               onClick={toggleAttach}
@@ -212,7 +221,7 @@ export default function ChatInput({
           </div>
           <div className="relative" ref={linkRef}>
             <TriggerBtn
-              icon={<Link2 className="w-3 h-3" />}
+              icon={<Link2 className="h-3 w-3 shrink-0" />}
               label="Link"
               active={linkOpen}
               onClick={toggleLink}
@@ -221,15 +230,16 @@ export default function ChatInput({
           </div>
         </div>
 
-        <div className="absolute bottom-2 right-2">
+        <div className="absolute bottom-2.5 right-2.5 z-10">
           <Button
             variant="default"
             size="icon"
             onClick={handleSubmit}
-            className="p-2 flex items-center gap-2 bg-primary text-background rounded-full hover:cursor-pointer group"
+            disabled={toolbarDisabled}
+            className="flex items-center gap-2 rounded-full bg-primary p-2 text-background hover:cursor-pointer group"
           >
             {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <ArrowUp
                 size={16}
@@ -273,16 +283,18 @@ export default function ChatInput({
 function TriggerBtn({ icon, label, active, onClick, disabled }) {
   return (
     <Button
-      variant="default"
-      size="xs"
+      type="button"
+      variant="ghost"
       onClick={onClick}
       disabled={disabled}
-      className={`p-1 flex items-center gap-1 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-        active ? "text-primary-600 bg-primary-50" : "text-gray-500 bg-white hover:text-primary-600 hover:bg-primary-50"
+      className={`flex h-7 shrink-0 items-center gap-1 rounded-sm border-0 px-2 py-1 shadow-none transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+        active
+          ? "bg-primary-50 text-primary-600 hover:bg-primary-50 hover:text-primary-600"
+          : "bg-white text-gray-500 hover:bg-primary-50 hover:text-primary-600"
       }`}
     >
       {icon}
-      <span className="text-xs">{label}</span>
+      <span className="text-xs leading-none">{label}</span>
     </Button>
   );
 }

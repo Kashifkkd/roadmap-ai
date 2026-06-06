@@ -256,6 +256,8 @@ export const RichTextArea = ({
   const selectionCallbackRef = useRef(onSelectionChange);
   const blurCallbackRef = useRef(onBlur);
   const blurHandlerRef = useRef(null);
+  const isFocusedRef = useRef(false);
+  const isToolbarActiveRef = useRef(false);
   const valueFormatRef = useRef(valueFormat);
 
   useEffect(() => {
@@ -345,6 +347,9 @@ export const RichTextArea = ({
           },
         },
       });
+
+      const { enableQuillSpellcheck } = await import("@/lib/spellcheck/utils");
+      enableQuillSpellcheck(editor);
 
       // Normalize old span-based heading styles to h1/h2/h3 for backward compatibility
       const normalizeHeadingHtml = (html) => {
@@ -478,7 +483,12 @@ export const RichTextArea = ({
         }
       });
 
+      const handleEditorFocus = () => {
+        isFocusedRef.current = true;
+      };
+
       const handleEditorBlur = () => {
+        isFocusedRef.current = false;
         const callback = blurCallbackRef.current;
         if (callback) {
           callback();
@@ -487,6 +497,7 @@ export const RichTextArea = ({
 
       blurHandlerRef.current = handleEditorBlur;
       const editorRoot = editor.root;
+      editorRoot.addEventListener("focus", handleEditorFocus);
       editorRoot.addEventListener("blur", handleEditorBlur);
 
       quillEditorRef.current = editor;
@@ -500,6 +511,7 @@ export const RichTextArea = ({
 
       if (editor && blurHandlerRef.current) {
         const editorRoot = editor.root;
+        editorRoot.removeEventListener("focus", () => {});
         editorRoot.removeEventListener("blur", blurHandlerRef.current);
         blurHandlerRef.current = null;
         quillEditorRef.current = null;
@@ -517,6 +529,7 @@ export const RichTextArea = ({
   // Use normalized HTML and avoid direct innerHTML to prevent br tag proliferation
   useEffect(() => {
     if (valueFormat !== "html" || !value || !quillEditorRef.current) return;
+    if (isFocusedRef.current || isToolbarActiveRef.current) return;
     const editor = quillEditorRef.current;
     let html = typeof value === "string" ? value : "";
     if (html.trim().startsWith("<")) {
@@ -589,7 +602,11 @@ export const RichTextArea = ({
           ref={toolbarRef}
           className="rich-text-toolbar ql-toolbar ql-snow p-1 flex gap-1 items-center flex-wrap border-0"
           style={{ border: "none" }}
-          onMouseDown={(e) => e.preventDefault()}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            isToolbarActiveRef.current = true;
+            setTimeout(() => { isToolbarActiveRef.current = false; }, 300);
+          }}
         >
           <button type="button" className="ql-bold" title="Bold" />
           <button type="button" className="ql-italic" title="Italic" />

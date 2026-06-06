@@ -125,8 +125,9 @@ function getScreenCardContentSnippet(screen) {
  * Resolves the best available preview image URL for a screen card.
  * Priority:
  *   1. screen.assets[] — first entry with type === "image"
- *   2. screen.screenContents.content.media — if type === "image"
- *   3. screen.thumbnail (legacy fallback)
+ *   2. screen.thumbnail (legacy fallback)
+ *
+ * content.media is user tool/media content, not a screen card image.
  */
 function getPreviewImageUrl(screen) {
   const imageAsset = (screen?.assets || []).find(
@@ -137,9 +138,6 @@ function getPreviewImageUrl(screen) {
       (a.url || a.ImageUrl)
   );
   if (imageAsset) return imageAsset.url || imageAsset.ImageUrl;
-
-  const media = screen?.screenContents?.content?.media;
-  if (media?.type === "image" && media?.url) return media.url;
 
   return screen?.thumbnail || null;
 }

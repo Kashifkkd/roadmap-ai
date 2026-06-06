@@ -21,16 +21,11 @@ import {
   FileIcon,
   SquareKanban,
   Search,
-  Plus,
   GripVertical,
-  Pencil,
-  Trash2,
   Check,
   X,
   MoreVertical,
   MoreHorizontal,
-  Copy,
-  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import {
@@ -82,6 +77,14 @@ const ASSET_CATEGORIES = [
     icon: FileIcon,
   },
 ];
+
+function isValidPathChapterId(n) {
+  return typeof n === "number" && Number.isFinite(n) && n >= 0;
+}
+
+function isValidPathStepId(n) {
+  return typeof n === "number" && Number.isFinite(n) && n >= 0;
+}
 
 // Filter assets by asset_type
 function filterAssetsByType(assets, assetType) {
@@ -307,6 +310,10 @@ export default function CometManagerSidebar({
       toast.error("Please publish cycle first to remix.");
       return;
     }
+    if (!isValidPathChapterId(chapter?.strictNumericChapterId)) {
+      toast.error("Please publish cycle first to remix.");
+      return;
+    }
     setCreateVariantSourceChapter(chapter);
     setCreateVariantSourceStep(null);
     setCreateVariantKind("remix-phase");
@@ -330,6 +337,10 @@ export default function CometManagerSidebar({
     e.stopPropagation();
     setOpenStepHeaderMenuId(null);
     if (!isCyclePublished) {
+      toast.error("Please publish cycle first to remix.");
+      return;
+    }
+    if (!isValidPathStepId(step?.strictNumericStepId)) {
       toast.error("Please publish cycle first to remix.");
       return;
     }
@@ -1169,7 +1180,10 @@ export default function CometManagerSidebar({
   ];
 
   return (
-    <div className="flex flex-col w-full  gap-2 h-full overflow-hidden">
+    <div
+      className="flex flex-col w-full  gap-2 h-full overflow-hidden"
+      data-spellcheck="false"
+    >
       {/* Tabs */}
       <div className="flex justify-between w-full  rounded-xl shrink-0">
         <Stack
@@ -1339,6 +1353,7 @@ export default function CometManagerSidebar({
                                     onKeyDown={(e) =>
                                       handleChapterEditKeyDown(e, chapterId)
                                     }
+                                    spellCheck={false}
                                     className="w-full px-2 py-1.5 text-xs focus:outline-none resize-none overflow-y-auto"
                                     placeholder="Phase name"
                                     rows={2}
@@ -1658,6 +1673,7 @@ export default function CometManagerSidebar({
                                                       step.description,
                                                     )
                                                   }
+                                                  spellCheck={false}
                                                   className="w-full px-2 py-1.5 text-xs focus:outline-none resize-none overflow-y-auto text-gray-900"
                                                   placeholder="Step name"
                                                   rows={2}
@@ -1767,7 +1783,7 @@ export default function CometManagerSidebar({
                                                       }
                                                       className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
                                                     >
-                                                      <Pencil className="w-3.5 h-3.5" />
+                                                      {/* <Pencil className="w-3.5 h-3.5" /> */}
                                                       Edit
                                                     </button>
                                                     <button
@@ -1780,7 +1796,7 @@ export default function CometManagerSidebar({
                                                       }
                                                       className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
                                                     >
-                                                      <Copy className="w-3.5 h-3.5" />
+                                                      {/* <Copy className="w-3.5 h-3.5" /> */}
                                                       Copy Step
                                                     </button>
                                                     <button
@@ -1793,7 +1809,7 @@ export default function CometManagerSidebar({
                                                       }
                                                       className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
                                                     >
-                                                      <Sparkles className="w-3.5 h-3.5" />
+                                                      {/* <Sparkles className="w-3.5 h-3.5" /> */}
                                                       Remix Step
                                                     </button>
                                                     <button
@@ -1806,7 +1822,7 @@ export default function CometManagerSidebar({
                                                       }
                                                       className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
                                                     >
-                                                      <Trash2 className="w-3.5 h-3.5" />
+                                                      {/* <Trash2 className="w-3.5 h-3.5" /> */}
                                                       Delete
                                                     </button>
                                                   </div>
@@ -1850,6 +1866,7 @@ export default function CometManagerSidebar({
                                                       value={editStepDescription}
                                                       onChange={(value) => setEditStepDescription(value)}
                                                       valueFormat="html"
+                                                      spellCheck={false}
                                                     />
                                                     <div className="border-t border-gray-300 mb-2"></div>
 
@@ -1931,7 +1948,7 @@ export default function CometManagerSidebar({
                                                           }
                                                           className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
                                                         >
-                                                          <Pencil className="w-3.5 h-3.5" />
+                                                          {/* <Pencil className="w-3.5 h-3.5" /> */}
                                                           Edit
                                                         </button>
                                                         {/* <button
@@ -2151,13 +2168,13 @@ export default function CometManagerSidebar({
                                                 <div className="flex flex-col gap-2">
                                                   <div className="flex flex-col gap-2">
                                                     <div className="flex items-center gap-2">
-                                                      <img
+                                                      {/* <img
                                                         src="/bulb.svg"
                                                         alt="Aha"
                                                         width={20}
                                                         height={20}
                                                         className="w-5 h-5"
-                                                      />
+                                                      /> */}
                                                       <span className="font-semibold text-sm">
                                                         Aha
                                                       </span>
@@ -2175,13 +2192,13 @@ export default function CometManagerSidebar({
                                                 <div className="flex flex-col gap-2">
                                                   <div className="flex flex-col gap-2">
                                                     <div className="flex items-center gap-2">
-                                                      <img
+                                                      {/* <img
                                                         src="/markup.svg"
                                                         alt="Micro-action"
                                                         width={20}
                                                         height={20}
                                                         className="w-5 h-5"
-                                                      />
+                                                      /> */}
                                                       <span className="font-semibold text-sm">
                                                         Micro-action
                                                       </span>
@@ -2198,13 +2215,13 @@ export default function CometManagerSidebar({
                                                 <div className="flex flex-col gap-2">
                                                   <div className="flex flex-col gap-2">
                                                     <div className="flex items-center gap-2">
-                                                      <img
+                                                      {/* <img
                                                         src="/tool.svg"
                                                         alt="Tool"
                                                         width={20}
                                                         height={20}
                                                         className="w-5 h-5"
-                                                      />
+                                                      /> */}
                                                       <span className="font-semibold text-sm">
                                                         Tool
                                                       </span>
@@ -2659,7 +2676,9 @@ export default function CometManagerSidebar({
               setCreateVariantSourceStep(null);
             }
           }}
-          numericChapterId={createVariantSourceChapter?.numericChapterId ?? null}
+          numericChapterId={
+            createVariantSourceChapter?.strictNumericChapterId ?? null
+          }
           sessionId={sessionId || ""}
           currentCycleName={currentCycleName}
           sourcePhaseName={sourcePhaseName}
@@ -2676,7 +2695,7 @@ export default function CometManagerSidebar({
               setCreateVariantSourceStep(null);
             }
           }}
-          numericStepId={createVariantSourceStep?.numericStepId ?? null}
+          numericStepId={createVariantSourceStep?.strictNumericStepId ?? null}
           sessionId={sessionId || ""}
           sourceChapterUid={sourceChapterUid}
           currentCycleName={currentCycleName}
