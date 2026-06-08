@@ -132,7 +132,7 @@ function TriggerTypePicker({ value, onValueChange }) {
   return (
     <div className="rounded-lg  bg-[#F5F5F5] p-2">
       <div className="flex flex-col gap-2 bg-white p-2 rounded-lg">
-        <Label className="mb-1 block text-sm font-medium leading-5 text-[#181D27]">
+        <Label className="mb-2 block text-sm font-medium leading-5 text-[#181D27]">
           Trigger
         </Label>
         <Select value={value || undefined} onValueChange={onValueChange}>
@@ -154,9 +154,11 @@ function TriggerTypePicker({ value, onValueChange }) {
 
 function TriggerNumberField({ label, hint, value, onChange }) {
   return (
-    <div className="space-y-1.5">
+    <div className="flex flex-col gap-2">
       <Label className={pathEmailLabelClass}>{label}</Label>
-      {hint ? <p className="text-xs leading-4 text-[#717680]">{hint}</p> : null}
+      {hint ? (
+        <p className="  text-xs leading-4 text-[#717680]">{hint}</p>
+      ) : null}
       <Input
         type="number"
         value={value ?? ""}
@@ -211,7 +213,7 @@ function StepPickerField({
 
   if (steps.length === 0) {
     return (
-      <div className="space-y-1.5 max-w-md">
+      <div className="flex flex-col gap-2 max-w-md">
         <Label className={pathEmailLabelClass}>{label}</Label>
         <Select disabled value={undefined}>
           <SelectTrigger className={`w-full ${pathEmailInputClass}`}>
@@ -226,7 +228,7 @@ function StepPickerField({
   }
 
   return (
-    <div className="space-y-1.5 max-w-md">
+    <div className="flex flex-col gap-2 max-w-md">
       <Label className={pathEmailLabelClass}>{label}</Label>
       {helper ? (
         <p className="text-xs leading-4 text-[#717680]">{helper}</p>
@@ -287,7 +289,7 @@ function HabitPickerField({ entry, onChange, habitLevelOptions }) {
 
   if (habitLevelOptions.length === 0) {
     return (
-      <div className="space-y-1.5 max-w-xl">
+      <div className="flex flex-col gap-2 max-w-xl">
         <Label className={pathEmailLabelClass}>Select habit</Label>
         <Select disabled value={undefined}>
           <SelectTrigger className={`w-full ${pathEmailInputClass}`}>
@@ -304,7 +306,7 @@ function HabitPickerField({ entry, onChange, habitLevelOptions }) {
 
   return (
     <div className="space-y-2">
-      <div className="space-y-1.5 max-w-xl">
+      <div className="flex flex-col gap-2 max-w-xl">
         <Label className={pathEmailLabelClass}>Select habit</Label>
         <p className="text-xs text-gray-500">
           One option per habit level on a habits screen.
@@ -806,7 +808,11 @@ export default function PathEmailSettingsPanel({
       // PUT returns the same shape as GET; keep triggers visible (do not reset to empty).
       setConfig(saved);
       setTriggerKindToAdd("");
-      toast.success("Email settings saved successfully");
+      toast.success(
+        variant === "manager"
+          ? "Manager Email Added"
+          : "Accountability Email Added",
+      );
       onSaveSuccess?.();
     } catch (e) {
       console.error(e);
@@ -828,11 +834,6 @@ export default function PathEmailSettingsPanel({
       [key]: [...(prev[key] || []), empty],
     }));
     setTriggerKindToAdd("");
-    toast.success(
-      variant === "manager"
-        ? "Manager email added"
-        : "Accountability email added",
-    );
   };
 
   const moveTriggerToSection = (fromKey, index, toKey) => {
@@ -882,7 +883,7 @@ export default function PathEmailSettingsPanel({
       <style>{`
         .path-email-settings .path-email-rich-text > .mb-4 { margin-bottom: 0; }
         .path-email-settings .path-email-rich-text > .mb-4 > .mb-2 {
-          margin-bottom: 0;
+          margin-bottom: 8px;
           padding: 4px 4px 0;
           gap: 6px;
         }
@@ -946,7 +947,7 @@ export default function PathEmailSettingsPanel({
         }
       `}</style>
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
-        <div className="max-w-4xl space-y-6 bg-[#F5F5F5] p-2 rounded-lg">
+        <div className="w-full space-y-6 bg-[#F5F5F5] p-2 rounded-lg">
           <div className="flex items-center justify-between px-4 pt-4">
             <h3 className="text-md font-semibold tracking-tight text-primary sm:text-xl">
               {title}
@@ -1002,17 +1003,14 @@ export default function PathEmailSettingsPanel({
                 </div> */}
 
                 <div className="flex flex-col">
-                  <Label className={pathEmailLabelClass}>Close Out Text</Label>
-
-                  <div className="mt-2">
-                    <PathEmailRichText
-                      value={config.close_out_text || ""}
-                      onChange={(html) =>
-                        setConfig((p) => ({ ...p, close_out_text: html }))
-                      }
-                      valueFormat="html"
-                    />
-                  </div>
+                  <PathEmailRichText
+                    label="Close Out Text"
+                    value={config.close_out_text || ""}
+                    onChange={(html) =>
+                      setConfig((p) => ({ ...p, close_out_text: html }))
+                    }
+                    valueFormat="html"
+                  />
                 </div>
 
                 <div className="space-y-4">

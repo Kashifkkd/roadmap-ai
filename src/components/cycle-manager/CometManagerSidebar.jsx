@@ -105,6 +105,7 @@ export default function CometManagerSidebar({
   chapters = [],
   onReorderChapters,
   onReorderSteps,
+  onMoveStepToChapter,
   onDeleteChapter,
   remainingChapters = [],
   onChapterClick,
@@ -158,6 +159,13 @@ export default function CometManagerSidebar({
   const [dropTargetChapter, setDropTargetChapter] = useState(null);
   const [draggedStep, setDraggedStep] = useState(null);
   const [dropTargetStep, setDropTargetStep] = useState(null);
+  // chapterId of the phase highlighted when a step is dragged cross-phase
+  const [dropTargetChapterForStep, setDropTargetChapterForStep] = useState(null);
+
+  const scrollContainerRef = useRef(null);
+  const lastDragPosRef = useRef({ x: 0, y: 0 });
+  const scrollIntervalRef = useRef(null);
+  const stepDragLeaveTimerRef = useRef(null);
 
   // Step editing state
   const [openStepHeaderMenuId, setOpenStepHeaderMenuId] = useState(null);
@@ -217,6 +225,46 @@ export default function CometManagerSidebar({
     createVariantSourceStep?.name ||
     createVariantSourceStep?.title ||
     null;
+
+  // Track cursor position during drag for auto-scroll (capture phase bypasses stopPropagation)
+  useEffect(() => {
+    const onDragOver = (e) => {
+      lastDragPosRef.current = { x: e.clientX, y: e.clientY };
+    };
+    document.addEventListener("dragover", onDragOver, true);
+    return () => document.removeEventListener("dragover", onDragOver, true);
+  }, []);
+
+  // Auto-scroll sidebar when dragging near top/bottom edge
+  useEffect(() => {
+    const isDragging = draggedStep !== null || draggedChapterIndex !== null;
+    if (!isDragging) {
+      if (scrollIntervalRef.current) {
+        clearInterval(scrollIntervalRef.current);
+        scrollIntervalRef.current = null;
+      }
+      return;
+    }
+    scrollIntervalRef.current = setInterval(() => {
+      const container = scrollContainerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const { y } = lastDragPosRef.current;
+      const ZONE = 80;
+      const MAX_SPEED = 12;
+      if (y > rect.top && y < rect.top + ZONE) {
+        container.scrollBy(0, -MAX_SPEED * (1 - (y - rect.top) / ZONE));
+      } else if (y > rect.bottom - ZONE && y < rect.bottom) {
+        container.scrollBy(0, MAX_SPEED * (1 - (rect.bottom - y) / ZONE));
+      }
+    }, 16);
+    return () => {
+      if (scrollIntervalRef.current) {
+        clearInterval(scrollIntervalRef.current);
+        scrollIntervalRef.current = null;
+      }
+    };
+  }, [draggedStep, draggedChapterIndex]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -566,107 +614,146 @@ export default function CometManagerSidebar({
   const handleChapterDragOver = (e, index) => {
     e.preventDefault();
     e.stopPropagation();
-    // Cannot drop on chapter 0
-    if (index === 0) {
-      e.dataTransfer.dropEffect = "none";
+
+    if (draggedStep !== null) {
+      const chapter = chapters[index];
+      const chapterId = chapter?.id || `chapter-${index}`;
+      if (draggedStep.chapterId !== chapterId) {
+        e.dataTransfer.dropEffect = "move";
+        clearTimeout(stepDragLeaveTimerRef.current);
+        setDropTargetChapterForStep((prev) => prev === chapterId ? prev : chapterId);
+
+        // Cursor in the top half of the phase card → insert at position 0 (start).
+        // Cursor in the bottom half → append after the last step (end).
+        // This lets the user choose start vs end simply by where they hover.
+        const rect = e.currentTarget.getBoundingClientRect();
+        const insertIdx = e.clientY < rect.top + rect.height / 2
+          ? 0
+          : (chapter?.steps?.length ?? 0);
+
+        setDropTargetStep((prev) =>
+          prev?.chapterId === chapterId && prev?.stepIndex === insertIdx
+            ? prev
+            : { chapterId, stepIndex: insertIdx },
+        );
+      }
       return;
     }
+
+    if (index === 0) { e.dataTransfer.dropEffect = "none"; return; }
     e.dataTransfer.dropEffect = "move";
     if (draggedChapterIndex !== null && draggedChapterIndex !== index) {
-      setDropTargetChapter(index);
+      setDropTargetChapter((prev) => prev === index ? prev : index);
     }
   };
 
   const handleChapterDragLeave = (e) => {
     e.stopPropagation();
     setDropTargetChapter(null);
+    setDropTargetChapterForStep(null);
+    setDropTargetStep((prev) => prev === null ? prev : null);
   };
 
   const handleChapterDrop = (e, dropIndex) => {
     e.preventDefault();
     e.stopPropagation();
 
-    // Cannot drop on chapter 0
-    if (dropIndex === 0) {
-      setDraggedChapterIndex(null);
-      setDropTargetChapter(null);
+    // Step dropped on chapter container → use the insert position that was
+    // already determined during dragOver (start=0 or end=steps.length).
+    if (draggedStep !== null) {
+      const chapter = chapters[dropIndex];
+      const chapterId = chapter?.id || `chapter-${dropIndex}`;
+      if (draggedStep.chapterId !== chapterId && onMoveStepToChapter) {
+        // dropTargetStep holds the exact index computed in handleChapterDragOver.
+        const insertIndex =
+          dropTargetStep?.chapterId === chapterId && dropTargetStep?.stepIndex !== undefined
+            ? dropTargetStep.stepIndex
+            : chapter?.steps?.length || 0;
+        onMoveStepToChapter(
+          draggedStep.chapterIndex,
+          draggedStep.stepIndex,
+          dropIndex,
+          insertIndex,
+        );
+      }
+      setDraggedStep(null);
+      setDropTargetStep(null);
+      setDropTargetChapterForStep(null);
       return;
     }
 
+    if (dropIndex === 0) { setDraggedChapterIndex(null); setDropTargetChapter(null); return; }
     if (draggedChapterIndex === null || draggedChapterIndex === dropIndex) {
-      setDraggedChapterIndex(null);
-      setDropTargetChapter(null);
-      return;
+      setDraggedChapterIndex(null); setDropTargetChapter(null); return;
     }
 
-    // Build new order of chapters
     const newOrder = chapters.map((_, i) => i);
     const [draggedIdx] = newOrder.splice(draggedChapterIndex, 1);
     newOrder.splice(dropIndex, 0, draggedIdx);
-
-    if (onReorderChapters) {
-      onReorderChapters(newOrder);
-    }
-
+    if (onReorderChapters) onReorderChapters(newOrder);
     setDraggedChapterIndex(null);
     setDropTargetChapter(null);
   };
 
-  const handleStepDragStart = (e, chapterId, stepIndex) => {
+  const handleStepDragStart = (e, chapterId, chapterIndex, stepIndex) => {
     e.stopPropagation();
-    setDraggedStep({ chapterId, stepIndex });
+    setDraggedStep({ chapterId, chapterIndex, stepIndex });
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/step", `${chapterId}:${stepIndex}`);
   };
 
   const handleStepDragEnd = () => {
+    clearTimeout(stepDragLeaveTimerRef.current);
     setDraggedStep(null);
     setDropTargetStep(null);
+    setDropTargetChapterForStep(null);
   };
 
   const handleStepDragOver = (e, chapterId, stepIndex) => {
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = "move";
-
-    if (
-      draggedStep &&
-      draggedStep.chapterId === chapterId &&
-      draggedStep.stepIndex !== stepIndex
-    ) {
-      setDropTargetStep({ chapterId, stepIndex });
+    if (!draggedStep) return;
+    clearTimeout(stepDragLeaveTimerRef.current);
+    const isSameSlot = draggedStep.chapterId === chapterId && draggedStep.stepIndex === stepIndex;
+    if (!isSameSlot) {
+      setDropTargetStep((prev) =>
+        prev?.chapterId === chapterId && prev?.stepIndex === stepIndex
+          ? prev : { chapterId, stepIndex },
+      );
+      setDropTargetChapterForStep((prev) => prev === null ? prev : null);
     }
   };
 
   const handleStepDragLeave = (e) => {
     e.stopPropagation();
-    setDropTargetStep(null);
+    clearTimeout(stepDragLeaveTimerRef.current);
+    stepDragLeaveTimerRef.current = setTimeout(() => setDropTargetStep(null), 60);
   };
 
-  const handleStepDrop = (e, chapterId, stepIndex, steps) => {
+  const handleStepDrop = (e, chapterId, chapterIndex, stepIndex, steps) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!draggedStep) { setDraggedStep(null); setDropTargetStep(null); setDropTargetChapterForStep(null); return; }
+    const isSameSlot = draggedStep.chapterId === chapterId && draggedStep.stepIndex === stepIndex;
+    if (isSameSlot) { setDraggedStep(null); setDropTargetStep(null); setDropTargetChapterForStep(null); return; }
 
-    if (
-      !draggedStep ||
-      draggedStep.chapterId !== chapterId ||
-      draggedStep.stepIndex === stepIndex
-    ) {
-      setDraggedStep(null);
-      setDropTargetStep(null);
-      return;
-    }
-
-    const newOrder = steps.map((_, i) => i);
-    const [draggedIdx] = newOrder.splice(draggedStep.stepIndex, 1);
-    newOrder.splice(stepIndex, 0, draggedIdx);
-
-    if (onReorderSteps) {
-      onReorderSteps(chapterId, newOrder);
+    if (draggedStep.chapterId === chapterId) {
+      // Same phase — reorder
+      const newOrder = steps.map((_, i) => i);
+      const [draggedIdx] = newOrder.splice(draggedStep.stepIndex, 1);
+      newOrder.splice(stepIndex, 0, draggedIdx);
+      if (onReorderSteps) onReorderSteps(chapterId, newOrder);
+    } else {
+      // Cross-phase move using array indices
+      if (onMoveStepToChapter) {
+        onMoveStepToChapter(draggedStep.chapterIndex, draggedStep.stepIndex, chapterIndex, stepIndex);
+      }
     }
 
     setDraggedStep(null);
     setDropTargetStep(null);
+    setDropTargetChapterForStep(null);
   };
 
   // Source materials state
@@ -1209,7 +1296,7 @@ export default function CometManagerSidebar({
       </div>
 
       {/* Tab Content */}
-      <div className="flex flex-col gap-2 bg-primary-50 p-2 rounded-xl flex-1 overflow-auto">
+      <div ref={scrollContainerRef} className="flex flex-col gap-2 bg-primary-50 p-2 rounded-xl flex-1 overflow-auto">
         <div className="flex flex-col gap-2 flex-1">
           {/* Steps Tab Content */}
           {tab === 0 && (
@@ -1232,6 +1319,7 @@ export default function CometManagerSidebar({
                     dropTargetChapter === index &&
                     draggedChapterIndex !== null &&
                     index !== 0;
+                  const isStepDropTarget = dropTargetChapterForStep === chapterId;
 
                   return (
                     <div
@@ -1245,11 +1333,16 @@ export default function CometManagerSidebar({
                         <div className="h-1.5 bg-primary rounded-full mx-2 my-1 transition-all shadow-sm pointer-events-none" />
                       )}
                       <div
-                        draggable={isDraggable}
+                        draggable={isDraggable && draggedStep === null}
                         onDragStart={(e) => handleChapterDragStart(e, index)}
                         onDragEnd={handleChapterDragEnd}
-                        className={`flex flex-col border-2 border-gray-300 rounded-sm transition-all ${
-                          isExpanded ? "bg-primary-100" : "bg-white"
+                        onDragOver={(e) => e.preventDefault()}
+                        className={`flex flex-col border-2 rounded-sm transition-all ${
+                          isStepDropTarget
+                            ? "border-primary-500 bg-primary-50 shadow-md"
+                            : isExpanded
+                              ? "border-gray-300 bg-primary-100"
+                              : "border-gray-300 bg-white"
                         } ${draggedChapterIndex === index ? "opacity-50" : ""}`}
                       >
                         {/* Chapter Header */}
@@ -1523,7 +1616,7 @@ export default function CometManagerSidebar({
                                   dropTargetStep.stepIndex === stepIndex;
                                 return (
                                   <div
-                                    key={stepId}
+                                    key={`${stepId}-${stepIndex}`}
                                     className="flex flex-col transition-all"
                                     onDragOver={(e) =>
                                       handleStepDragOver(
@@ -1537,6 +1630,7 @@ export default function CometManagerSidebar({
                                       handleStepDrop(
                                         e,
                                         chapterId,
+                                        index,
                                         stepIndex,
                                         chapter.steps,
                                       )
@@ -1555,6 +1649,7 @@ export default function CometManagerSidebar({
                                         handleStepDragStart(
                                           e,
                                           chapterId,
+                                          index,
                                           stepIndex,
                                         )
                                       }
@@ -1977,6 +2072,34 @@ export default function CometManagerSidebar({
                                   </div>
                                 );
                               })}
+
+                              {/* Append zone: shown when dragging a step from another phase */}
+                              {draggedStep && draggedStep.chapterId !== chapterId && (
+                                <div
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.dataTransfer.dropEffect = "move";
+                                    clearTimeout(stepDragLeaveTimerRef.current);
+                                    setDropTargetStep((prev) =>
+                                      prev?.chapterId === chapterId && prev?.stepIndex === chapter.steps.length
+                                        ? prev : { chapterId, stepIndex: chapter.steps.length },
+                                    );
+                                  }}
+                                  onDragLeave={(e) => {
+                                    e.stopPropagation();
+                                    clearTimeout(stepDragLeaveTimerRef.current);
+                                    stepDragLeaveTimerRef.current = setTimeout(() => setDropTargetStep(null), 60);
+                                  }}
+                                  onDrop={(e) => handleStepDrop(e, chapterId, index, chapter.steps.length, chapter.steps)}
+                                  className="h-6"
+                                >
+                                  {dropTargetStep?.chapterId === chapterId &&
+                                    dropTargetStep?.stepIndex === chapter.steps.length && (
+                                    <div className="h-1 bg-primary rounded-full mx-2 mt-1 transition-all shadow-sm pointer-events-none" />
+                                  )}
+                                </div>
+                              )}
                             </div>
                           )}
                       </div>

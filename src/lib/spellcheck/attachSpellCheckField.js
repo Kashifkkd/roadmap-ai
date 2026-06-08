@@ -136,6 +136,7 @@ export function attachSpellCheckField(field, { multiline = false } = {}) {
     backdrop.style.pointerEvents = "none";
     backdrop.style.overflow = "hidden";
     backdrop.style.color = "transparent";
+    backdrop.style.borderColor = "transparent";
     backdrop.style.whiteSpace = multiline ? "pre-wrap" : "pre";
     backdrop.style.wordBreak = multiline ? "break-word" : "normal";
     backdrop.style.zIndex = "0";

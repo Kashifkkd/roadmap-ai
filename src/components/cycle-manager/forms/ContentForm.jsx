@@ -206,7 +206,7 @@ export default function ContentForm({
         <div className="p-2">
           <SectionHeader title="Content" />
         </div>
-        <div className="bg-white rounded-lg p-2 align-center">
+        <div className="bg-white rounded-lg border-none p-2 align-center">
           <TextField
             label="Title"
             value={formData.heading || ""}

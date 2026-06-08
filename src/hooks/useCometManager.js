@@ -711,6 +711,54 @@ export function useCometManager(sessionData = null) {
     setSelectedStepId(stepId);
   };
 
+  /**
+   * Move a step from one chapter to another using direct array indices.
+   * Index-based to avoid fragile ID lookups that silently return -1 when
+   * chapter positions shift after a reorder.
+   */
+  const moveStepToChapter = (fromChapterIndex, fromStepIndex, toChapterIndex, toStepIndex) => {
+    setOutline((prevOutline) => {
+      if (!prevOutline || !prevOutline.chapters) return prevOutline;
+
+      const newOutline = JSON.parse(JSON.stringify(prevOutline));
+      const pathChapters = newOutline.chapters || [];
+
+      if (fromChapterIndex < 0 || fromChapterIndex >= pathChapters.length) return prevOutline;
+      if (toChapterIndex < 0 || toChapterIndex >= pathChapters.length) return prevOutline;
+      if (fromChapterIndex === toChapterIndex) return prevOutline;
+
+      const fromSteps = pathChapters[fromChapterIndex].steps || [];
+      if (fromStepIndex < 0 || fromStepIndex >= fromSteps.length) return prevOutline;
+
+      // Remove from source
+      const stepToMove = fromSteps[fromStepIndex];
+      const newFromSteps = [...fromSteps];
+      newFromSteps.splice(fromStepIndex, 1);
+      for (let i = 0; i < newFromSteps.length; i++) {
+        newFromSteps[i].position = i + 1;
+        if (newFromSteps[i].step && typeof newFromSteps[i].step === "object") {
+          newFromSteps[i].step.position = i + 1;
+        }
+      }
+
+      // Insert into target
+      const toSteps = pathChapters[toChapterIndex].steps || [];
+      const newToSteps = [...toSteps];
+      const clampedIndex = Math.min(Math.max(toStepIndex, 0), newToSteps.length);
+      newToSteps.splice(clampedIndex, 0, stepToMove);
+      for (let i = 0; i < newToSteps.length; i++) {
+        newToSteps[i].position = i + 1;
+        if (newToSteps[i].step && typeof newToSteps[i].step === "object") {
+          newToSteps[i].step.position = i + 1;
+        }
+      }
+
+      pathChapters[fromChapterIndex].steps = newFromSteps;
+      pathChapters[toChapterIndex].steps = newToSteps;
+      return newOutline;
+    });
+  };
+
   return {
     isLoading,
     screens, // Filtered screens based on selectedStepId
@@ -724,6 +772,7 @@ export function useCometManager(sessionData = null) {
     reorderScreensList,
     reorderChapters,
     reorderSteps,
+    moveStepToChapter,
     insertScreenAt,
     outline, // Expose outline for direct access if needed
     setOutline, // Expose setter for outline updates

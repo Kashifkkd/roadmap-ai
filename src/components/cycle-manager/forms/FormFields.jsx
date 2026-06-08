@@ -16,20 +16,21 @@ import {
 } from "lucide-react";
 
 const SaveIndicator = ({ state }) => {
-  if (state === "saving") return <Loader2 size={13} className="animate-spin text-blue-400 shrink-0" />;
-  if (state === "saved") return <Check size={13} className="text-green-500 shrink-0" />;
+  if (state === "saving")
+    return (
+      <Loader2 size={13} className="animate-spin text-blue-400 shrink-0" />
+    );
+  if (state === "saved")
+    return <Check size={13} className="text-green-500 shrink-0" />;
   return null;
 };
 import "quill/dist/quill.snow.css";
-
-
 
 export const SectionHeader = ({ title }) => (
   <div className="w-full mb-4">
     <h3 className="text-md font-semibold text-primary">{title}</h3>
   </div>
 );
-
 
 export const TextField = ({
   label,
@@ -46,7 +47,9 @@ export const TextField = ({
   const resetRef = useRef(null);
   const onRequestAutoSaveRef = useRef(onRequestAutoSave);
 
-  useEffect(() => { onRequestAutoSaveRef.current = onRequestAutoSave; }, [onRequestAutoSave]);
+  useEffect(() => {
+    onRequestAutoSaveRef.current = onRequestAutoSave;
+  }, [onRequestAutoSave]);
 
   useEffect(() => {
     if (!isFocusedRef.current) setLocalValue(value || "");
@@ -56,11 +59,13 @@ export const TextField = ({
     const saveFn = onRequestAutoSaveRef.current;
     if (!saveFn) return;
     setSaveState("saving");
-    saveFn().then((result) => {
-      setSaveState(result !== false ? "saved" : "idle");
-      if (resetRef.current) clearTimeout(resetRef.current);
-      resetRef.current = setTimeout(() => setSaveState("idle"), 2000);
-    }).catch(() => setSaveState("idle"));
+    saveFn()
+      .then((result) => {
+        setSaveState(result !== false ? "saved" : "idle");
+        if (resetRef.current) clearTimeout(resetRef.current);
+        resetRef.current = setTimeout(() => setSaveState("idle"), 2000);
+      })
+      .catch(() => setSaveState("idle"));
   };
 
   const handleChange = (e) => {
@@ -76,18 +81,25 @@ export const TextField = ({
   return (
     <div className="mb-4">
       <div className="mb-2 flex items-center gap-1.5">
-        <Label className="block text-sm font-medium text-gray-700">{label}</Label>
+        <Label className="block text-sm font-medium text-gray-700">
+          {label}
+        </Label>
         <SaveIndicator state={saveState} />
       </div>
       <Input
         type="text"
         value={localValue}
         onChange={handleChange}
-        onFocus={() => { isFocusedRef.current = true; }}
+        onFocus={() => {
+          isFocusedRef.current = true;
+        }}
         placeholder={placeholder}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         {...inputProps}
-        onBlur={(e) => { isFocusedRef.current = false; inputProps?.onBlur?.(e); }}
+        onBlur={(e) => {
+          isFocusedRef.current = false;
+          inputProps?.onBlur?.(e);
+        }}
       />
     </div>
   );
@@ -109,7 +121,9 @@ export const TextArea = ({
   const resetRef = useRef(null);
   const onRequestAutoSaveRef = useRef(onRequestAutoSave);
 
-  useEffect(() => { onRequestAutoSaveRef.current = onRequestAutoSave; }, [onRequestAutoSave]);
+  useEffect(() => {
+    onRequestAutoSaveRef.current = onRequestAutoSave;
+  }, [onRequestAutoSave]);
 
   useEffect(() => {
     if (!isFocusedRef.current) setLocalValue(value || "");
@@ -123,11 +137,13 @@ export const TextArea = ({
       setSaveState("saving");
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        saveFn().then((result) => {
-          setSaveState(result !== false ? "saved" : "idle");
-          if (resetRef.current) clearTimeout(resetRef.current);
-          resetRef.current = setTimeout(() => setSaveState("idle"), 2000);
-        }).catch(() => setSaveState("idle"));
+        saveFn()
+          .then((result) => {
+            setSaveState(result !== false ? "saved" : "idle");
+            if (resetRef.current) clearTimeout(resetRef.current);
+            resetRef.current = setTimeout(() => setSaveState("idle"), 2000);
+          })
+          .catch(() => setSaveState("idle"));
       }, 1200);
     }
   };
@@ -135,18 +151,25 @@ export const TextArea = ({
   return (
     <div className="mb-4">
       <div className="mb-2 flex items-center gap-1.5">
-        <Label className="block text-sm font-medium text-gray-700">{label}</Label>
+        <Label className="block text-sm font-medium text-gray-700">
+          {label}
+        </Label>
         <SaveIndicator state={saveState} />
       </div>
       <Textarea
         value={localValue}
         onChange={handleChange}
-        onFocus={() => { isFocusedRef.current = true; }}
+        onFocus={() => {
+          isFocusedRef.current = true;
+        }}
         placeholder={placeholder}
         rows={rows}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         {...inputProps}
-        onBlur={(e) => { isFocusedRef.current = false; inputProps?.onBlur?.(e); }}
+        onBlur={(e) => {
+          isFocusedRef.current = false;
+          inputProps?.onBlur?.(e);
+        }}
       />
     </div>
   );
@@ -247,15 +270,17 @@ export const ListField = ({
               // onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
-              className={`flex gap-2 ${draggedIndex === index ? "opacity-50" : ""
-                }`}
+              className={`flex gap-2 ${
+                draggedIndex === index ? "opacity-50" : ""
+              }`}
             >
               <div
                 draggable={!!onReorder}
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragEnd={handleDragEnd}
-                className={`${onReorder ? "cursor-move" : "cursor-default"
-                  } text-gray-400 h-10 w-10 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center`}
+                className={`${
+                  onReorder ? "cursor-move" : "cursor-default"
+                } text-gray-400 h-10 w-10 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center`}
               >
                 <GripVertical size={18} />
               </div>
@@ -266,10 +291,11 @@ export const ListField = ({
                 <div className="flex items-center justify-center gap-x-1">
                   <div
                     onClick={() => handleToggleCorrect(index, true)}
-                    className={`cursor-pointer h-10 w-10 flex items-center justify-center rounded-lg transition-all ${isCorrect
-                      ? "bg-green-500"
-                      : "bg-green-100 hover:bg-green-200"
-                      }`}
+                    className={`cursor-pointer h-10 w-10 flex items-center justify-center rounded-lg transition-all ${
+                      isCorrect
+                        ? "bg-green-500"
+                        : "bg-green-100 hover:bg-green-200"
+                    }`}
                   >
                     <CircleCheck
                       size={18}
@@ -278,10 +304,11 @@ export const ListField = ({
                   </div>
                   <div
                     onClick={() => handleToggleCorrect(index, false)}
-                    className={`cursor-pointer h-10 w-10 rounded-lg flex items-center justify-center transition-all ${!isCorrect && isCorrect !== undefined
-                      ? "bg-red-500"
-                      : "bg-red-100 hover:bg-red-200"
-                      }`}
+                    className={`cursor-pointer h-10 w-10 rounded-lg flex items-center justify-center transition-all ${
+                      !isCorrect && isCorrect !== undefined
+                        ? "bg-red-500"
+                        : "bg-red-100 hover:bg-red-200"
+                    }`}
                   >
                     <CircleX
                       size={18}
@@ -378,8 +405,7 @@ export const RichTextArea = ({
   }, [onRequestAutoSave]);
 
   useEffect(() => {
-    if (quillEditorRef.current || !editorRef.current)
-      return;
+    if (quillEditorRef.current || !editorRef.current) return;
 
     const isHtmlFormat = valueFormat === "html";
     const isHtmlString = (v) =>
@@ -466,7 +492,7 @@ export const RichTextArea = ({
         const styleMatch = (size) =>
           new RegExp(
             `<span style="[^"]*font-size:\\s*${size}[^"]*"[^>]*>([\\s\\S]*?)</span>`,
-            "gi"
+            "gi",
           );
         return html
           .replace(styleMatch("1\\.75em"), '<h1 style="display:inline">$1</h1>')
@@ -529,7 +555,10 @@ export const RichTextArea = ({
                 try {
                   editor.root.innerHTML = textValue;
                 } catch (htmlError) {
-                  console.error("Failed to set HTML in Quill editor:", htmlError);
+                  console.error(
+                    "Failed to set HTML in Quill editor:",
+                    htmlError,
+                  );
                 }
               }
             }
@@ -557,7 +586,9 @@ export const RichTextArea = ({
       let rtResetTimer = null;
       editor.on("text-change", () => {
         if (valueFormatRef.current === "html") {
-          changeCallbackRef.current(normalizeQuillHtmlOutput(editor.root.innerHTML));
+          changeCallbackRef.current(
+            normalizeQuillHtmlOutput(editor.root.innerHTML),
+          );
         } else {
           changeCallbackRef.current(JSON.stringify(editor.getContents()));
         }
@@ -566,11 +597,13 @@ export const RichTextArea = ({
           setSaveState("saving");
           if (rtDebounceTimer) clearTimeout(rtDebounceTimer);
           rtDebounceTimer = setTimeout(() => {
-            saveFn().then((result) => {
-              setSaveState(result !== false ? "saved" : "idle");
-              if (rtResetTimer) clearTimeout(rtResetTimer);
-              rtResetTimer = setTimeout(() => setSaveState("idle"), 2000);
-            }).catch(() => setSaveState("idle"));
+            saveFn()
+              .then((result) => {
+                setSaveState(result !== false ? "saved" : "idle");
+                if (rtResetTimer) clearTimeout(rtResetTimer);
+                rtResetTimer = setTimeout(() => setSaveState("idle"), 2000);
+              })
+              .catch(() => setSaveState("idle"));
           }, 1200);
         }
       });
@@ -588,9 +621,9 @@ export const RichTextArea = ({
           const absolutePosition =
             editorRect && typeof window !== "undefined"
               ? {
-                top: editorRect.top + bounds.bottom + window.scrollY,
-                left: editorRect.left + bounds.left + window.scrollX,
-              }
+                  top: editorRect.top + bounds.bottom + window.scrollY,
+                  left: editorRect.left + bounds.left + window.scrollX,
+                }
               : null;
 
           callback({
@@ -671,7 +704,11 @@ export const RichTextArea = ({
           blurHandlerRef.current = null;
         }
         if (pasteHandlerRef.current) {
-          editorRoot.removeEventListener("paste", pasteHandlerRef.current, true);
+          editorRoot.removeEventListener(
+            "paste",
+            pasteHandlerRef.current,
+            true,
+          );
           pasteHandlerRef.current = null;
         }
         quillEditorRef.current = null;
@@ -694,10 +731,8 @@ export const RichTextArea = ({
     const raw = typeof value === "string" ? value : "";
     if (!raw.trim()) return;
 
-    const isHtmlString =
-      raw.trim().length > 0 && raw.trim().startsWith("<");
-    const isDeltaString =
-      raw.trim().length > 0 && raw.trim().startsWith("{");
+    const isHtmlString = raw.trim().length > 0 && raw.trim().startsWith("<");
+    const isDeltaString = raw.trim().length > 0 && raw.trim().startsWith("{");
 
     if (isDeltaString) {
       try {
@@ -717,9 +752,18 @@ export const RichTextArea = ({
 
     if (isHtmlString) {
       let html = raw
-        .replace(/<span style="[^"]*font-size:\s*1\.75em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h1 style="display:inline">$1</h1>')
-        .replace(/<span style="[^"]*font-size:\s*1\.35em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h2 style="display:inline">$1</h2>')
-        .replace(/<span style="[^"]*font-size:\s*1\.1em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h3 style="display:inline">$1</h3>');
+        .replace(
+          /<span style="[^"]*font-size:\s*1\.75em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi,
+          '<h1 style="display:inline">$1</h1>',
+        )
+        .replace(
+          /<span style="[^"]*font-size:\s*1\.35em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi,
+          '<h2 style="display:inline">$1</h2>',
+        )
+        .replace(
+          /<span style="[^"]*font-size:\s*1\.1em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi,
+          '<h3 style="display:inline">$1</h3>',
+        );
       const normalized = normalizeQuillHtmlOutput(html);
       const currentHtml = editor.root.innerHTML;
       if (currentHtml !== normalized) {
@@ -748,7 +792,9 @@ export const RichTextArea = ({
   return (
     <div className="mb-4">
       <div className="mb-2 flex items-center gap-1.5">
-        <Label className="block text-sm font-medium text-gray-700">{label}</Label>
+        <Label className="block text-sm font-medium text-gray-700">
+          {label}
+        </Label>
         <SaveIndicator state={saveState} />
       </div>
       {/*Editor Area */}
@@ -798,17 +844,47 @@ export const RichTextArea = ({
           onMouseDown={(e) => {
             e.preventDefault();
             isToolbarActiveRef.current = true;
-            setTimeout(() => { isToolbarActiveRef.current = false; }, 300);
+            setTimeout(() => {
+              isToolbarActiveRef.current = false;
+            }, 300);
           }}
         >
           <button type="button" className="ql-bold" title="Bold" />
           <button type="button" className="ql-italic" title="Italic" />
           <button type="button" className="ql-underline" title="Underline" />
-          <button type="button" className="ql-heading1" title="Heading 1 (selected text)">H1</button>
-          <button type="button" className="ql-heading2" title="Heading 2 (selected text)">H2</button>
-          <button type="button" className="ql-heading3" title="Heading 3 (selected text)">H3</button>
-          <button type="button" className="ql-list" value="bullet" title="Bulleted List" />
-          <button type="button" className="ql-list" value="ordered" title="Numbered List" />
+          <button
+            type="button"
+            className="ql-heading1"
+            title="Heading 1 (selected text)"
+          >
+            H1
+          </button>
+          <button
+            type="button"
+            className="ql-heading2"
+            title="Heading 2 (selected text)"
+          >
+            H2
+          </button>
+          <button
+            type="button"
+            className="ql-heading3"
+            title="Heading 3 (selected text)"
+          >
+            H3
+          </button>
+          <button
+            type="button"
+            className="ql-list"
+            value="bullet"
+            title="Bulleted List"
+          />
+          <button
+            type="button"
+            className="ql-list"
+            value="ordered"
+            title="Numbered List"
+          />
           <button type="button" className="ql-strike" title="Strikethrough" />
           <button type="button" className="ql-link" title="Link" />
           <button type="button" className="ql-image" title="Image" />

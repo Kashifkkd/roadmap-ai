@@ -287,6 +287,7 @@ export default function CometManager({
     reorderScreensList,
     reorderChapters,
     reorderSteps,
+    moveStepToChapter,
     insertScreenAt,
     outline,
     setOutline,
@@ -1924,6 +1925,13 @@ export default function CometManager({
                   const autoSaveOk = await requestAutoSaveAfterOutlineCommit();
                   if (autoSaveOk === false) {
                     console.error("Auto-save failed while reordering steps.");
+                  }
+                }}
+                onMoveStepToChapter={async (...args) => {
+                  moveStepToChapter(...args);
+                  const autoSaveOk = await requestAutoSaveAfterOutlineCommit();
+                  if (autoSaveOk === false) {
+                    console.error("Auto-save failed while moving step to chapter.");
                   }
                 }}
                 onDeleteChapter={handleDeleteChapter}
