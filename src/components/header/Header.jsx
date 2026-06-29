@@ -1201,7 +1201,7 @@ export default function Header() {
                                     }`}
                                   />
                                   <SquareArrowOutUpRight
-                                    className={`w-4 h-4 transition-colors duration-200 ${
+                                    className={`w-3 h-3 transition-colors duration-200 ${
                                       activeButton === "kyperDashboard"
                                         ? "text-white"
                                         : "text-[#181D27] group-hover:text-primary-600"
@@ -1253,7 +1253,7 @@ export default function Header() {
                                     }`}
                                   />
                                   <SquareArrowOutUpRight
-                                    className={`w-4 h-4 transition-colors duration-200 ${
+                                    className={`w-3 h-3 transition-colors duration-200 ${
                                       activeButton === "kyperShift"
                                         ? "text-white"
                                         : "text-[#181D27] group-hover:text-primary-600"
