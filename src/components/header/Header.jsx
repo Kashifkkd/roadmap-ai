@@ -18,6 +18,7 @@ import {
   Mail,
   PaintRollerIcon,
   ChevronRight,
+  SquareArrowOutUpRight,
 } from "lucide-react";
 import { tokenManager } from "@/lib/api-client";
 import Image from "next/image";
@@ -216,7 +217,7 @@ export default function Header() {
           onClick={handleFloatingFeedbackClick}
           className="h-10 rounded-md border-2 border-[#e7fffe] bg-[#e7fffe] hover:bg-[#D9F0EC] shadow-lg flex items-center justify-center transition-all cursor-grab gap-2"
           style={{
-            width: "130px",          // 👈 FORCE WIDTH HERE
+            width: "130px", // 👈 FORCE WIDTH HERE
             touchAction: "none",
             userSelect: "none",
           }}
@@ -224,7 +225,6 @@ export default function Header() {
           <Image src="/Dialog 2.svg" alt="Feedback" width={24} height={24} />
           <span className="text-md font-medium text-gray-900">Feedback</span>
         </button>
-
       </div>
     );
   };
@@ -278,7 +278,6 @@ export default function Header() {
       return null;
     }
   });
-
 
   // Check if user is super admin
   const isSuperAdmin = () => {
@@ -372,7 +371,7 @@ export default function Header() {
       if (redirectPath) {
         try {
           window.sessionStorage.setItem("postLoginRedirect", redirectPath);
-        } catch { }
+        } catch {}
       }
 
       setLoginButtonPosition(buttonPositionFromEvent);
@@ -400,7 +399,7 @@ export default function Header() {
       try {
         const nextSession = localStorage.getItem("sessionData");
         setSession((prevSession) =>
-          prevSession === nextSession ? prevSession : nextSession
+          prevSession === nextSession ? prevSession : nextSession,
         );
       } catch {
         setSession(null);
@@ -558,13 +557,13 @@ export default function Header() {
 
       if (response?.response && !response.error) {
         toast.success(
-          "Feedback sent successfully! Thank you for your feedback."
+          "Feedback sent successfully! Thank you for your feedback.",
         );
         handleFeedbackClose();
       } else {
         toast.error(
           response?.response?.data?.detail ||
-          "Failed to send feedback. Please try again."
+            "Failed to send feedback. Please try again.",
         );
       }
     } catch (error) {
@@ -572,7 +571,7 @@ export default function Header() {
       toast.error(
         error?.response?.data?.detail ||
           error?.message ||
-        "Failed to send feedback. Please try again."
+          "Failed to send feedback. Please try again.",
       );
     } finally {
       setIsSubmittingFeedback(false);
@@ -595,7 +594,9 @@ export default function Header() {
       }
 
       const session =
-        typeof window !== "undefined" ? localStorage.getItem("sessionData") : null;
+        typeof window !== "undefined"
+          ? localStorage.getItem("sessionData")
+          : null;
       const sessionData = session ? JSON.parse(session || "{}") : {};
       const cometTitle = getCycleDisplayTitle(sessionData);
 
@@ -626,9 +627,9 @@ export default function Header() {
       try {
         window.sessionStorage.setItem(
           "postLoginRedirect",
-          pathname || window.location?.pathname || "/"
+          pathname || window.location?.pathname || "/",
         );
-      } catch { }
+      } catch {}
     }
     setLoginButtonPosition(null);
     setIsLoginDialogOpen(true);
@@ -642,7 +643,7 @@ export default function Header() {
     if (typeof window !== "undefined") {
       try {
         window.sessionStorage.removeItem("postLoginRedirect");
-      } catch { }
+      } catch {}
       window.dispatchEvent(new Event("auth-changed"));
     }
     toast.success("Logged out successfully");
@@ -664,13 +665,13 @@ export default function Header() {
     localStorage.setItem("Client id", client.id.toString());
     localStorage.setItem("ClientName", client.name.toString());
     window.dispatchEvent(
-      new StorageEvent("storage", { key: "Client id", newValue: client.id })
+      new StorageEvent("storage", { key: "Client id", newValue: client.id }),
     );
     window.dispatchEvent(
       new StorageEvent("storage", {
         key: "ClientName",
         newValue: client.name,
-      })
+      }),
     );
 
     // Clear session data when switching client so we don't carry over comet/session from another client
@@ -876,11 +877,12 @@ export default function Header() {
   //     ))}
   //   </div>
   // );
-// console.log("isPublishing", isPublishing);
+  // console.log("isPublishing", isPublishing);
   const InviteButton = () => (
     <button
       onClick={handleInviteClick}
-      className={`flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 rounded-sm border transition-colors duration-200 cursor-pointer shrink-0 ${isInviteButtonActive
+      className={`flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 md:px-3 py-1.5 sm:py-2 rounded-sm border transition-colors duration-200 cursor-pointer shrink-0 ${
+        isInviteButtonActive
           ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
           : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
       }`}
@@ -896,7 +898,8 @@ export default function Header() {
     <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 my-1">
       <button
         onClick={handleDownloadClick}
-        className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-sm border transition-colors duration-200 shrink-0 ${isDownloadActive
+        className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-sm border transition-colors duration-200 shrink-0 ${
+          isDownloadActive
             ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
             : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600 hover:cursor-pointer"
         }`}
@@ -928,7 +931,8 @@ export default function Header() {
           width: activeModeButton === "editor" ? "auto" : undefined,
           willChange: "width",
         }}
-        className={`hidden md:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${activeModeButton === "editor"
+        className={`hidden md:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${
+          activeModeButton === "editor"
             ? "bg-primary-50 text-primary border-primary-400 px-2 sm:px-2.5 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9 min-w-0 md:min-w-[5.625rem]"
             : "bg-gray-50 text-gray-700 border-transparent h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 justify-center p-0 hover:bg-gray-100"
         }`}
@@ -950,7 +954,8 @@ export default function Header() {
               transition: "all 10s ease-in-out",
               flexShrink: 0,
             }}
-            className={`${activeModeButton === "editor"
+            className={`${
+              activeModeButton === "editor"
                 ? "w-5 h-3 sm:w-5 md:w-5 md:h-4 text-primary"
                 : "w-4 h-3 sm:w-5 sm:h-5 md:w-5 md:h-5 text-gray-700"
             }`}
@@ -960,7 +965,8 @@ export default function Header() {
               transition:
                 "opacity 10s ease-in-out, max-width 10s ease-in-out, margin-left 10s ease-in-out",
               whiteSpace: "nowrap",
-              maxWidth: activeModeButton === "editor" ? "min(10ch, 100%)" : "0px",
+              maxWidth:
+                activeModeButton === "editor" ? "min(10ch, 100%)" : "0px",
               opacity: activeModeButton === "editor" ? 1 : 0,
               marginLeft: activeModeButton === "editor" ? "0.375rem" : "0",
               overflow: "hidden",
@@ -979,7 +985,8 @@ export default function Header() {
           setActiveModeButton("preview");
           setIsPreviewMode(!isPreviewMode);
         }}
-        className={`flex items-center justify-center rounded-md border-2 hover:cursor-pointer shrink-0 transition-colors h-8 w-8 md:h-9 md:w-9 p-0 ${activeModeButton === "preview"
+        className={`flex items-center justify-center rounded-md border-2 hover:cursor-pointer shrink-0 transition-colors h-8 w-8 md:h-9 md:w-9 p-0 ${
+          activeModeButton === "preview"
             ? "bg-primary-50 text-primary border-primary-400 hover:bg-primary-100"
             : "bg-gray-50 text-gray-700 border-transparent hover:bg-gray-100"
         }`}
@@ -999,7 +1006,8 @@ export default function Header() {
             width: activeModeButton === "settings" ? "auto" : undefined,
             willChange: "width",
           }}
-          className={`hidden sm:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${activeModeButton === "settings"
+          className={`hidden sm:flex items-center rounded-md border-2 hover:cursor-pointer shrink-0 overflow-hidden ${
+            activeModeButton === "settings"
               ? "bg-primary-50 text-primary border-primary-400 px-2 sm:px-2.5 py-1.5 sm:py-2 h-7 sm:h-8 md:h-9 min-w-0 sm:min-w-[6.875rem]"
               : "bg-gray-50 text-gray-700 border-transparent h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 justify-center p-0 hover:bg-gray-100"
           }`}
@@ -1021,7 +1029,8 @@ export default function Header() {
                 transition: "all 10s ease-in-out",
                 flexShrink: 0,
               }}
-              className={`${activeModeButton === "settings"
+              className={`${
+                activeModeButton === "settings"
                   ? "w-4 sm:w-4 md:w-5 md:h-5 text-primary"
                   : "w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-700"
               }`}
@@ -1031,7 +1040,8 @@ export default function Header() {
                 transition:
                   "opacity 10s ease-in-out, max-width 10s ease-in-out, margin-left 10s ease-in-out",
                 whiteSpace: "nowrap",
-                maxWidth: activeModeButton === "settings" ? "min(12ch, 100%)" : "0px",
+                maxWidth:
+                  activeModeButton === "settings" ? "min(12ch, 100%)" : "0px",
                 opacity: activeModeButton === "settings" ? 1 : 0,
                 marginLeft: activeModeButton === "settings" ? "0.375rem" : "0",
                 overflow: "hidden",
@@ -1048,7 +1058,8 @@ export default function Header() {
 
       <button
         onClick={handleDownloadClick}
-        className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-sm border transition-colors duration-200 shrink-0 ${isDownloadActive
+        className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-sm border transition-colors duration-200 shrink-0 ${
+          isDownloadActive
             ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
             : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600 hover:cursor-pointer"
         }`}
@@ -1082,7 +1093,8 @@ export default function Header() {
   return (
     <>
       <header
-        className={`px-1 sm:px-2 pt-2 border-gray-200 w-full ${isHome ? "bg-white" : "bg-primary-50"
+        className={`px-1 sm:px-2 pt-2 border-gray-200 w-full ${
+          isHome ? "bg-white" : "bg-primary-50"
         }`}
       >
         <div className="bg-white px-3 sm:px-4 md:px-6 py-1 rounded-lg w-full">
@@ -1102,160 +1114,342 @@ export default function Header() {
                     />
                   </div>
                   {isAuthenticated && (
-                  <>
-                  <button
-                    onClick={toggleUserMenu}
-                    className="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 md:size-6 bg-gray-100 rounded-full shrink-0 cursor-pointer hover:bg-gray-200 transition-colors"
-                  >
-                    <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 shrink-0" />
-                  </button>
-                  {isUserMenuOpen && (
-                    <div
-                      className="absolute left-0 top-full mt-3 w-48 bg-white rounded-sm shadow-lg border border-gray-200 z-50"
-                      onClick={(e) => e.stopPropagation()}
-                      data-user-menu
-                    >
-                      <div className=" p-2 border-gray-200 border-b">
-                        <button
-                          className={`px-4 py-1 w-full border-gray-100 flex  gap-2 cursor-pointer rounded-sm transition-all duration-200 items-center justify-start hover:cursor-pointer ${activeButton === "home"
-                              ? "bg-primary text-white"
-                              : "bg-white text-gray-900 hover:bg-primary-100"
-                          } `}
-                          onClick={() => {
-                            handleButtonClick("home");
-                            handleGoHome();
-                          }}
+                    <>
+                      <button
+                        onClick={toggleUserMenu}
+                        className="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 md:size-6 bg-gray-100 rounded-full shrink-0 cursor-pointer hover:bg-gray-200 transition-colors"
+                      >
+                        <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 shrink-0" />
+                      </button>
+                      {isUserMenuOpen && (
+                        <div
+                          className="absolute left-0 top-full mt-3 w-[339px] p-2 bg-white rounded-lg shadow-xl z-50"
+                          onClick={(e) => e.stopPropagation()}
+                          data-user-menu
                         >
-                          <Image
-                            src="/home.svg"
-                            alt="Profile"
-                            width={20}
-                            height={20}
-                            className={
-                              activeButton === "home"
-                                ? "brightness-0 invert"
-                                : ""
-                            }
-                          />
-                          <span className="text-base ">Back to Home</span>
-                        </button>
-                      </div>
-
-                      {isAuthenticated && (
-                        <>
-                          <div className=" p-2 py-1   gap-2 flex flex-col">
+                          <div className="flex flex-col justify-center items-start gap-1">
+                            {/* Kyper Studio */}
                             <button
-                              className={`w-full px-4 py-1 flex items-center justify-start gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "myAccount"
-                                  ? "bg-primary text-white"
+                              className={`w-full flex items-center gap-2 px-4 py-2 rounded min-h-9 border-none transition-colors duration-200 cursor-pointer ${
+                                activeButton === "kyperStudio"
+                                  ? "bg-primary-700 text-white"
                                   : "bg-white text-gray-900 hover:bg-primary-100"
                               }`}
-                              onClick={handleMyAccountClick}
+                              onClick={() => {
+                                handleButtonClick("kyperStudio");
+                                setIsUserMenuOpen(false);
+                              }}
                             >
-                              <User
-                                className={`w-5 h-5 ${activeButton === "myAccount" ? "text-white" : ""
-                                }`}
-                              />
-                              <span className="text-base">My Account</span>
-                            </button>
-                            <button
-                              className={`pl-4 py-1 w-full flex items-center  gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "settings"
-                                  ? "bg-primary text-white"
-                                  : "bg-white text-gray-900 hover:bg-primary-100"
-                              }`}
-                              onClick={handleClientSettingsClick}
-                            >
-                              <Settings
-                                className={`w-5 h-5 ${activeButton === "settings" ? "text-white" : ""
-                                }`}
-                              />
-                              <span className="text-base ">Settings</span>
-                            </button>
-                            <div className="relative">
-                              <button
-                                className={`pl-4 py-1 w-full flex items-center gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "theme"
-                                    ? "bg-primary text-white"
-                                    : "bg-white text-gray-900 hover:bg-primary-100"
-                                }`}
-                                onClick={handleThemeClick}
-                              >
-                                <PaintRollerIcon
-                                  className={`w-5 h-5 ${activeButton === "theme" ? "text-white" : ""
+                              <div className="flex flex-col items-start gap-2 flex-1">
+                                <div className="flex items-center gap-2 w-full">
+                                  <Image
+                                    src="/logonew.png"
+                                    alt="Kyper Studio"
+                                    width={57}
+                                    height={29}
+                                    className={`object-contain ${
+                                      activeButton === "kyperStudio"
+                                        ? "brightness-0 invert"
+                                        : ""
+                                    }`}
+                                  />
+                                </div>
+                                <span
+                                  className={`font-inter font-medium text-[10px] leading-[13px] text-left ${
+                                    activeButton === "kyperStudio"
+                                      ? "text-white"
+                                      : "text-[#181D27]"
                                   }`}
-                                />
-                                <div className="flex items-center gap-2 justify-between w-full">
-                                  <span className="text-base ">Theme</span>
-                                  <ChevronRight className="w-5 h-5" />
-                                </div>
-                              </button>
-                              {isThemeSubmenuOpen && (
-                                <div
-                                  className="absolute left-full top-0 ml-2 w-48 bg-white rounded-sm shadow-lg border border-gray-200 z-50"
-                                  onClick={(e) => e.stopPropagation()}
-                                  data-user-menu
                                 >
-                                  <div className="p-2">
-                                    <button
-                                      className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${selectedTheme === "light"
-                                          ? "bg-primary text-white"
-                                          : "bg-white text-gray-900 hover:bg-primary-100"
-                                      }`}
-                                      onClick={() => handleThemeSelect("light")}
-                                    >
-                                      Light Theme
-                                    </button>
-                                    <button
-                                      className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${selectedTheme === "dark"
-                                          ? "bg-primary text-white"
-                                          : "bg-white text-gray-900 hover:bg-primary-100"
-                                      }`}
-                                      onClick={() => handleThemeSelect("dark")}
-                                    >
-                                      Dark Theme
-                                    </button>
-                                    <button
-                                      className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${selectedTheme === "system"
-                                          ? "bg-primary text-white"
-                                          : "bg-white text-gray-900 hover:bg-primary-100"
-                                      }`}
-                                      onClick={() => handleThemeSelect("system")}
-                                    >
-                                      System Theme
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                                  Create, deploy, & manage cycles
+                                </span>
+                              </div>
+                            </button>
 
-                          <div className="p-2 border-t border-gray-100 ">
+                            {/* Divider */}
+                            <div className="w-full h-0 border border-[#D5D7DA]" />
+
+                            {/* Kyper Dashboard */}
                             <button
-                              onClick={() =>
-                                handleButtonClick("logout") || handleLogout()
-                              }
-                              className={`px-4 py-1 w-full flex items-center justify-start gap-2 text-sm text-gray-700 rounded-xs transition-all duration-200 hover:cursor-pointer ${activeButton === "logout"
-                                  ? "bg-primary text-white"
+                              className={`w-full flex items-center gap-2 px-4 py-2 rounded min-h-9 border-none transition-colors duration-200 cursor-pointer ${
+                                activeButton === "kyperDashboard"
+                                  ? "bg-primary-600 text-white"
                                   : "bg-white text-gray-900 hover:bg-primary-100"
                               }`}
+                              onClick={() => {
+                                handleButtonClick("kyperDashboard");
+                                setIsUserMenuOpen(false);
+                                window.open(
+                                  "https://dashboard.kyper.com",
+                                  "_blank",
+                                );
+                              }}
                             >
-                              <Image
-                                src="/Logout.svg"
-                                alt="Logout"
-                                width={20}
-                                height={20}
-                                className={
-                                  activeButton === "logout"
-                                    ? "brightness-0 invert"
-                                    : ""
-                                }
-                              />
-                              <span className="text-base   ">Logout</span>
+                              <div className="flex flex-col items-start gap-2 flex-1">
+                                <div className="flex items-center justify-between w-full">
+                                  <Image
+                                    src="/kyper dashboard.png"
+                                    alt="Kyper Dashboard"
+                                    width={80}
+                                    height={29}
+                                    className={`object-contain ${
+                                      activeButton === "kyperDashboard"
+                                        ? "brightness-0 invert"
+                                        : ""
+                                    }`}
+                                  />
+                                  <SquareArrowOutUpRight
+                                    className={`w-4 h-4 ${
+                                      activeButton === "kyperDashboard"
+                                        ? "text-white"
+                                        : "text-[#181D27]"
+                                    }`}
+                                  />
+                                </div>
+                                <span
+                                  className={`font-inter font-medium text-[10px] leading-[13px] text-left ${
+                                    activeButton === "kyperDashboard"
+                                      ? "text-white"
+                                      : "text-[#181D27]"
+                                  }`}
+                                >
+                                  Live analytics and impact assessment
+                                </span>
+                              </div>
                             </button>
+
+                            {/* Divider */}
+                            <div className="w-full h-0 border border-[#D5D7DA]" />
+
+                            {/* Kyper Shift */}
+                            <button
+                              className={`w-full flex items-center gap-2 px-4 py-2 rounded min-h-9 border-none transition-colors duration-200 cursor-pointer ${
+                                activeButton === "kyperShift"
+                                  ? "bg-primary-600 text-white"
+                                  : "bg-white text-gray-900 hover:bg-primary-100"
+                              }`}
+                              onClick={() => {
+                                handleButtonClick("kyperShift");
+                                setIsUserMenuOpen(false);
+                                window.open(
+                                  "https://shift.kyper.com",
+                                  "_blank",
+                                );
+                              }}
+                            >
+                              <div className="flex flex-col items-start gap-2 flex-1">
+                                <div className="flex items-center justify-between w-full">
+                                  <Image
+                                    src="/kypershift.png"
+                                    alt="Kyper Shift"
+                                    width={57}
+                                    height={29}
+                                    className={`object-contain ${
+                                      activeButton === "kyperShift"
+                                        ? "brightness-0 invert"
+                                        : ""
+                                    }`}
+                                  />
+                                  <SquareArrowOutUpRight
+                                    className={`w-4 h-4 ${
+                                      activeButton === "kyperShift"
+                                        ? "text-white"
+                                        : "text-[#181D27]"
+                                    }`}
+                                  />
+                                </div>
+                                <span
+                                  className={`font-inter font-medium text-[10px] leading-[13px] text-left ${
+                                    activeButton === "kyperShift"
+                                      ? "text-white"
+                                      : "text-[#181D27]"
+                                  }`}
+                                >
+                                  Mobile & web app for daily learning & habit
+                                  building
+                                </span>
+                              </div>
+                            </button>
+
+                            {/* Divider */}
+                            <div className="w-full h-0 border border-[#D5D7DA]" />
+
+                            {isAuthenticated && (
+                              <>
+                                {/* My Account */}
+                                <button
+                                  className={`w-full flex items-center gap-2 px-4 py-2 rounded min-h-9 border-none transition-all duration-200 cursor-pointer ${
+                                    activeButton === "myAccount"
+                                      ? "bg-primary text-white"
+                                      : "bg-white text-gray-900 hover:bg-primary-100"
+                                  }`}
+                                  onClick={handleMyAccountClick}
+                                >
+                                  <User
+                                    className={`w-5 h-5 ${
+                                      activeButton === "myAccount"
+                                        ? "text-white"
+                                        : ""
+                                    }`}
+                                  />
+                                  <span
+                                    className={`font-inter font-medium text-base leading-6 ${
+                                      activeButton === "myAccount"
+                                        ? "text-white"
+                                        : "text-[#181D27]"
+                                    }`}
+                                  >
+                                    My Account
+                                  </span>
+                                </button>
+
+                                {/* Settings */}
+                                <button
+                                  className={`w-full flex items-center gap-2 px-4 py-2 rounded min-h-9 border-none transition-all duration-200 cursor-pointer ${
+                                    activeButton === "settings"
+                                      ? "bg-primary text-white"
+                                      : "bg-white text-gray-900 hover:bg-primary-100"
+                                  }`}
+                                  onClick={handleClientSettingsClick}
+                                >
+                                  <Settings
+                                    className={`w-5 h-5 ${
+                                      activeButton === "settings"
+                                        ? "text-white"
+                                        : ""
+                                    }`}
+                                  />
+                                  <span
+                                    className={`font-inter font-medium text-base leading-6 ${
+                                      activeButton === "settings"
+                                        ? "text-white"
+                                        : "text-[#181D27]"
+                                    }`}
+                                  >
+                                    Settings
+                                  </span>
+                                </button>
+
+                                {/* Theme */}
+                                <div className="relative w-full">
+                                  <button
+                                    className={`w-full flex items-center gap-2 px-4 py-2 rounded min-h-9 border-none transition-all duration-200 cursor-pointer ${
+                                      activeButton === "theme"
+                                        ? "bg-primary text-white"
+                                        : "bg-white text-gray-900 hover:bg-primary-100"
+                                    }`}
+                                    onClick={handleThemeClick}
+                                  >
+                                    <PaintRollerIcon
+                                      className={`w-5 h-5 ${
+                                        activeButton === "theme"
+                                          ? "text-white"
+                                          : ""
+                                      }`}
+                                    />
+                                    <div className="flex items-center justify-between w-full">
+                                      <span
+                                        className={`font-inter font-medium text-base leading-6 ${
+                                          activeButton === "theme"
+                                            ? "text-white"
+                                            : "text-[#181D27]"
+                                        }`}
+                                      >
+                                        Theme
+                                      </span>
+                                      <ChevronRight className="w-5 h-5" />
+                                    </div>
+                                  </button>
+                                  {isThemeSubmenuOpen && (
+                                    <div
+                                      className="absolute left-full top-0 ml-2 w-48 bg-white rounded-sm shadow-lg border border-gray-200 z-50"
+                                      onClick={(e) => e.stopPropagation()}
+                                      data-user-menu
+                                    >
+                                      <div className="p-2">
+                                        <button
+                                          className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${
+                                            selectedTheme === "light"
+                                              ? "bg-primary text-white"
+                                              : "bg-white text-gray-900 hover:bg-primary-100"
+                                          }`}
+                                          onClick={() =>
+                                            handleThemeSelect("light")
+                                          }
+                                        >
+                                          Light Theme
+                                        </button>
+                                        <button
+                                          className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${
+                                            selectedTheme === "dark"
+                                              ? "bg-primary text-white"
+                                              : "bg-white text-gray-900 hover:bg-primary-100"
+                                          }`}
+                                          onClick={() =>
+                                            handleThemeSelect("dark")
+                                          }
+                                        >
+                                          Dark Theme
+                                        </button>
+                                        <button
+                                          className={`w-full px-4 py-2 text-left text-sm rounded-xs transition-all duration-200 hover:cursor-pointer ${
+                                            selectedTheme === "system"
+                                              ? "bg-primary text-white"
+                                              : "bg-white text-gray-900 hover:bg-primary-100"
+                                          }`}
+                                          onClick={() =>
+                                            handleThemeSelect("system")
+                                          }
+                                        >
+                                          System Theme
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Divider */}
+                                <div className="w-full h-0 border border-[#D5D7DA]" />
+
+                                {/* Logout */}
+                                <button
+                                  className={`w-full flex items-center gap-2 px-4 py-2 rounded min-h-9 border-none transition-all duration-200 cursor-pointer ${
+                                    activeButton === "logout"
+                                      ? "bg-primary text-white"
+                                      : "bg-white text-gray-900 hover:bg-primary-100"
+                                  }`}
+                                  onClick={() =>
+                                    handleButtonClick("logout") ||
+                                    handleLogout()
+                                  }
+                                >
+                                  <Image
+                                    src="/Logout.svg"
+                                    alt="Logout"
+                                    width={20}
+                                    height={20}
+                                    className={
+                                      activeButton === "logout"
+                                        ? "brightness-0 invert"
+                                        : ""
+                                    }
+                                  />
+                                  <span
+                                    className={`font-inter font-medium text-base leading-6 ${
+                                      activeButton === "logout"
+                                        ? "text-white"
+                                        : "text-[#181D27]"
+                                    }`}
+                                  >
+                                    Log out
+                                  </span>
+                                </button>
+                              </>
+                            )}
                           </div>
-                        </>
+                        </div>
                       )}
-                    </div>
-                  )}
-                  </>
+                    </>
                   )}
                 </div>
               </div>
@@ -1272,7 +1466,8 @@ export default function Header() {
                   {!isHome && (
                     <div
                       onClick={handleGoHome}
-                      className={`hidden lg:flex w-9 h-9 cursor-pointer rounded-sm items-center justify-center shrink-0 transition-colors duration-200 border ${isHomeButtonActive
+                      className={`hidden lg:flex w-9 h-9 cursor-pointer rounded-sm items-center justify-center shrink-0 transition-colors duration-200 border ${
+                        isHomeButtonActive
                           ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
                           : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
                       }`}
@@ -1306,14 +1501,20 @@ export default function Header() {
                     <button
                       key={item.name}
                       onClick={() => {
-                        if (!isAuthenticated && item.path !== "/" && item.path !== "/about" && item.path !== "/contact") {
+                        if (
+                          !isAuthenticated &&
+                          item.path !== "/" &&
+                          item.path !== "/about" &&
+                          item.path !== "/contact"
+                        ) {
                           setLoginButtonPosition(null);
                           setIsLoginDialogOpen(true);
                           return;
                         }
                         router.push(item.path);
                       }}
-                      className={`relative font-medium text-base tracking-wide h-full transition-colors duration-300 group ${pathname === item.path
+                      className={`relative font-medium text-base tracking-wide h-full transition-colors duration-300 group ${
+                        pathname === item.path
                           ? "text-gray-700"
                           : "text-gray-700 hover:text-blue-600"
                       }`}
@@ -1347,7 +1548,8 @@ export default function Header() {
                         {!isHome && (
                           <div
                             onClick={handleGoHome}
-                            className={`hidden lg:flex w-9 h-9 cursor-pointer rounded-sm items-center justify-center shrink-0 -ml-12 transition-colors duration-200 border ${isHomeButtonActive
+                            className={`hidden lg:flex w-9 h-9 cursor-pointer rounded-sm items-center justify-center shrink-0 -ml-12 transition-colors duration-200 border ${
+                              isHomeButtonActive
                                 ? "bg-[#E3E1FC] border-[#645AD1] text-primary-600"
                                 : "bg-[#F5F5F5] border-transparent hover:bg-[#F1F0FE] hover:text-primary-600"
                             }`}
@@ -1535,7 +1737,12 @@ export default function Header() {
                   <button
                     key={item.name}
                     onClick={() => {
-                      if (!isAuthenticated && item.path !== "/" && item.path !== "/about" && item.path !== "/contact") {
+                      if (
+                        !isAuthenticated &&
+                        item.path !== "/" &&
+                        item.path !== "/about" &&
+                        item.path !== "/contact"
+                      ) {
                         setIsMobileMenuOpen(false);
                         setLoginButtonPosition(null);
                         setIsLoginDialogOpen(true);
@@ -1544,7 +1751,8 @@ export default function Header() {
                       router.push(item.path);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-2 font-medium rounded-lg transition-colors ${pathname === item.path
+                    className={`w-full text-left px-3 py-2 font-medium rounded-lg transition-colors ${
+                      pathname === item.path
                         ? "text-blue-600 bg-blue-50"
                         : "text-gray-700 hover:bg-gray-50"
                     }`}
@@ -1626,7 +1834,6 @@ export default function Header() {
               </form>
             </DialogContent>
           </Dialog>
-
         </div>
       </header>
       <MyAccountDialog
