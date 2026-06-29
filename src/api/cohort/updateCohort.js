@@ -1,7 +1,7 @@
 import { apiService } from "../apiService";
 import { endpoints } from "../endpoint";
 
-export const updateCohort = async ({ cohortId, name, description }) => {
+export const updateCohort = async ({ cohortId, name, description, pathIds }) => {
   if (!cohortId) {
     throw new Error("cohortId is required");
   }
@@ -16,6 +16,7 @@ export const updateCohort = async ({ cohortId, name, description }) => {
     data: {
       name,
       description: description || "",
+      path_ids: Array.isArray(pathIds) ? pathIds : [],
     },
   });
 };

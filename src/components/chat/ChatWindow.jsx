@@ -18,12 +18,28 @@ const messagesFromConversation = (conversation) => {
       const names = Array.isArray(entry.source_material)
         ? entry.source_material.map((i) => i?.source_name).filter(Boolean)
         : [];
+      const attachParts = Array.isArray(entry.source_material)
+        ? entry.source_material
+            .map((i) => {
+              const n = i?.source_name;
+              if (!n) return null;
+              const c = (i?.comment ?? "").trim();
+              return c ? `${n} — ${c}` : n;
+            })
+            .filter(Boolean)
+        : [];
       const titles = Array.isArray(entry.webpage_url)
         ? entry.webpage_url
             .map((i) => i?.title || i?.webpage_url || i?.url)
             .filter(Boolean)
         : [];
-      const attach = names.length ? `\n\nAttached: ${names.join(", ")}` : "";
+      const attachSummary =
+        attachParts.length > 0
+          ? attachParts
+          : names;
+      const attach = attachSummary.length
+        ? `\n\nAttached: ${attachSummary.join(", ")}`
+        : "";
       const links = titles.length ? `\n\nLinks: ${titles.join(", ")}` : "";
       out.push({
         from: "user",
@@ -44,6 +60,102 @@ const messagesFromConversation = (conversation) => {
   return out;
 };
 
+<<<<<<< HEAD
+=======
+const materialKey = (m) =>
+  `${m?.id ?? ""}|${m?.source_name ?? ""}|${m?.s3_path ?? ""}`;
+
+function mergeUniqueMaterials(existing, additions) {
+  const base = Array.isArray(existing) ? [...existing] : [];
+  const seen = new Set(base.map(materialKey));
+  for (const a of additions) {
+    const k = materialKey(a);
+    if (k === "||") continue;
+    if (!seen.has(k)) {
+      seen.add(k);
+      base.push(a);
+    }
+  }
+  return base;
+}
+
+function mergeUniqueWebLinks(existing, additions) {
+  const base = Array.isArray(existing) ? [...existing] : [];
+  const seen = new Set(
+    base
+      .map((l) =>
+        (l?.webpage_url ?? l?.url ?? "").trim().toLowerCase().replace(/\/+$/, ""),
+      )
+      .filter(Boolean),
+  );
+  for (const raw of additions) {
+    const w = {
+      webpage_url: raw?.webpage_url ?? raw?.url ?? "",
+      title: raw?.title ?? "",
+      comment: raw?.comment ?? "",
+      ...(raw?.id ? { id: raw.id } : {}),
+    };
+    const k = (w.webpage_url || "").trim().toLowerCase().replace(/\/+$/, "");
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    base.push(w);
+  }
+  return base;
+}
+
+/** Avoid losing pending rows: stale React session or lagging autosave can be shorter than localStorage. */
+function pickChatbotConversation(storedSession, incomingSession) {
+  const a = Array.isArray(storedSession?.chatbot_conversation)
+    ? storedSession.chatbot_conversation
+    : [];
+  const b = Array.isArray(incomingSession?.chatbot_conversation)
+    ? incomingSession.chatbot_conversation
+    : [];
+  if (a.length > b.length) return [...a];
+  if (b.length > a.length) return [...b];
+  return [...a];
+}
+
+function mergedSessionAttachments(storedSession, incomingSession) {
+  return {
+    source_material: mergeUniqueMaterials(
+      Array.isArray(incomingSession?.source_material)
+        ? incomingSession.source_material
+        : [],
+      Array.isArray(storedSession?.source_material)
+        ? storedSession.source_material
+        : [],
+    ),
+    webpage_url: mergeUniqueWebLinks(
+      Array.isArray(incomingSession?.webpage_url)
+        ? incomingSession.webpage_url
+        : [],
+      Array.isArray(storedSession?.webpage_url) ? storedSession.webpage_url : [],
+    ),
+  };
+}
+
+function formatUploadedDocumentUserLine(m) {
+  return [
+    "[Uploaded document]",
+    m?.source_name ?? "Document",
+    // m?.id != null && m?.id !== "" && `id: ${m.id}`,
+    // m?.s3_path && `s3_path: ${m.s3_path}`,
+    m?.comment && `comment: ${m.comment}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function formatUploadedLinkUserLine(w) {
+  const url = w?.webpage_url ?? w?.url ?? "";
+  const title = w?.title || url || "Link";
+  return ["[Added link]", url, w?.comment && `comment: ${w.comment}`]
+    .filter(Boolean)
+    .join("\n");
+}
+
+>>>>>>> 00dc986e4fd7cca1d20e93c7170dc79ce6382051
 export default function ChatWindow({
   initialInput = null,
   userQuestions = null,
@@ -308,6 +420,99 @@ export default function ChatWindow({
     setInputValue(value);
   };
 
+<<<<<<< HEAD
+=======
+  const recordUploadInConversation = useCallback(
+    async ({ sourceMaterial, webLink }) => {
+      if (!sourceMaterial && !webLink) return;
+      try {
+        let sid = sessionId || localStorage.getItem("sessionId");
+        if (!sid) {
+          const sessionResponse = await graphqlClient.createSession();
+          sid = sessionResponse.createSession.sessionId;
+          localStorage.setItem("sessionId", sid);
+          window.dispatchEvent(new Event("sessionIdChanged"));
+          setSessionId(sid);
+        }
+        let stored = {};
+        try {
+          stored = JSON.parse(localStorage.getItem("sessionData") || "{}");
+        } catch {
+          stored = {};
+        }
+        const fromProps =
+          sessionData && typeof sessionData === "object" ? sessionData : {};
+        const mergedAttach = mergedSessionAttachments(stored, fromProps);
+        const baseSession = {
+          ...stored,
+          ...fromProps,
+          session_id: sid,
+          chatbot_conversation: pickChatbotConversation(stored, fromProps),
+          source_material: mergedAttach.source_material,
+          webpage_url: mergedAttach.webpage_url,
+        };
+        const prevConv = Array.isArray(baseSession.chatbot_conversation)
+          ? [...baseSession.chatbot_conversation]
+          : [];
+        let userLine = "";
+        let nextMaterials = mergeUniqueMaterials(
+          baseSession.source_material,
+          [],
+        );
+        let nextLinks = mergeUniqueWebLinks(baseSession.webpage_url, []);
+
+        if (sourceMaterial) {
+          userLine = formatUploadedDocumentUserLine(sourceMaterial);
+          nextMaterials = mergeUniqueMaterials(baseSession.source_material, [
+            sourceMaterial,
+          ]);
+        } else if (webLink) {
+          const w = {
+            webpage_url: webLink.webpage_url ?? webLink.url ?? "",
+            title: webLink.title ?? "",
+            comment: webLink.comment ?? "",
+            ...(webLink.id ? { id: webLink.id } : {}),
+          };
+          userLine = formatUploadedLinkUserLine(w);
+          nextLinks = mergeUniqueWebLinks(baseSession.webpage_url, [w]);
+        }
+
+        const chatbot_conversation = [...prevConv, { user: userLine }];
+        const updated = {
+          ...baseSession,
+          chatbot_conversation,
+          source_material: nextMaterials,
+          webpage_url: nextLinks,
+        };
+
+        localStorage.setItem("sessionData", JSON.stringify(updated));
+        onResponseReceived?.(updated);
+        window.dispatchEvent(new Event("chatConversationUpdated"));
+
+        graphqlClient
+          .autoSaveComet(
+            JSON.stringify({
+              session_id: sid,
+              input_type: updated.input_type || inputType,
+              cycle_creation_data: updated.cycle_creation_data ?? {},
+              comet_creation_data: updated.comet_creation_data ?? {},
+              response_outline: updated.response_outline ?? {},
+              response_path: updated.response_path ?? {},
+              chatbot_conversation,
+              to_modify: updated.to_modify ?? {},
+              webpage_url: nextLinks,
+              source_material: nextMaterials,
+            }),
+          )
+          .catch(() => {});
+      } catch (e) {
+        console.error("recordUploadInConversation failed:", e);
+      }
+    },
+    [sessionId, sessionData, inputType, onResponseReceived],
+  );
+
+>>>>>>> 00dc986e4fd7cca1d20e93c7170dc79ce6382051
   const handleSubmit = async (input) => {
     try {
       setIsLoading(true);
@@ -366,7 +571,8 @@ export default function ChatWindow({
                 const name = item?.source_name || `file_${index + 1}`;
                 const id = item?.id ?? "n/a";
                 const s3Path = item?.s3_path || "n/a";
-                return `- source_name: ${name}, id: ${id}, s3_path: ${s3Path}`;
+                const comment = (item?.comment ?? "").trim();
+                return `- source_name: ${name}, id: ${id}, s3_path: ${s3Path}${comment ? `, comment: ${comment}` : ""}`;
               })
               .join("\n")}`
           : "";
@@ -513,7 +719,12 @@ export default function ChatWindow({
       const attachmentLabel =
         sourceMaterials.length > 0
           ? `\n\nAttached: ${sourceMaterials
-              .map((item) => item?.source_name)
+              .map((item) => {
+                const n = item?.source_name;
+                if (!n) return null;
+                const c = (item?.comment ?? "").trim();
+                return c ? `${n} — ${c}` : n;
+              })
               .filter(Boolean)
               .join(", ")}`
           : "";
@@ -545,25 +756,33 @@ export default function ChatWindow({
     (sessionData) => {
       console.log("Session update received:", sessionData);
 
-      // Preserve enabled_attributes from current session if server didn't return them
+      // Preserve longer chat + merged attachments so lagging autosave/subscription
+      // does not wipe pending "[Uploaded document]" rows from localStorage.
       let dataToStore = sessionData;
-      if (
-        !sessionData?.response_path?.enabled_attributes &&
-        typeof window !== "undefined"
-      ) {
+      if (typeof window !== "undefined") {
         try {
-          const stored = localStorage.getItem("sessionData");
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            if (parsed?.response_path?.enabled_attributes) {
-              dataToStore = {
-                ...sessionData,
-                response_path: {
-                  ...sessionData?.response_path,
-                  enabled_attributes: parsed.response_path.enabled_attributes,
-                },
-              };
-            }
+          const raw = localStorage.getItem("sessionData");
+          const parsed = raw ? JSON.parse(raw) : null;
+          if (parsed) {
+            const attach = mergedSessionAttachments(parsed, sessionData);
+            dataToStore = {
+              ...sessionData,
+              chatbot_conversation: pickChatbotConversation(parsed, sessionData),
+              source_material: attach.source_material,
+              webpage_url: attach.webpage_url,
+            };
+          }
+          if (
+            !dataToStore?.response_path?.enabled_attributes &&
+            parsed?.response_path?.enabled_attributes
+          ) {
+            dataToStore = {
+              ...dataToStore,
+              response_path: {
+                ...dataToStore?.response_path,
+                enabled_attributes: parsed.response_path.enabled_attributes,
+              },
+            };
           }
         } catch (e) {}
       }
@@ -572,18 +791,18 @@ export default function ChatWindow({
       }
       localStorage.setItem("sessionData", JSON.stringify(dataToStore));
 
-      if (sessionData.chatbot_conversation) {
-        const conversation = sessionData.chatbot_conversation;
+      const conversation = dataToStore?.chatbot_conversation;
+      if (conversation) {
         const agentMessageCount = Array.isArray(conversation)
           ? conversation.filter((entry) => entry?.agent).length
           : 0;
-        const allMessages = messagesFromConversation(conversation);
+        const rebuilt = messagesFromConversation(conversation);
 
         const shouldStopLoading =
           !awaitingConversationRef.current ||
           agentMessageCount >= minAgentMessageCountRef.current;
 
-        if (allMessages.length > 0) setAllMessages(allMessages);
+        if (rebuilt.length > 0) setAllMessages(rebuilt);
         if (shouldStopLoading) {
           setIsLoading(false);
           awaitingConversationRef.current = false;

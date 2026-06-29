@@ -344,7 +344,10 @@ export default function OutlineManagerLayout() {
   // ];
 
   return (
-    <div className="flex h-full w-full bg-primary-50">
+    <div
+      className="flex h-full w-full bg-primary-50"
+      data-kyper-no-imperative-spellcheck
+    >
       <div className="flex flex-1 gap-2 p-2 overflow-y-auto">
         <div className="hidden lg:block w-full lg:w-[360px] h-full">
           <ChatWindow

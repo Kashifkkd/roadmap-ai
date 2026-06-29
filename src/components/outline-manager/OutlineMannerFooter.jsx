@@ -24,6 +24,10 @@ export default function OutlineMannerFooter() {
     if (storedSessionData) {
       setSessionData(JSON.parse(storedSessionData));
     }
+    const storedSessionId = localStorage.getItem("sessionId");
+    if (storedSessionId) {
+      setSessionId(storedSessionId);
+    }
   }, []);
 
   useEffect(() => {

@@ -4,7 +4,7 @@ import Comet from "./Comet";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/toast";
 
-export default function AllCometsContainer({ cometSessions }) {
+export default function AllCometsContainer({ cometSessions, onDeleteSuccess }) {
 
   useEffect(() => {
     console.log(
@@ -99,6 +99,7 @@ export default function AllCometsContainer({ cometSessions }) {
             session_id={c.session_id}
             path_id={c.path_id ?? c.pathId ?? c.id}
             onCometClick={handleCometClick}
+            onDeleteSuccess={onDeleteSuccess}
             updatedBy={c.updated_by || c.created_by}
           />
         ))}

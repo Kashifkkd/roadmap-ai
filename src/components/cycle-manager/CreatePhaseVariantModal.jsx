@@ -322,7 +322,7 @@ export default function CreatePhaseVariantModal({
               </div>
 
               {/* Inputs card */}
-              <div className="flex flex-col gap-2 rounded-2xl bg-[#FNew Step Title5F5F5] p-4">
+              <div className="flex flex-col gap-2 rounded-2xl bg-[#F5F5F5] p-4">
                 <div className="flex flex-col gap-2">
                   <Label
                     htmlFor="phase-variant-title"
@@ -403,16 +403,15 @@ export default function CreatePhaseVariantModal({
                         <SelectValue placeholder="Select a cycle" />
                       </SelectTrigger>
                       <SelectContent>
-                        {cycles
-                          .filter((cycle) => cycle.sessionId !== sessionId)
-                          .map((cycle) => (
-                            <SelectItem
-                              key={cycle.sessionId}
-                              value={cycle.sessionId}
-                            >
-                              {cycle.name}
-                            </SelectItem>
-                          ))}
+                        {cycles.map((cycle) => (
+                          <SelectItem
+                            key={cycle.sessionId}
+                            value={cycle.sessionId}
+                          >
+                            {cycle.name}
+                            {cycle.sessionId === sessionId ? " (current)" : ""}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

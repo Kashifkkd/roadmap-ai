@@ -155,32 +155,13 @@ export default function ContentForm({
     }
   };
 
-  // Handle removing uploaded media (exclude content icon so we never remove it as "media")
+  // Handle removing uploaded media — media lives in screenContents.content
+  // (mediaUrl, mediaType, mediaName), NOT in screen.assets[].
+  // Never touch screen.assets here.
   const handleRemoveMedia = () => {
-    const contentIconUrl = formData.contentImageIcon;
-    const mediaIndex = existingAssets.findIndex(
-      (asset) => {
-        const assetUrl = asset.url || asset.ImageUrl;
-        if (contentIconUrl && assetUrl === contentIconUrl) return false;
-        return (
-          asset.type === "video" ||
-          asset.type === "audio" ||
-          asset.type === "image" ||
-          asset.type === "pdf" ||
-          asset.type === "ppt" ||
-          asset.type === "document" ||
-          asset.type === "file" ||
-          asset.url === formData.mediaUrl ||
-          asset.ImageUrl === formData.mediaUrl
-        );
-      }
-    );
-    if (mediaIndex >= 0 && removeScreenAsset) {
-      removeScreenAsset(mediaIndex);
-    }
-    // Clear media URL
     updateField("mediaUrl", "");
     updateField("mediaType", "");
+    updateField("mediaName", "");
     updateField("contentMediaFile", null);
     setUploadedMedia(null);
   };

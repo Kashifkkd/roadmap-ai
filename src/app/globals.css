@@ -599,3 +599,22 @@
 );
   background-size: 220% 100%;
 }
+
+.spellcheck-field {
+  isolation: isolate;
+}
+
+.spellcheck-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  color: transparent;
+  z-index: 0;
+}
+
+.spellcheck-backdrop .kyper-spell-error {
+  text-decoration: underline wavy #ef4444;
+  text-decoration-skip-ink: none;
+  text-underline-offset: 2px;
+}

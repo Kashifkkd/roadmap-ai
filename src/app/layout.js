@@ -11,6 +11,7 @@ import { CometSettingsProvider } from "@/contexts/CometSettingsContext";
 import { Toaster } from "@/components/ui/toast";
 import QueryProvider from "@/providers/QueryProvider";
 import CloudfrontCookieManager from "@/components/auth/CloudfrontCookieManager";
+import SpellCheckProvider from "@/components/spellcheck/SpellCheckProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -120,7 +121,7 @@ function LayoutContent({ children }) {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en-US">
       <head>
         <link rel="icon" href="/fav.svg" type="image/svg+xml" />
       </head>
@@ -133,12 +134,14 @@ export default function RootLayout({ children }) {
         </Script>
         <QueryProvider>
           <CloudfrontCookieManager />
-          <PreviewModeProvider>
-            <CometSettingsProvider>
-              <LayoutContent>{children}</LayoutContent>
-              <Toaster />
-            </CometSettingsProvider>
-          </PreviewModeProvider>
+          <SpellCheckProvider>
+            <PreviewModeProvider>
+              <CometSettingsProvider>
+                <LayoutContent>{children}</LayoutContent>
+                <Toaster />
+              </CometSettingsProvider>
+            </PreviewModeProvider>
+          </SpellCheckProvider>
         </QueryProvider>
       </body>
     </html>

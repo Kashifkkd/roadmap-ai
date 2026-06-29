@@ -334,21 +334,15 @@ export default function ChatInput({
           );
         }
       }
-
-      if (successfullyUploaded.length > 0) {
-        setUploadedSourceMaterials((prev) => [
-          ...prev,
-          ...successfullyUploaded,
-        ]);
-        toast.success(
-          successfullyUploaded.length === 1
-            ? "Source material uploaded successfully."
-            : `${successfullyUploaded.length} files uploaded successfully.`,
-        );
-        await persistAssetsToBackend({
-          sessionId,
-          addedSources: successfullyUploaded,
-        });
+      if (uploaded.length) {
+        if (onUploadRecorded) {
+          for (const item of uploaded) {
+            await onUploadRecorded({ sourceMaterial: item });
+          }
+        } else {
+          setFiles((prev) => [...prev, ...uploaded]);
+        }
+        toast.success(uploaded.length === 1 ? "File attached." : `${uploaded.length} files attached.`);
       }
 
       resetSourceUploadDialog();
@@ -380,53 +374,17 @@ export default function ChatInput({
     setIsLinkActive(false);
     try {
       const sessionId = await ensureSessionId();
-      const formData = new FormData();
-      formData.append("url", url);
-      formData.append("session_id", sessionId);
-      if (comment) formData.append("comment", comment);
-
-      const result = await apiService({
-        endpoint: endpoints.uploadSourceMaterialWebLink,
-        method: "POST",
-        data: formData,
-      });
-
-      if (result?.error || result?.success === false) {
-        throw new Error(result?.message || "Failed to upload link");
+      const link = await uploadLink({ url, sessionId, comment: linkComment.trim() });
+      if (onUploadRecorded) {
+        await onUploadRecorded({ webLink: link });
+      } else {
+        setLinks((prev) => [...prev, link]);
       }
-
-      const rawPayload = result?.response;
-      const payload = Array.isArray(rawPayload)
-        ? (rawPayload[0] ?? {})
-        : (rawPayload ?? {});
-      const apiTitle =
-        payload?.title || payload?.page_title || payload?.source_name || "";
-      const fallbackTitle = (() => {
-        try {
-          return new URL(url).hostname;
-        } catch {
-          return url;
-        }
-      })();
-
-      const linkEntry = {
-        ...payload,
-        url,
-        title: apiTitle || fallbackTitle,
-        comment,
-        source_name: payload?.source_name || apiTitle || fallbackTitle,
-      };
-
-      setUploadedWebLinks((prev) => [...prev, linkEntry]);
-      toast.success("Link uploaded successfully.");
-      await persistAssetsToBackend({
-        sessionId,
-        addedLinks: [linkEntry],
-      });
-      resetLinkPanel();
-    } catch (error) {
-      console.error("Link upload failed:", error);
-      toast.error(error?.message || "Failed to upload link.");
+      toast.success("Link attached.");
+      closeLink();
+    } catch (err) {
+      console.error("Link upload failed:", err);
+      toast.error(err?.message || "Failed to upload link.");
     } finally {
       setIsUploadingLink(false);
     }
@@ -446,167 +404,108 @@ export default function ChatInput({
       e.preventDefault();
     }
     setIsClicked(true);
-    setTimeout(() => {
-      setIsClicked(false);
-    }, 1000);
-    if (!currentValue.trim() || disabled) {
-      return;
-    }
-    if (onSubmit) {
-      onSubmit({
-        text: currentValue,
-        sourceMaterials: uploadedSourceMaterials,
-        webLinks: uploadedWebLinks,
-      });
-    }
-    setUploadedSourceMaterials([]);
-    setUploadedWebLinks([]);
-    if (value === undefined) {
-      setText("");
-    }
+    setTimeout(() => setIsClicked(false), 1000);
+    if (!text.trim() || disabled) return;
+    onSubmit?.({ text, sourceMaterials: files, webLinks: links });
+    setFiles([]); setLinks([]);
+    if (value === undefined) setInternalText("");
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
+  const clearComposerText = () => {
+    setText("");
+  };
+
+  const toggleAttach = () => {
+    setLinkOpen(false);
+    setAttachOpen((p) => {
+      if (p) setPending([]);
+      else clearComposerText();
+      return !p;
+    });
+  };
+  const toggleLink = () => {
+    setAttachOpen(false);
+    setLinkOpen((p) => {
+      const opening = !p;
+      if (opening) clearComposerText();
+      return opening;
+    });
+    setLinkUrl("");
+    setLinkComment("");
+    setTimeout(() => linkInputRef.current?.focus(), 50);
   };
 
   const hasPreviews =
     uploadedSourceMaterials.length > 0 || uploadedWebLinks.length > 0;
 
   return (
-    <div
-      className={`w-full p-2 bg-accent flex flex-col items-center gap-2 rounded-xl ${
-        hasPreviews ? "h-[145px] sm:h-[175px]" : "h-[100px] sm:h-[130px]"
-      }`}
-    >
-      <div className="relative w-full h-full rounded-xl  text-[#717680]">
-        <Search className="absolute top-3 left-2 w-4 h-4 text-[#717680]" />
+    <div className="flex h-[100px] w-full flex-col items-center gap-2 rounded-xl bg-accent p-2 sm:h-[130px]">
+      <div className="relative h-full w-full overflow-visible rounded-xl text-[#717680]">
+        <Search className="pointer-events-none absolute left-2 top-3 z-10 h-4 w-4 text-[#717680]" />
         <Textarea
           placeholder={placeholder || "Ask me anything"}
-          value={currentValue}
-          onChange={(e) => setCurrentValue(e.target.value)}
-          onKeyDown={handleKeyDown}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
           disabled={disabled}
-          className={`pl-[30px] pt-2 ${
-            hasPreviews ? "pb-24" : "pb-12"
-          } pr-2 text-sm text-gray-900 placeholder:text-[#717680] shadow-none border-0 rounded-xl bg-background w-full min-h-full max-h-full overflow-y-auto focus-visible:ring-primary-300 focus-visible:ring-1 focus-visible:ring-offset-2 leading-6 break-words resize-none ${
-            disabled ? " cursor-not-allowed" : ""
-          }`}
+          spellCheck={false}
+          className={`min-h-full max-h-full w-full resize-none overflow-y-auto rounded-xl border-0 bg-background pb-12 pl-[30px] pr-2 pt-2 text-sm leading-6 break-words text-gray-900 shadow-none placeholder:text-[#717680] focus-visible:ring-1 focus-visible:ring-primary-300 focus-visible:ring-offset-2 ${disabled ? "cursor-not-allowed" : ""}`}
         />
-        <div className="absolute bottom-0 left-0 right-0 h-10  rounded-b-xl" />
-        {(isUploadingSource || isUploadingLink) && (
-          <div className="absolute bottom-11 left-2 right-2 flex items-center gap-2.5 py-1">
-            <div className="gradient-loader" />
-            <span className="text-[13px] font-medium text-gray-600">
-              {isUploadingSource ? "Uploading Files..." : "Uploading Link..."}
-            </span>
+
+        {/* Solid footer strip so attach/link are not clipped by rounded corners */}
+        <div
+          className="pointer-events-none absolute bottom-0 left-0 right-0 z-[1] h-11 rounded-b-xl bg-background"
+          aria-hidden
+        />
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPT}
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            stageFiles(e.target.files);
+            e.target.value = "";
+          }}
+        />
+
+        <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1.5">
+          <div className="relative" ref={attachRef}>
+            <TriggerBtn
+              icon={<Paperclip className="h-3 w-3 shrink-0" />}
+              label="Attach"
+              active={attachOpen}
+              onClick={toggleAttach}
+              disabled={toolbarDisabled}
+            />
           </div>
-        )}
-        {!isUploadingSource &&
-          !isUploadingLink &&
-          (uploadedSourceMaterials.length > 0 ||
-            uploadedWebLinks.length > 0) && (
-            <div className="absolute bottom-11 left-2 right-2">
-              <div
-                className="flex items-center gap-1 overflow-x-auto flex-nowrap pr-8"
-                style={{ scrollbarWidth: "none" }}
-              >
-                {uploadedSourceMaterials.map((item, index) => (
-                <div
-                  key={`file-${item.source_name}-${index}`}
-                  className="flex items-center gap-1.5 bg-primary-50 text-primary-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-primary-200/60 shrink-0"
-                  title={
-                    item.source_name +
-                    (item.comment ? ` — ${item.comment}` : "")
-                  }
-                >
-                  <FileText className="w-3 h-3 shrink-0 mt-0.5 self-start" />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="truncate font-medium">
-                      {(item.source_name ?? "").slice(0, 20)}
-                      {(item.source_name ?? "").length > 20 ? "…" : ""}
-                    </span>
-                    {item.comment ? (
-                      <span
-                        className="flex items-start truncate text-gray-600 mt-0.5"
-                        title={item.comment}
-                      >
-                        {item.comment.slice(0, 20)}
-                        {item.comment.length > 20 ? "…" : ""}
-                      </span>
-                    ) : null}
-                  </div>
-                  <button
-                    type="button"
-                    className="hover:text-red-500 transition-colors shrink-0 p-0.5 rounded-full hover:bg-primary-100"
-                    onClick={() =>
-                      setUploadedSourceMaterials((prev) =>
-                        prev.filter((_, i) => i !== index),
-                      )
-                    }
-                    aria-label="Remove uploaded file"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-              {uploadedWebLinks.map((entry, index) => (
-                <div
-                  key={`link-${entry.url}-${index}`}
-                  className="flex items-center gap-1.5 bg-gray-50 text-gray-700 pl-2 pr-1 py-1.5 rounded-lg text-xs max-w-[240px] border border-gray-200 shrink-0"
-                  title={
-                    entry.url + (entry.comment ? ` — ${entry.comment}` : "")
-                  }
-                >
-                  <Link2 className="w-3 h-3 shrink-0 mt-0.5 self-start text-gray-500" />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="truncate font-medium">
-                      {(entry.title || entry.url).slice(0, 22)}
-                      {(entry.title || entry.url).length > 22 ? "…" : ""}
-                    </span>
-                    {entry.comment ? (
-                      <span
-                        className="flex items-start truncate text-gray-500 mt-0.5"
-                        title={entry.comment}
-                      >
-                        {entry.comment.slice(0, 22)}
-                        {entry.comment.length > 22 ? "…" : ""}
-                      </span>
-                    ) : null}
-                  </div>
-                  <button
-                    type="button"
-                    className="hover:text-red-500 transition-colors shrink-0 p-0.5 rounded-full hover:bg-gray-200 text-gray-400"
-                    onClick={() =>
-                      setUploadedWebLinks((prev) =>
-                        prev.filter((_, i) => i !== index),
-                      )
-                    }
-                    aria-label="Remove uploaded link"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-              </div>
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-y-0 right-0 w-10 rounded-r-lg bg-linear-to-l from-background via-background/80 to-transparent"
-              />
-            </div>
-          )}
-        <div className="absolute bottom-2 right-2">
+          <div className="relative" ref={linkRef}>
+            <TriggerBtn
+              icon={<Link2 className="h-3 w-3 shrink-0" />}
+              label="Link"
+              active={linkOpen}
+              onClick={toggleLink}
+              disabled={toolbarDisabled}
+            />
+          </div>
+        </div>
+
+        <div className="absolute bottom-2.5 right-2.5 z-10">
           <Button
             variant="default"
             size="icon"
             onClick={handleSubmit}
-            className="p-2 flex items-center gap-2 bg-primary text-background rounded-full hover:cursor-pointer group"
+            disabled={toolbarDisabled}
+            className="flex items-center gap-2 rounded-full bg-primary p-2 text-background hover:cursor-pointer group"
           >
             {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <ArrowUp
                 size={16}
@@ -794,85 +693,21 @@ export default function ChatInput({
             )}
           </div>
 
-          <div className="relative" ref={linkWrapperRef}>
-            <Button
-              variant="default"
-              size="xs"
-              className={`p-1 cursor-pointer flex text-center gap-0 rounded-sm ${
-                isLinkActive
-                  ? "text-white bg-primary-600"
-                  : "text-gray-500 bg-white hover:text-primary-600 hover:bg-primary-50"
-              }`}
-              onClick={handleToggleLink}
-            >
-              <Link2 className="w-2 h-2" />
-              <span className="text-xs">Link</span>
-            </Button>
-
-            {isLinkActive && (
-              <div
-                ref={linkPanelRef}
-                style={{
-                  position: "fixed",
-                  top: linkPanelPos.top,
-                  left: linkPanelPos.left,
-                  width: linkPanelPos.width ?? 320,
-                  transform: "translateY(-100%)",
-                  maxHeight: "calc(100vh - 24px)",
-                }}
-                className="z-50 bg-primary-50 border border-primary-400 rounded-2xl p-1 shadow-[0_4px_24px_rgba(0,0,0,0.10)] overflow-y-auto"
-                onMouseDown={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center gap-1 bg-primary-50 rounded-xl py-1 mb-0.5">
-                  <div className="flex items-center gap-1 bg-gray-200 p-2 rounded-lg">
-                    <Link2 className="w-5 h-5 text-gray-500 shrink-0" />
-                  </div>
-                  <input
-                    ref={linkInputRef}
-                    type="url"
-                    placeholder="Paste link here"
-                    value={linkInputValue}
-                    onChange={(e) => setLinkInputValue(e.target.value)}
-                    onKeyDown={handleLinkInputKeyDown}
-                    className="flex-1 bg-white rounded-lg p-2 text-sm outline-none placeholder:text-gray-400 min-w-0"
-                  />
-                </div>
-                <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-1">
-                  <input
-                    type="text"
-                    placeholder="Add Comment"
-                    value={linkCommentValue}
-                    onChange={(e) => setLinkCommentValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddLink();
-                      }
-                    }}
-                    className="flex-1 bg-transparent text-sm py-1.5 outline-none placeholder:text-gray-400 min-w-0"
-                  />
-                  <Button
-                    variant="outline"
-                    className="px-4 py-1.5 text-sm bg-primary text-white hover:bg-primary/90 h-8 rounded-lg shrink-0 disabled:opacity-50"
-                    onClick={handleAddLink}
-                    disabled={!linkInputValue.trim() || isUploadingLink}
-                  >
-                    {isUploadingLink ? "Adding..." : "Add"}
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={resetLinkPanel}
-                    className="text-gray-400 hover:text-gray-600 transition-colors p-0.5 shrink-0"
-                    aria-label="Close link panel"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+function TriggerBtn({ icon, label, active, onClick, disabled }) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex h-7 shrink-0 items-center gap-1 rounded-sm border-0 px-2 py-1 shadow-none transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+        active
+          ? "bg-primary-50 text-primary-600 hover:bg-primary-50 hover:text-primary-600"
+          : "bg-white text-gray-500 hover:bg-primary-50 hover:text-primary-600"
+      }`}
+    >
+      {icon}
+      <span className="text-xs leading-none">{label}</span>
+    </Button>
   );
 }

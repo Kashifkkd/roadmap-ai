@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { TextField, RichTextArea, SectionHeader } from "./FormFields";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
 import { Info } from "lucide-react";
 import ImageUpload from "@/components/common/ImageUpload";
 import UploadTool from "@/components/common/UploadTool";
+import { deleteToolByUrl } from "@/api/generateStepImages";
+import { toast } from "@/components/ui/toast";
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
@@ -67,11 +69,36 @@ export default function ActionsForm({
 
   const existingAssets = screen?.assets || [];
 
+  const [isDeletingTool, setIsDeletingTool] = useState(false);
+
   // Handle tool upload success
   const handleToolUploadSuccess = (toolData) => {
     if (toolData?.url) {
       updateField("toolLink", toolData.url);
     }
+  };
+
+  // Handle tool removal — delete from DB by URL then clear form fields
+  const handleClearTool = async () => {
+    const toolUrl = formData.toolLink;
+    if (toolUrl) {
+      setIsDeletingTool(true);
+      try {
+        const res = await deleteToolByUrl({ toolUrl });
+        if (res?.success) {
+          toast.success("Tool deleted successfully");
+        } else {
+          toast.error("Failed to delete tool");
+        }
+      } catch (err) {
+        console.error("Failed to delete tool from DB:", err);
+        toast.error("Failed to delete tool");
+      } finally {
+        setIsDeletingTool(false);
+      }
+    }
+    updateField("toolLink", "");
+    updateField("toolName", "");
   };
 
   const handleRemoveAsset = (index) => {
@@ -176,7 +203,7 @@ export default function ActionsForm({
             onUploadSuccess={handleToolUploadSuccess}
             currentUrl={formData.toolLink || ""}
             currentName={formData.toolName || formData.title || ""}
-            onClearTool={() => updateField("toolLink", "")}
+            onClearTool={handleClearTool}
           />
           {!formData.toolLink && (
             <>

@@ -79,8 +79,8 @@ function screenMatchesInteractionId(screen, targetScreenId) {
   return candidateIds.includes(target);
 }
 
-/** Integer for POST …/chapters/{id}/variant — from session chapter fields only. */
-function pathChapterIdFromChapter(chapter) {
+/** Plain numeric chapter_id / id only — excludes #chapter_N alias strings. */
+function strictPathChapterIdFromChapter(chapter) {
   if (!chapter || typeof chapter !== "object") return null;
   const cid = chapter.chapter_id ?? chapter.chapterId;
   if (typeof cid === "number" && Number.isFinite(cid) && cid >= 0) {
@@ -95,7 +95,14 @@ function pathChapterIdFromChapter(chapter) {
   if (typeof chapter.id === "string" && /^\d+$/.test(chapter.id.trim())) {
     return parseInt(chapter.id.trim(), 10);
   }
-  if (typeof chapter.id === "string") {
+  return null;
+}
+
+/** Integer for POST …/chapters/{id}/variant — from session chapter fields only. */
+function pathChapterIdFromChapter(chapter) {
+  const strictId = strictPathChapterIdFromChapter(chapter);
+  if (strictId !== null) return strictId;
+  if (typeof chapter?.id === "string") {
     const t = chapter.id.trim();
     const m = /^#chapter_(\d+)$/i.exec(t) || /^chapter_(\d+)$/i.exec(t);
     if (m) return parseInt(m[1], 10);
@@ -103,8 +110,8 @@ function pathChapterIdFromChapter(chapter) {
   return null;
 }
 
-/** Integer for POST …/steps/{id}/variant — from session step / stepItem fields. */
-function pathStepIdFromStep(stepItem, step) {
+/** Plain numeric step_id / id only — excludes #step_N and screen* alias strings. */
+function strictPathStepIdFromStep(stepItem, step) {
   const s = step && typeof step === "object" ? step : {};
   const sid = s.step_id ?? s.stepId;
   if (typeof sid === "number" && Number.isFinite(sid) && sid >= 0) {
@@ -133,6 +140,14 @@ function pathStepIdFromStep(stepItem, step) {
   if (typeof stepItemId === "string" && /^\d+$/.test(stepItemId.trim())) {
     return parseInt(stepItemId.trim(), 10);
   }
+  return null;
+}
+
+/** Integer for POST …/steps/{id}/variant — from session step / stepItem fields. */
+function pathStepIdFromStep(stepItem, step) {
+  const strictId = strictPathStepIdFromStep(stepItem, step);
+  if (strictId !== null) return strictId;
+  const s = step && typeof step === "object" ? step : {};
   if (typeof s.id === "string") {
     const t = s.id.trim();
     const m =
@@ -297,6 +312,7 @@ export function useCometManager(sessionData = null) {
           description: stepDescription,
           contentTypes: Array.from(contentTypes),
           numericStepId: pathStepIdFromStep(stepItem, step),
+          strictNumericStepId: strictPathStepIdFromStep(stepItem, step),
         });
       });
 
@@ -306,6 +322,11 @@ export function useCometManager(sessionData = null) {
         order: chapter?.position ? chapter.position - 1 : chapterIndex,
         steps: transformedSteps,
         numericChapterId: pathChapterIdFromChapter(chapter),
+<<<<<<< HEAD
+=======
+        strictNumericChapterId: strictPathChapterIdFromChapter(chapter),
+        chapterUuid,
+>>>>>>> 00dc986e4fd7cca1d20e93c7170dc79ce6382051
       };
     });
   }, [outline]);
@@ -685,6 +706,54 @@ export function useCometManager(sessionData = null) {
     setSelectedStepId(stepId);
   };
 
+  /**
+   * Move a step from one chapter to another using direct array indices.
+   * Index-based to avoid fragile ID lookups that silently return -1 when
+   * chapter positions shift after a reorder.
+   */
+  const moveStepToChapter = (fromChapterIndex, fromStepIndex, toChapterIndex, toStepIndex) => {
+    setOutline((prevOutline) => {
+      if (!prevOutline || !prevOutline.chapters) return prevOutline;
+
+      const newOutline = JSON.parse(JSON.stringify(prevOutline));
+      const pathChapters = newOutline.chapters || [];
+
+      if (fromChapterIndex < 0 || fromChapterIndex >= pathChapters.length) return prevOutline;
+      if (toChapterIndex < 0 || toChapterIndex >= pathChapters.length) return prevOutline;
+      if (fromChapterIndex === toChapterIndex) return prevOutline;
+
+      const fromSteps = pathChapters[fromChapterIndex].steps || [];
+      if (fromStepIndex < 0 || fromStepIndex >= fromSteps.length) return prevOutline;
+
+      // Remove from source
+      const stepToMove = fromSteps[fromStepIndex];
+      const newFromSteps = [...fromSteps];
+      newFromSteps.splice(fromStepIndex, 1);
+      for (let i = 0; i < newFromSteps.length; i++) {
+        newFromSteps[i].position = i + 1;
+        if (newFromSteps[i].step && typeof newFromSteps[i].step === "object") {
+          newFromSteps[i].step.position = i + 1;
+        }
+      }
+
+      // Insert into target
+      const toSteps = pathChapters[toChapterIndex].steps || [];
+      const newToSteps = [...toSteps];
+      const clampedIndex = Math.min(Math.max(toStepIndex, 0), newToSteps.length);
+      newToSteps.splice(clampedIndex, 0, stepToMove);
+      for (let i = 0; i < newToSteps.length; i++) {
+        newToSteps[i].position = i + 1;
+        if (newToSteps[i].step && typeof newToSteps[i].step === "object") {
+          newToSteps[i].step.position = i + 1;
+        }
+      }
+
+      pathChapters[fromChapterIndex].steps = newFromSteps;
+      pathChapters[toChapterIndex].steps = newToSteps;
+      return newOutline;
+    });
+  };
+
   return {
     isLoading,
     screens, // Filtered screens based on selectedStepId
@@ -698,6 +767,7 @@ export function useCometManager(sessionData = null) {
     reorderScreensList,
     reorderChapters,
     reorderSteps,
+    moveStepToChapter,
     insertScreenAt,
     outline, // Expose outline for direct access if needed
     setOutline, // Expose setter for outline updates

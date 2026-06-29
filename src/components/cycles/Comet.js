@@ -8,6 +8,14 @@ import { toast } from "@/components/ui/toast";
 import CreateCycleVariantModal from "./CreateCycleVariantModal";
 import CreateCycleRemixModal from "./CreateCycleRemixModal";
 import { appendCacheBuster, refreshCloudfrontCookies } from "@/lib/cloudfront-cookies";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 /** When the sessions list omits path_id, session details in localStorage may still have it. */
 function pathIdFromSessionCache(sessionId) {
@@ -55,6 +63,7 @@ const Comet = ({
   /** Backend path id for POST /paths/{id}/variant */
   path_id,
   onCometClick,
+  onDeleteSuccess,
   updatedBy,
 }) => {
   const [disabled, setDisabled] = useState(false);
@@ -63,6 +72,8 @@ const Comet = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
   const [isRemixModalOpen, setIsRemixModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const menuRef = useRef(null);
   const { setIsCometSettingsOpen } = useCometSettings();
   const isPublishedCycle =
@@ -158,6 +169,51 @@ const Comet = ({
     setIsRemixModalOpen(true);
   };
 
+  const handleDeleteClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!session_id) {
+      toast.error("Unable to delete this cycle right now.");
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
+      const token = localStorage.getItem("access_token");
+      const response = await fetch(
+        `${apiUrl}/api/comet/v2/sessions/${session_id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail || "Failed to delete cycle");
+      }
+      toast.success("Cycle deleted successfully.");
+      setIsDeleteDialogOpen(false);
+      if (onDeleteSuccess) onDeleteSuccess();
+    } catch (error) {
+      const msg =
+        error.message?.includes("fetch") || error.message?.includes("network")
+          ? "Network error. Please check your connection."
+          : error.message || "Something went wrong. Please try again.";
+      toast.error(msg);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   useEffect(() => {
     setImgSrc(imageURL || "/fallbackImage.png");
     setDidRetryImage(false);
@@ -233,6 +289,10 @@ const Comet = ({
       // Store sessionData in localStorage
       localStorage.setItem("sessionData", JSON.stringify(result));
       localStorage.setItem("sessionId", session_id);
+      localStorage.setItem(
+        "cometStatus",
+        result?.status || result?.meta?.status || status || ""
+      );
 
       setIsCometSettingsOpen(true);
     } catch (error) {
@@ -268,36 +328,45 @@ const Comet = ({
           <div className="flex flex-col gap-2">
             <div className="flex items-start justify-between gap-2">
               <StatusButton status={status} />
-              {isPublishedCycle && (
-                <div className="relative" ref={menuRef}>
-                  <button
-                    type="button"
-                    onClick={handleMoreClick}
-                    className="flex items-center justify-center rounded-md p-1 text-gray-600 hover:bg-gray-100 transition-colors"
-                    aria-label="More options"
-                  >
-                    <MoreHorizontal className="h-5 w-5" />
-                  </button>
-                  {isMenuOpen && (
-                    <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-40 overflow-hidden py-1">
-                      <button
-                        type="button"
-                        onClick={handleCreateVariantClick}
-                        className="w-full px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50 transition-colors text-left whitespace-nowrap"
-                      >
-                        Copy Cycle
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleRemixClick}
-                        className="w-full px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50 transition-colors text-left whitespace-nowrap"
-                      >
-                        Remix Cycle
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+              <div className="relative" ref={menuRef}>
+                <button
+                  type="button"
+                  onClick={handleMoreClick}
+                  className="flex items-center justify-center rounded-md p-1 text-gray-600 hover:bg-gray-100 transition-colors"
+                  aria-label="More options"
+                >
+                  <MoreHorizontal className="h-5 w-5" />
+                </button>
+                {isMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-40 overflow-hidden py-1">
+                    {isPublishedCycle && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleCreateVariantClick}
+                          className="w-full px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50 transition-colors text-left whitespace-nowrap"
+                        >
+                          Copy Cycle
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemixClick}
+                          className="w-full px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50 transition-colors text-left whitespace-nowrap"
+                        >
+                          Remix Cycle
+                        </button>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleDeleteClick}
+                      className="w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left whitespace-nowrap"
+                    >
+                      Delete Cycle
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
             <span className="text-gray-800 font-noto font-semibold text-[18px] leading-[24px] tracking-normal line-clamp-3 min-h-[48px]">
               {title}
@@ -428,6 +497,34 @@ const Comet = ({
       </div>
 
       <div onClick={(e) => e.stopPropagation()}>
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delete Cycle</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete <strong>{title}</strong>? This will remove the cycle and its associated path. This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <button
+                type="button"
+                onClick={() => setIsDeleteDialogOpen(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         <CreateCycleVariantModal
           open={isVariantModalOpen}
           onOpenChange={setIsVariantModalOpen}

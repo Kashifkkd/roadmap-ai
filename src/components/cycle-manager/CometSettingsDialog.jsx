@@ -18,6 +18,10 @@ import {
   EyeOff,
   Pencil,
   X,
+  Bell,
+  ChevronRight,
+  UsersRound,
+  UserCheck,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/Button";
@@ -33,6 +37,7 @@ import {
 } from "@/components/ui/select";
 import { RichTextArea } from "@/components/cycle-manager/forms/FormFields";
 import { graphqlClient } from "@/lib/graphql-client";
+import { writeSessionDataToStorage } from "@/lib/cycleTitle";
 import { uploadAssetFile } from "@/api/uploadAssets";
 import { uploadPathImage } from "@/api/uploadPathImage";
 import UserManagement from "@/components/common/UserManagement";
@@ -41,6 +46,8 @@ import {
   ART_STYLE_KEYS,
   normalizeArtStyleFromApi,
 } from "@/constants/artStyles";
+import { toast } from "@/components/ui/toast";
+import PathEmailSettingsPanel from "@/components/cycle-manager/PathEmailSettingsPanel";
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
@@ -73,8 +80,26 @@ const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
   </div>
 );
 
+// Helper to extract plain text from Quill Delta JSON or HTML
+const extractPlainText = (value) => {
+  if (!value) return "";
+  try {
+    const parsed = typeof value === "string" ? JSON.parse(value) : value;
+    if (parsed && parsed.ops && Array.isArray(parsed.ops)) {
+      return parsed.ops
+        .map((op) => (typeof op.insert === "string" ? op.insert : ""))
+        .join("")
+        .trim();
+    }
+  } catch (e) {
+    // Not JSON, treat as HTML
+  }
+  return value.replace(/<[^>]*>/g, "").trim();
+};
+
 export default function CometSettingsDialog({ open, onOpenChange }) {
   const [activeTab, setActiveTab] = useState("users");
+  const [cometStatus, setCometStatus] = useState("");
   const [cometTitle, setCometTitle] = useState("");
   const [description, setDescription] = useState("");
   const [coverImage, setCoverImage] = useState(null);
@@ -90,25 +115,31 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [sourceAlignment, setSourceAlignment] = useState("");
   const [duration, setDuration] = useState("");
 
+  // Welcome Email
+  const [welcomeEmailEnabled, setWelcomeEmailEnabled] = useState(false);
+  const [welcomeEmailText, setWelcomeEmailText] = useState("");
+
   // Kick Off
   const [kickOffDates, setKickOffDates] = useState([]);
   const [newKickOffDate, setNewKickOffDate] = useState("");
   const [newKickOffTime, setNewKickOffTime] = useState("");
 
   // Ad Hoc Notifications
-  const [adHocChannelRows, setAdHocChannelRows] = useState([
-    { id: 1, name: "" },
-  ]);
   const [adHocDraft, setAdHocDraft] = useState({
-    channel: "",
-    emailSubject: "",
-    emailHeader: "",
-    emailBody: "",
-    sendDate: "",
-    sendTime: "",
+    type: "",
+    header: "",
+    subject: "",
+    mailContent: "",
+    pushContent: "",
+    emailSendDate: "",
+    emailSendTime: "",
+    pushSendDate: "",
+    pushSendTime: "",
   });
-  const [adHocNotifications, setAdHocNotifications] = useState([]);
-  console.log("shdfhgsh");
+  const [showAdHocDraft, setShowAdHocDraft] = useState(false);
+  const [sendViaEmailList, setSendViaEmailList] = useState([]);
+  const [sendViaPushList, setSendViaPushList] = useState([]);
+  const [expandedNotification, setExpandedNotification] = useState(null);
 
   // Toggles (all available from backend)
   const [habitEnabled, setHabitEnabled] = useState(false);
@@ -137,6 +168,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
   const [isSaving, setIsSaving] = useState(false);
 
+  const [resolvedPathId, setResolvedPathId] = useState(null);
+
   // Users tab state
   const [selectedUser, setSelectedUser] = useState(null);
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -158,49 +191,51 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [newColorHex, setNewColorHex] = useState("#000000");
   const [editingColorIndex, setEditingColorIndex] = useState(null);
   const [editingColorHex, setEditingColorHex] = useState("");
-const debounceRef = useRef(null);
+  const debounceRef = useRef(null);
 
-const [tempColors, setTempColors] = useState(() =>
-  brandColors.map((c) => ({ ...c }))
-);
-const [openColorIndex, setOpenColorIndex] = useState(null);
-const tempColorsRef = useRef(tempColors);
-const openColorIndexRef = useRef(openColorIndex);
+  const [tempColors, setTempColors] = useState(() =>
+    brandColors.map((c) => ({ ...c })),
+  );
+  const [openColorIndex, setOpenColorIndex] = useState(null);
+  const tempColorsRef = useRef(tempColors);
+  const openColorIndexRef = useRef(openColorIndex);
 
-useEffect(() => {
-  tempColorsRef.current = tempColors;
-}, [tempColors]);
+  useEffect(() => {
+    tempColorsRef.current = tempColors;
+  }, [tempColors]);
 
-useEffect(() => {
-  openColorIndexRef.current = openColorIndex;
-}, [openColorIndex]);
+  useEffect(() => {
+    openColorIndexRef.current = openColorIndex;
+  }, [openColorIndex]);
 
-useEffect(() => {
-  setTempColors(brandColors.map((c) => ({ ...c })));
-}, [brandColors]);
+  useEffect(() => {
+    setTempColors(brandColors.map((c) => ({ ...c })));
+  }, [brandColors]);
 
-const saveColor = (index) => {
-  setBrandColors((prev) => {
-    const updated = [...prev];
-    updated[index] = { ...tempColorsRef.current[index] };
-    return updated;
-  });
-  setOpenColorIndex(null);
-  openColorIndexRef.current = null;
-};
+  const saveColor = (index) => {
+    setBrandColors((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...tempColorsRef.current[index] };
+      return updated;
+    });
+    setOpenColorIndex(null);
+    openColorIndexRef.current = null;
+  };
 
-const cancelColor = (index) => {
-  setTempColors((prev) => {
-    const updated = [...prev];
-    updated[index] = { ...brandColors[index] };
-    return updated;
-  });
-  setOpenColorIndex(null);
-  openColorIndexRef.current = null;
-};
+  const cancelColor = (index) => {
+    setTempColors((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...brandColors[index] };
+      return updated;
+    });
+    setOpenColorIndex(null);
+    openColorIndexRef.current = null;
+  };
 
   useEffect(() => {
     if (!open) return;
+
+    setCometStatus(localStorage.getItem("cometStatus") || "");
 
     const data = localStorage.getItem("sessionData");
     if (data) {
@@ -402,10 +437,86 @@ const cancelColor = (index) => {
           validSources.find((s) => source.includes(s)) || "";
         setSourceAlignment(normalizedSource);
       }
+
+      // Load welcome email settings from response_path
+      // Toggle is derived from whether welcome_email_text has content
+      const responsePath = sessionData?.response_path;
+      if (responsePath?.welcome_email_text) {
+        setWelcomeEmailEnabled(true);
+        setWelcomeEmailText(responsePath.welcome_email_text);
+      } else {
+        setWelcomeEmailEnabled(false);
+        setWelcomeEmailText("");
+      }
+
+      // Load kick-off dates from response_path
+      const savedKickOffDates = sessionData?.response_path?.all_kickoff_dates;
+      if (Array.isArray(savedKickOffDates) && savedKickOffDates.length > 0) {
+        // Parse "YYYY-MM-DD HH:MM" strings back into {date, time} objects
+        const parsed = savedKickOffDates.map((entry) => {
+          if (typeof entry === "string" && entry.includes(" ")) {
+            const [date, time] = entry.split(" ");
+            return { date, time };
+          }
+          if (typeof entry === "object" && entry.date) {
+            return entry;
+          }
+          return { date: entry, time: "" };
+        });
+        setKickOffDates(parsed);
+      } else {
+        setKickOffDates([]);
+      }
+
+      // Load ad-hoc notifications from notification_settings
+      const notificationSettings =
+        sessionData?.response_path?.notification_settings;
+      if (notificationSettings) {
+        setSendViaEmailList(
+          Array.isArray(notificationSettings.send_via_email)
+            ? notificationSettings.send_via_email
+            : [],
+        );
+        setSendViaPushList(
+          Array.isArray(notificationSettings.send_via_push)
+            ? notificationSettings.send_via_push
+            : [],
+        );
+      } else {
+        setSendViaEmailList([]);
+        setSendViaPushList([]);
+      }
     }
 
     // Do NOT override with cometSettings localStorage - enabled_attributes is the source of truth
   }, [open]); // Reload data when dialog open
+
+  useEffect(() => {
+    if (!open || typeof window === "undefined") {
+      setResolvedPathId(null);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem("sessionData");
+      if (!raw) {
+        setResolvedPathId(null);
+        return;
+      }
+      const id = JSON.parse(raw)?.response_path?.id;
+      if (typeof id === "number" && Number.isFinite(id)) {
+        setResolvedPathId(id);
+        return;
+      }
+      if (typeof id === "string" && id.trim() !== "") {
+        const n = Number(id);
+        setResolvedPathId(Number.isFinite(n) ? n : null);
+        return;
+      }
+      setResolvedPathId(null);
+    } catch {
+      setResolvedPathId(null);
+    }
+  }, [open]);
 
   useEffect(() => {
     return () => {
@@ -530,10 +641,22 @@ const cancelColor = (index) => {
         return acc;
       }, {});
 
+      // Format kick-off dates as "YYYY-MM-DD HH:MM" strings for the backend
+      const formattedKickOffDates = kickOffDates.map(
+        (item) => `${item.date} ${item.time}`,
+      );
+
       const updatedResponsePath = {
         ...currentResponsePath,
         enabled_attributes: updatedEnabledAttributes,
         colours: coloursObject,
+        all_kickoff_dates: formattedKickOffDates,
+        welcome_email_text: welcomeEmailEnabled ? welcomeEmailText : null,
+        notification_settings: {
+          ...(currentResponsePath.notification_settings || {}),
+          send_via_push: sendViaPushList,
+          send_via_email: sendViaEmailList,
+        },
         ...(uploadedImageUrl && !uploadedImageUrl.startsWith("blob:")
           ? { path_image: uploadedImageUrl }
           : pathImageUrl && !pathImageUrl.startsWith("blob:")
@@ -564,7 +687,7 @@ const cancelColor = (index) => {
           cycle_creation_data: updatedCometCreationData,
           response_path: updatedResponsePath,
         };
-        localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
+        writeSessionDataToStorage(updatedSessionData);
 
         // Save comet settings
         localStorage.setItem(
@@ -621,56 +744,53 @@ const cancelColor = (index) => {
     setKickOffDates(kickOffDates.filter((_, i) => i !== index));
   };
 
-  const addAdHocChannelRow = () => {
-    setAdHocChannelRows((rows) => {
-      const nextId = rows.reduce((max, r) => Math.max(max, r.id), 0) + 1;
-      return [...rows, { id: nextId, name: "" }];
-    });
-  };
-
-  const updateAdHocChannelRowName = (id, name) => {
-    setAdHocChannelRows((rows) =>
-      rows.map((r) => (r.id === id ? { ...r, name } : r)),
-    );
-  };
-
-  const removeAdHocChannelRow = (id) => {
-    setAdHocChannelRows((rows) => {
-      const next = rows.filter((r) => r.id !== id);
-      return next.length ? next : [{ id: 1, name: "" }];
-    });
-  };
-
-  const getAdHocChannels = () => {
-    const seen = new Set();
-    return adHocChannelRows
-      .map((r) => String(r.name || "").trim())
-      .filter(Boolean)
-      .filter((name) => {
-        const key = name.toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-  };
-
   const resetAdHocDraft = () => {
     setAdHocDraft({
-      channel: "",
-      emailSubject: "",
-      emailHeader: "",
-      emailBody: "",
-      sendDate: "",
-      sendTime: "",
+      type: "",
+      header: "",
+      subject: "",
+      mailContent: "",
+      pushContent: "",
+      emailSendDate: "",
+      emailSendTime: "",
+      pushSendDate: "",
+      pushSendTime: "",
     });
+    setShowAdHocDraft(false);
   };
 
   const handleSaveAdHocNotification = () => {
-    setAdHocNotifications((prev) => [
-      ...prev,
-      { ...adHocDraft, id: Date.now() },
-    ]);
+    if (adHocDraft.type === "send_via_email") {
+      setSendViaEmailList((prev) => [
+        ...prev,
+        {
+          header: adHocDraft.header || null,
+          subject: adHocDraft.subject || null,
+          mail_content: adHocDraft.mailContent || null,
+          push_content: null,
+          push_send_date: null,
+          push_send_time: null,
+          email_send_date: adHocDraft.emailSendDate || null,
+          email_send_time: adHocDraft.emailSendTime || null,
+        },
+      ]);
+    } else if (adHocDraft.type === "send_via_push") {
+      setSendViaPushList((prev) => [
+        ...prev,
+        {
+          header: null,
+          subject: null,
+          mail_content: null,
+          push_content: adHocDraft.pushContent || null,
+          push_send_date: adHocDraft.pushSendDate || null,
+          push_send_time: adHocDraft.pushSendTime || null,
+          email_send_date: null,
+          email_send_time: null,
+        },
+      ]);
+    }
     resetAdHocDraft();
+    setShowAdHocDraft(false);
   };
 
   const handleAddColor = () => {
@@ -780,6 +900,512 @@ const cancelColor = (index) => {
     return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
   };
 
+  const notificationSettingsContent = (
+    <>
+      <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
+        <p className="font-bold mb-4 px-2 text-gray-800">
+          Notification Settings{" "}
+        </p>
+        <div className="space-y-4 bg-white p-2 rounded-lg">
+          <div className="flex flex-col space-y-2 max-w-md">
+            <Label className="text-sm font-medium text-gray-800">
+              Reminder Type
+            </Label>
+            <Select
+              value={reminderType || undefined}
+              onValueChange={setReminderType}
+            >
+              <SelectTrigger className="w-full border-2 rounded-lg border-gray-300">
+                <SelectValue placeholder="Select reminder type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="border-b-2 border-gray-200"></div>
+
+          <ToggleSwitch
+            checked={pushNotifications}
+            onChange={setPushNotifications}
+            label="Enable Push Notifications"
+          />
+          <div className="border-b-2 border-gray-200"></div>
+          <ToggleSwitch
+            checked={emailNotifications}
+            onChange={setEmailNotifications}
+            label="Enable Email Notifications"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm text-gray-900 font-medium">Kick Off</h3>
+          <Info size={16} className="text-gray-500 cursor-help" />
+        </div>
+        <div className="border-2 border-gray-200 rounded-lg p-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="border-2 border-gray-200 rounded-lg p-4">
+            <div className="space-y-2">
+              <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium text-gray-800 bg-gray-100 p-2">
+                <div>Kick off Date</div>
+                <div>Kick off Time</div>
+              </div>
+              <div className="border-t border-gray-200"></div>
+              {kickOffDates.map((item, index) => (
+                <div
+                  key={index}
+                  className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm text-gray-600 items-center border-b border-gray-200 py-2"
+                >
+                  <div>{formatDateForDisplay(item.date)}</div>
+                  <div>{formatTimeForDisplay(item.time)}</div>
+                  <button
+                    onClick={() => handleRemoveKickOff(index)}
+                    className="text-red-500 hover:text-red-700 p-1"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="border-2 border-gray-200 rounded-lg p-4 space-y-4">
+            <div className="flex flex-col space-y-2">
+              <Label className="text-sm font-medium text-gray-800">
+                Kick off Date
+              </Label>
+              <div className="relative">
+                <Input
+                  type="date"
+                  value={newKickOffDate}
+                  onChange={(e) => setNewKickOffDate(e.target.value)}
+                  className="w-full border-2 border-gray-200 rounded-lg pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0"
+                />
+                <Calendar
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col space-y-2">
+              <Label className="text-sm font-medium text-gray-800">
+                Kick off Time
+              </Label>
+              <div className="relative">
+                <Input
+                  type="time"
+                  value={newKickOffTime}
+                  onChange={(e) => setNewKickOffTime(e.target.value)}
+                  className="w-full border-2 border-gray-200 rounded-lg pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0"
+                />
+                <Clock
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                onClick={handleAddKickOff}
+                className="text-primary hover:text-primary-dark rounded-lg px-4 py-2"
+              >
+                Add
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="border rounded-lg">
+        {/* <p className="font-bold mb-4 px-2 text-gray-800">Welcome Email</p> */}
+        <div className="space-y-4 bg-white p-2 rounded-lg">
+          <ToggleSwitch
+            checked={welcomeEmailEnabled}
+            onChange={setWelcomeEmailEnabled}
+            label="Welcome Email"
+          />
+          {welcomeEmailEnabled && (
+            <div className="pt-2">
+              <RichTextArea
+                label="Welcome Email Content"
+                value={welcomeEmailText}
+                onChange={(value) => setWelcomeEmailText(value)}
+                valueFormat="html"
+                showToolbar={true}
+                minHeight={120}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-medium text-gray-900">
+            Ad Hoc Notifications
+          </h3>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              resetAdHocDraft();
+              setShowAdHocDraft(true);
+            }}
+            className="text-primary hover:text-primary-dark rounded-lg px-3 py-2 h-auto whitespace-nowrap"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Create Ad Hoc Notification
+          </Button>
+        </div>
+        {showAdHocDraft && (
+          <div className="border-2 border-gray-200 rounded-lg p-2 space-y-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-800">
+                Notification Type
+              </Label>
+              <Select
+                value={adHocDraft.type || undefined}
+                onValueChange={(value) =>
+                  setAdHocDraft((d) => ({ ...d, type: value }))
+                }
+              >
+                <SelectTrigger className="w-full border-2 rounded-lg bg-gray-50 border-gray-300">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="send_via_email">Send via Email</SelectItem>
+                  <SelectItem value="send_via_push">Send via Push</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {adHocDraft.type === "send_via_email" && (
+              <>
+                <RichTextArea
+                  label="Subject"
+                  value={adHocDraft.subject}
+                  onChange={(value) =>
+                    setAdHocDraft((d) => ({ ...d, subject: value }))
+                  }
+                  showToolbar={true}
+                  minHeight={64}
+                />
+                <RichTextArea
+                  label="Header"
+                  value={adHocDraft.header}
+                  onChange={(value) =>
+                    setAdHocDraft((d) => ({ ...d, header: value }))
+                  }
+                  showToolbar={true}
+                  minHeight={64}
+                />
+                <RichTextArea
+                  label="Email Body"
+                  value={adHocDraft.mailContent}
+                  onChange={(value) =>
+                    setAdHocDraft((d) => ({ ...d, mailContent: value }))
+                  }
+                  showToolbar={true}
+                  minHeight={120}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
+                  <div className="flex flex-col space-y-2">
+                    <Label className="text-sm font-medium text-gray-800">
+                      Email Send Date
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type="date"
+                        value={adHocDraft.emailSendDate}
+                        onChange={(e) =>
+                          setAdHocDraft((d) => ({
+                            ...d,
+                            emailSendDate: e.target.value,
+                          }))
+                        }
+                        className="w-full rounded-lg pr-10 border-2 border-gray-200 [&::-webkit-calendar-picker-indicator]:opacity-0"
+                      />
+                      <Calendar
+                        size={18}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <Label className="text-sm font-medium text-gray-800">
+                      Email Send Time (UTC)
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type="time"
+                        value={adHocDraft.emailSendTime}
+                        onChange={(e) =>
+                          setAdHocDraft((d) => ({
+                            ...d,
+                            emailSendTime: e.target.value,
+                          }))
+                        }
+                        className="w-full border-2 border-gray-200 rounded-lg pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0"
+                      />
+                      <Clock
+                        size={18}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSaveAdHocNotification}
+                    className="border-primary border-2 text-primary cursor-pointer"
+                  >
+                    Save
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {adHocDraft.type === "send_via_push" && (
+              <>
+                <RichTextArea
+                  label="Push Content"
+                  value={adHocDraft.pushContent}
+                  onChange={(value) =>
+                    setAdHocDraft((d) => ({ ...d, pushContent: value }))
+                  }
+                  showToolbar={true}
+                  minHeight={120}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
+                  <div className="flex flex-col space-y-2">
+                    <Label className="text-sm font-medium text-gray-800">
+                      Push Send Date
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type="date"
+                        value={adHocDraft.pushSendDate}
+                        onChange={(e) =>
+                          setAdHocDraft((d) => ({
+                            ...d,
+                            pushSendDate: e.target.value,
+                          }))
+                        }
+                        className="w-full rounded-lg pr-10 border-2 border-gray-200 [&::-webkit-calendar-picker-indicator]:opacity-0"
+                      />
+                      <Calendar
+                        size={18}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <Label className="text-sm font-medium text-gray-800">
+                      Push Send Time (UTC)
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type="time"
+                        value={adHocDraft.pushSendTime}
+                        onChange={(e) =>
+                          setAdHocDraft((d) => ({
+                            ...d,
+                            pushSendTime: e.target.value,
+                          }))
+                        }
+                        className="w-full border-2 border-gray-200 rounded-lg pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0"
+                      />
+                      <Clock
+                        size={18}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      onClick={handleSaveAdHocNotification}
+                      className="bg-primary hover:bg-primary-dark px-6 py-2 rounded-lg text-sm font-medium"
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {(sendViaEmailList.length > 0 || sendViaPushList.length > 0) && (
+          <div className="flex flex-col gap-2 bg-[#F8F7FE] border border-[#D5D7DA] rounded-lg p-2">
+            {/* Email Preview heading */}
+            <p className="text-sm font-medium text-[#181D27]">Email Preview</p>
+
+            {sendViaEmailList.map((item, index) => {
+              const key = `email-${index}`;
+              const isExpanded = expandedNotification === key;
+              return (
+                <div key={key} className="flex flex-row items-start gap-2">
+                  {/* White card */}
+                  <div
+                    className="flex-1 bg-white border border-[#D5D7DA] rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer overflow-hidden"
+                    onClick={() =>
+                      setExpandedNotification(isExpanded ? null : key)
+                    }
+                  >
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <svg
+                        width="36"
+                        height="36"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`shrink-0 text-[#1C274C] transition-transform rounded-full ${isExpanded ? "rotate-180" : ""}`}
+                      >
+                        <path d="M9 10h6l-3 3z" />
+                      </svg>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-medium text-[#181D27] truncate">
+                          {item.subject
+                            ? extractPlainText(item.subject) || "Subject"
+                            : "Subject"}
+                        </span>
+                        <span className="text-xs font-normal text-[#717680]">
+                          {item.email_send_date || "\u2014"}{" "}
+                          {item.email_send_time || ""}
+                        </span>
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="px-4 pb-3 pt-1 border-t border-[#D5D7DA] text-xs text-[#535862] space-y-0.5">
+                        <div>
+                          <span className="font-medium text-[#181D27]">
+                            Header:
+                          </span>{" "}
+                          {item.header ? extractPlainText(item.header) : null}
+                        </div>
+                        <div>
+                          <span className="font-medium text-[#181D27]">
+                            Body:
+                          </span>{" "}
+                          {item.mail_content
+                            ? extractPlainText(item.mail_content)
+                            : null}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {/* Delete button */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSendViaEmailList((prev) =>
+                        prev.filter((_, i) => i !== index),
+                      )
+                    }
+                    className="shrink-0 w-9 h-9 rounded-lg bg-[#F04438] hover:bg-[#F04438]/90 text-white flex items-center justify-center transition-colors"
+                    title="Remove notification"
+                    aria-label="Remove notification"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              );
+            })}
+
+            {/* Push Message Preview heading */}
+            {sendViaPushList.length > 0 && (
+              <>
+                <p className="text-sm font-medium text-[#181D27] mt-2">
+                  Push Message Preview
+                </p>
+                {sendViaPushList.map((item, index) => {
+                  const key = `push-${index}`;
+                  const isExpanded = expandedNotification === key;
+                  return (
+                    <div key={key} className="flex flex-row items-start gap-2">
+                      {/* White card */}
+                      <div
+                        className="flex-1 bg-white border border-[#D5D7DA] rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer overflow-hidden"
+                        onClick={() =>
+                          setExpandedNotification(isExpanded ? null : key)
+                        }
+                      >
+                        <div className="flex items-center gap-2 px-3 py-2">
+                          <svg
+                            width="36"
+                            height="36"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className={`shrink-0 text-[#1C274C] transition-transform rounded-full ${isExpanded ? "rotate-180" : ""}`}
+                          >
+                            <path d="M9 10h6l-3 3z" />
+                          </svg>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-medium text-[#181D27] truncate">
+                              {item.push_content
+                                ? extractPlainText(item.push_content).substring(
+                                    0,
+                                    50,
+                                  ) || "Push Message"
+                                : "Push Message"}{" "}
+                              {index + 1}
+                            </span>
+                            <span className="text-xs font-normal text-[#717680]">
+                              {item.push_send_date || "\u2014"}{" "}
+                              {item.push_send_time || ""}
+                            </span>
+                          </div>
+                        </div>
+                        {isExpanded && (
+                          <div className="px-4 pb-3 pt-1 border-t border-[#D5D7DA] text-xs text-[#535862] space-y-0.5">
+                            <div>
+                              <span className="font-medium text-[#181D27]">
+                                Content:
+                              </span>{" "}
+                              {item.push_content
+                                ? extractPlainText(item.push_content)
+                                : null}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {/* Delete button */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSendViaPushList((prev) =>
+                            prev.filter((_, i) => i !== index),
+                          )
+                        }
+                        className="shrink-0 w-9 h-9 rounded-lg bg-[#F04438] hover:bg-[#F04438]/90 text-white flex items-center justify-center transition-colors"
+                        title="Remove notification"
+                        aria-label="Remove notification"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   if (!open) return null;
 
   return (
@@ -847,6 +1473,78 @@ const cancelColor = (index) => {
 
               <button
                 onClick={() => {
+                  setActiveTab("notification");
+                  setSelectedUser(null);
+                  setShowAddUserForm(false);
+                }}
+                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
+                  activeTab === "notification"
+                    ? "bg-primary text-white shadow-md"
+                    : "text-gray-800 hover:bg-white/60"
+                }`}
+              >
+                <Bell
+                  size={18}
+                  className={`lg:w-5 lg:h-5 ${
+                    activeTab === "notification"
+                      ? "text-white"
+                      : "text-gray-500"
+                  }`}
+                />
+                <span className="hidden md:inline">Notification</span>
+                <span className="md:hidden">Notify</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab("manager-emails");
+                  setSelectedUser(null);
+                  setShowAddUserForm(false);
+                }}
+                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
+                  activeTab === "manager-emails"
+                    ? "bg-primary text-white shadow-md"
+                    : "text-gray-800 hover:bg-white/60"
+                }`}
+              >
+                <UsersRound
+                  size={18}
+                  className={`lg:w-5 lg:h-5 ${
+                    activeTab === "manager-emails"
+                      ? "text-white"
+                      : "text-gray-500"
+                  }`}
+                />
+                <span className="hidden md:inline">Manager emails</span>
+                <span className="md:hidden">Manager</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab("accountability-emails");
+                  setSelectedUser(null);
+                  setShowAddUserForm(false);
+                }}
+                className={`w-full flex items-center gap-2 md:gap-3 lg:gap-4 rounded-sm px-2.5 sm:px-3 md:px-4 lg:px-5 py-2.5 sm:py-3 lg:py-3.5 text-xs sm:text-sm md:text-[15px] lg:text-base font-medium transition-all whitespace-nowrap ${
+                  activeTab === "accountability-emails"
+                    ? "bg-primary text-white shadow-md"
+                    : "text-gray-800 hover:bg-white/60"
+                }`}
+              >
+                <UserCheck
+                  size={18}
+                  className={`lg:w-5 lg:h-5 ${
+                    activeTab === "accountability-emails"
+                      ? "text-white"
+                      : "text-gray-500"
+                  }`}
+                />
+                <span className="hidden md:inline">Accountability</span>
+                <span className="md:hidden">Account.</span>
+              </button>
+
+              <button
+                onClick={() => {
                   setActiveTab("analytics");
                   setSelectedUser(null);
                   setShowAddUserForm(false);
@@ -869,7 +1567,7 @@ const cancelColor = (index) => {
           </div>
 
           {/* Content Area - Right Side */}
-          <div className="flex-1 bg-white rounded-lg flex flex-col overflow-hidden">
+          <div className="flex-1 bg-white rounded-lg flex flex-col overflow-hidden min-h-0">
             {activeTab === "comet-info" && (
               <div className="h-full flex flex-col">
                 <div className="flex-1 overflow-y-auto p-2">
@@ -1041,25 +1739,6 @@ const cancelColor = (index) => {
                                 <SelectItem value="en">English</SelectItem>
                                 <SelectItem value="es">Spanish</SelectItem>
                                 <SelectItem value="fr">French</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="flex flex-col space-y-2">
-                            <Label className="text-sm font-medium text-gray-800">
-                              Reminder Type
-                            </Label>
-                            <Select
-                              value={reminderType || undefined}
-                              onValueChange={setReminderType}
-                            >
-                              <SelectTrigger className="w-full border-2 rounded-lg  border-gray-300">
-                                <SelectValue placeholder="Select reminder type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="daily">Daily</SelectItem>
-                                <SelectItem value="weekly">Weekly</SelectItem>
-                                <SelectItem value="monthly">Monthly</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -1277,18 +1956,6 @@ const cancelColor = (index) => {
                         />
                         <div className="border-b-2 border-gray-200"></div>
                         <ToggleSwitch
-                          checked={pushNotifications}
-                          onChange={setPushNotifications}
-                          label="Enable Push Notifications"
-                        />
-                        <div className="border-b-2 border-gray-200"></div>
-                        <ToggleSwitch
-                          checked={emailNotifications}
-                          onChange={setEmailNotifications}
-                          label="Enable Email Notifications"
-                        />
-                        <div className="border-b-2 border-gray-200"></div>
-                        <ToggleSwitch
                           checked={feedback}
                           onChange={setFeedback}
                           label="Feedback"
@@ -1308,306 +1975,6 @@ const cancelColor = (index) => {
                       </div>
                     </div>
 
-                    {/* Kick Off Section */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm text-gray-900 font-medium">
-                          Kick Off
-                        </h3>
-                        <Info size={16} className="text-gray-500 cursor-help" />
-                      </div>
-                      <div className="border-2 border-gray-200 rounded-lg p-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Existing Kick-off Dates */}
-                        <div className="border-2 border-gray-200 rounded-lg p-4">
-                          <div className=" space-y-2">
-                            <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium text-gray-800 bg-gray-100 p-2">
-                              <div>Kick off Date</div>
-                              <div>Kick off Time</div>
-                            </div>
-                            <div className="border-t border-gray-200"></div>
-
-                            {kickOffDates.map((item, index) => (
-                              <div
-                                key={index}
-                                className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm text-gray-600 items-center border-b border-gray-200 py-2"
-                              >
-                                <div>{formatDateForDisplay(item.date)}</div>
-                                <div>{formatTimeForDisplay(item.time)}</div>
-                                <button
-                                  onClick={() => handleRemoveKickOff(index)}
-                                  className="text-red-500 hover:text-red-700 p-1"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Add New Kick-off */}
-                        <div className="border-2 border-gray-200 rounded-lg p-4 space-y-4">
-                          <div className="flex flex-col space-y-2">
-                            <Label className="text-sm font-medium text-gray-800">
-                              Kick off Date
-                            </Label>
-                            <div className="relative">
-                              <Input
-                                type="date"
-                                value={newKickOffDate}
-                                onChange={(e) =>
-                                  setNewKickOffDate(e.target.value)
-                                }
-                                className="w-full border-2 border-gray-200 rounded-lg pr-10"
-                              />
-                              <Calendar
-                                size={18}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex flex-col space-y-2">
-                            <Label className="text-sm font-medium text-gray-800">
-                              Kick off Time
-                            </Label>
-                            <div className="relative">
-                              <Input
-                                type="time"
-                                value={newKickOffTime}
-                                onChange={(e) =>
-                                  setNewKickOffTime(e.target.value)
-                                }
-                                className="w-full border-2 border-gray-200 rounded-lg pr-10"
-                              />
-                              <Clock
-                                size={18}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex justify-end">
-                            <Button
-                              variant="outline"
-                              onClick={handleAddKickOff}
-                              className="text-primary hover:text-primary-dark rounded-lg px-4 py-2"
-                            >
-                              Add
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Ad Hoc Notifications Section */}
-                    <div className="space-y-2">
-                      <div className="border-t-2 border-gray-200"> </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <h3 className="text-sm font-medium text-gray-900">
-                          Ad Hoc Notifications
-                        </h3>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={resetAdHocDraft}
-                          className="text-primary hover:text-primary-dark rounded-lg px-3 py-2 h-auto whitespace-nowrap"
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Create Ad Hoc Notification
-                        </Button>
-                      </div>
-
-                      <div className="border-2 border-gray-200 rounded-lg p-2 space-y-2">
-                        {/* Select Channel */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-800">
-                            Select Channel
-                          </Label>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 min-w-0">
-                              <Select
-                                value={adHocDraft.channel || undefined}
-                                onValueChange={(value) =>
-                                  setAdHocDraft((d) => ({
-                                    ...d,
-                                    channel: value,
-                                  }))
-                                }
-                              >
-                                <SelectTrigger className="w-full border-2 rounded-lg bg-gray-50 border-gray-300">
-                                  <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {getAdHocChannels().map((name) => (
-                                    <SelectItem key={name} value={name}>
-                                      {name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setAdHocDraft((d) => ({ ...d, channel: "" }))
-                              }
-                              className="shrink-0 w-9 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
-                              title="Clear selected channel"
-                              aria-label="Clear selected channel"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Email Subject */}
-                        <RichTextArea
-                          label="Email Subject"
-                          value={adHocDraft.emailSubject}
-                          onChange={(value) =>
-                            setAdHocDraft((d) => ({
-                              ...d,
-                              emailSubject: value,
-                            }))
-                          }
-                          showToolbar={true}
-                          minHeight={64}
-                        />
-
-                        {/* Email Header */}
-                        <RichTextArea
-                          label="Email Header"
-                          value={adHocDraft.emailHeader}
-                          onChange={(value) =>
-                            setAdHocDraft((d) => ({ ...d, emailHeader: value }))
-                          }
-                          showToolbar={true}
-                          minHeight={64}
-                        />
-
-                        {/* Email Body Text */}
-                        <RichTextArea
-                          label="Email Body Text"
-                          value={adHocDraft.emailBody}
-                          onChange={(value) =>
-                            setAdHocDraft((d) => ({ ...d, emailBody: value }))
-                          }
-                          showToolbar={true}
-                          minHeight={120}
-                        />
-
-                        {/* Send Date/Time + Save */}
-                        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
-                          <div className=" flex flex-col space-y-2">
-                            <Label className="text-sm font-medium text-gray-800">
-                              Notification Send Date
-                            </Label>
-                            <div className="relative">
-                              <Input
-                                type="date"
-                                value={adHocDraft.sendDate}
-                                onChange={(e) =>
-                                  setAdHocDraft((d) => ({
-                                    ...d,
-                                    sendDate: e.target.value,
-                                  }))
-                                }
-                                className="w-full rounded-lg pr-10 border-2 border-gray-200"
-                              />
-                              <Calendar
-                                size={18}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                              />
-                            </div>
-                          </div>
-                          <div className=" flex flex-col space-y-2">
-                            <Label className="text-sm font-medium text-gray-800">
-                              Notification Send Time (UTC)
-                            </Label>
-                            <div className="relative">
-                              <Input
-                                type="time"
-                                value={adHocDraft.sendTime}
-                                onChange={(e) =>
-                                  setAdHocDraft((d) => ({
-                                    ...d,
-                                    sendTime: e.target.value,
-                                  }))
-                                }
-                                className="w-full border-2 border-gray-200 rounded-lg pr-10"
-                              />
-                              <Clock
-                                size={18}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex justify-end">
-                            <Button
-                              type="button"
-                              onClick={handleSaveAdHocNotification}
-                              className="bg-primary hover:bg-primary-dark px-6 py-2 rounded-lg text-sm font-medium"
-                            >
-                              Save
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Channel Names */}
-                      <div className="space-y-3">
-                        {adHocChannelRows.map((row) => (
-                          <div
-                            key={row.id}
-                            className="border-2 border-purple-100 rounded-lg bg-[#F1F0FE] p-3"
-                          >
-                            <div className="flex items-center justify-between mb-2 ">
-                              <Label className="text-sm font-medium text-gray-800">
-                                Channel Name
-                              </Label>
-                              <button
-                                type="button"
-                                onClick={addAdHocChannelRow}
-                                className="w-6 h-6 rounded flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors"
-                                title="Add channel"
-                                aria-label="Add channel"
-                              >
-                                <div className="flex items-center justify-center bg-white rounded-lg">
-                                  <Plus size={18} className="text-gray-800" />
-                                </div>
-                              </button>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                value={row.name}
-                                onChange={(e) =>
-                                  updateAdHocChannelRowName(
-                                    row.id,
-                                    e.target.value,
-                                  )
-                                }
-                                placeholder="Channel Name"
-                                className="w-full border-2 border-gray-200 rounded-lg bg-white"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeAdHocChannelRow(row.id)}
-                                className="shrink-0 w-9 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
-                                title="Remove channel"
-                                aria-label="Remove channel"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <input
-                        type="hidden"
-                        value={adHocNotifications.length}
-                        readOnly
-                      />
-                    </div>
-
                     {/* Path Colors Section */}
                     <div className="space-y-4">
                       <h3 className="text-sm font-medium text-gray-900">
@@ -1616,7 +1983,6 @@ const cancelColor = (index) => {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-3 sm:gap-4">
                         {brandColors.map((color, index) => {
-                          
                           const displayColor = (
                             tempColors[index]?.hex ||
                             tempColors[index]?.color ||
@@ -1624,7 +1990,6 @@ const cancelColor = (index) => {
                             color?.color ||
                             "#000000"
                           ).toUpperCase();
-
 
                           return (
                             <div
@@ -1634,23 +1999,29 @@ const cancelColor = (index) => {
                               {/* Swatch (click opens palette) */}
                               <div className="relative w-12 h-8 sm:w-16 sm:h-10 shrink-0 overflow-hidden">
                                 <div className="relative w-16 h-10 rounded-sm overflow-hidden">
-                                   <input
-                                      type="color"
-                                      value={displayColor}
-                                      onChange={(e) => {
-                                        const newHex = String(e.target.value || "").toUpperCase();
-                                        setTempColors((prev) => {
-                                          const updated = [...prev];
-                                          updated[index] = { ...updated[index], hex: newHex, color: newHex };
-                                          return updated;
-                                        });
-                                      }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setOpenColorIndex(index);
-                                      }}
-                                      className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
-                                    />
+                                  <input
+                                    type="color"
+                                    value={displayColor}
+                                    onChange={(e) => {
+                                      const newHex = String(
+                                        e.target.value || "",
+                                      ).toUpperCase();
+                                      setTempColors((prev) => {
+                                        const updated = [...prev];
+                                        updated[index] = {
+                                          ...updated[index],
+                                          hex: newHex,
+                                          color: newHex,
+                                        };
+                                        return updated;
+                                      });
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenColorIndex(index);
+                                    }}
+                                    className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                                  />
 
                                   <div
                                     className="w-full h-full rounded-sm"
@@ -1668,40 +2039,41 @@ const cancelColor = (index) => {
                                   {displayColor}
                                 </span>
                               </div>
-                                      
-                          <div className="flex flex-col gap-1 ml-auto items-end h-full">
-                              <Info
-                                size={16}
-                                className="text-gray-500 cursor-help"
-                              />
-                              {openColorIndex === index && (
-                                <div className="flex gap-1">
-                                  <Button
-                                    variant="outline"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (debounceRef.current) clearTimeout(debounceRef.current);
-                                      saveColor(index);
-                                    }}
-                                    className="cursor-pointer border border-primary text-primary hover:bg-white h-6 leading-4"
-                                  >
-                                    Save
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (debounceRef.current) clearTimeout(debounceRef.current);
-                                      cancelColor(index);
-                                    }}
-                                    className="cursor-pointer border border-primary text-primary hover:bg-white h-6 w-6 leading-4 p-0 ps-0"
-                                  >
-                                   <X size={16} /> 
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
 
+                              <div className="flex flex-col gap-1 ml-auto items-end h-full">
+                                <Info
+                                  size={16}
+                                  className="text-gray-500 cursor-help"
+                                />
+                                {openColorIndex === index && (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (debounceRef.current)
+                                          clearTimeout(debounceRef.current);
+                                        saveColor(index);
+                                      }}
+                                      className="cursor-pointer border border-primary text-primary hover:bg-white h-6 leading-4"
+                                    >
+                                      Save
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (debounceRef.current)
+                                          clearTimeout(debounceRef.current);
+                                        cancelColor(index);
+                                      }}
+                                      className="cursor-pointer border border-primary text-primary hover:bg-white h-6 w-6 leading-4 p-0 ps-0"
+                                    >
+                                      <X size={16} />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
@@ -1731,7 +2103,27 @@ const cancelColor = (index) => {
                     open={open}
                     isActive={activeTab === "users"}
                     usePathUsers
+                    cometStatus={cometStatus}
                   />
+                </div>
+              </div>
+            )}
+
+            {activeTab === "notification" && (
+              <div className="h-full flex flex-col min-h-0">
+                <div className="flex-1 overflow-y-auto p-2">
+                  <div className="space-y-4 md:space-y-5">
+                    {notificationSettingsContent}
+                  </div>
+                </div>
+                <div className="border-t-3 rounded-b-lg border-gray-100 px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-2 sm:py-2.5 lg:py-3 flex justify-end shrink-0">
+                  <Button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="bg-primary hover:bg-primary-dark px-6 sm:px-8 md:px-10 lg:px-12 py-2 lg:py-2.5 rounded-lg text-sm lg:text-base font-medium w-full sm:w-auto min-w-[120px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSaving ? "Saving..." : "Save"}
+                  </Button>
                 </div>
               </div>
             )}
@@ -1741,6 +2133,26 @@ const cancelColor = (index) => {
                 <div className="flex-1 flex items-center justify-center px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-3 sm:py-4 md:py-6 lg:py-8 text-center text-gray-500">
                   Analytics content will be displayed here
                 </div>
+              </div>
+            )}
+
+            {activeTab === "manager-emails" && (
+              <div className="h-full flex flex-col min-h-0">
+                <PathEmailSettingsPanel
+                  pathId={resolvedPathId}
+                  variant="manager"
+                  onSaveSuccess={() => onOpenChange(false)}
+                />
+              </div>
+            )}
+
+            {activeTab === "accountability-emails" && (
+              <div className="h-full flex flex-col min-h-0">
+                <PathEmailSettingsPanel
+                  pathId={resolvedPathId}
+                  variant="accountability"
+                  onSaveSuccess={() => onOpenChange(false)}
+                />
               </div>
             )}
           </div>

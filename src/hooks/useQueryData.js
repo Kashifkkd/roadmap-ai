@@ -4,6 +4,33 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { getClients, updateClientDetails, getRecentClients, getClientDetails ,updateClientCohortDetails } from "@/api/client";
 import { getUser } from "@/api/User/getUser";
 
+/** Throw on auth/network failures so ClientAccessGuard won't treat them as "client disabled". */
+function assertGuardApiSuccess(res, { allowNotFound = false } = {}) {
+  if (res?.unauthorized || res?.status === 401) {
+    throw new Error("Unauthorized");
+  }
+  if (res?.error) {
+    throw new Error(res.message || "Network error");
+  }
+  if (!res?.success) {
+    if (allowNotFound && res?.status === 404) return;
+    const detail =
+      typeof res?.response?.detail === "string"
+        ? res.response.detail
+        : "Request failed";
+    throw new Error(detail);
+  }
+}
+
+function parseRecentClientsPayload(res) {
+  const payload = res?.response;
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.results)) return payload.results;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.clients)) return payload.clients;
+  return [];
+}
+
 // Client Settings hook
 export function useClients(
   enabled = true,
@@ -52,13 +79,8 @@ export function useRecentClients(enabled = true) {
     queryKey: ["recentClients"],
     queryFn: async () => {
       const res = await getRecentClients();
-      const payload = res?.response;
-      if (Array.isArray(payload)) return payload;
-      // Tolerate paginated / wrapped shapes so consumers can always .filter/.map.
-      if (Array.isArray(payload?.results)) return payload.results;
-      if (Array.isArray(payload?.data)) return payload.data;
-      if (Array.isArray(payload?.clients)) return payload.clients;
-      return [];
+      assertGuardApiSuccess(res);
+      return parseRecentClientsPayload(res);
     },
     enabled,
   });
@@ -71,6 +93,7 @@ export function useClientDetails(clientId, enabled = true) {
     queryFn: async () => {
       if (!clientId) return null;
       const res = await getClientDetails(clientId);
+      assertGuardApiSuccess(res, { allowNotFound: true });
       return res?.response || null;
     },
     enabled: enabled && !!clientId,

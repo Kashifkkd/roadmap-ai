@@ -23,9 +23,9 @@ const savePendingSubscriptions = (subscriptions) => {
   }
 };
 
-const addPendingSubscription = (sessionId, cycleName) => {
+const addPendingSubscription = (sessionId, data) => {
   const subs = getPendingSubscriptions();
-  subs[sessionId] = cycleName;
+  subs[sessionId] = data;
   savePendingSubscriptions(subs);
 };
 
@@ -74,11 +74,12 @@ const extractSessionId = (payload) => {
   );
 };
 
-export function subscribeToVariantReadyWithToast(sessionId, cycleName) {
+export function subscribeToVariantReadyWithToast(sessionId, cycleName, options = {}) {
   if (!sessionId) return;
   if (activeSubscriptions.has(sessionId)) return activeSubscriptions.get(sessionId);
 
-  addPendingSubscription(sessionId, cycleName);
+  const remixType = options.type || "cycle";
+  addPendingSubscription(sessionId, { name: cycleName, type: remixType });
 
   const handleUpdate = (rawPayload, envelope) => {
     try {
@@ -95,16 +96,20 @@ export function subscribeToVariantReadyWithToast(sessionId, cycleName) {
         seenVariantSessions.add(variantSessionId);
       }
 
+      const typeLabel = remixType.charAt(0).toUpperCase() + remixType.slice(1);
       toast.success("Variant is ready", {
         description: cycleName
-          ? `Cycle "${cycleName}" remixed successfully`
-          : "Cycle remixed successfully",
+          ? `${typeLabel} "${cycleName}" remixed successfully`
+          : `${typeLabel} remixed successfully`,
         duration: Infinity,
         closeButton: true,
       });
 
       removePendingSubscription(sessionId);
       activeSubscriptions.delete(sessionId);
+      if (variantSessionId) {
+        seenVariantSessions.delete(variantSessionId);
+      }
 
       if (typeof unsubscribe === "function") {
         unsubscribe();
@@ -132,6 +137,12 @@ export function subscribeToVariantReadyWithToast(sessionId, cycleName) {
 if (typeof window !== "undefined") {
   const pending = getPendingSubscriptions();
   Object.keys(pending).forEach((sessionId) => {
-    subscribeToVariantReadyWithToast(sessionId, pending[sessionId]);
+    const entry = pending[sessionId];
+    // Backward compat: old entries are plain strings (the cycle name)
+    if (typeof entry === "string") {
+      subscribeToVariantReadyWithToast(sessionId, entry);
+    } else {
+      subscribeToVariantReadyWithToast(sessionId, entry.name, { type: entry.type });
+    }
   });
 }

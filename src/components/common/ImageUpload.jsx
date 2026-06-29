@@ -343,7 +343,6 @@ export default function ImageUpload({
       }
 
       if (response) {
-        // Normalize asset data to always have ImageUrl
         const assetToSave = {
           status: response.status || "success",
           ImageUrl: response.image_url || response.url,
@@ -603,7 +602,10 @@ export default function ImageUpload({
   };
 
   const isImageAsset = (asset) =>
-    Boolean(getAssetUrl(asset) && !asset?.audioUrl && !asset?.videoUrl);
+    Boolean(
+      (asset?.type === "image" || asset?.asset_type === "image") &&
+      getAssetUrl(asset)
+    );
 
   const imageAssetEntries = useMemo(
     () =>

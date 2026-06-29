@@ -194,7 +194,7 @@ export default function AllComet() {
                 No cycle sessions found.
               </div>
             ) : (
-                <AllCometsContainer cometSessions={Array.isArray(cometSessions) ? cometSessions : []} />
+                <AllCometsContainer cometSessions={Array.isArray(cometSessions) ? cometSessions : []} onDeleteSuccess={getCometData} />
             )}
           </div>
         </div>

@@ -271,9 +271,9 @@ export default function CreateCycleRemixModal({
 
         <div className="flex flex-col items-stretch gap-[2px] rounded-2xl bg-[#F5F5F5] p-2">
           <div className="flex max-h-[calc(85vh-150px)] min-h-[280px] flex-col overflow-hidden rounded-t-lg bg-white p-2 md:min-h-[320px]">
-            <div className="flex min-h-0 flex-1 flex-col gap-0 divide-y divide-[#E9EAEB] md:flex-row md:divide-x md:divide-y-0">
+            <div className="grid min-h-0 min-w-0 max-h-full flex-1 grid-cols-1 items-start overflow-y-auto md:grid-cols-2 md:grid-rows-[minmax(0,1fr)] md:items-start md:overflow-hidden">
               {/* Left: cycle + remix form */}
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-2 md:max-w-[50%] md:pr-3">
+              <div className="flex min-h-0 max-h-full min-w-0 flex-col gap-3 overflow-x-hidden overflow-y-auto border-[#E9EAEB] p-2 md:border-r md:pr-3">
                 <div className="flex flex-col gap-1">
                   <p className="text-sm font-medium leading-5 text-[#181D27]">
                     Cycle Title
@@ -351,14 +351,15 @@ export default function CreateCycleRemixModal({
                 </div>
               </div>
 
-              {/* Right: source materials */}
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-2 pt-3 md:max-w-[50%] md:pl-3 md:pt-2">
-                {/* <p className="mb-2 shrink-0 text-sm font-medium leading-5 text-[#181D27]">
-                  Source materials
+              {/* Right: add new sources */}
+              <div className="flex min-h-0 max-h-full min-w-0 flex-col gap-3 overflow-x-hidden overflow-y-auto p-2 md:pl-3">
+                <p className="shrink-0 text-sm font-medium leading-5 text-[#181D27]">
+                  Add New Sources
                 </p>
-                 */}
-                <div className="min-h-0 flex-1 rounded-2xl bg-[#F5F5F5] p-3">
+                <div className="min-h-0 w-full min-w-0 max-w-full flex-1 rounded-2xl bg-[#F5F5F5] p-4">
                   <SourceMaterialCard
+                    compact
+                    hideTitle
                     sessionId={remixSessionId}
                     files={sourceFiles}
                     setFiles={setSourceFiles}

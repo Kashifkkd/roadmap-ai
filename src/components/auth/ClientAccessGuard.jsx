@@ -101,12 +101,14 @@ export function ClientAccessGuard({ children }) {
     data: recentClients = [],
     isLoading: recentLoading,
     isFetched: recentFetched,
+    isError: recentError,
   } = useRecentClients(isAuthenticated);
 
   const {
     data: selectedClientDetails,
     isLoading: detailsLoading,
     isFetched: detailsFetched,
+    isError: detailsError,
   } = useClientDetails(storedClientId, isAuthenticated && !!storedClientId);
 
   const visibleRecentClients = useMemo(
@@ -115,17 +117,23 @@ export function ClientAccessGuard({ children }) {
   );
 
   const hasNoVisibleClients =
-    isAuthenticated && recentFetched && visibleRecentClients.length === 0;
+    isAuthenticated &&
+    recentFetched &&
+    !recentError &&
+    visibleRecentClients.length === 0;
 
   // The backend now returns 404 for hidden clients; useClientDetails maps a
   // 404 response into the `{ detail: "..." }` payload. So a real client comes
   // back with an `id`; a hidden / missing client does not. We also belt-and-
   // suspenders against `is_kyper_enabled === false`.
+  // Skip blocking on query errors (401, network, etc.) — session expiry is
+  // handled by apiService + ProtectedRoute redirect.
   const selectedIsHidden =
     isAuthenticated &&
     !!storedClientId &&
     detailsFetched &&
     !detailsLoading &&
+    !detailsError &&
     !isClientVisibleInKyper(selectedClientDetails);
 
   // The first render before queries resolve shouldn't flash the alert.
@@ -134,7 +142,14 @@ export function ClientAccessGuard({ children }) {
     (recentLoading ||
       (storedClientId && detailsLoading && !detailsFetched));
 
-  const blocked = !stillResolving && (hasNoVisibleClients || selectedIsHidden);
+  const blocked =
+    isAuthenticated &&
+    !stillResolving &&
+    (hasNoVisibleClients || selectedIsHidden);
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   // When a previously-selected client just became hidden, drop it from
   // localStorage so a refresh starts clean.

@@ -956,7 +956,10 @@ export default function CometManagerSidebar({
   ];
 
   return (
-    <div className="flex flex-col w-full  gap-2 h-full overflow-hidden">
+    <div
+      className="flex flex-col w-full  gap-2 h-full overflow-hidden"
+      data-spellcheck="false"
+    >
       {/* Tabs */}
       <div className="flex justify-between w-full  rounded-xl shrink-0">
         <Stack
@@ -1126,6 +1129,7 @@ export default function CometManagerSidebar({
                                     onKeyDown={(e) =>
                                       handleChapterEditKeyDown(e, chapterId)
                                     }
+                                    spellCheck={false}
                                     className="w-full px-2 py-1.5 text-xs focus:outline-none resize-none overflow-y-auto"
                                     placeholder="Chapter name"
                                     rows={2}
@@ -1422,6 +1426,7 @@ export default function CometManagerSidebar({
                                                       step.description,
                                                     )
                                                   }
+                                                  spellCheck={false}
                                                   className="w-full px-2 py-1.5 text-xs focus:outline-none resize-none overflow-y-auto text-gray-900"
                                                   placeholder="Step name"
                                                   rows={2}
@@ -1603,6 +1608,7 @@ export default function CometManagerSidebar({
                                                           step.name,
                                                         )
                                                       }
+                                                      spellCheck={false}
                                                       className="w-full px-2 text-xs focus:outline-none resize-none overflow-y-auto"
                                                       rows={3}
                                                       placeholder="Step description"

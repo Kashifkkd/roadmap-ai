@@ -103,6 +103,10 @@ const Comet = ({
       // Store sessionData in localStorage
       localStorage.setItem("sessionData", JSON.stringify(result));
       localStorage.setItem("sessionId", session_id);
+      localStorage.setItem(
+        "cometStatus",
+        result?.status || result?.meta?.status || status || ""
+      );
 
       setIsCometSettingsOpen(true);
     } catch (error) {
