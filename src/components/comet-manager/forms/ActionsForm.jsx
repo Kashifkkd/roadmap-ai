@@ -9,7 +9,7 @@ import UploadTool from "@/components/common/UploadTool";
 
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
   <div className="flex items-center justify-between py-2">
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1">
       <Label className="text-sm font-medium text-gray-800">{label}</Label>
       {showInfo && (
         <Info
