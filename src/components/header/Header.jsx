@@ -707,6 +707,8 @@ export default function Header() {
     if (!isUserMenuOpen) {
       setActiveButton(null);
       setIsThemeSubmenuOpen(false);
+    } else {
+      setActiveButton("kyperStudio");
     }
   }, [isUserMenuOpen]);
 
@@ -1132,7 +1134,7 @@ export default function Header() {
                             <button
                               className={`w-full flex items-center gap-2 px-4 py-2 rounded min-h-9 border-none transition-colors duration-200 cursor-pointer ${
                                 activeButton === "kyperStudio"
-                                  ? "bg-primary-700 text-white"
+                                  ? "bg-primary-600 text-white"
                                   : "bg-white text-gray-900 hover:bg-primary-100"
                               }`}
                               onClick={() => {
@@ -1143,9 +1145,9 @@ export default function Header() {
                               <div className="flex flex-col items-start gap-2 flex-1">
                                 <div className="flex items-center gap-2 w-full">
                                   <Image
-                                    src="/logonew.png"
+                                    src="/kyper studio.svg"
                                     alt="Kyper Studio"
-                                    width={57}
+                                    width={135}
                                     height={29}
                                     className={`object-contain ${
                                       activeButton === "kyperStudio"
@@ -1171,7 +1173,7 @@ export default function Header() {
 
                             {/* Kyper Dashboard */}
                             <button
-                              className={`w-full flex items-center gap-2 px-4 py-2 rounded min-h-9 border-none transition-colors duration-200 cursor-pointer ${
+                              className={`group w-full flex items-center gap-2 px-4 py-2 rounded min-h-9 border-none transition-colors duration-200 cursor-pointer ${
                                 activeButton === "kyperDashboard"
                                   ? "bg-primary-600 text-white"
                                   : "bg-white text-gray-900 hover:bg-primary-100"
@@ -1188,10 +1190,10 @@ export default function Header() {
                               <div className="flex flex-col items-start gap-2 flex-1">
                                 <div className="flex items-center justify-between w-full">
                                   <Image
-                                    src="/kyper dashboard.png"
+                                    src="/kyper dashboard1.svg"
                                     alt="Kyper Dashboard"
-                                    width={80}
-                                    height={29}
+                                    width={165}
+                                    height={32}
                                     className={`object-contain ${
                                       activeButton === "kyperDashboard"
                                         ? "brightness-0 invert"
@@ -1199,10 +1201,10 @@ export default function Header() {
                                     }`}
                                   />
                                   <SquareArrowOutUpRight
-                                    className={`w-4 h-4 ${
+                                    className={`w-4 h-4 transition-colors duration-200 ${
                                       activeButton === "kyperDashboard"
                                         ? "text-white"
-                                        : "text-[#181D27]"
+                                        : "text-[#181D27] group-hover:text-primary-600"
                                     }`}
                                   />
                                 </div>
@@ -1223,7 +1225,7 @@ export default function Header() {
 
                             {/* Kyper Shift */}
                             <button
-                              className={`w-full flex items-center gap-2 px-4 py-2 rounded min-h-9 border-none transition-colors duration-200 cursor-pointer ${
+                              className={`group w-full flex items-center gap-2 px-4 py-2 rounded min-h-9 border-none transition-colors duration-200 cursor-pointer ${
                                 activeButton === "kyperShift"
                                   ? "bg-primary-600 text-white"
                                   : "bg-white text-gray-900 hover:bg-primary-100"
@@ -1240,9 +1242,9 @@ export default function Header() {
                               <div className="flex flex-col items-start gap-2 flex-1">
                                 <div className="flex items-center justify-between w-full">
                                   <Image
-                                    src="/kypershift.png"
+                                    src="/kypershift 1.svg"
                                     alt="Kyper Shift"
-                                    width={57}
+                                    width={119}
                                     height={29}
                                     className={`object-contain ${
                                       activeButton === "kyperShift"
@@ -1251,10 +1253,10 @@ export default function Header() {
                                     }`}
                                   />
                                   <SquareArrowOutUpRight
-                                    className={`w-4 h-4 ${
+                                    className={`w-4 h-4 transition-colors duration-200 ${
                                       activeButton === "kyperShift"
                                         ? "text-white"
-                                        : "text-[#181D27]"
+                                        : "text-[#181D27] group-hover:text-primary-600"
                                     }`}
                                   />
                                 </div>
