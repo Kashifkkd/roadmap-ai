@@ -9,6 +9,10 @@ import CreateCycleVariantModal from "./CreateCycleVariantModal";
 import CreateCycleRemixModal from "./CreateCycleRemixModal";
 import { appendCacheBuster, refreshCloudfrontCookies } from "@/lib/cloudfront-cookies";
 import {
+  ensureCycleAuth,
+  fetchCycleSessionDetails,
+} from "@/lib/cycle-access";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -115,47 +119,20 @@ const Comet = ({
       toast.error("Unable to remix this cycle right now.");
       return;
     }
+    if (!ensureCycleAuth()) return;
     try {
-      const apiUrl =
-        process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
-      const response = await fetch(
-        `${apiUrl}/api/comet/session_details/${session_id}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-      if (!response.ok) {
-        toast.error("Failed to validate cycle phases. Please try again.");
-        return;
-      }
-      const result = await response.json();
-      const pathChapters = result?.response_path?.chapters;
-      const outlineRoot = result?.response_outline;
-      const outlineChapters = Array.isArray(outlineRoot?.chapters)
-        ? outlineRoot.chapters
-        : Array.isArray(outlineRoot)
-          ? outlineRoot
-          : [];
-      const collectionLength = (value) =>
-        Array.isArray(value)
-          ? value.length
-          : value && typeof value === "object"
-            ? Object.keys(value).length
-            : 0;
-      const pathList = Array.isArray(pathChapters)
-        ? pathChapters
-        : pathChapters && typeof pathChapters === "object"
-          ? Object.values(pathChapters)
-          : [];
-      const outlineLen = collectionLength(outlineChapters);
-      // Exclude onboarding (position 0) so counts align with outline chapters.
-      const pathCurriculumLen = pathList.filter(
-        (ch) => ch != null && Number(ch.position) !== 0,
-      ).length;
-      if (outlineLen > 0 && pathCurriculumLen < outlineLen) {
+      const { ok, result, unauthorized } =
+        await fetchCycleSessionDetails(session_id);
+      if (unauthorized || !ok || !result) return;
+      // Block remix only when phases are still pending generation.
+      // remaining_chapters is a list that shrinks as each phase is built;
+      // an empty (or absent) list means all phases have been generated.
+      // The old outline-count comparison broke after deleting phases because
+      // response_outline is never updated on phase deletion.
+      const remaining = result?.response_path?.remaining_chapters;
+      const hasPendingPhases =
+        Array.isArray(remaining) && remaining.length > 0;
+      if (hasPendingPhases) {
         toast.error("Generate all the phases and re-publish the full cycle to use Remix.");
         return;
       }
@@ -236,6 +213,7 @@ const Comet = ({
 
   const handleClick = async () => {
     if (disabled) return;
+    if (!ensureCycleAuth()) return;
     try {
       setDisabled(true);
 
@@ -252,46 +230,45 @@ const Comet = ({
     }
   };
 
+  const handleEditClick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await handleClick();
+  };
+
+  const handlePreviewClick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await handleClick();
+  };
+
   const handleSettingsClick = async (e) => {
     e.preventDefault();
-    e.stopPropagation(); // Prevent event from bubbling up to parent div
+    e.stopPropagation();
 
     if (!session_id) {
       console.error("No sessionId found for comet");
       return;
     }
 
+    if (!ensureCycleAuth()) return;
+
     try {
-      // Fetch session details from
-      const apiUrl =
-        process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
-      const response = await fetch(
-        `${apiUrl}/api/comet/session_details/${session_id}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      const { ok, result, unauthorized } =
+        await fetchCycleSessionDetails(session_id);
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch session details");
-      }
-
-      const result = await response.json();
+      if (unauthorized || !ok || !result) return;
 
       if (imageURL && imageURL !== "/fallbackImage.png") {
         result.response_path = result.response_path || {};
         result.response_path.path_image = imageURL;
       }
 
-      // Store sessionData in localStorage
       localStorage.setItem("sessionData", JSON.stringify(result));
       localStorage.setItem("sessionId", session_id);
       localStorage.setItem(
         "cometStatus",
-        result?.status || result?.meta?.status || status || ""
+        result?.status || result?.meta?.status || status || "",
       );
 
       setIsCometSettingsOpen(true);
@@ -410,7 +387,11 @@ const Comet = ({
               })}
             </span>
             <div className="flex gap-1 flex-nowrap">
-              <button className="flex justify-center items-center rounded-sm py-[8px] px-[12px] bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer">
+              <button
+                type="button"
+                onClick={handleEditClick}
+                className="flex justify-center items-center rounded-sm py-[8px] px-[12px] bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer"
+              >
                 <div className="flex items-center gap-1.5">
                   <Image
                     src="/edit.png"
@@ -423,7 +404,11 @@ const Comet = ({
                   </span>
                 </div>
               </button>
-              <button className="flex justify-center items-center rounded-sm py-[8px] px-[12px] bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer">
+              <button
+                type="button"
+                onClick={handlePreviewClick}
+                className="flex justify-center items-center rounded-sm py-[8px] px-[12px] bg-[#453E90] hover:bg-[#7367F0] active:bg-[#574EB6] shrink-0 cursor-pointer"
+              >
                 <div className="flex items-center gap-1.5">
                   <Image
                     src="/preview.png"

@@ -42,7 +42,21 @@ export default function HabitOptInForm({
   };
 
   const addHabit = () => {
-    const next = [...habits, { title: "", text: "", reps: "" }];
+    const maxId = habits.reduce(
+      (m, h) => Math.max(m, Number(h?.id) || 0),
+      0,
+    );
+    const nextId = maxId + 1;
+    const next = [
+      ...habits,
+      {
+        id: nextId,
+        level: nextId,
+        title: "",
+        text: "",
+        reps: "",
+      },
+    ];
     updateField("habits", next);
   };
 

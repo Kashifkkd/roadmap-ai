@@ -611,10 +611,36 @@
   overflow: hidden;
   color: transparent;
   z-index: 0;
+  border-color: transparent;
 }
 
 .spellcheck-backdrop .kyper-spell-error {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
   text-decoration: underline wavy #ef4444;
+  text-decoration-color: #ef4444;
+  -webkit-text-decoration-color: #ef4444;
   text-decoration-skip-ink: none;
   text-underline-offset: 2px;
+}
+
+/* Quill backdrop mirrors .ql-editor so paragraph spacing and inline formats align */
+.spellcheck-backdrop-quill.ql-editor {
+  margin: 0;
+  border: none;
+  outline: none;
+  caret-color: transparent;
+}
+
+.spellcheck-backdrop-quill.ql-editor h1,
+.spellcheck-backdrop-quill.ql-editor h2,
+.spellcheck-backdrop-quill.ql-editor h3 {
+  margin: 0;
+  padding: 0;
+  display: inline;
+}
+
+/* Backdrop is underline-only; don't replay strike/underline from formatted clones */
+.spellcheck-backdrop-quill.ql-editor *:not(.kyper-spell-error) {
+  text-decoration: none !important;
 }

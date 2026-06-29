@@ -13,24 +13,94 @@ import {
   CircleX,
   Loader2,
   Check,
+  Info,
 } from "lucide-react";
 
-const SaveIndicator = ({ state }) => {
-  if (state === "saving")
-    return (
-      <Loader2 size={13} className="animate-spin text-blue-400 shrink-0" />
-    );
-  if (state === "saved")
-    return <Check size={13} className="text-green-500 shrink-0" />;
+export const SaveIndicator = ({ state }) => {
+  if (state === "saving") return <Loader2 size={13} className="animate-spin text-blue-400 shrink-0" />;
+  if (state === "saved") return <Check size={13} className="text-green-500 shrink-0" />;
   return null;
 };
 import "quill/dist/quill.snow.css";
+import { DynamicTagSuggestionList } from "@/components/cycle-manager/DynamicTagSuggestionList";
+import { useQuillDynamicTags } from "@/hooks/useQuillDynamicTags";
+
+
 
 export const SectionHeader = ({ title }) => (
   <div className="w-full mb-4">
     <h3 className="text-md font-semibold text-primary">{title}</h3>
   </div>
 );
+
+export const ToggleSwitch = ({
+  checked,
+  onChange,
+  label,
+  showInfo = false,
+  infoTitle = "Users will be asked a reflection question when they complete this action",
+  onRequestAutoSave,
+  className = "",
+}) => {
+  const [saveState, setSaveState] = useState("idle");
+  const resetRef = useRef(null);
+  const onRequestAutoSaveRef = useRef(onRequestAutoSave);
+
+  useEffect(() => {
+    onRequestAutoSaveRef.current = onRequestAutoSave;
+  }, [onRequestAutoSave]);
+
+  const triggerSave = () => {
+    const saveFn = onRequestAutoSaveRef.current;
+    if (!saveFn) return;
+    setSaveState("saving");
+    saveFn()
+      .then((result) => {
+        setSaveState(result !== false ? "saved" : "idle");
+        if (resetRef.current) clearTimeout(resetRef.current);
+        resetRef.current = setTimeout(() => setSaveState("idle"), 2000);
+      })
+      .catch(() => setSaveState("idle"));
+  };
+
+  const handleToggle = () => {
+    onChange(!checked);
+    triggerSave();
+  };
+
+  return (
+    <div className={`flex items-center justify-between py-2 ${className}`}>
+      <div className="flex items-center gap-2">
+        <Label className="text-sm font-medium text-gray-800">{label}</Label>
+        {showInfo && (
+          <Info
+            size={16}
+            className="text-gray-500 cursor-help"
+            title={infoTitle}
+          />
+        )}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <SaveIndicator state={saveState} />
+        <button
+          type="button"
+          onClick={handleToggle}
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+            checked ? "bg-primary" : "bg-gray-300"
+          }`}
+          role="switch"
+          aria-checked={checked}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
+              checked ? "translate-x-6" : "translate-x-1"
+            }`}
+          />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const TextField = ({
   label,
@@ -47,9 +117,7 @@ export const TextField = ({
   const resetRef = useRef(null);
   const onRequestAutoSaveRef = useRef(onRequestAutoSave);
 
-  useEffect(() => {
-    onRequestAutoSaveRef.current = onRequestAutoSave;
-  }, [onRequestAutoSave]);
+  useEffect(() => { onRequestAutoSaveRef.current = onRequestAutoSave; }, [onRequestAutoSave]);
 
   useEffect(() => {
     if (!isFocusedRef.current) setLocalValue(value || "");
@@ -59,13 +127,11 @@ export const TextField = ({
     const saveFn = onRequestAutoSaveRef.current;
     if (!saveFn) return;
     setSaveState("saving");
-    saveFn()
-      .then((result) => {
-        setSaveState(result !== false ? "saved" : "idle");
-        if (resetRef.current) clearTimeout(resetRef.current);
-        resetRef.current = setTimeout(() => setSaveState("idle"), 2000);
-      })
-      .catch(() => setSaveState("idle"));
+    saveFn().then((result) => {
+      setSaveState(result !== false ? "saved" : "idle");
+      if (resetRef.current) clearTimeout(resetRef.current);
+      resetRef.current = setTimeout(() => setSaveState("idle"), 2000);
+    }).catch(() => setSaveState("idle"));
   };
 
   const handleChange = (e) => {
@@ -81,25 +147,18 @@ export const TextField = ({
   return (
     <div className="mb-4">
       <div className="mb-2 flex items-center gap-1.5">
-        <Label className="block text-sm font-medium text-gray-700">
-          {label}
-        </Label>
+        <Label className="block text-sm font-medium text-gray-700">{label}</Label>
         <SaveIndicator state={saveState} />
       </div>
       <Input
         type="text"
         value={localValue}
         onChange={handleChange}
-        onFocus={() => {
-          isFocusedRef.current = true;
-        }}
+        onFocus={() => { isFocusedRef.current = true; }}
         placeholder={placeholder}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         {...inputProps}
-        onBlur={(e) => {
-          isFocusedRef.current = false;
-          inputProps?.onBlur?.(e);
-        }}
+        onBlur={(e) => { isFocusedRef.current = false; inputProps?.onBlur?.(e); }}
       />
     </div>
   );
@@ -121,9 +180,7 @@ export const TextArea = ({
   const resetRef = useRef(null);
   const onRequestAutoSaveRef = useRef(onRequestAutoSave);
 
-  useEffect(() => {
-    onRequestAutoSaveRef.current = onRequestAutoSave;
-  }, [onRequestAutoSave]);
+  useEffect(() => { onRequestAutoSaveRef.current = onRequestAutoSave; }, [onRequestAutoSave]);
 
   useEffect(() => {
     if (!isFocusedRef.current) setLocalValue(value || "");
@@ -137,13 +194,11 @@ export const TextArea = ({
       setSaveState("saving");
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        saveFn()
-          .then((result) => {
-            setSaveState(result !== false ? "saved" : "idle");
-            if (resetRef.current) clearTimeout(resetRef.current);
-            resetRef.current = setTimeout(() => setSaveState("idle"), 2000);
-          })
-          .catch(() => setSaveState("idle"));
+        saveFn().then((result) => {
+          setSaveState(result !== false ? "saved" : "idle");
+          if (resetRef.current) clearTimeout(resetRef.current);
+          resetRef.current = setTimeout(() => setSaveState("idle"), 2000);
+        }).catch(() => setSaveState("idle"));
       }, 1200);
     }
   };
@@ -151,25 +206,18 @@ export const TextArea = ({
   return (
     <div className="mb-4">
       <div className="mb-2 flex items-center gap-1.5">
-        <Label className="block text-sm font-medium text-gray-700">
-          {label}
-        </Label>
+        <Label className="block text-sm font-medium text-gray-700">{label}</Label>
         <SaveIndicator state={saveState} />
       </div>
       <Textarea
         value={localValue}
         onChange={handleChange}
-        onFocus={() => {
-          isFocusedRef.current = true;
-        }}
+        onFocus={() => { isFocusedRef.current = true; }}
         placeholder={placeholder}
         rows={rows}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         {...inputProps}
-        onBlur={(e) => {
-          isFocusedRef.current = false;
-          inputProps?.onBlur?.(e);
-        }}
+        onBlur={(e) => { isFocusedRef.current = false; inputProps?.onBlur?.(e); }}
       />
     </div>
   );
@@ -270,17 +318,15 @@ export const ListField = ({
               // onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
-              className={`flex gap-2 ${
-                draggedIndex === index ? "opacity-50" : ""
-              }`}
+              className={`flex gap-2 ${draggedIndex === index ? "opacity-50" : ""
+                }`}
             >
               <div
                 draggable={!!onReorder}
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragEnd={handleDragEnd}
-                className={`${
-                  onReorder ? "cursor-move" : "cursor-default"
-                } text-gray-400 h-10 w-10 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center`}
+                className={`${onReorder ? "cursor-move" : "cursor-default"
+                  } text-gray-400 h-10 w-10 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center`}
               >
                 <GripVertical size={18} />
               </div>
@@ -291,11 +337,10 @@ export const ListField = ({
                 <div className="flex items-center justify-center gap-x-1">
                   <div
                     onClick={() => handleToggleCorrect(index, true)}
-                    className={`cursor-pointer h-10 w-10 flex items-center justify-center rounded-lg transition-all ${
-                      isCorrect
-                        ? "bg-green-500"
-                        : "bg-green-100 hover:bg-green-200"
-                    }`}
+                    className={`cursor-pointer h-10 w-10 flex items-center justify-center rounded-lg transition-all ${isCorrect
+                      ? "bg-green-500"
+                      : "bg-green-100 hover:bg-green-200"
+                      }`}
                   >
                     <CircleCheck
                       size={18}
@@ -304,11 +349,10 @@ export const ListField = ({
                   </div>
                   <div
                     onClick={() => handleToggleCorrect(index, false)}
-                    className={`cursor-pointer h-10 w-10 rounded-lg flex items-center justify-center transition-all ${
-                      !isCorrect && isCorrect !== undefined
-                        ? "bg-red-500"
-                        : "bg-red-100 hover:bg-red-200"
-                    }`}
+                    className={`cursor-pointer h-10 w-10 rounded-lg flex items-center justify-center transition-all ${!isCorrect && isCorrect !== undefined
+                      ? "bg-red-500"
+                      : "bg-red-100 hover:bg-red-200"
+                      }`}
                   >
                     <CircleX
                       size={18}
@@ -369,8 +413,10 @@ export const RichTextArea = ({
   onRequestAutoSave,
   valueFormat = "delta",
   spellCheck = true,
+  enableDynamicTags = false,
 }) => {
   const [saveState, setSaveState] = useState("idle");
+  const [quillEditor, setQuillEditor] = useState(null);
   const onRequestAutoSaveRef = useRef(onRequestAutoSave);
   const isFocusedRef = useRef(false);
   const isToolbarActiveRef = useRef(false);
@@ -381,6 +427,9 @@ export const RichTextArea = ({
   const blurCallbackRef = useRef(onBlur);
   const changeCallbackRef = useRef(onChange);
   const blurHandlerRef = useRef(null);
+  const pasteHandlerRef = useRef(null);
+  const editorMouseDownRef = useRef(null);
+  const enableDynamicTagsRef = useRef(enableDynamicTags);
   const valueFormatRef = useRef(valueFormat);
 
   useEffect(() => {
@@ -404,7 +453,17 @@ export const RichTextArea = ({
   }, [onRequestAutoSave]);
 
   useEffect(() => {
-    if (quillEditorRef.current || !editorRef.current) return;
+    enableDynamicTagsRef.current = enableDynamicTags;
+  }, [enableDynamicTags]);
+
+  const { menu: dynamicTagMenu, insertTag: insertDynamicTag } = useQuillDynamicTags(
+    quillEditor,
+    enableDynamicTags
+  );
+
+  useEffect(() => {
+    if (quillEditorRef.current || !editorRef.current)
+      return;
 
     const isHtmlFormat = valueFormat === "html";
     const isHtmlString = (v) =>
@@ -491,7 +550,7 @@ export const RichTextArea = ({
         const styleMatch = (size) =>
           new RegExp(
             `<span style="[^"]*font-size:\\s*${size}[^"]*"[^>]*>([\\s\\S]*?)</span>`,
-            "gi",
+            "gi"
           );
         return html
           .replace(styleMatch("1\\.75em"), '<h1 style="display:inline">$1</h1>')
@@ -554,10 +613,7 @@ export const RichTextArea = ({
                 try {
                   editor.root.innerHTML = textValue;
                 } catch (htmlError) {
-                  console.error(
-                    "Failed to set HTML in Quill editor:",
-                    htmlError,
-                  );
+                  console.error("Failed to set HTML in Quill editor:", htmlError);
                 }
               }
             }
@@ -585,9 +641,7 @@ export const RichTextArea = ({
       let rtResetTimer = null;
       editor.on("text-change", () => {
         if (valueFormatRef.current === "html") {
-          changeCallbackRef.current(
-            normalizeQuillHtmlOutput(editor.root.innerHTML),
-          );
+          changeCallbackRef.current(normalizeQuillHtmlOutput(editor.root.innerHTML));
         } else {
           changeCallbackRef.current(JSON.stringify(editor.getContents()));
         }
@@ -596,13 +650,11 @@ export const RichTextArea = ({
           setSaveState("saving");
           if (rtDebounceTimer) clearTimeout(rtDebounceTimer);
           rtDebounceTimer = setTimeout(() => {
-            saveFn()
-              .then((result) => {
-                setSaveState(result !== false ? "saved" : "idle");
-                if (rtResetTimer) clearTimeout(rtResetTimer);
-                rtResetTimer = setTimeout(() => setSaveState("idle"), 2000);
-              })
-              .catch(() => setSaveState("idle"));
+            saveFn().then((result) => {
+              setSaveState(result !== false ? "saved" : "idle");
+              if (rtResetTimer) clearTimeout(rtResetTimer);
+              rtResetTimer = setTimeout(() => setSaveState("idle"), 2000);
+            }).catch(() => setSaveState("idle"));
           }, 1200);
         }
       });
@@ -620,9 +672,9 @@ export const RichTextArea = ({
           const absolutePosition =
             editorRect && typeof window !== "undefined"
               ? {
-                  top: editorRect.top + bounds.bottom + window.scrollY,
-                  left: editorRect.left + bounds.left + window.scrollX,
-                }
+                top: editorRect.top + bounds.bottom + window.scrollY,
+                left: editorRect.left + bounds.left + window.scrollX,
+              }
               : null;
 
           callback({
@@ -653,7 +705,56 @@ export const RichTextArea = ({
       editorRoot.addEventListener("focus", handleEditorFocus);
       editorRoot.addEventListener("blur", handleEditorBlur);
 
+      // Paste from Word/browsers carries styled HTML; insert plain text only so editor styles apply.
+      const handlePasteAsPlainText = (e) => {
+        const clip = e.clipboardData;
+        if (!clip) return;
+
+        let text = clip.getData("text/plain");
+        if (text == null || text === "") {
+          const html = clip.getData("text/html");
+          if (html) {
+            const tmp = document.createElement("div");
+            tmp.innerHTML = html;
+            text = tmp.innerText || tmp.textContent || "";
+          } else {
+            text = "";
+          }
+        }
+
+        const hasFiles = clip.files && clip.files.length > 0;
+        if (!text && hasFiles && !clip.getData("text/html")) {
+          return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const range = editor.getSelection(true);
+        if (!range) return;
+        editor.deleteText(range.index, range.length, "user");
+        editor.insertText(range.index, text, "user");
+        editor.setSelection(range.index + text.length, "silent");
+      };
+
+      pasteHandlerRef.current = handlePasteAsPlainText;
+      editorRoot.addEventListener("paste", pasteHandlerRef.current, true);
+
+      if (enableDynamicTagsRef.current) {
+        const handleEditorMouseDown = () => {
+          window.requestAnimationFrame(() => {
+            const plain = editor.getText().replace(/\n$/, "");
+            if (!plain.trim()) {
+              editor.setSelection(0, 0, "silent");
+            }
+          });
+        };
+        editorMouseDownRef.current = handleEditorMouseDown;
+        editorRoot.addEventListener("mousedown", handleEditorMouseDown);
+      }
+
       quillEditorRef.current = editor;
+      setQuillEditor(editor);
     };
 
     initEditor();
@@ -662,25 +763,21 @@ export const RichTextArea = ({
     return () => {
       const editor = quillEditorRef.current;
 
-      if (editor && blurHandlerRef.current) {
+      if (editor) {
+        setQuillEditor(null);
         const editorRoot = editor.root;
-<<<<<<< HEAD
-        editorRoot.removeEventListener("blur", blurHandlerRef.current);
-        blurHandlerRef.current = null;
-=======
         if (blurHandlerRef.current) {
           editorRoot.removeEventListener("blur", blurHandlerRef.current);
           blurHandlerRef.current = null;
         }
         if (pasteHandlerRef.current) {
-          editorRoot.removeEventListener(
-            "paste",
-            pasteHandlerRef.current,
-            true,
-          );
+          editorRoot.removeEventListener("paste", pasteHandlerRef.current, true);
           pasteHandlerRef.current = null;
         }
->>>>>>> 00dc986e4fd7cca1d20e93c7170dc79ce6382051
+        if (editorMouseDownRef.current) {
+          editorRoot.removeEventListener("mousedown", editorMouseDownRef.current);
+          editorMouseDownRef.current = null;
+        }
         quillEditorRef.current = null;
       }
 
@@ -701,8 +798,10 @@ export const RichTextArea = ({
     const raw = typeof value === "string" ? value : "";
     if (!raw.trim()) return;
 
-    const isHtmlString = raw.trim().length > 0 && raw.trim().startsWith("<");
-    const isDeltaString = raw.trim().length > 0 && raw.trim().startsWith("{");
+    const isHtmlString =
+      raw.trim().length > 0 && raw.trim().startsWith("<");
+    const isDeltaString =
+      raw.trim().length > 0 && raw.trim().startsWith("{");
 
     if (isDeltaString) {
       try {
@@ -722,18 +821,9 @@ export const RichTextArea = ({
 
     if (isHtmlString) {
       let html = raw
-        .replace(
-          /<span style="[^"]*font-size:\s*1\.75em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi,
-          '<h1 style="display:inline">$1</h1>',
-        )
-        .replace(
-          /<span style="[^"]*font-size:\s*1\.35em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi,
-          '<h2 style="display:inline">$1</h2>',
-        )
-        .replace(
-          /<span style="[^"]*font-size:\s*1\.1em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi,
-          '<h3 style="display:inline">$1</h3>',
-        );
+        .replace(/<span style="[^"]*font-size:\s*1\.75em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h1 style="display:inline">$1</h1>')
+        .replace(/<span style="[^"]*font-size:\s*1\.35em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h2 style="display:inline">$1</h2>')
+        .replace(/<span style="[^"]*font-size:\s*1\.1em[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '<h3 style="display:inline">$1</h3>');
       const normalized = normalizeQuillHtmlOutput(html);
       const currentHtml = editor.root.innerHTML;
       if (currentHtml !== normalized) {
@@ -762,16 +852,18 @@ export const RichTextArea = ({
   return (
     <div className="mb-4">
       <div className="mb-2 flex items-center gap-1.5">
-        <Label className="block text-sm font-medium text-gray-700">
-          {label}
-        </Label>
+        <Label className="block text-sm font-medium text-gray-700">{label}</Label>
         <SaveIndicator state={saveState} />
       </div>
       {/*Editor Area */}
       <div className="bg-gray-100 rounded-lg p-0.5">
         <div
           ref={editorRef}
-          className="h-[76px] border rounded-lg bg-white [&_.ql-editor]:font-sans [&_.ql-editor]:text-sm [&_.ql-editor]:text-black [&_.ql-editor]:min-h-[76px]"
+          className={
+            enableDynamicTags
+              ? "h-[76px] overflow-hidden rounded-lg border bg-white [&_.ql-container]:flex [&_.ql-container]:h-full [&_.ql-container]:flex-col [&_.ql-editor]:box-border [&_.ql-editor]:h-full [&_.ql-editor]:min-h-0 [&_.ql-editor]:overflow-y-auto [&_.ql-editor]:px-3 [&_.ql-editor]:py-2.5 [&_.ql-editor]:font-sans [&_.ql-editor]:text-sm [&_.ql-editor]:text-black [&_.ql-editor_p]:!m-0"
+              : "h-[76px] border rounded-lg bg-white [&_.ql-editor]:min-h-[76px] [&_.ql-editor]:font-sans [&_.ql-editor]:text-sm [&_.ql-editor]:text-black"
+          }
           style={{ fontFamily: "inherit" }}
         />
 
@@ -805,7 +897,7 @@ export const RichTextArea = ({
           .rich-text-toolbar .ql-heading3.ql-active {
             color: #06c;
           }
-          .ql-editor p{ margin-bottom: 10px;}
+          .ql-editor p{ margin-bottom: ${enableDynamicTags ? "0" : "10px"};}
         `}</style>
         <div
           ref={toolbarRef}
@@ -814,47 +906,17 @@ export const RichTextArea = ({
           onMouseDown={(e) => {
             e.preventDefault();
             isToolbarActiveRef.current = true;
-            setTimeout(() => {
-              isToolbarActiveRef.current = false;
-            }, 300);
+            setTimeout(() => { isToolbarActiveRef.current = false; }, 300);
           }}
         >
           <button type="button" className="ql-bold" title="Bold" />
           <button type="button" className="ql-italic" title="Italic" />
           <button type="button" className="ql-underline" title="Underline" />
-          <button
-            type="button"
-            className="ql-heading1"
-            title="Heading 1 (selected text)"
-          >
-            H1
-          </button>
-          <button
-            type="button"
-            className="ql-heading2"
-            title="Heading 2 (selected text)"
-          >
-            H2
-          </button>
-          <button
-            type="button"
-            className="ql-heading3"
-            title="Heading 3 (selected text)"
-          >
-            H3
-          </button>
-          <button
-            type="button"
-            className="ql-list"
-            value="bullet"
-            title="Bulleted List"
-          />
-          <button
-            type="button"
-            className="ql-list"
-            value="ordered"
-            title="Numbered List"
-          />
+          <button type="button" className="ql-heading1" title="Heading 1 (selected text)">H1</button>
+          <button type="button" className="ql-heading2" title="Heading 2 (selected text)">H2</button>
+          <button type="button" className="ql-heading3" title="Heading 3 (selected text)">H3</button>
+          <button type="button" className="ql-list" value="bullet" title="Bulleted List" />
+          <button type="button" className="ql-list" value="ordered" title="Numbered List" />
           <button type="button" className="ql-strike" title="Strikethrough" />
           <button type="button" className="ql-link" title="Link" />
           <button type="button" className="ql-image" title="Image" />
@@ -862,6 +924,12 @@ export const RichTextArea = ({
           <button type="button" className="ql-redo" title="Redo" />
         </div>
       </div>
+      {enableDynamicTags ? (
+        <DynamicTagSuggestionList
+          menu={dynamicTagMenu}
+          onSelect={insertDynamicTag}
+        />
+      ) : null}
     </div>
   );
 };

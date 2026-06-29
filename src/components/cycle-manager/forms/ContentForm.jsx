@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { SectionHeader, TextField, RichTextArea } from "./FormFields";
+import { SectionHeader, TextField, RichTextArea, ToggleSwitch } from "./FormFields";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
 import { Link as LinkIcon, Check, X, Loader2, Trash2, Pencil, FileText, FileVideo, FileAudio, File } from "lucide-react";
@@ -37,6 +37,11 @@ export default function ContentForm({
   // Get existing assets from screen
   const existingAssets = screen?.assets || [];
 
+  // Accepted file extensions for the media upload (no images — images use the
+  // separate "Upload Image/Icon" section handled by <ImageUpload />).
+  const MEDIA_ACCEPT =
+    ".pdf,.ppt,.pptx,.doc,.docx,.txt,.csv,.xlsx,.xls,.mp4,.mp3,.wav";
+
   // Helper function to determine asset type from file
   const getAssetType = (file) => {
     const fileType = file.type.toLowerCase();
@@ -70,6 +75,28 @@ export default function ContentForm({
     return "file";
   };
 
+  const getScreenImageAsset = () =>
+    (existingAssets || []).find(
+      (asset) =>
+        (asset?.type === "image" || asset?.asset_type === "image") &&
+        (asset?.ImageUrl ||
+          asset?.image_url ||
+          asset?.url ||
+          asset?.mediaUrl ||
+          asset?.s3_url)
+    );
+
+  const restoreMediaAfterLinkRemoved = () => {
+    const imageAsset = getScreenImageAsset();
+    updateField("mediaUrl", "");
+    updateField("mediaType", imageAsset ? "image" : "");
+    if (!imageAsset) {
+      updateField("mediaName", "");
+    }
+    updateField("contentMediaFile", null);
+    setUploadedMedia(null);
+  };
+
   const existingMediaAsset = useMemo(() => {
     const mediaUrl = formData.mediaUrl || formData.media?.url;
 
@@ -97,6 +124,45 @@ export default function ContentForm({
     );
   }, [existingAssets, formData.mediaUrl, formData.media]);
 
+  const getYouTubeEmbedUrl = (url) => {
+    if (typeof url !== "string" || !url.trim()) return null;
+    const raw = url.trim();
+    const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    try {
+      const parsed = new URL(normalized);
+      const host = parsed.hostname.replace(/^www\./i, "").toLowerCase();
+      let videoId = "";
+      if (host === "youtube.com" || host === "m.youtube.com") {
+        videoId = parsed.searchParams.get("v") || "";
+      } else if (host === "youtu.be") {
+        videoId = parsed.pathname.split("/").filter(Boolean)[0] || "";
+      }
+      if (!videoId) return null;
+      return `https://www.youtube.com/embed/${videoId}`;
+    } catch {
+      return null;
+    }
+  };
+
+  const getNormalizedPreviewUrl = (url) => {
+    if (typeof url !== "string" || !url.trim()) return "";
+    const raw = url.trim();
+    return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  };
+
+  const isExternalMediaLink = (url) => {
+    const raw = (url || "").trim();
+    if (!/^https?:\/\//i.test(raw)) return false;
+    return !/cdn\.kyper/i.test(raw);
+  };
+
+  const isLinkMediaPreview =
+    typeof formData.mediaUrl === "string" &&
+    formData.mediaUrl.trim() !== "" &&
+    (formData.mediaType === "link" || isExternalMediaLink(formData.mediaUrl));
+  const linkPreviewUrl =
+    getYouTubeEmbedUrl(formData.mediaUrl) || getNormalizedPreviewUrl(formData.mediaUrl);
+
   useEffect(() => {
     const mediaUrl = formData.mediaUrl;
     const mediaType = formData.mediaType;
@@ -119,9 +185,9 @@ export default function ContentForm({
     formData.contentMediaFile,
   ]);
 
-  // Get user-friendly error message from API response or error object
+  // Get user-friendly error message from API response or error objec
   const getUploadErrorMessage = (uploadResponse, error) => {
-    // From apiService return (4xx): uploadResponse.response may have message/detail
+    // From apiService return (4x): uploadResponse.response may have message/detail
     if (uploadResponse?.response) {
       const msg = uploadResponse.response?.message ?? uploadResponse.response?.detail ?? uploadResponse.response?.error;
       if (msg && typeof msg === "string") return msg;
@@ -156,10 +222,14 @@ export default function ContentForm({
     }
   };
 
-  // Handle removing uploaded media — media lives in screenContents.content
-  // (mediaUrl, mediaType, mediaName), NOT in screen.assets[].
-  // Never touch screen.assets here.
+  // Clear link/file media in content.media. When removing a link, restore
+  // media.type to image if a screen icon/hero image still exists in assets[].
   const handleRemoveMedia = () => {
+    if (isLinkMediaPreview || formData.mediaType === "link") {
+      restoreMediaAfterLinkRemoved();
+      return;
+    }
+
     updateField("mediaUrl", "");
     updateField("mediaType", "");
     updateField("mediaName", "");
@@ -173,7 +243,7 @@ export default function ContentForm({
         <div className="p-2">
           <SectionHeader title="Content" />
         </div>
-        <div className="bg-white rounded-lg border-none p-2 align-center">
+        <div className="bg-white rounded-lg p-2 align-center">
           <TextField
             label="Title"
             value={formData.heading || ""}
@@ -199,33 +269,16 @@ export default function ContentForm({
 
           {/* Upload Image/Icon Section */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div></div>
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-medium text-gray-700">
-                  Full Bleed Image
-                </Label>
-                <label className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus-within:outline-none focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 cursor-pointer">
-                  <Input
-                    type="checkbox"
-                    checked={formData.contentFullBleed === true}
-                    onChange={(e) =>
-                      updateField("contentFullBleed", e.target.checked)
-                    }
-                    className="sr-only peer"
-                  />
-                  <span
-                    className={`absolute h-6 w-11 rounded-full transition-colors duration-200 ease-in-out peer-checked:bg-primary bg-gray-300`}
-                  />
-                  <span
-                    className={`absolute inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out peer-checked:translate-x-6 translate-x-1`}
-                  />
-                </label>
-              </div>
-            </div>
+            <ToggleSwitch
+              checked={formData.contentFullBleed === true}
+              onChange={(value) => updateField("contentFullBleed", value)}
+              label="Full Bleed Image"
+              onRequestAutoSave={onRequestAutoSave}
+              className="mb-4"
+            />
 
             <ImageUpload
-              label="Upload Image/Icon"
+              label="Add Image/Icon"
               sessionId={sessionId}
               chapterUid={chapterUuid}
               stepUid={stepUuid}
@@ -261,15 +314,25 @@ export default function ContentForm({
             </Label>
             <div className="relative p-2 bg-gray-100 rounded-lg hover:border-primary transition-colors mb-4">
               {/* Show preview or upload area */}
-              {existingMediaAsset || uploadedMedia ? (
+              {existingMediaAsset || uploadedMedia || isLinkMediaPreview ? (
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-0 mb-2 bg-white overflow-hidden">
                   <div className="relative w-full h-[120px] group/media">
                     {/* Media preview based on type */}
-                    {formData.mediaType === "link" ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 gap-2 px-4">
-                        <LinkIcon className="w-10 h-10 text-blue-400 shrink-0" />
-                        <span className="text-xs text-gray-500 truncate max-w-full">{formData.mediaUrl}</span>
-                      </div>
+                    {isLinkMediaPreview ? (
+                      linkPreviewUrl ? (
+                        <iframe
+                          src={linkPreviewUrl}
+                          title="Media preview"
+                          className="w-full h-full border-0 bg-black"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 gap-2 px-4">
+                          <LinkIcon className="w-10 h-10 text-blue-400 shrink-0" />
+                          <span className="text-xs text-gray-500 truncate max-w-full">{formData.mediaUrl}</span>
+                        </div>
+                      )
                     ) : formData.mediaType === "video" || existingMediaAsset?.type === "video" ? (
                       <div className="w-full h-full flex items-center justify-center bg-gray-50">
                         <video
@@ -314,9 +377,15 @@ export default function ContentForm({
                       <div className="relative inline-block">
                         <Input
                           type="file"
+                          accept={MEDIA_ACCEPT}
                           onChange={async (e) => {
                             const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
                             if (file) {
+                              if (file.type.startsWith("image/")) {
+                                setUploadErrorMedia("Image files are not supported here. Use the Upload Image/Icon section above.");
+                                e.target.value = "";
+                                return;
+                              }
                               handleRemoveMedia();
                               setIsUploadingMedia(true);
                               setUploadErrorMedia(null);
@@ -359,12 +428,18 @@ export default function ContentForm({
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 mb-2 bg-white">
                   <Input
                     type="file"
+                    accept={MEDIA_ACCEPT}
                     onChange={async (e) => {
                       const file =
                         e.target.files && e.target.files[0]
                           ? e.target.files[0]
                           : null;
                       if (file) {
+                        if (file.type.startsWith("image/")) {
+                          setUploadErrorMedia("Image files are not supported here. Use the Upload Image/Icon section above.");
+                          e.target.value = "";
+                          return;
+                        }
                         setIsUploadingMedia(true);
                         setUploadErrorMedia(null);
                         // Update form field
@@ -468,12 +543,13 @@ export default function ContentForm({
                   value={formData.mediaUrl || ""}
                   onChange={(e) => {
                     const url = e.target.value;
-                    updateField("mediaUrl", url);
                     if (url && url.trim() !== "") {
+                      updateField("mediaUrl", url);
                       updateField("mediaType", "link");
-                    } else {
-                      updateField("mediaType", "");
+                      return;
                     }
+
+                    restoreMediaAfterLinkRemoved();
                   }}
                   placeholder="Paste your link here"
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"

@@ -31,6 +31,37 @@ export function writeSessionDataToStorage(sessionData) {
   window.dispatchEvent(new Event("sessionDataChanged"));
 }
 
+let sessionDataNotifierInstalled = false;
+
+/**
+ * Many call sites write localStorage.setItem("sessionData", ...) directly and
+ * never dispatch "sessionDataChanged", leaving the header title stale (the
+ * native "storage" event only fires in other tabs). Patch Storage once so any
+ * sessionData write/remove/clear in this tab notifies all listeners.
+ */
+export function installSessionDataChangeNotifier() {
+  if (typeof window === "undefined" || sessionDataNotifierInstalled) return;
+  sessionDataNotifierInstalled = true;
+
+  const notify = () => window.dispatchEvent(new Event("sessionDataChanged"));
+  const { setItem, removeItem, clear } = Storage.prototype;
+
+  Storage.prototype.setItem = function (key, value) {
+    setItem.call(this, key, value);
+    if (this === window.localStorage && key === "sessionData") notify();
+  };
+
+  Storage.prototype.removeItem = function (key) {
+    removeItem.call(this, key);
+    if (this === window.localStorage && key === "sessionData") notify();
+  };
+
+  Storage.prototype.clear = function () {
+    clear.call(this);
+    if (this === window.localStorage) notify();
+  };
+}
+
 export function applyCycleTitleLocally(sessionData, newTitle) {
   const trimmed = (newTitle ?? "").trim() || DEFAULT_TITLE;
   const updated = {

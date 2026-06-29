@@ -3,6 +3,7 @@
 import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Label";
+import { Textarea } from "@/components/ui/Textarea";
 import { graphqlClient } from "@/lib/graphql-client";
 
 export default function ChapterTextarea({
@@ -149,7 +150,7 @@ export default function ChapterTextarea({
   return (
     <div className="flex flex-col gap-2 p-2 border rounded-md bg-white">
       <Label className="text-sm">Add Phase Description</Label>
-      <textarea
+      <Textarea
         className="w-full min-h-28 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         value={text}
         onChange={(e) => setText(e.target.value)}

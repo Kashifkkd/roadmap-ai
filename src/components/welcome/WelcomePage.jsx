@@ -139,6 +139,7 @@ export default function WelcomePage() {
 
 
   useEffect(() => {
+    console.log("changes to see prod live");
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
         behavior: "smooth",

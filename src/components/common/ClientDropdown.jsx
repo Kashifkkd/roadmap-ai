@@ -105,6 +105,8 @@ export default function ClientDropdown({
 
   const handleClientClick = (client) => {
     setIsOpen(false);
+    setIsAllClientsOpen(false);
+    setSearchQuery("");
     if (onClientSelect) {
       onClientSelect(client);
     }
@@ -132,6 +134,7 @@ export default function ClientDropdown({
   };
 
   const handleAllClientsClientClick = (client) => {
+    setIsOpen(false);
     setIsAllClientsOpen(false);
     setSearchQuery("");
     if (onClientSelect) {

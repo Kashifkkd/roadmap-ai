@@ -31,6 +31,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Textarea";
 import { Stack } from "@mui/material";
 import DevicePreview from "./DevicePreview";
 import GenerateStepImageButton from "./GenerateStepImageButton";
@@ -1120,7 +1121,7 @@ export default function CometManagerSidebar({
                                   {/* <label className="text-xs font-medium text-gray-600 mb-1 block ">
                                     Chapter name
                                   </label> */}
-                                  <textarea
+                                  <Textarea
                                     ref={chapterEditInputRef}
                                     value={editChapterName}
                                     onChange={(e) =>
@@ -1129,8 +1130,8 @@ export default function CometManagerSidebar({
                                     onKeyDown={(e) =>
                                       handleChapterEditKeyDown(e, chapterId)
                                     }
-                                    spellCheck={false}
-                                    className="w-full px-2 py-1.5 text-xs focus:outline-none resize-none overflow-y-auto"
+                                    wrapperClassName="bg-transparent"
+                                    className="w-full min-h-0 px-2 py-1.5 text-xs border-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-none overflow-y-auto"
                                     placeholder="Chapter name"
                                     rows={2}
                                   />
@@ -1410,7 +1411,7 @@ export default function CometManagerSidebar({
                                               onClick={(e) => e.stopPropagation()}
                                             >
                                               <div className="border border-gray-300 rounded-md p-2 bg-white">
-                                                <textarea
+                                                <Textarea
                                                   ref={stepNameEditInputRef}
                                                   value={editStepName}
                                                   onChange={(e) =>
@@ -1426,8 +1427,8 @@ export default function CometManagerSidebar({
                                                       step.description,
                                                     )
                                                   }
-                                                  spellCheck={false}
-                                                  className="w-full px-2 py-1.5 text-xs focus:outline-none resize-none overflow-y-auto text-gray-900"
+                                                  wrapperClassName="bg-transparent"
+                                                  className="w-full min-h-0 px-2 py-1.5 text-xs border-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-none overflow-y-auto text-gray-900"
                                                   placeholder="Step name"
                                                   rows={2}
                                                 />
@@ -1588,7 +1589,7 @@ export default function CometManagerSidebar({
                                                       `Step ${stepIndex + 1}`}
                                                   </h4> */}
                                                   <div className="border border-gray-300 rounded-md p-2 bg-white">
-                                                    <textarea
+                                                    <Textarea
                                                       ref={
                                                         stepDescriptionEditInputRef
                                                       }
@@ -1608,8 +1609,8 @@ export default function CometManagerSidebar({
                                                           step.name,
                                                         )
                                                       }
-                                                      spellCheck={false}
-                                                      className="w-full px-2 text-xs focus:outline-none resize-none overflow-y-auto"
+                                                      wrapperClassName="bg-transparent"
+                                                      className="w-full min-h-0 px-2 text-xs border-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-none overflow-y-auto"
                                                       rows={3}
                                                       placeholder="Step description"
                                                     />

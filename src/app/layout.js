@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { Geist, Geist_Mono, Noto_Serif, Inter } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import Header from "@/components/header/Header";
 import { usePathname } from "next/navigation";
@@ -12,6 +11,7 @@ import { Toaster } from "@/components/ui/toast";
 import QueryProvider from "@/providers/QueryProvider";
 import CloudfrontCookieManager from "@/components/auth/CloudfrontCookieManager";
 import SpellCheckProvider from "@/components/spellcheck/SpellCheckProvider";
+import { installSessionDataChangeNotifier } from "@/lib/cycleTitle";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -75,6 +75,10 @@ function LayoutContent({ children }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    // Ensure every sessionData write in this tab fires "sessionDataChanged",
+    // so the header title, cycle title, and document title stay in sync.
+    installSessionDataChangeNotifier();
+
     const updateDocumentTitle = () => {
       let cycleTitle = "";
       try {
@@ -92,14 +96,10 @@ function LayoutContent({ children }) {
     window.addEventListener("sessionDataChanged", updateDocumentTitle);
     window.addEventListener("sessionIdChanged", updateDocumentTitle);
 
-    // Keep title in sync even when sessionData is updated without events.
-    const syncIntervalId = window.setInterval(updateDocumentTitle, 300);
-
     return () => {
       window.removeEventListener("storage", updateDocumentTitle);
       window.removeEventListener("sessionDataChanged", updateDocumentTitle);
       window.removeEventListener("sessionIdChanged", updateDocumentTitle);
-      window.clearInterval(syncIntervalId);
     };
   }, [pathname]);
 
@@ -129,9 +129,6 @@ export default function RootLayout({ children }) {
         className={`font-sans ${notoSerif.variable} ${inter.variable} antialiased 
         h-[100vh] w-[100vw]`}
       >
-        <Script id="microsoft-clarity" strategy="afterInteractive">
-          {`(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "wjroiskydw");`}
-        </Script>
         <QueryProvider>
           <CloudfrontCookieManager />
           <SpellCheckProvider>

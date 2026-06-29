@@ -4,6 +4,7 @@
  */
 
 import { tokenManager } from "./api-client";
+import { clearAuthSession } from "@/lib/clear-auth-session";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
 
@@ -88,22 +89,9 @@ export function isRefreshing() {
  * Logout the user - clear all tokens and redirect to login
  */
 export function logout() {
-
     if (typeof window === "undefined") return;
 
-    // Log current tokens before clearing
-    const currentAccessToken = localStorage.getItem("access_token");
-    const currentRefreshToken = localStorage.getItem("refresh_token");
-
-    // Clear all tokens
-    tokenManager.clearAllTokens();
-
-    // Clear other auth-related data
-    localStorage.removeItem("user_name");
-    localStorage.removeItem("token_type");
-
-    // Dispatch auth-changed event
-    window.dispatchEvent(new Event("auth-changed"));
+    clearAuthSession();
 
     // Redirect to home/login page
     window.location.href = "/";

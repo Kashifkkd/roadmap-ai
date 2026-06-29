@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Plus, GripVertical, Expand, Trash2 } from "lucide-react";
 // Dropdown removed: Edit, Browse Images were here; only delete (trash) is shown on the card.
 // import { MoreVertical, Pencil, ImageIcon } from "lucide-react";
@@ -173,6 +173,7 @@ export default function ScreenCard({
   chapter,
   selectedScreen,
   index,
+  draggedIndex,
   isGeneratingImages,
   onDragStart,
   onDragEnd,
@@ -183,8 +184,10 @@ export default function ScreenCard({
   onRequestDeleteScreen,
   isDeleting = false,
 }) {
+  const isDragging = draggedIndex === index;
   const [showAddButton, setShowAddButton] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const cardRef = useRef(null);
 
   const handleRequestDelete = (e) => {
     e.stopPropagation();
@@ -223,16 +226,18 @@ export default function ScreenCard({
       onMouseLeave={() => setShowAddButton(false)}
     >
       <div
+        ref={cardRef}
         draggable
         onDragStart={(e) => onDragStart(e, index)}
         onDragEnd={onDragEnd}
-        onDragOver={onDragOver}
+        onDragOver={(e) => onDragOver(e, index)}
         onDrop={(e) => onDrop(e, index)}
         onClick={() => onClick(screen)}
         className={`rounded-lg p-1.5 sm:p-2 flex flex-col justify-between items-center gap-1 sm:gap-1 text-xs
-          shrink-0 shadow-sm hover:shadow-md cursor-pointer 
+          shrink-0 shadow-sm hover:shadow-md cursor-pointer
           border border-transparent hover:border-primary-600
           transition-all duration-300 ease-in-out
+          ${isDragging ? "opacity-50 scale-[1.04] shadow-xl ring-2 ring-primary-400 z-10" : ""}
           ${selectedScreen?.id === screen.id
             ? "bg-primary-700 hover:bg-primary-600 min-w-35 sm:min-w-37.5 max-w-37.5 sm:max-w-45"
             : "bg-gray-100 hover:bg-primary-100 min-w-27.5 sm:min-w-37.5 max-w-37.5 sm:max-w-37.5"
@@ -302,6 +307,7 @@ export default function ScreenCard({
                     <img
                       src={previewImageUrl || "/noImage.png"}
                       alt={screen.title || "Screen preview"}
+                      draggable="false"
                       className="w-full h-full object-cover transition-all duration-300"
                       onError={(e) => (e.target.src = "/error-img.png")}
                     />
@@ -336,25 +342,39 @@ export default function ScreenCard({
             </div>
           </div>
         </div>
-        <div className=" w-full flex justify-between items-center">
-          <Expand
-            style={{ width: "1em", height: "1em" }}
+        <div
+          className="w-full flex justify-between items-center"
+          draggable
+          onDragStart={(e) => {
+            e.stopPropagation();
+            if (cardRef.current) {
+              const rect = cardRef.current.getBoundingClientRect();
+              e.dataTransfer.setDragImage(cardRef.current, e.clientX - rect.left, e.clientY - rect.top);
+            }
+            onDragStart(e, index);
+          }}
+        >
+          <div
+            className="cursor-pointer hover:scale-110 transition-all duration-300"
             onClick={(e) => {
               e.stopPropagation();
               setIsDialogOpen(true);
             }}
-            className={`cursor-pointer hover:scale-110 transition-all duration-300 ${selectedScreen?.id === screen.id ? "text-white" : "text-gray-500"
-              }`}
-          />
+          >
+            <Expand
+              style={{ width: "1em", height: "1em" }}
+              className={selectedScreen?.id === screen.id ? "text-white" : "text-gray-500"}
+            />
+          </div>
           <div
-            className={`p-1 rounded transition-colors duration-300 ${selectedScreen?.id === screen.id
+            className={`p-1 rounded transition-colors duration-300 cursor-grab active:cursor-grabbing ${selectedScreen?.id === screen.id
                 ? "bg-primary-800"
                 : "bg-background"
               }`}
           >
             <GripVertical
               style={{ width: "1em", height: "1em" }}
-              className={`cursor-grab active:cursor-grabbing transition-colors duration-300 ${selectedScreen?.id === screen.id
+              className={`transition-colors duration-300 ${selectedScreen?.id === screen.id
                   ? "text-white"
                   : "text-gray-500"
                 }`}

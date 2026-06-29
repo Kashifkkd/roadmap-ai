@@ -157,7 +157,7 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
         style={customStyle}
       >
         <DialogTitle className="sr-only">Login</DialogTitle>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" data-spellcheck="false">
           {/* Email Field */}
           <div className="space-y-2">
             <Label className="text-sm font-bold text-black">Email</Label>
@@ -165,7 +165,9 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
               <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
               <Input
                 name="email"
-                type="text"
+                type="email"
+                spellCheck={false}
+                autoComplete="email"
                 placeholder="Enter Email"
                 value={formData.email}
                 onChange={handleInputChange}
@@ -188,6 +190,8 @@ export function LoginForm({ open = true, onOpenChange, buttonPosition }) {
               <Input
                 name="password"
                 type={showPassword ? "text" : "password"}
+                spellCheck={false}
+                autoComplete="current-password"
                 placeholder="Enter Password"
                 value={formData.password}
                 onChange={handleInputChange}

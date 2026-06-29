@@ -1,43 +1,12 @@
 import React, { useState } from "react";
-import { TextField, RichTextArea, SectionHeader } from "./FormFields";
+import { TextField, RichTextArea, SectionHeader, ToggleSwitch } from "./FormFields";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
-import { Info } from "lucide-react";
 import ImageUpload from "@/components/common/ImageUpload";
 import UploadTool from "@/components/common/UploadTool";
 import { deleteToolByUrl } from "@/api/generateStepImages";
+import { renameTool } from "@/api/uploadToolfile";
 import { toast } from "@/components/ui/toast";
-
-// Toggle Switch Component
-const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
-  <div className="flex items-center justify-between py-2">
-    <div className="flex items-center gap-2">
-      <Label className="text-sm font-medium text-gray-800">{label}</Label>
-      {showInfo && (
-        <Info
-          size={16}
-          className="text-gray-500 cursor-help"
-          title="Users will be asked a reflection question when they complete this action"
-        />
-      )}
-    </div>
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-        checked ? "bg-primary" : "bg-gray-300"
-      }`}
-      role="switch"
-      aria-checked={checked}
-    >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
-          checked ? "translate-x-6" : "translate-x-1"
-        }`}
-      />
-    </button>
-  </div>
-);
 
 export default function ActionsForm({
   formData,
@@ -185,7 +154,15 @@ export default function ActionsForm({
             onSelect={(event) =>
               onTextFieldSelect?.("actionToolName", event, formData.toolName)
             }
-            onBlur={onFieldBlur}
+            onBlur={(e) => {
+              onFieldBlur?.();
+              const newName = e.target.value?.trim();
+              if (newName && formData.toolLink && sessionId && screenUuid) {
+                renameTool(sessionId, screenUuid, newName).catch((err) =>
+                  console.error("Failed to rename tool:", err)
+                );
+              }
+            }}
           />
         </div>
 
@@ -199,10 +176,10 @@ export default function ActionsForm({
             stepId={stepUuid || stepId || ""}
             screenId={screenUuid || screenId || ""}
             screenContentId={screen?.screenContents?.uuid || ""}
-            toolName={formData.toolName || formData.title || "Tool"}
+            toolName={formData.toolName || "Tool"}
             onUploadSuccess={handleToolUploadSuccess}
             currentUrl={formData.toolLink || ""}
-            currentName={formData.toolName || formData.title || ""}
+            currentName={formData.toolName || ""}
             onClearTool={handleClearTool}
           />
           {!formData.toolLink && (
@@ -256,12 +233,14 @@ export default function ActionsForm({
               checked={formData.canCompleteNow ?? false}
               onChange={(value) => updateField("canCompleteNow", value)}
               label="Users can complete this Micro-action immediately"
+              onRequestAutoSave={onRequestAutoSave}
             />
 
             <ToggleSwitch
               checked={formData.canSchedule ?? false}
               onChange={(value) => updateField("canSchedule", value)}
               label="Users can schedule this Micro-action for later"
+              onRequestAutoSave={onRequestAutoSave}
             />
 
             <ToggleSwitch
@@ -269,24 +248,25 @@ export default function ActionsForm({
               onChange={(value) => updateField("hasReflectionQuestion", value)}
               label="Users are prompted with a reflection question when completing this Micro-action"
               showInfo={true}
+              onRequestAutoSave={onRequestAutoSave}
             />
           </div>
-          {/* {formData.hasReflectionQuestion && (
-            <div className="mb-4 mt-4 ml-6">
-              <Label className="block text-sm font-medium text-gray-700 mb-2">
-                Reflection Question
-              </Label>
-              <Input
-                type="text"
-                value={formData.reflection_question || ""}
-                onChange={(e) =>
-                  updateField("reflection_question", e.target.value)
-                }
+          {formData.hasReflectionQuestion && (
+            <div className="mt-4 ml-6">
+              <TextField
+                label="Reflection Question"
+                value={formData.reflectionPrompt || ""}
+                onChange={(value) => updateField("reflectionPrompt", value)}
                 placeholder="Enter reflection question..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-white"
+                onRequestAutoSave={onRequestAutoSave}
+                inputProps={{
+                  onSelect: (event) =>
+                    onTextFieldSelect?.("actionReflectionPrompt", event, formData.reflectionPrompt),
+                  onBlur: onFieldBlur,
+                }}
               />
             </div>
-          )} */}
+          )}
         </div>
       </div>
     </div>

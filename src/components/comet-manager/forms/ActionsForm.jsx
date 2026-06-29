@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Info } from "lucide-react";
 import UploadTool from "@/components/common/UploadTool";
+import { renameTool } from "@/api/uploadToolfile";
 
-
+// Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
   <div className="flex items-center justify-between py-2">
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-2">
       <Label className="text-sm font-medium text-gray-800">{label}</Label>
       {showInfo && (
         <Info
@@ -111,7 +112,15 @@ export default function ActionsForm({
             onSelect={(event) =>
               onTextFieldSelect?.("actionToolName", event, formData.toolName)
             }
-            onBlur={onFieldBlur}
+            onBlur={(e) => {
+              onFieldBlur?.();
+              const newName = e.target.value?.trim();
+              if (newName && formData.toolLink && sessionId && screenUuid) {
+                renameTool(sessionId, screenUuid, newName).catch((err) =>
+                  console.error("Failed to rename tool:", err)
+                );
+              }
+            }}
           />
         </div>
 
@@ -125,7 +134,7 @@ export default function ActionsForm({
             stepId={stepUuid || stepId || ""}
             screenId={screenUuid || screenId || ""}
             screenContentId={screen?.screenContents?.uuid || ""}
-            toolName={formData.toolName || formData.title || "Tool"}
+            toolName={formData.toolName || "Tool"}
             onUploadSuccess={handleToolUploadSuccess}
           />
           <Label className="block text-sm font-medium text-gray-700 mb-2">

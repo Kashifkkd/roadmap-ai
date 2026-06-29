@@ -5,11 +5,17 @@ import {
   SPELLCHECK_LANG,
   SPELLCHECK_SKIP_ATTR,
 } from "./constants";
+import { tokenizeWords } from "./tokenize";
 
-const WORD_PATTERN = /[a-zA-Z']+/;
+const WORD_PATTERN = /[a-zA-Z]+(?:'[a-zA-Z]+)*(?:-[a-zA-Z]+(?:'[a-zA-Z]+)*)*/;
 
 export function isExplicitlyDisabled(element) {
   if (!element) return true;
+
+  // React-managed overlays opt in explicitly; ancestor opt-out must not block them.
+  if (element.dataset?.kyperSpellcheckManaged === "react") {
+    return false;
+  }
 
   if (element.closest?.("[data-spellcheck='false']")) {
     return true;
@@ -98,6 +104,32 @@ export function applySpellcheckAttributes(element) {
   return true;
 }
 
+/**
+ * Hide the misspelling underline for the word the caret is currently inside,
+ * mirroring native browser behavior: a word is not flagged until the user
+ * finishes typing it (moves the caret out, types a space, or blurs).
+ */
+export function excludeWordAtCaret(field, misspelledWords) {
+  if (
+    !field ||
+    !Array.isArray(misspelledWords) ||
+    misspelledWords.length === 0 ||
+    typeof document === "undefined" ||
+    document.activeElement !== field
+  ) {
+    return misspelledWords ?? [];
+  }
+
+  const caret = field.selectionStart;
+  if (caret == null || caret !== field.selectionEnd) {
+    return misspelledWords;
+  }
+
+  return misspelledWords.filter(
+    ({ start, end }) => caret < start || caret > end
+  );
+}
+
 export function collectSpellcheckElements(root = document.body) {
   if (!root) return [];
 
@@ -128,36 +160,110 @@ export function getWordAtIndex(text, index) {
     return null;
   }
 
-  let start = index;
-  let end = index;
+  const caret = Math.min(index, text.length);
+  const words = tokenizeWords(text);
 
-  if (start > text.length) {
-    start = text.length;
+  return (
+    words.find(({ start, end }) => caret >= start && caret < end) ??
+    words.find(({ start, end }) => caret === end && end > start) ??
+    null
+  );
+}
+
+function getQuillBlockElements(root) {
+  const blocks = [...root.children];
+  return blocks.length ? blocks : [root];
+}
+
+export function buildQuillPlainTextFromRoot(root) {
+  return getQuillBlockElements(root)
+    .map((block) => block.textContent ?? "")
+    .join("\n")
+    .replace(/\n$/, "");
+}
+
+function getQuillTextOffsetInRoot(root, targetNode, targetOffset) {
+  let offset = 0;
+
+  for (const block of getQuillBlockElements(root)) {
+    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode();
+
+    while (node) {
+      if (node === targetNode) {
+        return offset + targetOffset;
+      }
+      offset += node.textContent?.length ?? 0;
+      node = walker.nextNode();
+    }
+
+    offset += 1;
   }
 
-  if (end > text.length) {
-    end = text.length;
+  return getTextOffsetInElement(root, targetNode, targetOffset);
+}
+
+export function createQuillRangeFromTextOffsets(root, start, end) {
+  let offset = 0;
+  const range = document.createRange();
+  let startSet = false;
+
+  for (const block of getQuillBlockElements(root)) {
+    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode();
+
+    while (node) {
+      const length = node.textContent?.length ?? 0;
+
+      if (!startSet && offset + length >= start) {
+        range.setStart(node, Math.max(0, start - offset));
+        startSet = true;
+      }
+
+      if (startSet && offset + length >= end) {
+        range.setEnd(node, Math.max(0, end - offset));
+        return range;
+      }
+
+      offset += length;
+      node = walker.nextNode();
+    }
+
+    offset += 1;
   }
 
-  if (start > 0 && !/\w/.test(text[start]) && /\w/.test(text[start - 1])) {
-    start -= 1;
-    end = start;
-  }
+  return startSet ? range : null;
+}
 
-  while (start > 0 && /\w/.test(text[start - 1])) {
-    start -= 1;
-  }
+function isQuillEditor(element) {
+  return element?.classList?.contains("ql-editor");
+}
 
-  while (end < text.length && /\w/.test(text[end])) {
-    end += 1;
-  }
-
-  const word = text.slice(start, end);
-  if (!WORD_PATTERN.test(word)) {
+export function enrichWordInfoForContentEditable(element, wordInfo) {
+  if (!wordInfo?.word) {
     return null;
   }
 
-  return { word, start, end };
+  if (wordInfo.range) {
+    return wordInfo;
+  }
+
+  if (!("start" in wordInfo) || !("end" in wordInfo)) {
+    return wordInfo;
+  }
+
+  const range = isQuillEditor(element)
+    ? createQuillRangeFromTextOffsets(element, wordInfo.start, wordInfo.end)
+    : createRangeFromTextOffsets(element, wordInfo.start, wordInfo.end);
+
+  if (!range) {
+    return null;
+  }
+
+  return {
+    ...wordInfo,
+    range,
+  };
 }
 
 export function getWordFromTextControl(element) {
@@ -376,23 +482,30 @@ export function getWordFromContentEditable(element, x, y) {
     return null;
   }
 
-  const text = element.innerText || element.textContent || "";
-  const caretOffset = getTextOffsetInElement(
-    element,
-    range.startContainer,
-    range.startOffset
-  );
+  const quillEditor = isQuillEditor(element);
+  const text = quillEditor
+    ? buildQuillPlainTextFromRoot(element)
+    : element.innerText || element.textContent || "";
+  const caretOffset = quillEditor
+    ? getQuillTextOffsetInRoot(
+        element,
+        range.startContainer,
+        range.startOffset
+      )
+    : getTextOffsetInElement(
+        element,
+        range.startContainer,
+        range.startOffset
+      );
   const wordInfo = getWordAtIndex(text, caretOffset);
 
   if (!wordInfo) {
     return null;
   }
 
-  const wordRange = createRangeFromTextOffsets(
-    element,
-    wordInfo.start,
-    wordInfo.end
-  );
+  const wordRange = quillEditor
+    ? createQuillRangeFromTextOffsets(element, wordInfo.start, wordInfo.end)
+    : createRangeFromTextOffsets(element, wordInfo.start, wordInfo.end);
 
   if (!wordRange) {
     return null;
@@ -400,6 +513,8 @@ export function getWordFromContentEditable(element, x, y) {
 
   return {
     word: wordInfo.word,
+    start: wordInfo.start,
+    end: wordInfo.end,
     range: wordRange,
   };
 }

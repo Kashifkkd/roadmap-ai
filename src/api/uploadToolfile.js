@@ -30,3 +30,11 @@ export const uploadToolfile = async (
     },
   });
 };
+
+export const renameTool = async (sessionId, screenUid, name) => {
+  return await apiService({
+    endpoint: endpoints.renameTool,
+    method: "PATCH",
+    data: { session_id: sessionId, screen_uid: screenUid, name },
+  });
+};

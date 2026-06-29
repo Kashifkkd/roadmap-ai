@@ -2,6 +2,7 @@ import React from "react";
 import {
   SectionHeader,
   TextField,
+  TextArea,
   RichTextArea,
   NumberField,
 } from "./FormFields";
@@ -80,6 +81,23 @@ export default function PollLinearForm({
           }
           onBlur={onRichTextBlur}
           valueFormat="html"
+        />
+        <TextArea
+          label="Key Learning"
+          value={formData.keyLearning || ""}
+          onChange={(value) => updateField("keyLearning", value)}
+          onRequestAutoSave={onRequestAutoSave}
+          placeholder=""
+          rows={3}
+          inputProps={{
+            onSelect: (event) =>
+              onTextFieldSelect?.(
+                "linearKeyLearning",
+                event,
+                formData.keyLearning
+              ),
+            onBlur: onFieldBlur,
+          }}
         />
         <div className="mb-4">
           <Label className="block text-sm font-medium text-gray-700 mb-2">

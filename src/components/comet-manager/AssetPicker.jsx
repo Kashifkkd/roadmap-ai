@@ -57,10 +57,23 @@ export default function AssetPicker({
       });
       const data = res?.response ?? res;
       if (data?.success || data?.asset_url) {
+        // Build the canonical asset entry — every URL alias + asset_id +
+        // provenance, matching what the backend's mirror helper writes to
+        // Redis. Without asset_id, publish-time linking (link_assets_by_uuid)
+        // can't resolve this entry to its DB row.
+        const url = data.asset_url || asset.url;
+        const assetId = data.asset_id ?? asset.id;
         onAssetLinked?.({
+          status: "success",
           type: "image",
-          url: data.asset_url || asset.url,
+          url,
+          ImageUrl: url,
+          image_url: url,
           key: "",
+          asset_id: assetId,
+          id: assetId,
+          generated_by: "user_selection",
+          source: "asset_library",
         });
         onClose();
       } else {

@@ -40,7 +40,7 @@ function mergeRefs(...refs) {
 }
 
 const Input = React.forwardRef(function Input(
-  { className, type, spellCheck, lang, ...props },
+  { className, wrapperClassName, type, spellCheck, lang, ...props },
   forwardedRef
 ) {
   const normalizedType = (type || "text").toLowerCase();
@@ -49,7 +49,8 @@ const Input = React.forwardRef(function Input(
   const { ref: registerRef, ...restProps } = props;
   const { fieldRef, backdropRef, markup } = useSpellCheckOverlay(
     isSpellCheckEnabled,
-    false
+    false,
+    props.value
   );
 
   const inputElement = (
@@ -75,7 +76,12 @@ const Input = React.forwardRef(function Input(
   }
 
   return (
-    <div className="relative w-full rounded-md bg-background spellcheck-field">
+    <div
+      className={cn(
+        "relative w-full rounded-md bg-background spellcheck-field",
+        wrapperClassName
+      )}
+    >
       <div
         ref={backdropRef}
         className="spellcheck-backdrop"

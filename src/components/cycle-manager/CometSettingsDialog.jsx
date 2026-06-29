@@ -46,8 +46,60 @@ import {
   ART_STYLE_KEYS,
   normalizeArtStyleFromApi,
 } from "@/constants/artStyles";
+import { LANGUAGES, normalizeLanguageFromApi } from "@/constants/languages";
 import { toast } from "@/components/ui/toast";
 import PathEmailSettingsPanel from "@/components/cycle-manager/PathEmailSettingsPanel";
+import { scrollElementIntoViewSmooth } from "@/lib/smoothScroll";
+import TimezoneSelect, {
+  resolveDefaultTimezone,
+  findTimezoneById,
+  formatTimezoneLabel,
+} from "@/components/common/TimezoneSelect";
+
+// Kickoff timezone UI — hidden until product enables it.
+// Set to `true` to show timezone column + picker in Notifications → Kick Off.
+const KICKOFF_TIMEZONE_UI_ENABLED = false;
+
+const DATE_INPUT_MIN = "1000-01-01";
+const DATE_INPUT_MAX = "9999-12-31";
+
+const DEFAULT_TIMEZONE = resolveDefaultTimezone();
+
+const formatKickoffTimezone = (timezone) =>
+  formatTimezoneLabel(findTimezoneById(timezone || DEFAULT_TIMEZONE), {
+    compact: true,
+  });
+
+const kickOffListGridClass = KICKOFF_TIMEZONE_UI_ENABLED
+  ? "grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1.5rem]"
+  : "grid-cols-[minmax(0,1fr)_minmax(0,1fr)_1.5rem]";
+
+const sanitizeDateInputValue = (value) => {
+  if (!value) return "";
+  const [year = "", month = "", day = ""] = value.split("-");
+  const sanitizedYear = year.slice(0, 4);
+  if (!month) return sanitizedYear;
+  if (!day) return `${sanitizedYear}-${month}`;
+  return `${sanitizedYear}-${month}-${day}`;
+};
+
+const notificationLabelClass = "text-sm font-medium text-gray-800 leading-5";
+const notificationUtcSuffixClass = "font-normal text-gray-500";
+const notificationFieldClass = "flex flex-col gap-2";
+const notificationCardClass =
+  "border border-gray-200 rounded-xl bg-white p-4 md:p-5 space-y-5";
+const notificationSelectTriggerClass =
+  "w-full h-10 border-2 border-gray-200 rounded-lg bg-white";
+const notificationDateTimeInputClass =
+  "w-full h-10 border-2 border-gray-200 rounded-lg pr-10 bg-white [&::-webkit-calendar-picker-indicator]:opacity-0";
+const notificationSectionTitleClass = "text-sm font-semibold text-gray-900";
+
+const NotificationFieldLabel = ({ children, utc = false }) => (
+  <Label className={notificationLabelClass}>
+    {children}
+    {utc && <span className={notificationUtcSuffixClass}> (UTC)</span>}
+  </Label>
+);
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
@@ -80,7 +132,7 @@ const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
   </div>
 );
 
-// Helper to extract plain text from Quill Delta JSON or HTML
+
 const extractPlainText = (value) => {
   if (!value) return "";
   try {
@@ -123,6 +175,13 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [kickOffDates, setKickOffDates] = useState([]);
   const [newKickOffDate, setNewKickOffDate] = useState("");
   const [newKickOffTime, setNewKickOffTime] = useState("");
+  const [newKickOffTimezone, setNewKickOffTimezone] = useState(DEFAULT_TIMEZONE);
+  const kickOffDateInputRef = useRef(null);
+  const kickOffTimeInputRef = useRef(null);
+  const adHocEmailSendDateInputRef = useRef(null);
+  const adHocEmailSendTimeInputRef = useRef(null);
+  const adHocPushSendDateInputRef = useRef(null);
+  const adHocPushSendTimeInputRef = useRef(null);
 
   // Ad Hoc Notifications
   const [adHocDraft, setAdHocDraft] = useState({
@@ -137,6 +196,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
     pushSendTime: "",
   });
   const [showAdHocDraft, setShowAdHocDraft] = useState(false);
+  const adHocDraftRef = useRef(null);
   const [sendViaEmailList, setSendViaEmailList] = useState([]);
   const [sendViaPushList, setSendViaPushList] = useState([]);
   const [expandedNotification, setExpandedNotification] = useState(null);
@@ -370,15 +430,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         }
 
         if (enabledAttributes.language !== undefined) {
-          const lang = String(enabledAttributes.language).trim().toLowerCase();
-          // Map full language names to codes if needed
-          const langCodeMap = { english: "en", spanish: "es", french: "fr" };
-          const validCodes = ["en", "es", "fr"];
-          // If it's already a valid code, use it; otherwise try to map from full name
-          const normalizedLang = validCodes.includes(lang)
-            ? lang
-            : langCodeMap[lang] || "en";
-          setLanguage(normalizedLang);
+          setLanguage(normalizeLanguageFromApi(enabledAttributes.language));
         }
 
         // Load all boolean toggles
@@ -456,12 +508,16 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         const parsed = savedKickOffDates.map((entry) => {
           if (typeof entry === "string" && entry.includes(" ")) {
             const [date, time] = entry.split(" ");
-            return { date, time };
+            return { date, time, timezone: DEFAULT_TIMEZONE };
           }
           if (typeof entry === "object" && entry.date) {
-            return entry;
+            return {
+              date: entry.date,
+              time: entry.time || "",
+              timezone: entry.timezone || DEFAULT_TIMEZONE,
+            };
           }
-          return { date: entry, time: "" };
+          return { date: entry, time: "", timezone: DEFAULT_TIMEZONE };
         });
         setKickOffDates(parsed);
       } else {
@@ -598,14 +654,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         reminder_type: reminderType || "",
         source_alignment: sourceAlignment || "",
         duration: duration || "",
-        language:
-          (language === "en"
-            ? "english"
-            : language === "es"
-              ? "spanish"
-              : language === "fr"
-                ? "french"
-                : language) || "english",
+        language: language || "en",
         chapters: chapters,
         action_hub: actionHub,
         checklists: checklists,
@@ -641,9 +690,15 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         return acc;
       }, {});
 
-      // Format kick-off dates as "YYYY-MM-DD HH:MM" strings for the backend
-      const formattedKickOffDates = kickOffDates.map(
-        (item) => `${item.date} ${item.time}`,
+      // Format kick-off dates for the backend
+      const formattedKickOffDates = kickOffDates.map((item) =>
+        KICKOFF_TIMEZONE_UI_ENABLED
+          ? {
+              date: item.date,
+              time: item.time,
+              timezone: item.timezone || DEFAULT_TIMEZONE,
+            }
+          : `${item.date} ${item.time}`,
       );
 
       const updatedResponsePath = {
@@ -733,10 +788,19 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
     if (newKickOffDate && newKickOffTime) {
       setKickOffDates([
         ...kickOffDates,
-        { date: newKickOffDate, time: newKickOffTime },
+        {
+          date: newKickOffDate,
+          time: newKickOffTime,
+          ...(KICKOFF_TIMEZONE_UI_ENABLED
+            ? { timezone: newKickOffTimezone || DEFAULT_TIMEZONE }
+            : {}),
+        },
       ]);
       setNewKickOffDate("");
       setNewKickOffTime("");
+      if (KICKOFF_TIMEZONE_UI_ENABLED) {
+        setNewKickOffTimezone(DEFAULT_TIMEZONE);
+      }
     }
   };
 
@@ -902,20 +966,18 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
   const notificationSettingsContent = (
     <>
-      <div className="pt-4 pb-2 px-2 bg-gray-100 rounded-lg">
-        <p className="font-bold mb-4 px-2 text-gray-800">
-          Notification Settings{" "}
+      <div className="p-4 bg-gray-100 rounded-xl">
+        <p className="font-bold mb-4 text-gray-800">
+          Notification Settings
         </p>
-        <div className="space-y-4 bg-white p-2 rounded-lg">
-          <div className="flex flex-col space-y-2 max-w-md">
-            <Label className="text-sm font-medium text-gray-800">
-              Reminder Type
-            </Label>
+        <div className="space-y-4 bg-white p-4 rounded-lg">
+          <div className={`${notificationFieldClass} max-w-md`}>
+            <NotificationFieldLabel>Reminder Type</NotificationFieldLabel>
             <Select
               value={reminderType || undefined}
               onValueChange={setReminderType}
             >
-              <SelectTrigger className="w-full border-2 rounded-lg border-gray-300">
+              <SelectTrigger className={notificationSelectTriggerClass}>
                 <SelectValue placeholder="Select reminder type" />
               </SelectTrigger>
               <SelectContent>
@@ -941,72 +1003,105 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm text-gray-900 font-medium">Kick Off</h3>
+          <h3 className={notificationSectionTitleClass}>Kick Off</h3>
           <Info size={16} className="text-gray-500 cursor-help" />
         </div>
-        <div className="border-2 border-gray-200 rounded-lg p-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="border-2 border-gray-200 rounded-lg p-4">
-            <div className="space-y-2">
-              <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium text-gray-800 bg-gray-100 p-2">
-                <div>Kick off Date</div>
-                <div>Kick off Time</div>
-              </div>
-              <div className="border-t border-gray-200"></div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+          <div className="rounded-lg border border-gray-200 p-4 flex flex-col min-h-[17rem] max-h-[17rem]">
+            <div
+              className={`shrink-0 grid ${kickOffListGridClass} items-center gap-x-3 rounded-md bg-gray-100 px-3 py-2.5 text-sm font-medium text-gray-800`}
+            >
+              <span>Kick off Date</span>
+              <span>Kick off Time</span>
+              {KICKOFF_TIMEZONE_UI_ENABLED ? <span>Timezone</span> : null}
+              <span aria-hidden="true" />
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden user-list-scrollbar">
               {kickOffDates.map((item, index) => (
                 <div
                   key={index}
-                  className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm text-gray-600 items-center border-b border-gray-200 py-2"
+                  className={`group grid ${kickOffListGridClass} items-center gap-x-3 border-b border-gray-200 px-3 py-2.5 text-sm text-gray-600 last:border-b-0`}
                 >
-                  <div>{formatDateForDisplay(item.date)}</div>
-                  <div>{formatTimeForDisplay(item.time)}</div>
+                  <span className="truncate">{formatDateForDisplay(item.date)}</span>
+                  <span className="truncate tabular-nums whitespace-nowrap">
+                    {formatTimeForDisplay(item.time)}
+                  </span>
+                  {KICKOFF_TIMEZONE_UI_ENABLED ? (
+                    <span className="truncate tabular-nums whitespace-nowrap">
+                      {formatKickoffTimezone(item.timezone)}
+                    </span>
+                  ) : null}
                   <button
+                    type="button"
                     onClick={() => handleRemoveKickOff(index)}
-                    className="text-red-500 hover:text-red-700 p-1"
+                    className="flex h-6 w-6 items-center justify-center text-red-400 opacity-0 transition-opacity hover:text-red-600 group-hover:opacity-100"
+                    aria-label="Remove kick off date"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
               ))}
             </div>
           </div>
-          <div className="border-2 border-gray-200 rounded-lg p-4 space-y-4">
-            <div className="flex flex-col space-y-2">
-              <Label className="text-sm font-medium text-gray-800">
-                Kick off Date
-              </Label>
-              <div className="relative">
-                <Input
-                  type="date"
-                  value={newKickOffDate}
-                  onChange={(e) => setNewKickOffDate(e.target.value)}
-                  className="w-full border-2 border-gray-200 rounded-lg pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0"
-                />
-                <Calendar
-                  size={18}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                />
+          <div className="rounded-lg border border-gray-200 p-4 flex flex-col min-h-[17rem]">
+            <div className="space-y-4 flex-1">
+              <div className={notificationFieldClass}>
+                <NotificationFieldLabel>Kick off Date</NotificationFieldLabel>
+                <div className="relative">
+                  <Input
+                    ref={kickOffDateInputRef}
+                    type="date"
+                    min={DATE_INPUT_MIN}
+                    max={DATE_INPUT_MAX}
+                    value={newKickOffDate}
+                    onChange={(e) =>
+                      setNewKickOffDate(sanitizeDateInputValue(e.target.value))
+                    }
+                    className={notificationDateTimeInputClass}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => kickOffDateInputRef.current?.showPicker?.()}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    aria-label="Open date picker"
+                  >
+                    <Calendar size={18} />
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="flex flex-col space-y-2">
-              <Label className="text-sm font-medium text-gray-800">
-                Kick off Time
-              </Label>
-              <div className="relative">
-                <Input
-                  type="time"
-                  value={newKickOffTime}
-                  onChange={(e) => setNewKickOffTime(e.target.value)}
-                  className="w-full border-2 border-gray-200 rounded-lg pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0"
-                />
-                <Clock
-                  size={18}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                />
+              <div className={notificationFieldClass}>
+                <NotificationFieldLabel>Kick off Time</NotificationFieldLabel>
+                <div className="relative">
+                  <Input
+                    ref={kickOffTimeInputRef}
+                    type="time"
+                    value={newKickOffTime}
+                    onChange={(e) => setNewKickOffTime(e.target.value)}
+                    className={notificationDateTimeInputClass}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => kickOffTimeInputRef.current?.showPicker?.()}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    aria-label="Open time picker"
+                  >
+                    <Clock size={18} />
+                  </button>
+                </div>
               </div>
+              {KICKOFF_TIMEZONE_UI_ENABLED ? (
+                <div className={notificationFieldClass}>
+                  <NotificationFieldLabel>Timezone</NotificationFieldLabel>
+                  <TimezoneSelect
+                    value={newKickOffTimezone || DEFAULT_TIMEZONE}
+                    onChange={setNewKickOffTimezone}
+                  />
+                </div>
+              ) : null}
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-4">
               <Button
                 variant="outline"
                 onClick={handleAddKickOff}
@@ -1018,9 +1113,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
           </div>
         </div>
       </div>
-      <div className="border rounded-lg">
-        {/* <p className="font-bold mb-4 px-2 text-gray-800">Welcome Email</p> */}
-        <div className="space-y-4 bg-white p-2 rounded-lg">
+      <div className="border border-gray-200 rounded-xl bg-white">
+        <div className="space-y-4 p-4 md:p-5 rounded-xl">
           <ToggleSwitch
             checked={welcomeEmailEnabled}
             onChange={setWelcomeEmailEnabled}
@@ -1041,9 +1135,9 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-sm font-medium text-gray-900">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <h3 className={notificationSectionTitleClass}>
             Ad Hoc Notifications
           </h3>
           <Button
@@ -1052,26 +1146,25 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
             onClick={() => {
               resetAdHocDraft();
               setShowAdHocDraft(true);
+              scrollElementIntoViewSmooth(adHocDraftRef);
             }}
-            className="text-primary hover:text-primary-dark rounded-lg px-3 py-2 h-auto whitespace-nowrap"
+            className="text-primary hover:text-primary-dark rounded-lg px-3 py-2 h-auto whitespace-nowrap shrink-0"
           >
             <Plus className="h-4 w-4 mr-1" />
             Create Ad Hoc Notification
           </Button>
         </div>
         {showAdHocDraft && (
-          <div className="border-2 border-gray-200 rounded-lg p-2 space-y-2">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-800">
-                Notification Type
-              </Label>
+          <div ref={adHocDraftRef} className={notificationCardClass}>
+            <div className={notificationFieldClass}>
+              <NotificationFieldLabel>Notification Type</NotificationFieldLabel>
               <Select
                 value={adHocDraft.type || undefined}
                 onValueChange={(value) =>
                   setAdHocDraft((d) => ({ ...d, type: value }))
                 }
               >
-                <SelectTrigger className="w-full border-2 rounded-lg bg-gray-50 border-gray-300">
+                <SelectTrigger className={notificationSelectTriggerClass}>
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1110,35 +1203,43 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                   showToolbar={true}
                   minHeight={120}
                 />
-                <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
-                  <div className="flex flex-col space-y-2">
-                    <Label className="text-sm font-medium text-gray-800">
-                      Email Send Date
-                    </Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                  <div className={notificationFieldClass}>
+                    <NotificationFieldLabel>Email Send Date</NotificationFieldLabel>
                     <div className="relative">
                       <Input
+                        ref={adHocEmailSendDateInputRef}
                         type="date"
+                        min={DATE_INPUT_MIN}
+                        max={DATE_INPUT_MAX}
                         value={adHocDraft.emailSendDate}
                         onChange={(e) =>
                           setAdHocDraft((d) => ({
                             ...d,
-                            emailSendDate: e.target.value,
+                            emailSendDate: sanitizeDateInputValue(e.target.value),
                           }))
                         }
-                        className="w-full rounded-lg pr-10 border-2 border-gray-200 [&::-webkit-calendar-picker-indicator]:opacity-0"
+                        className={notificationDateTimeInputClass}
                       />
-                      <Calendar
-                        size={18}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          adHocEmailSendDateInputRef.current?.showPicker?.()
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        aria-label="Open date picker"
+                      >
+                        <Calendar size={18} />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex flex-col space-y-2">
-                    <Label className="text-sm font-medium text-gray-800">
-                      Email Send Time (UTC)
-                    </Label>
+                  <div className={notificationFieldClass}>
+                    <NotificationFieldLabel utc>
+                      Email Send Time
+                    </NotificationFieldLabel>
                     <div className="relative">
                       <Input
+                        ref={adHocEmailSendTimeInputRef}
                         type="time"
                         value={adHocDraft.emailSendTime}
                         onChange={(e) =>
@@ -1147,12 +1248,18 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                             emailSendTime: e.target.value,
                           }))
                         }
-                        className="w-full border-2 border-gray-200 rounded-lg pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0"
+                        className={notificationDateTimeInputClass}
                       />
-                      <Clock
-                        size={18}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          adHocEmailSendTimeInputRef.current?.showPicker?.()
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        aria-label="Open time picker"
+                      >
+                        <Clock size={18} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1180,35 +1287,43 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                   showToolbar={true}
                   minHeight={120}
                 />
-                <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
-                  <div className="flex flex-col space-y-2">
-                    <Label className="text-sm font-medium text-gray-800">
-                      Push Send Date
-                    </Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                  <div className={notificationFieldClass}>
+                    <NotificationFieldLabel>Push Send Date</NotificationFieldLabel>
                     <div className="relative">
                       <Input
+                        ref={adHocPushSendDateInputRef}
                         type="date"
+                        min={DATE_INPUT_MIN}
+                        max={DATE_INPUT_MAX}
                         value={adHocDraft.pushSendDate}
                         onChange={(e) =>
                           setAdHocDraft((d) => ({
                             ...d,
-                            pushSendDate: e.target.value,
+                            pushSendDate: sanitizeDateInputValue(e.target.value),
                           }))
                         }
-                        className="w-full rounded-lg pr-10 border-2 border-gray-200 [&::-webkit-calendar-picker-indicator]:opacity-0"
+                        className={notificationDateTimeInputClass}
                       />
-                      <Calendar
-                        size={18}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          adHocPushSendDateInputRef.current?.showPicker?.()
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        aria-label="Open date picker"
+                      >
+                        <Calendar size={18} />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex flex-col space-y-2">
-                    <Label className="text-sm font-medium text-gray-800">
-                      Push Send Time (UTC)
-                    </Label>
+                  <div className={notificationFieldClass}>
+                    <NotificationFieldLabel utc>
+                      Push Send Time
+                    </NotificationFieldLabel>
                     <div className="relative">
                       <Input
+                        ref={adHocPushSendTimeInputRef}
                         type="time"
                         value={adHocDraft.pushSendTime}
                         onChange={(e) =>
@@ -1217,23 +1332,29 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                             pushSendTime: e.target.value,
                           }))
                         }
-                        className="w-full border-2 border-gray-200 rounded-lg pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0"
+                        className={notificationDateTimeInputClass}
                       />
-                      <Clock
-                        size={18}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          adHocPushSendTimeInputRef.current?.showPicker?.()
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        aria-label="Open time picker"
+                      >
+                        <Clock size={18} />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex justify-end">
-                    <Button
-                      type="button"
-                      onClick={handleSaveAdHocNotification}
-                      className="bg-primary hover:bg-primary-dark px-6 py-2 rounded-lg text-sm font-medium"
-                    >
-                      Save
-                    </Button>
-                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={handleSaveAdHocNotification}
+                    className="bg-primary hover:bg-primary-dark px-6 py-2 rounded-lg text-sm font-medium"
+                  >
+                    Save
+                  </Button>
                 </div>
               </>
             )}
@@ -1241,9 +1362,8 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         )}
 
         {(sendViaEmailList.length > 0 || sendViaPushList.length > 0) && (
-          <div className="flex flex-col gap-2 bg-[#F8F7FE] border border-[#D5D7DA] rounded-lg p-2">
-            {/* Email Preview heading */}
-            <p className="text-sm font-medium text-[#181D27]">Email Preview</p>
+          <div className="flex flex-col gap-3 bg-[#F8F7FE] border border-[#D5D7DA] rounded-xl p-4 md:p-5">
+            <p className="text-sm font-semibold text-[#181D27]">Email Preview</p>
 
             {sendViaEmailList.map((item, index) => {
               const key = `email-${index}`;
@@ -1735,10 +1855,12 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               <SelectTrigger className="w-full border-2 rounded-lg  border-gray-300">
                                 <SelectValue placeholder="Select language" />
                               </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="en">English</SelectItem>
-                                <SelectItem value="es">Spanish</SelectItem>
-                                <SelectItem value="fr">French</SelectItem>
+                              <SelectContent className="max-h-[280px]">
+                                {LANGUAGES.map(([code, label]) => (
+                                  <SelectItem key={code} value={code}>
+                                    {label}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -2111,7 +2233,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
 
             {activeTab === "notification" && (
               <div className="h-full flex flex-col min-h-0">
-                <div className="flex-1 overflow-y-auto p-2">
+                <div className="flex-1 overflow-y-auto p-3 md:p-4 lg:p-5">
                   <div className="space-y-4 md:space-y-5">
                     {notificationSettingsContent}
                   </div>

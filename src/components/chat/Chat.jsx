@@ -129,6 +129,7 @@ const Chat = ({
   inputValue = "",
   onInputChange,
   onSubmit,
+  onUploadRecorded,
   cometManager = false,
   error = null,
   pageIdentifier = 1,
@@ -290,6 +291,7 @@ const Chat = ({
             value={inputValue}
             onChange={onInputChange}
             onSubmit={onSubmit}
+            onUploadRecorded={onUploadRecorded}
             isLoading={shouldShowLoader}
           />
         </div>

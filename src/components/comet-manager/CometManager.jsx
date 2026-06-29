@@ -256,7 +256,9 @@ export default function CometManager({
   console.log("screens >>>>>>>>>>>>>>>>>>>>>>>", screens);
 
   const outlineRef = useRef(outline);
-  useEffect(() => {
+  // Keep ref in sync before the next macrotask so requestAutoSaveAfterOutlineCommit
+  // (setTimeout(0) after updateField) reads the outline that just committed — e.g. HTML file upload.
+  useLayoutEffect(() => {
     outlineRef.current = outline;
   }, [outline]);
 
@@ -1160,7 +1162,7 @@ export default function CometManager({
       newScreen = {
         id: screenId,
         uuid: screenUuid,
-        screenType: "multiple_choice",
+        screenType: "poll",
         position: position,
         screenContents: {
           id: screenContentId,
@@ -1246,7 +1248,7 @@ export default function CometManager({
       newScreen = {
         id: screenId,
         uuid: screenUuid,
-        screenType: "linear_poll",
+        screenType: "poll",
         position: position,
         screenContents: {
           id: screenContentId,
@@ -1255,7 +1257,7 @@ export default function CometManager({
             title: linearTitle,
             highLabel: "",
             lowLabel: "",
-            key_learning: "",
+            keyLearning: "",
             lowerScale: 1,
             higherScale: 10,
           },
@@ -1380,8 +1382,29 @@ export default function CometManager({
         order: allScreens.length,
       };
     } else if (screenType.id === "habits") {
-      // Habits screen structure
+      // Habits screen structure — align with backend screen_schemas (habitImage, etc.)
       const habitsTitle = "";
+      const defaultHabitsContent = {
+        title: habitsTitle,
+        habitDescription: "",
+        habitImage: "",
+        habits: [
+          {
+            id: 1,
+            level: 1,
+            title: "",
+            text: "",
+            reps: 3,
+          },
+          {
+            id: 2,
+            level: 2,
+            title: "",
+            text: "",
+            reps: 4,
+          },
+        ],
+      };
       newScreen = {
         id: screenId,
         uuid: screenUuid,
@@ -1390,15 +1413,7 @@ export default function CometManager({
         screenContents: {
           id: screenContentId,
           contentType: "habits",
-          content: {
-            title: habitsTitle,
-            habit_image: {
-              url: "",
-              description: "",
-            },
-            enabled: false,
-            habits: [],
-          },
+          content: { ...defaultHabitsContent },
         },
         assets: [],
         imageStatus: "pending",
@@ -1406,13 +1421,7 @@ export default function CometManager({
         stepId: targetStepId,
         thumbnail: "",
         title: habitsTitle,
-        formData: {
-          title: habitsTitle,
-          description: "",
-          url: "",
-          habitsIsMandatory: false,
-          habits: [],
-        },
+        formData: { ...defaultHabitsContent },
         assessment: null,
         order: allScreens.length,
       };
@@ -1450,7 +1459,7 @@ export default function CometManager({
       newScreen = {
         id: screenId,
         uuid: screenUuid,
-        screenType: "path_personalization",
+        screenType: "pathPersonalization",
         position: position,
         screenContents: {
           id: screenContentId,
@@ -1576,11 +1585,6 @@ export default function CometManager({
         chapterId: targetChapterId,
         stepId: targetStepId,
         thumbnail: "",
-        title: "",
-        formData: {
-          title: "",
-          htmlContent: "",
-        },
         assessment: null,
         order: allScreens.length,
       };
@@ -2773,23 +2777,27 @@ export default function CometManager({
           // the sessionData → outline sync path stalls (e.g. JSON-equality cache
           // or timing with auto-save).
           if (!stepUid || !newImageUrl) return;
-          setOutline?.((prev) => {
-            if (!prev?.chapters) return prev;
-            const next = JSON.parse(JSON.stringify(prev));
-            for (const ch of next.chapters || []) {
-              for (const stepItem of ch.steps || []) {
-                const step = stepItem.step;
-                if (
-                  step &&
-                  (String(step.uuid ?? "") === String(stepUid) ||
-                    String(step.id ?? "") === String(stepUid))
-                ) {
-                  step.image = newImageUrl;
-                }
+          const currentOutline = outlineRef.current || outline;
+          if (!currentOutline?.chapters) return;
+          const next = JSON.parse(JSON.stringify(currentOutline));
+          for (const ch of next.chapters || []) {
+            for (const stepItem of ch.steps || []) {
+              const step = stepItem.step;
+              if (
+                step &&
+                (String(step.uuid ?? "") === String(stepUid) ||
+                  String(step.id ?? "") === String(stepUid))
+              ) {
+                step.image = newImageUrl;
               }
             }
-            return next;
-          });
+          }
+          setOutline?.(next);
+          // Flush to parent immediately so CometManagerLayout's outlineRef
+          // is updated synchronously — prevents the 5s auto-save timer from
+          // reading the stale outline (with the old image) and sending it to
+          // the backend, which would revert the upload via session_merge.
+          onOutlineChange?.(next);
         }}
         onSuccess={(response) => {
           console.log("Step image uploaded:", response);

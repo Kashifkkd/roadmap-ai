@@ -19,13 +19,14 @@ function mergeRefs(...refs) {
 }
 
 const Textarea = React.forwardRef(function Textarea(
-  { className, spellCheck = true, lang, ...props },
+  { className, wrapperClassName, spellCheck = true, lang, ...props },
   forwardedRef
 ) {
   const { ref: registerRef, ...restProps } = props;
   const { fieldRef, backdropRef, markup } = useSpellCheckOverlay(
     spellCheck,
-    true
+    true,
+    props.value
   );
 
   const textareaElement = (
@@ -48,7 +49,12 @@ const Textarea = React.forwardRef(function Textarea(
   }
 
   return (
-    <div className="relative w-full rounded-md bg-background spellcheck-field">
+    <div
+      className={cn(
+        "relative w-full rounded-md bg-background spellcheck-field",
+        wrapperClassName
+      )}
+    >
       <div
         ref={backdropRef}
         className="spellcheck-backdrop"

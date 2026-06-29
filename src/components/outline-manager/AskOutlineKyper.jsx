@@ -12,6 +12,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import Stars from "@/components/icons/Stars";
 
 export default function AskOutlineKyper({
@@ -180,14 +181,15 @@ export default function AskOutlineKyper({
 
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                  <input
+                  <Input
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => onPopupInteract?.()}
                     disabled={isLoading}
                     placeholder="Ask me anything..."
-                    className="w-full pl-10 pr-12 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    wrapperClassName="rounded-xl bg-white"
+                    className="h-auto w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
                     autoFocus
                   />
                   <button

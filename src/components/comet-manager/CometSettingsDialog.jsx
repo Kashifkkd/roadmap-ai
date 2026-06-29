@@ -44,6 +44,27 @@ import {
   ART_STYLE_KEYS,
   normalizeArtStyleFromApi,
 } from "@/constants/artStyles";
+import { LANGUAGES, normalizeLanguageFromApi } from "@/constants/languages";
+import TimezoneSelect, {
+  resolveDefaultTimezone,
+  findTimezoneById,
+  formatTimezoneLabel,
+} from "@/components/common/TimezoneSelect";
+
+// Kickoff timezone UI — hidden until product enables it.
+// Set to `true` to show timezone column + picker in Notifications → Kick Off.
+const KICKOFF_TIMEZONE_UI_ENABLED = false;
+
+const DEFAULT_TIMEZONE = resolveDefaultTimezone();
+
+const formatKickoffTimezone = (timezone) =>
+  formatTimezoneLabel(findTimezoneById(timezone || DEFAULT_TIMEZONE), {
+    compact: true,
+  });
+
+const kickOffListGridClass = KICKOFF_TIMEZONE_UI_ENABLED
+  ? "grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
+  : "grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]";
 
 // Toggle Switch Component
 const ToggleSwitch = ({ checked, onChange, label, showInfo = false }) => (
@@ -102,6 +123,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
   const [kickOffDates, setKickOffDates] = useState([]);
   const [newKickOffDate, setNewKickOffDate] = useState("");
   const [newKickOffTime, setNewKickOffTime] = useState("");
+  const [newKickOffTimezone, setNewKickOffTimezone] = useState(DEFAULT_TIMEZONE);
 
   // Ad Hoc Notifications
   const [adHocDraft, setAdHocDraft] = useState({
@@ -306,15 +328,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         }
 
         if (enabledAttributes.language !== undefined) {
-          const lang = String(enabledAttributes.language).trim().toLowerCase();
-          // Map full language names to codes if needed
-          const langCodeMap = { english: "en", spanish: "es", french: "fr" };
-          const validCodes = ["en", "es", "fr"];
-          // If it's already a valid code, use it; otherwise try to map from full name
-          const normalizedLang = validCodes.includes(lang)
-            ? lang
-            : langCodeMap[lang] || "en";
-          setLanguage(normalizedLang);
+          setLanguage(normalizeLanguageFromApi(enabledAttributes.language));
         }
 
         // Load all boolean toggles
@@ -392,12 +406,16 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         const parsed = savedKickOffDates.map((entry) => {
           if (typeof entry === "string" && entry.includes(" ")) {
             const [date, time] = entry.split(" ");
-            return { date, time };
+            return { date, time, timezone: DEFAULT_TIMEZONE };
           }
           if (typeof entry === "object" && entry.date) {
-            return entry;
+            return {
+              date: entry.date,
+              time: entry.time || "",
+              timezone: entry.timezone || DEFAULT_TIMEZONE,
+            };
           }
-          return { date: entry, time: "" };
+          return { date: entry, time: "", timezone: DEFAULT_TIMEZONE };
         });
         setKickOffDates(parsed);
       } else {
@@ -498,14 +516,7 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         reminder_type: reminderType || "",
         source_alignment: sourceAlignment || "",
         duration: duration || "",
-        language:
-          (language === "en"
-            ? "english"
-            : language === "es"
-              ? "spanish"
-              : language === "fr"
-                ? "french"
-                : language) || "english",
+        language: language || "en",
         chapters: chapters,
         action_hub: actionHub,
         checklists: checklists,
@@ -541,9 +552,15 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
         return acc;
       }, {});
 
-      // Format kick-off dates as "YYYY-MM-DD HH:MM" strings for the backend
-      const formattedKickOffDates = kickOffDates.map(
-        (item) => `${item.date} ${item.time}`,
+      // Format kick-off dates for the backend
+      const formattedKickOffDates = kickOffDates.map((item) =>
+        KICKOFF_TIMEZONE_UI_ENABLED
+          ? {
+              date: item.date,
+              time: item.time,
+              timezone: item.timezone || DEFAULT_TIMEZONE,
+            }
+          : `${item.date} ${item.time}`,
       );
 
       const updatedResponsePath = {
@@ -633,10 +650,19 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
     if (newKickOffDate && newKickOffTime) {
       setKickOffDates([
         ...kickOffDates,
-        { date: newKickOffDate, time: newKickOffTime },
+        {
+          date: newKickOffDate,
+          time: newKickOffTime,
+          ...(KICKOFF_TIMEZONE_UI_ENABLED
+            ? { timezone: newKickOffTimezone || DEFAULT_TIMEZONE }
+            : {}),
+        },
       ]);
       setNewKickOffDate("");
       setNewKickOffTime("");
+      if (KICKOFF_TIMEZONE_UI_ENABLED) {
+        setNewKickOffTimezone(DEFAULT_TIMEZONE);
+      }
     }
   };
 
@@ -1055,10 +1081,12 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               <SelectTrigger className="w-full border-2 rounded-lg  border-gray-300">
                                 <SelectValue placeholder="Select language" />
                               </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="en">English</SelectItem>
-                                <SelectItem value="es">Spanish</SelectItem>
-                                <SelectItem value="fr">French</SelectItem>
+                              <SelectContent className="max-h-[280px]">
+                                {LANGUAGES.map(([code, label]) => (
+                                  <SelectItem key={code} value={code}>
+                                    {label}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -1362,19 +1390,31 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                         {/* Existing Kick-off Dates */}
                         <div className="border-2 border-gray-200 rounded-lg p-4">
                           <div className=" space-y-2">
-                            <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium text-gray-800 bg-gray-100 p-2">
+                            <div
+                              className={`grid ${kickOffListGridClass} items-center gap-x-3 text-sm font-medium text-gray-800 bg-gray-100 px-3 py-2.5`}
+                            >
                               <div>Kick off Date</div>
                               <div>Kick off Time</div>
+                              {KICKOFF_TIMEZONE_UI_ENABLED ? (
+                                <div>Timezone</div>
+                              ) : null}
+                              <div aria-hidden="true" />
                             </div>
-                            <div className="border-t border-gray-200"></div>
 
                             {kickOffDates.map((item, index) => (
                               <div
                                 key={index}
-                                className="grid grid-cols-[1fr_1fr_auto] gap-2 text-sm text-gray-600 items-center border-b border-gray-200 py-2"
+                                className={`grid ${kickOffListGridClass} items-center gap-x-3 text-sm text-gray-600 border-b border-gray-200 px-3 py-2.5 last:border-b-0`}
                               >
-                                <div>{formatDateForDisplay(item.date)}</div>
-                                <div>{formatTimeForDisplay(item.time)}</div>
+                                <div className="truncate">{formatDateForDisplay(item.date)}</div>
+                                <div className="truncate tabular-nums whitespace-nowrap">
+                                  {formatTimeForDisplay(item.time)}
+                                </div>
+                                {KICKOFF_TIMEZONE_UI_ENABLED ? (
+                                  <div className="truncate tabular-nums whitespace-nowrap">
+                                    {formatKickoffTimezone(item.timezone)}
+                                  </div>
+                                ) : null}
                                 <button
                                   onClick={() => handleRemoveKickOff(index)}
                                   className="text-red-500 hover:text-red-700 p-1"
@@ -1426,6 +1466,17 @@ export default function CometSettingsDialog({ open, onOpenChange }) {
                               />
                             </div>
                           </div>
+                          {KICKOFF_TIMEZONE_UI_ENABLED ? (
+                            <div className="flex flex-col space-y-2">
+                              <Label className="text-sm font-medium text-gray-800">
+                                Timezone
+                              </Label>
+                              <TimezoneSelect
+                                value={newKickOffTimezone || DEFAULT_TIMEZONE}
+                                onChange={setNewKickOffTimezone}
+                              />
+                            </div>
+                          ) : null}
                           <div className="flex justify-end">
                             <Button
                               variant="outline"

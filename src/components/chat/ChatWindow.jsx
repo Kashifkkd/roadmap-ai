@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Chat from "./Chat";
 import Loader from "@/components/loader2";
 import { graphqlClient } from "@/lib/graphql-client";
@@ -60,8 +60,6 @@ const messagesFromConversation = (conversation) => {
   return out;
 };
 
-<<<<<<< HEAD
-=======
 const materialKey = (m) =>
   `${m?.id ?? ""}|${m?.source_name ?? ""}|${m?.s3_path ?? ""}`;
 
@@ -155,7 +153,6 @@ function formatUploadedLinkUserLine(w) {
     .join("\n");
 }
 
->>>>>>> 00dc986e4fd7cca1d20e93c7170dc79ce6382051
 export default function ChatWindow({
   initialInput = null,
   userQuestions = null,
@@ -420,8 +417,6 @@ export default function ChatWindow({
     setInputValue(value);
   };
 
-<<<<<<< HEAD
-=======
   const recordUploadInConversation = useCallback(
     async ({ sourceMaterial, webLink }) => {
       if (!sourceMaterial && !webLink) return;
@@ -512,7 +507,6 @@ export default function ChatWindow({
     [sessionId, sessionData, inputType, onResponseReceived],
   );
 
->>>>>>> 00dc986e4fd7cca1d20e93c7170dc79ce6382051
   const handleSubmit = async (input) => {
     try {
       setIsLoading(true);
@@ -523,18 +517,10 @@ export default function ChatWindow({
         ? input.sourceMaterials
         : [];
       const webLinks = Array.isArray(input?.webLinks) ? input.webLinks : [];
-      const mergedWebpageUrls = [
-        ...(Array.isArray(sessionData?.webpage_url)
-          ? sessionData.webpage_url
-          : []),
-        ...webLinks.map((entry) => ({
-          webpage_url: entry?.url ?? entry?.webpage_url ?? "",
-          title: entry?.title ?? "",
-          comment: entry?.comment ?? "",
-          ...(entry?.id ? { id: entry.id } : {}),
-          ...(entry?.s3_path ? { s3_path: entry.s3_path } : {}),
-        })),
-      ];
+      const mergedWebpageUrls = mergeUniqueWebLinks(
+        sessionData?.webpage_url,
+        webLinks,
+      );
 
       if (!currentSessionId) {
         currentSessionId = localStorage.getItem("sessionId");
@@ -581,7 +567,7 @@ export default function ChatWindow({
           ? `\n\n[Attached links]\n${webLinks
               .map((item, index) => {
                 const title = item?.title || `link_${index + 1}`;
-                const url = item?.url || "";
+                const url = item?.webpage_url ?? item?.url ?? "";
                 const comment = item?.comment || "";
                 return `- title: ${title}, url: ${url}${comment ? `, comment: ${comment}` : ""}`;
               })
@@ -674,7 +660,10 @@ export default function ChatWindow({
         },
         chatbot_conversation: chatbotConversation,
         to_modify: sessionData?.to_modify ?? {},
-        source_material: sourceMaterials,
+        source_material: mergeUniqueMaterials(
+          sessionData?.source_material,
+          sourceMaterials,
+        ),
         webpage_url: mergedWebpageUrls,
         execution_id: executionId,
         retry_count: 0,
@@ -731,7 +720,7 @@ export default function ChatWindow({
       const linksLabel =
         webLinks.length > 0
           ? `\n\nLinks: ${webLinks
-              .map((item) => item?.title || item?.url)
+              .map((item) => item?.title || item?.webpage_url || item?.url)
               .filter(Boolean)
               .join(", ")}`
           : "";
@@ -832,6 +821,7 @@ export default function ChatWindow({
         inputValue={inputValue}
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}
+        onUploadRecorded={recordUploadInConversation}
         error={error}
         pageIdentifier={pageIdentifier}
       />

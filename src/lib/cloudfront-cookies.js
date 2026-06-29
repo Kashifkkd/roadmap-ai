@@ -57,7 +57,7 @@ export async function refreshCloudfrontCookies({
   minRefreshGapMs = DEFAULT_MIN_REFRESH_GAP_MS,
   expiresInHours = DEFAULT_EXPIRY_HOURS,
   showFailureToast = false,
-  failureToastMessage = "Media session expired. Please log in again.",
+  failureToastMessage = "Session expired. Please log in again.",
 } = {}) {
   if (typeof window === "undefined") {
     return { ok: false, skipped: true, reason: "non-browser" };

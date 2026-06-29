@@ -398,24 +398,24 @@ export default function GenerateStepImageButton({
 
   // Check completion
   const imagesComplete = useMemo(() => {
-    // 1. Check if step or any of its screens have images in sessionData 
+    // 1. Check if step or any of its screens have images in sessionData
     const allChapters = [
       ...(sessionData?.response_path?.chapters || []),
       ...(sessionData?.response_outline?.chapters || []),
     ];
-    
-    const hasAnyImage = allChapters.some((ch) =>
-      ch?.steps?.some((item) => {
+
+    const hasAnyImage = allChapters.some(ch =>
+      ch.steps?.some(item => {
         if (item?.step?.uuid !== stepUid && item?.step?.id !== stepUid) return false;
-        
+
         // Check step wallpaper
         if (item?.step?.image) return true;
-        
+
         // Check screens
         if (item?.step?.screens?.some(s => s?.imageStatus === "completed" || s?.assets?.length > 0)) {
           return true;
         }
-        
+
         return false;
       })
     );
@@ -423,7 +423,7 @@ export default function GenerateStepImageButton({
     if (hasAnyImage) return true;
     if (stepStatus?.images?.is_complete) return true;
     if (!isEnqueued) return false;
-    
+
     return false;
   }, [isEnqueued, stepStatus?.images?.is_complete, sessionData, stepUid]);
 
@@ -504,18 +504,6 @@ export default function GenerateStepImageButton({
           >
             <Info className="w-4 h-4" />
           </button>
-
-          {stepStatus?.images?.has_failures && (
-            <button
-              type="button"
-              onClick={handleRetryImages}
-              disabled={isRetrying}
-              title="Regenerate failed images"
-              className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-red-100 hover:bg-red-200 text-red-600 transition-colors disabled:opacity-50 border border-red-200"
-            >
-              <RefreshCw className={`w-4 h-4 ${isRetrying ? "animate-spin" : ""}`} />
-            </button>
-          )}
         </div>
       ) : (
         /* Generate Step Images state button */
@@ -540,15 +528,6 @@ export default function GenerateStepImageButton({
             <Sparkles className="w-3.5 h-3.5 text-primary-400" />
             <span className="hidden sm:inline">Generate Step Images</span>
           </Button>
-          <button
-            type="button"
-            onClick={() => setIsManageModalOpen(true)}
-            disabled={isDisabled}
-            title="Manage step images"
-            className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-200 text-primary-500 hover:bg-primary-50 transition-colors disabled:opacity-50"
-          >
-            <Info className="w-4 h-4" />
-          </button>
         </div>
       )}
 
@@ -778,7 +757,8 @@ export default function GenerateStepImageButton({
         chapterUid={chapterUid}
         stepUid={stepUid}
         onRegenerateStart={(uid) => {
-          setStepStatus(null);
+          setStepStatus({ images: { is_complete: false } });
+          markAsEnqueued();
           onGeneratingStart?.(uid);
           fetchStepStatusSilent();
         }}

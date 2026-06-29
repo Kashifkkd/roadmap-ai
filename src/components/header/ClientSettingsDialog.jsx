@@ -14,6 +14,8 @@ import {
   Plus,
   ArrowLeft,
   ChevronDown,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -70,6 +72,10 @@ export default function ClientSettingsDialog({
   const [creatorEmail, setCreatorEmail] = useState("");
   const [creatorPassword, setCreatorPassword] = useState("");
   const [creatorConfirmPassword, setCreatorConfirmPassword] = useState("");
+  const [isCreatorPasswordVisible, setIsCreatorPasswordVisible] =
+    useState(false);
+  const [isCreatorConfirmPasswordVisible, setIsCreatorConfirmPasswordVisible] =
+    useState(false);
   const [creatorRole, setCreatorRole] = useState("");
   const [creatorClient, setCreatorClient] = useState("");
   /** Selected client IDs when role is admin (multi-select). */
@@ -1064,32 +1070,78 @@ export default function ClientSettingsDialog({
                                       <span className="text-red-500">*</span>
                                       {/* <span className="text-gray-500 font-normal ml-1">(min 8 characters)</span> */}
                                     </Label>
-                                    <Input
-                                      type="password"
-                                      value={creatorPassword}
-                                      onChange={(e) =>
-                                        setCreatorPassword(e.target.value)
-                                      }
-                                      autoComplete="new-password"
-                                      placeholder="Enter password"
-                                      className="w-full bg-white border border-gray-300"
-                                    />
+                                    <div className="relative">
+                                      <Input
+                                        type={
+                                          isCreatorPasswordVisible
+                                            ? "text"
+                                            : "password"
+                                        }
+                                        spellCheck={false}
+                                        value={creatorPassword}
+                                        onChange={(e) =>
+                                          setCreatorPassword(e.target.value)
+                                        }
+                                        autoComplete="new-password"
+                                        placeholder="Enter password"
+                                        className="w-full bg-white border border-gray-300 pr-12"
+                                      />
+                                      <button
+                                        type="button"
+                                        className="absolute inset-y-0 right-3 flex items-center text-gray-400 transition hover:text-gray-700"
+                                        onClick={() =>
+                                          setIsCreatorPasswordVisible(
+                                            (current) => !current
+                                          )
+                                        }
+                                      >
+                                        {isCreatorPasswordVisible ? (
+                                          <EyeOff className="size-5" />
+                                        ) : (
+                                          <Eye className="size-5" />
+                                        )}
+                                      </button>
+                                    </div>
                                   </div>
                                   <div>
                                     <Label className="text-sm font-medium text-gray-700 mb-2 block">
                                       Confirm Password
                                       <span className="text-red-500">*</span>
                                     </Label>
-                                    <Input
-                                      type="password"
-                                      value={creatorConfirmPassword}
-                                      onChange={(e) =>
-                                        setCreatorConfirmPassword(e.target.value)
-                                      }
-                                      autoComplete="new-password"
-                                      placeholder="Confirm password"
-                                      className="w-full bg-white border border-gray-300"
-                                    />
+                                    <div className="relative">
+                                      <Input
+                                        type={
+                                          isCreatorConfirmPasswordVisible
+                                            ? "text"
+                                            : "password"
+                                        }
+                                        spellCheck={false}
+                                        value={creatorConfirmPassword}
+                                        onChange={(e) =>
+                                          setCreatorConfirmPassword(
+                                            e.target.value
+                                          )
+                                        }
+                                        autoComplete="new-password"
+                                        placeholder="Confirm password"
+                                        className="w-full bg-white border border-gray-300 pr-12"
+                                      />
+                                      <button
+                                        type="button"
+                                        className="absolute inset-y-0 right-3 flex items-center text-gray-400 transition hover:text-gray-700"
+                                        onClick={() =>
+                                          setIsCreatorConfirmPasswordVisible(
+                                            (current) => !current
+                                          )
+                                        }
+                                      >
+                                        {isCreatorConfirmPasswordVisible ? (
+                                          <EyeOff className="size-5" />
+                                        ) : (
+                                          <Eye className="size-5" />
+                                        )}
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
                               )}
@@ -1100,31 +1152,77 @@ export default function ClientSettingsDialog({
                                       Password
                                       <span className="text-gray-500 font-normal ml-1">(min 8 characters)</span>
                                     </Label>
-                                    <Input
-                                      type="password"
-                                      value={creatorPassword}
-                                      onChange={(e) =>
-                                        setCreatorPassword(e.target.value)
-                                      }
-                                      autoComplete="new-password"
-                                      placeholder="Leave blank to keep current"
-                                      className="w-full bg-white border border-gray-300"
-                                    />
+                                    <div className="relative">
+                                      <Input
+                                        type={
+                                          isCreatorPasswordVisible
+                                            ? "text"
+                                            : "password"
+                                        }
+                                        spellCheck={false}
+                                        value={creatorPassword}
+                                        onChange={(e) =>
+                                          setCreatorPassword(e.target.value)
+                                        }
+                                        autoComplete="new-password"
+                                        placeholder="Leave blank to keep current"
+                                        className="w-full bg-white border border-gray-300 pr-12"
+                                      />
+                                      <button
+                                        type="button"
+                                        className="absolute inset-y-0 right-3 flex items-center text-gray-400 transition hover:text-gray-700"
+                                        onClick={() =>
+                                          setIsCreatorPasswordVisible(
+                                            (current) => !current
+                                          )
+                                        }
+                                      >
+                                        {isCreatorPasswordVisible ? (
+                                          <EyeOff className="size-5" />
+                                        ) : (
+                                          <Eye className="size-5" />
+                                        )}
+                                      </button>
+                                    </div>
                                   </div>
                                   <div>
                                     <Label className="text-sm font-medium text-gray-700 mb-2 block">
                                       Confirm Password
                                     </Label>
-                                    <Input
-                                      type="password"
-                                      value={creatorConfirmPassword}
-                                      onChange={(e) =>
-                                        setCreatorConfirmPassword(e.target.value)
-                                      }
-                                      autoComplete="new-password"
-                                      placeholder="Confirm new password"
-                                      className="w-full bg-white border border-gray-300 "
-                                    />
+                                    <div className="relative">
+                                      <Input
+                                        type={
+                                          isCreatorConfirmPasswordVisible
+                                            ? "text"
+                                            : "password"
+                                        }
+                                        spellCheck={false}
+                                        value={creatorConfirmPassword}
+                                        onChange={(e) =>
+                                          setCreatorConfirmPassword(
+                                            e.target.value
+                                          )
+                                        }
+                                        autoComplete="new-password"
+                                        placeholder="Confirm new password"
+                                        className="w-full bg-white border border-gray-300 pr-12"
+                                      />
+                                      <button
+                                        type="button"
+                                        className="absolute inset-y-0 right-3 flex items-center text-gray-400 transition hover:text-gray-700"
+                                        onClick={() =>
+                                          setIsCreatorConfirmPasswordVisible(
+                                            (current) => !current
+                                          )
+                                        }
+                                      >
+                                        {isCreatorConfirmPasswordVisible ? (
+                                          <EyeOff className="size-5" />
+                                        ) : (
+                                          <Eye className="size-5" />
+                                        )}
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
                               )}

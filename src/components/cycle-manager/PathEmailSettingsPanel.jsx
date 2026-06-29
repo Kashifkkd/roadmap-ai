@@ -35,12 +35,12 @@ import { collectHabitLevelOptionsFromResponsePath } from "@/lib/pathEmailHabitOp
 import { collectStepOptionsFromResponsePath } from "@/lib/pathEmailStepOptions";
 
 const PLACEHOLDER_TOKENS =
-  "@user_name, @first_name, @path_name, @user_activity, @leaderboard";
+  "@user_name, @cycle_name, @first_name, @leaderboard, @user_activity";
 
 const pathEmailInputClass =
   "h-9 min-h-9 rounded-lg border border-[#D5D7DA] bg-white px-3 py-[7.5px] text-sm text-[#181D27] shadow-[0_1px_2px_rgba(0,0,0,0.05)] focus-visible:ring-2 focus-visible:ring-primary/30";
 
-const pathEmailLabelClass = "text-sm font-medium leading-5 text-[#181D27]";
+const pathEmailLabelClass = "block text-sm font-medium leading-5 text-[#181D27]";
 
 const pathEmailDeleteBtnClass =
   "inline-flex h-9 w-9 min-h-9 min-w-9 shrink-0 items-center justify-center rounded-lg bg-[#F04438] text-white transition-colors hover:bg-[#F04438]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F04438]/40";
@@ -77,10 +77,10 @@ function PathEmailDeleteButton({ onClick, label, size = 16 }) {
 }
 
 /** Scoped Figma styles for RichTextArea — does not modify shared FormFields. */
-function PathEmailRichText(props) {
+function PathEmailRichText({ enableDynamicTags = false, ...props }) {
   return (
     <div className="path-email-rich-text">
-      <RichTextArea {...props} />
+      <RichTextArea {...props} enableDynamicTags={enableDynamicTags} />
     </div>
   );
 }
@@ -128,14 +128,19 @@ const TRIGGER_SECTIONS = [
   },
 ];
 
-function TriggerTypePicker({ value, onValueChange }) {
+function TriggerTypePicker({ value, onValueChange, open, onOpenChange }) {
   return (
     <div className="rounded-lg  bg-[#F5F5F5] p-2">
       <div className="flex flex-col gap-2 bg-white p-2 rounded-lg">
-        <Label className="mb-2 block text-sm font-medium leading-5 text-[#181D27]">
+        <Label className="mb-1 block text-sm font-medium leading-5 text-[#181D27]">
           Trigger
         </Label>
-        <Select value={value || undefined} onValueChange={onValueChange}>
+        <Select
+          value={value || undefined}
+          onValueChange={onValueChange}
+          open={open}
+          onOpenChange={onOpenChange}
+        >
           <SelectTrigger className={`w-full ${pathEmailInputClass}`}>
             <SelectValue placeholder="Select" />
           </SelectTrigger>
@@ -154,11 +159,9 @@ function TriggerTypePicker({ value, onValueChange }) {
 
 function TriggerNumberField({ label, hint, value, onChange }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="space-y-2">
       <Label className={pathEmailLabelClass}>{label}</Label>
-      {hint ? (
-        <p className="  text-xs leading-4 text-[#717680]">{hint}</p>
-      ) : null}
+      {hint ? <p className="text-xs leading-4 text-[#717680]">{hint}</p> : null}
       <Input
         type="number"
         value={value ?? ""}
@@ -213,7 +216,7 @@ function StepPickerField({
 
   if (steps.length === 0) {
     return (
-      <div className="flex flex-col gap-2 max-w-md">
+      <div className="space-y-2 max-w-md">
         <Label className={pathEmailLabelClass}>{label}</Label>
         <Select disabled value={undefined}>
           <SelectTrigger className={`w-full ${pathEmailInputClass}`}>
@@ -228,7 +231,7 @@ function StepPickerField({
   }
 
   return (
-    <div className="flex flex-col gap-2 max-w-md">
+    <div className="space-y-2 max-w-md">
       <Label className={pathEmailLabelClass}>{label}</Label>
       {helper ? (
         <p className="text-xs leading-4 text-[#717680]">{helper}</p>
@@ -289,7 +292,7 @@ function HabitPickerField({ entry, onChange, habitLevelOptions }) {
 
   if (habitLevelOptions.length === 0) {
     return (
-      <div className="flex flex-col gap-2 max-w-xl">
+      <div className="space-y-1.5 max-w-xl">
         <Label className={pathEmailLabelClass}>Select habit</Label>
         <Select disabled value={undefined}>
           <SelectTrigger className={`w-full ${pathEmailInputClass}`}>
@@ -306,7 +309,7 @@ function HabitPickerField({ entry, onChange, habitLevelOptions }) {
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-col gap-2 max-w-xl">
+      <div className="space-y-2 max-w-xl">
         <Label className={pathEmailLabelClass}>Select habit</Label>
         <p className="text-xs text-gray-500">
           One option per habit level on a habits screen.
@@ -425,27 +428,28 @@ function parseOptionalInt(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-function HintBanners({ onCopyUserName }) {
+function HintBanners({ onCopyTags }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="rounded-lg bg-[#F1F0FE] px-4 py-4 text-sm font-medium leading-5 text-[#181D27]">
-        <span className="text-black">Email content - </span>
-        Type @user_name to insert the learner&apos;s name.
+        <span className="text-black">Email content — </span>
+        Type <code className="text-[#7367F0]">@</code> in header, sub-header, or
+        body fields to insert dynamic tags: {PLACEHOLDER_TOKENS}.
       </div>
       <div className="flex flex-col gap-2.5 rounded-lg bg-[#F1F0FE] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-sm font-medium leading-5 text-[#181D27]">
           <span className="text-black">Note: </span>
-          use @user_name text in textbox to define user in manager emails
+          dynamic tags work in all mail trigger text fields
         </span>
         <Button
           type="button"
           variant="outline"
           size="sm"
           className={`shrink-0 ${pathEmailOutlineButtonClass}`}
-          onClick={onCopyUserName}
+          onClick={onCopyTags}
         >
           <Copy size={14} className="mr-1.5" />
-          Copy @user_name
+          Copy tags
         </Button>
       </div>
     </div>
@@ -697,6 +701,7 @@ function TriggerEntryCard({
             value={entry.subheader || ""}
             onChange={setSubheader}
             valueFormat="html"
+            enableDynamicTags
           />
 
           <PathEmailRichText
@@ -704,6 +709,7 @@ function TriggerEntryCard({
             value={entry.text || ""}
             onChange={setText}
             valueFormat="html"
+            enableDynamicTags
           />
         </div>
 
@@ -732,6 +738,7 @@ export default function PathEmailSettingsPanel({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [triggerKindToAdd, setTriggerKindToAdd] = useState("");
+  const [triggerPickerOpen, setTriggerPickerOpen] = useState(false);
 
   const pathVariant = includeSurveyQuestions ? "manager" : "accountability";
 
@@ -785,10 +792,10 @@ export default function PathEmailSettingsPanel({
     [variant],
   );
 
-  const copyUserName = useCallback(async () => {
+  const copyDynamicTags = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText("@user_name");
-      toast.success("Copied @user_name");
+      await navigator.clipboard.writeText(PLACEHOLDER_TOKENS);
+      toast.success("Copied dynamic tags");
     } catch {
       toast.error("Could not copy to clipboard");
     }
@@ -834,6 +841,15 @@ export default function PathEmailSettingsPanel({
       [key]: [...(prev[key] || []), empty],
     }));
     setTriggerKindToAdd("");
+    setTriggerPickerOpen(false);
+  };
+
+  const handleAddEmail = () => {
+    if (triggerKindToAdd) {
+      addTrigger(triggerKindToAdd);
+    } else {
+      setTriggerPickerOpen(true);
+    }
   };
 
   const moveTriggerToSection = (fromKey, index, toKey) => {
@@ -883,7 +899,7 @@ export default function PathEmailSettingsPanel({
       <style>{`
         .path-email-settings .path-email-rich-text > .mb-4 { margin-bottom: 0; }
         .path-email-settings .path-email-rich-text > .mb-4 > .mb-2 {
-          margin-bottom: 8px;
+          margin-bottom: 6px;
           padding: 4px 4px 0;
           gap: 6px;
         }
@@ -901,16 +917,27 @@ export default function PathEmailSettingsPanel({
         .path-email-settings .path-email-rich-text .bg-gray-100 > div:first-child {
           min-height: 76px;
           height: 76px;
+          overflow: hidden;
           border: 1px solid #D5D7DA;
           border-radius: 8px;
           background: #fff;
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
+        .path-email-settings .path-email-rich-text .bg-gray-100 > div:first-child .ql-container {
+          height: 100%;
+          border: none !important;
+        }
         .path-email-settings .path-email-rich-text .bg-gray-100 > div:first-child .ql-editor {
-          min-height: 76px;
+          min-height: 0 !important;
+          height: 100%;
+          padding: 10px 12px;
+          box-sizing: border-box;
           font-size: 14px;
           line-height: 20px;
           color: #181D27;
+        }
+        .path-email-settings .path-email-rich-text .bg-gray-100 > div:first-child .ql-editor p {
+          margin: 0 !important;
         }
         .path-email-settings .path-email-rich-text .rich-text-toolbar {
           display: flex;
@@ -956,8 +983,7 @@ export default function PathEmailSettingsPanel({
               type="button"
               variant="outline"
               className="h-9 border-[#7367F0] text-[#7367F0] hover:bg-[#F8F7FF] px-4 rounded-lg flex items-center gap-1.5"
-              onClick={() => addTrigger(triggerKindToAdd)}
-              disabled={!triggerKindToAdd}
+              onClick={handleAddEmail}
             >
               <Plus size={16} />
               Add Email
@@ -972,7 +998,7 @@ export default function PathEmailSettingsPanel({
             </div>
           )}
           <div className="flex flex-col gap-2 bg-white p-2 rounded-lg">
-            <HintBanners onCopyUserName={copyUserName} />
+            <HintBanners onCopyTags={copyDynamicTags} />
 
             {loading ? (
               <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
@@ -981,6 +1007,8 @@ export default function PathEmailSettingsPanel({
                 <TriggerTypePicker
                   value={triggerKindToAdd}
                   onValueChange={setTriggerKindToAdd}
+                  open={triggerPickerOpen}
+                  onOpenChange={setTriggerPickerOpen}
                 />
                 {/* <div className="flex flex-col gap-1.5 max-w-xs">
                   <Label className={pathEmailLabelClass}>
@@ -1002,22 +1030,19 @@ export default function PathEmailSettingsPanel({
                   />
                 </div> */}
 
-                <div className="flex flex-col">
-                  <PathEmailRichText
-                    label="Close Out Text"
-                    value={config.close_out_text || ""}
-                    onChange={(html) =>
-                      setConfig((p) => ({ ...p, close_out_text: html }))
-                    }
-                    valueFormat="html"
-                  />
-                </div>
+                <PathEmailRichText
+                  label="Close Out Text"
+                  value={config.close_out_text || ""}
+                  onChange={(html) =>
+                    setConfig((p) => ({ ...p, close_out_text: html }))
+                  }
+                  valueFormat="html"
+                  enableDynamicTags
+                />
 
-                <div className="space-y-4">
+                <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">
-                    <h4 className="text-sm font-semibold text-gray-900">
-                      Triggers
-                    </h4>
+                    <Label className={pathEmailLabelClass}>Trigger</Label>
                     <span className="text-xs text-gray-500">
                       {triggerBlocks.length} configured
                     </span>

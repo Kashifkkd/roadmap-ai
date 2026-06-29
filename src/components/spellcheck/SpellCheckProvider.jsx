@@ -11,12 +11,14 @@ import {
   cacheSuggestions,
   findMisspelledWordForWordInfo,
   getCachedSuggestions,
+  getFieldMisspelledWords,
   resolveSpellcheckTarget,
   setFieldMisspelledWords,
 } from "@/lib/spellcheck/fieldMisspelledStore";
 import {
   applySpellcheckAttributes,
   collectSpellcheckElements,
+  enrichWordInfoForContentEditable,
   getWordFromContentEditable,
   getWordFromTextControl,
   getWordFromTextControlAtPoint,
@@ -46,7 +48,14 @@ function resolveWordAtContextMenu(target, clientX, clientY) {
   }
 
   if (target.isContentEditable) {
-    return getWordFromContentEditable(target, clientX, clientY);
+    const fromPoint = getWordFromContentEditable(target, clientX, clientY);
+    const storedMatch = findMisspelledWordForWordInfo(target, fromPoint);
+    const activeWordInfo = enrichWordInfoForContentEditable(
+      target,
+      storedMatch ?? fromPoint
+    );
+
+    return activeWordInfo;
   }
 
   return null;
@@ -210,11 +219,15 @@ export default function SpellCheckProvider({ children }) {
       const isTextControl =
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement;
+      const isContentEditable = target.isContentEditable;
 
       const storedMatch = isTextControl
         ? findMisspelledWordForWordInfo(target, wordInfo)
         : null;
-      const activeWordInfo = storedMatch ?? wordInfo;
+      const activeWordInfo =
+        isTextControl && storedMatch
+          ? storedMatch
+          : wordInfo;
       const cachedSuggestions = getCachedSuggestions(activeWordInfo.word);
 
       const openMenu = (suggestions, loading = false) => {
@@ -226,7 +239,7 @@ export default function SpellCheckProvider({ children }) {
           suggestions,
           target,
           replacementContext:
-            "start" in activeWordInfo
+            "start" in activeWordInfo && !activeWordInfo.range
               ? {
                   type: "text-control",
                   start: activeWordInfo.start,
@@ -267,31 +280,66 @@ export default function SpellCheckProvider({ children }) {
           return;
         }
 
+        if (target.dataset?.kyperSpellcheckManaged === "react") {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+
         void (async () => {
           const correct = await isWordCorrect(activeWordInfo.word);
           if (correct) {
+            closeMenu();
             return;
           }
 
-          event.preventDefault();
-          event.stopPropagation();
           await showSuggestionsMenu();
         })();
         return;
       }
 
-      event.preventDefault();
-      event.stopPropagation();
+      if (isContentEditable) {
+        const storedEditableMatch = findMisspelledWordForWordInfo(
+          target,
+          wordInfo
+        );
 
-      void (async () => {
-        const correct = await isWordCorrect(activeWordInfo.word);
-        if (correct) {
-          closeMenu();
+        if (
+          storedEditableMatch ||
+          getFieldMisspelledWords(target).some(
+            ({ word, start, end }) =>
+              word === activeWordInfo.word &&
+              start === activeWordInfo.start &&
+              end === activeWordInfo.end
+          )
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          void showSuggestionsMenu();
           return;
         }
 
-        await showSuggestionsMenu();
-      })();
+        if (cachedSuggestions?.length) {
+          event.preventDefault();
+          event.stopPropagation();
+          openMenu(cachedSuggestions, false);
+          return;
+        }
+
+        if (target.dataset?.kyperQuillSpellcheckAttached === "true") {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+
+        void (async () => {
+          const correct = await isWordCorrect(activeWordInfo.word);
+          if (correct) {
+            closeMenu();
+            return;
+          }
+
+          await showSuggestionsMenu();
+        })();
+      }
     };
 
     const handleSpellcheckMenuEvent = (event) => {

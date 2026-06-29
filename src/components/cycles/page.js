@@ -12,6 +12,8 @@ import { useCometSettings } from "@/contexts/CometSettingsContext";
 import debounce from "lodash.debounce";
 import axios from "axios";
 import { toast } from "@/components/ui/toast";
+import { clearAuthSession } from "@/lib/clear-auth-session";
+import { tokenManager } from "@/lib/api-client";
 // import Comet from "./Comet";
 
 export default function AllComet() {
@@ -43,9 +45,27 @@ export default function AllComet() {
         getCometData();
       }
     };
+    const handleAuthChanged = () => {
+      if (!tokenManager.isAuthenticated()) {
+        setCometSessions([]);
+        setNoComet(false);
+        setError(null);
+        setLoading(false);
+        setIsCometSettingsOpen(false);
+      }
+    };
+    const handleSessionCleared = () => {
+      setIsCometSettingsOpen(false);
+    };
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, [debouncedSearch, selected, sortBy, sortOrder]);
+    window.addEventListener("auth-changed", handleAuthChanged);
+    window.addEventListener("sessionIdChanged", handleSessionCleared);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("auth-changed", handleAuthChanged);
+      window.removeEventListener("sessionIdChanged", handleSessionCleared);
+    };
+  }, [debouncedSearch, selected, sortBy, sortOrder, setIsCometSettingsOpen]);
 
 
   const getCometData = async () => {
@@ -63,9 +83,14 @@ export default function AllComet() {
       setNoComet(list.length === 0);
     } catch (err) {
       const msg = getErrorMessage(err);
+      if (err?.response?.status === 401) {
+        clearAuthSession();
+      }
       setError(msg);
       setCometSessions([]);
-      toast.error(msg);
+      // Use the same stable id as apiService so Sonner deduplicates the
+      // "Session expired" toast instead of stacking a second copy.
+      toast.error(msg, err?.response?.status === 401 ? { id: "session-expired" } : {});
     } finally {
       setLoading(false);
     }

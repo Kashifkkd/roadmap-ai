@@ -23,9 +23,8 @@ const OptionList = ({
 
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
-    const selectedText = window.getSelection()?.toString() || options[index]?.text || "";
-    e.dataTransfer.setData("text/plain", selectedText);
-    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", options[index]?.text || "");
   };
 
   const handleDragEnd = () => {
@@ -49,60 +48,52 @@ const OptionList = ({
   };
 
   return (
-      <div className="space-y-2">
-  {options.map((option, optionIndex) => (
-    <div
-      key={option?.option_id || option?.optionId || optionIndex}
-      draggable
-      onDragStart={(e) => {
-        handleDragStart(e, optionIndex);
-        e.dataTransfer.setData("text/plain", option?.text || "");
-        e.dataTransfer.effectAllowed = "copy";
-      }}
-      onDragEnd={handleDragEnd}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => handleDrop(e, optionIndex)}
-      className={`flex items-center gap-2 ${
-        draggedIndex === optionIndex ? "opacity-50" : ""
-      }`}
-    >
-      {/* Drag Handle */}
-      <div
-        onPointerDown={(e) => e.currentTarget.parentElement.setAttribute("draggable", "true")}
-        onPointerUp={(e) => e.currentTarget.parentElement.setAttribute("draggable", "false")}
-        className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 h-10 w-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-all"
-      >
-        <GripVertical size={20} />
-      </div>
+    <div className="space-y-2">
+      {options.map((option, optionIndex) => (
+        <div
+          key={option?.option_id || option?.optionId || optionIndex}
+          onDragOver={(e) => handleDragOver(e, optionIndex)}
+          onDrop={(e) => handleDrop(e, optionIndex)}
+          className={`flex items-center gap-2 ${
+            draggedIndex === optionIndex ? "opacity-50" : ""
+          }`}
+        >
+          {/* Drag Handle */}
+          <div
+            draggable
+            onDragStart={(e) => handleDragStart(e, optionIndex)}
+            onDragEnd={handleDragEnd}
+            className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 h-10 w-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-all"
+          >
+            <GripVertical size={20} />
+          </div>
 
-      {/* Numbered Box */}
-      <div className="flex items-center justify-center w-8 h-8 bg-gray-100 border border-gray-300 rounded text-sm font-medium text-gray-700">
-        {optionIndex + 1}
-      </div>
+          {/* Numbered Box */}
+          <div className="flex items-center justify-center w-8 h-8 bg-gray-100 border border-gray-300 rounded text-sm font-medium text-gray-700">
+            {optionIndex + 1}
+          </div>
 
-      {/* Option Input */}
-      <Input
-        type="text"
-        value={option?.text || ""}
-        onChange={(e) =>
-          updateOption(questionIndex, optionIndex, e.target.value)
-        }
-        onPointerDown={(e) => e.currentTarget.closest("[draggable]").setAttribute("draggable", "false")}
-        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-      />
+          {/* Option Input */}
+          <Input
+            type="text"
+            value={option?.text || ""}
+            onChange={(e) =>
+              updateOption(questionIndex, optionIndex, e.target.value)
+            }
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          />
 
-      {/* Delete Button */}
-      <Button
-        type="button"
-        onClick={() => removeOption(questionIndex, optionIndex)}
-        onPointerDown={(e) => e.currentTarget.closest("[draggable]").setAttribute("draggable", "false")}
-        className="px-2 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center"
-      >
-        <Trash2 size={16} />
-      </Button>
+          {/* Delete Button */}
+          <Button
+            type="button"
+            onClick={() => removeOption(questionIndex, optionIndex)}
+            className="px-2 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center"
+          >
+            <Trash2 size={16} />
+          </Button>
+        </div>
+      ))}
     </div>
-  ))}
-</div>
   );
 };
 // import Quill from "quill";

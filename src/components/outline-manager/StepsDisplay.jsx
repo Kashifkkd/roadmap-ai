@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Label } from "@/components/ui/Label";
 import { Button } from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Textarea";
 import { isArrayWithValues } from "@/utils/isArrayWithValues";
 import AskOutlineKyper from "./AskOutlineKyper";
 import { graphqlClient } from "@/lib/graphql-client";
@@ -829,7 +830,7 @@ const StepsDisplay = ({
                           <p className="font-medium text-gray-900 mb-1">Aha</p>
                           {editingField === `${index}-aha` ? (
                             <div className="space-y-2">
-                              <textarea
+                              <Textarea
                                 ref={inputRef}
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
@@ -892,7 +893,7 @@ const StepsDisplay = ({
                           </p>
                           {editingField === `${index}-action` ? (
                             <div className="space-y-2">
-                              <textarea
+                              <Textarea
                                 ref={inputRef}
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
@@ -955,7 +956,7 @@ const StepsDisplay = ({
                           <p className="font-medium text-gray-900 mb-1">Tool</p>
                           {editingField === `${index}-tool` ? (
                             <div className="space-y-2">
-                              <textarea
+                              <Textarea
                                 ref={inputRef}
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
@@ -1015,7 +1016,7 @@ const StepsDisplay = ({
                           </p>
                           {editingField === `${index}-description` ? (
                             <div className="space-y-2">
-                              <textarea
+                              <Textarea
                                 ref={inputRef}
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
@@ -1066,7 +1067,7 @@ const StepsDisplay = ({
                           </p>
                           {editingField === `${index}-habit_description` ? (
                             <div className="space-y-2">
-                              <textarea
+                              <Textarea
                                 ref={inputRef}
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
@@ -1174,10 +1175,11 @@ const AddStepModal = ({
         <h3 className="text-lg font-semibold text-gray-900">Add New Step</h3>
 
         <div className="mt-4 space-y-4">
-          <textarea
+          <Textarea
             value={promptValue}
             onChange={(e) => onPromptChange(e.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-gray-50/60 p-4 text-sm text-gray-900 shadow-inner focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+            wrapperClassName="rounded-2xl bg-gray-50/60"
+            className="w-full rounded-2xl border border-gray-200 p-4 text-sm text-gray-900 shadow-inner focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
             rows={5}
             placeholder="Describe the new step you'd like Kyper to create..."
             disabled={isSubmitting}
@@ -1203,10 +1205,11 @@ const AddStepModal = ({
           </div>
 
           {includeSourceMaterial ? (
-            <textarea
+            <Textarea
               value={sourceMaterialValue}
               onChange={(e) => onSourceMaterialChange(e.target.value)}
-              className="w-full rounded-2xl border border-dashed border-gray-300 bg-white/70 p-3 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+              wrapperClassName="rounded-2xl bg-white/70"
+              className="w-full rounded-2xl border border-dashed border-gray-300 p-3 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
               rows={3}
               placeholder="Paste supporting content for this step..."
               disabled={isSubmitting}

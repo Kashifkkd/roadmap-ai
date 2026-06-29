@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
-import SectionHeader from "@/components/section-header";
+import CycleCreationHeader from "@/components/common/CycleCreationHeader";
 import FormCard from "./FormCard";
 import SourceMaterialCard from "./SourceMaterialCard";
 import CreateCometFooter from "./CreateCometFooter";
@@ -40,7 +40,10 @@ function normalizeWebpageUrlEntry(item, defaultUploaded = false) {
 
   return {
     url,
-    title: fromApi || getFetchedTitleFromLocalStorage(url) || deriveTitleFromUrl(url),
+    title:
+      fromApi ||
+      getFetchedTitleFromLocalStorage(url) ||
+      deriveTitleFromUrl(url),
     comment: item?.comment ?? "",
     isUploaded:
       typeof item?.isUploaded === "boolean" ? item.isUploaded : defaultUploaded,
@@ -119,7 +122,10 @@ export default function CreateComet({
       const storedSessionId = localStorage.getItem("sessionId");
       if (storedSessionId) {
         setSessionId(storedSessionId);
-        console.log("Auto-save: Loaded sessionId from localStorage:", storedSessionId);
+        console.log(
+          "Auto-save: Loaded sessionId from localStorage:",
+          storedSessionId,
+        );
       } else {
         console.log("Auto-save: No sessionId in localStorage yet");
       }
@@ -488,7 +494,8 @@ export default function CreateComet({
         prefillField("engagementFrequency", prefillData.engagementFrequency);
       if (prefillData.lengthFrequency)
         prefillField("lengthFrequency", prefillData.duration);
-      if (prefillData.clientOrg) prefillField("clientOrg", prefillData.clientOrg);
+      if (prefillData.clientOrg)
+        prefillField("clientOrg", prefillData.clientOrg);
       if (prefillData.clientWebsite)
         prefillField("clientWebsite", prefillData.clientWebsite);
     }
@@ -542,7 +549,7 @@ export default function CreateComet({
           personalizationEnabled,
           chapterSkipEnabled,
           changed: changed,
-          hasPrevData: !!prevString
+          hasPrevData: !!prevString,
         });
       }
     });
@@ -570,7 +577,13 @@ export default function CreateComet({
       }, 200);
       return () => clearTimeout(timer);
     }
-  }, [prefillData, watch, habitEnabled, personalizationEnabled, chapterSkipEnabled]);
+  }, [
+    prefillData,
+    watch,
+    habitEnabled,
+    personalizationEnabled,
+    chapterSkipEnabled,
+  ]);
 
   // Update tracked data when toggles change - this triggers auto-save detection
   useEffect(() => {
@@ -600,7 +613,7 @@ export default function CreateComet({
       personalizationEnabled,
       chapterSkipEnabled,
       hasChanged,
-      willTriggerAutoSave: hasChanged
+      willTriggerAutoSave: hasChanged,
     });
 
     // If this is a change (not initialization), the next interval tick will detect it
@@ -630,15 +643,13 @@ export default function CreateComet({
           habitEnabled,
           habitText: data.habit || "",
           personalizationEnabled,
-          chapterSkipEnabled:
-            personalizationEnabled && chapterSkipEnabled,
+          chapterSkipEnabled: personalizationEnabled && chapterSkipEnabled,
           sourceFiles: files,
-          webpage_url: uniqueWebpageUrls
-            .map((e) => ({
-              webpage_url: e.url.trim(),
-              title: e.title ?? "",
-              comment: e.comment ?? "",
-            })),
+          webpage_url: uniqueWebpageUrls.map((e) => ({
+            webpage_url: e.url.trim(),
+            title: e.title ?? "",
+            comment: e.comment ?? "",
+          })),
         };
         await onSubmit(formData);
       }
@@ -680,17 +691,29 @@ export default function CreateComet({
     }
 
     // Get sessionId from props or localStorage
-    const currentSessionId = sessionId || (typeof window !== "undefined" ? localStorage.getItem("sessionId") : null);
+    const currentSessionId =
+      sessionId ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("sessionId")
+        : null);
 
     if (!currentSessionId) {
-      console.log("Auto-save: No sessionId available, skipping auto-save setup");
+      console.log(
+        "Auto-save: No sessionId available, skipping auto-save setup",
+      );
       return;
     }
 
-    console.log("Auto-save: Setting up auto-save with sessionId:", currentSessionId);
+    console.log(
+      "Auto-save: Setting up auto-save with sessionId:",
+      currentSessionId,
+    );
 
     // Initialize on first run if not already initialized
-    if (prevFormDataRef.current === null && currentFormDataRef.current === null) {
+    if (
+      prevFormDataRef.current === null &&
+      currentFormDataRef.current === null
+    ) {
       const initialValues = watch();
       const initialDataWithToggles = {
         ...initialValues,
@@ -721,7 +744,7 @@ export default function CreateComet({
         hasCurrent: !!currentFormDataString,
         hasPrev: !!prevFormDataString,
         currentLength: currentFormDataString?.length,
-        prevLength: prevFormDataString?.length
+        prevLength: prevFormDataString?.length,
       });
 
       // If refs are not initialized, try to get from watch
@@ -751,31 +774,42 @@ export default function CreateComet({
       if (formDataChanged) {
         try {
           const current = JSON.parse(currentFormDataString);
-          const prev = prevFormDataString ? JSON.parse(prevFormDataString) : null;
+          const prev = prevFormDataString
+            ? JSON.parse(prevFormDataString)
+            : null;
           console.log("Auto-save: Form data changed detected", {
             habitEnabled: {
               current: current.habitEnabled,
               prev: prev?.habitEnabled,
-              stateValue: habitEnabled
+              stateValue: habitEnabled,
             },
             personalizationEnabled: {
               current: current.personalizationEnabled,
               prev: prev?.personalizationEnabled,
-              stateValue: personalizationEnabled
+              stateValue: personalizationEnabled,
             },
             chapterSkipEnabled: {
               current: current.chapterSkipEnabled,
               prev: prev?.chapterSkipEnabled,
-              stateValue: chapterSkipEnabled
+              stateValue: chapterSkipEnabled,
             },
-            togglesChanged: prev ? (current.habitEnabled !== prev.habitEnabled || current.personalizationEnabled !== prev.personalizationEnabled || current.chapterSkipEnabled !== prev.chapterSkipEnabled) : false
+            togglesChanged: prev
+              ? current.habitEnabled !== prev.habitEnabled ||
+                current.personalizationEnabled !==
+                  prev.personalizationEnabled ||
+                current.chapterSkipEnabled !== prev.chapterSkipEnabled
+              : false,
           });
         } catch (e) {
           console.log("Auto-save: Form data changed detected (parse error)");
         }
       }
 
-      if (formDataChanged && prevFormDataString !== null && currentFormDataString) {
+      if (
+        formDataChanged &&
+        prevFormDataString !== null &&
+        currentFormDataString
+      ) {
         console.log("Form data changed, triggering auto-save...");
         let currentFormValues;
         try {
@@ -806,7 +840,10 @@ export default function CreateComet({
             return;
           }
 
-          console.log("Auto-save: Starting save process for sessionId:", currentSessionIdForSave);
+          console.log(
+            "Auto-save: Starting save process for sessionId:",
+            currentSessionIdForSave,
+          );
 
           // Format form data similar to handleFormSubmit
           const formattedCometData = {
@@ -834,10 +871,13 @@ export default function CreateComet({
             },
             "Experience Design": {
               Focus: currentFormValues.cometFocus || "",
-              "Source Alignment": currentFormValues.sourceMaterialFidelity || "",
-              "Engagement Frequency": currentFormValues.engagementFrequency || "",
+              "Source Alignment":
+                currentFormValues.sourceMaterialFidelity || "",
+              "Engagement Frequency":
+                currentFormValues.engagementFrequency || "",
               Duration: currentFormValues.lengthFrequency || "",
-              "Special Instructions": currentFormValues.specialInstructions || "",
+              "Special Instructions":
+                currentFormValues.specialInstructions || "",
             },
           };
 
@@ -863,13 +903,13 @@ export default function CreateComet({
             stateValues: {
               habit: habitEnabled,
               personalization: personalizationEnabled,
-              chapterSkip: chapterSkipEnabled
+              chapterSkip: chapterSkipEnabled,
             },
             parsedValues: {
               habit: currentFormValues.habitEnabled,
               personalization: currentFormValues.personalizationEnabled,
-              chapterSkip: currentFormValues.chapterSkipEnabled
-            }
+              chapterSkip: currentFormValues.chapterSkipEnabled,
+            },
           });
 
           const enabled_attributes = {
@@ -883,7 +923,7 @@ export default function CreateComet({
           console.log("Auto-save: enabled_attributes being saved:", {
             path_personalization: enabled_attributes.path_personalization,
             chapter_skip: enabled_attributes.chapter_skip,
-            habit_enabled: enabled_attributes.habit_enabled
+            habit_enabled: enabled_attributes.habit_enabled,
           });
 
           // Ensure response_path exists and update with new enabled_attributes
@@ -894,7 +934,8 @@ export default function CreateComet({
             parsedSessionData.response_path = {};
           }
           // Update enabled_attributes with new toggle values
-          parsedSessionData.response_path.enabled_attributes = enabled_attributes;
+          parsedSessionData.response_path.enabled_attributes =
+            enabled_attributes;
 
           // Create response_path object with updated enabled_attributes
           const updatedResponsePath = {
@@ -916,7 +957,8 @@ export default function CreateComet({
             session_id: currentSessionIdForSave,
             cometTitle: formattedCometData["Basic Information"]["Cycle Title"],
             description: formattedCometData["Basic Information"]["Description"],
-            enabled_attributes_in_payload: updatedResponsePath.enabled_attributes
+            enabled_attributes_in_payload:
+              updatedResponsePath.enabled_attributes,
           });
 
           const response = await graphqlClient.autoSaveComet(cometJsonForSave);
@@ -960,14 +1002,15 @@ export default function CreateComet({
               localStorage.setItem("sessionData", JSON.stringify(savedData));
               prevFormDataRef.current = currentFormDataString;
               console.log("Auto-save successful", {
-                enabled_attributes: savedData.response_path?.enabled_attributes
+                enabled_attributes: savedData.response_path?.enabled_attributes,
               });
             } catch (parseError) {
               console.error("Error parsing auto-save response:", parseError);
               const updatedSessionData = {
                 ...parsedSessionData,
                 cycle_creation_data: formattedCometData,
-                chatbot_conversation: parsedSessionData?.chatbot_conversation || [],
+                chatbot_conversation:
+                  parsedSessionData?.chatbot_conversation || [],
               };
               // Ensure enabled_attributes are updated even on error
               if (!updatedSessionData.response_path) {
@@ -982,9 +1025,13 @@ export default function CreateComet({
                 JSON.stringify(updatedSessionData),
               );
               prevFormDataRef.current = currentFormDataString;
-              console.log("Auto-save: Saved to localStorage with enabled_attributes:", {
-                enabled_attributes: updatedSessionData.response_path.enabled_attributes
-              });
+              console.log(
+                "Auto-save: Saved to localStorage with enabled_attributes:",
+                {
+                  enabled_attributes:
+                    updatedSessionData.response_path.enabled_attributes,
+                },
+              );
             }
           }
         } catch (error) {
@@ -1001,7 +1048,13 @@ export default function CreateComet({
         console.log("Auto-save: Cleaned up interval");
       }
     };
-  }, [sessionId, habitEnabled, personalizationEnabled, chapterSkipEnabled, watch]);
+  }, [
+    sessionId,
+    habitEnabled,
+    personalizationEnabled,
+    chapterSkipEnabled,
+    watch,
+  ]);
 
   const handleAskKyper = async (query) => {
     try {
@@ -1084,12 +1137,11 @@ export default function CreateComet({
           { user: conversationMessage },
         ],
         to_modify: {},
-        webpage_url: uniqueWebpageUrls
-          .map((e) => ({
-            webpage_url: e.url.trim(),
-            title: e.title ?? "",
-            comment: e.comment ?? "",
-          })),
+        webpage_url: uniqueWebpageUrls.map((e) => ({
+          webpage_url: e.url.trim(),
+          title: e.title ?? "",
+          comment: e.comment ?? "",
+        })),
       });
 
       console.log("Final payload:", cometJsonForMessage, {
@@ -1269,16 +1321,18 @@ export default function CreateComet({
       setValue("learningObjectives", [""]);
     }
   };
-
+  const title = watch("cometTitle");
   return (
     <>
       <form
         onSubmit={handleSubmit(handleFormSubmit)}
         className="flex flex-col flex-1 w-full h-full bg-background rounded-xl"
       >
-        <div className="w-full px-2 pt-2">
-          <SectionHeader title="Create New Cycle" />
-        </div>
+        <CycleCreationHeader
+          activeStep="configure"
+          sessionData={prefillData || sessionData}
+          title={title}
+        />
         <div className="p-1 sm:p-2 w-full h-full overflow-y-auto create-comet-scrollbar">
           <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 bg-primary-50 rounded-xl h-full p-1 sm:p-2">
             <div className="flex p-1 sm:p-2 w-full lg:w-1/2 bg-background rounded-xl">

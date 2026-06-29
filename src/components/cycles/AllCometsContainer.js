@@ -3,6 +3,10 @@ import React, { useEffect } from "react";
 import Comet from "./Comet";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/toast";
+import {
+  ensureCycleAuth,
+  fetchCycleSessionDetails,
+} from "@/lib/cycle-access";
 
 export default function AllCometsContainer({ cometSessions, onDeleteSuccess }) {
 
@@ -21,30 +25,18 @@ export default function AllCometsContainer({ cometSessions, onDeleteSuccess }) {
         return;
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://kyper-stage.1st90.com";
-      const response = await fetch(
-        `${apiUrl}/api/comet/session_details/${session_id}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      if (!ensureCycleAuth()) return;
 
-      if (!response.ok) {
-        const status = response.status;
-        let message = "Failed to fetch session details";
-        if (status >= 500) message = "Server error. Please try again later.";
-        else if (status === 404) message = "Session not found.";
-        else if (status === 403) message = "Access denied.";
-        else if (status === 401) message = "Session expired. Please login again.";
-        else if (status === 400) message = "Invalid request.";
-        toast.error(message);
+      const { ok, result, unauthorized, message } =
+        await fetchCycleSessionDetails(session_id);
+
+      if (unauthorized) return;
+
+      if (!ok || !result) {
+        if (message) toast.error(message);
         return;
       }
 
-      const result = await response.json();
       console.log("Fetched session details:", result);
 
       const sessionState = result?.meta?.state;
@@ -56,17 +48,16 @@ export default function AllCometsContainer({ cometSessions, onDeleteSuccess }) {
       localStorage.setItem("sessionData", JSON.stringify(result));
       localStorage.setItem("sessionId", session_id);
 
-      // Safely read nested properties in case parts of the response are missing
       const sessionData = JSON.parse(localStorage.getItem("sessionData") || "{}");
-      const pathChapters =
-        sessionData?.response_path?.chapters ??
-        [];
-      const outlineChapters =
-        sessionData?.response_outline?.chapters ??
-        [];
+      const pathChapters = sessionData?.response_path?.chapters ?? [];
+      const outlineChapters = sessionData?.response_outline?.chapters ?? [];
       if (Array.isArray(pathChapters) && pathChapters.length > 0) {
         router.push("/cycle-manager");
-      } else if (sessionData.response_outline.length > 0) {
+      } else if (
+        Array.isArray(outlineChapters)
+          ? outlineChapters.length > 0
+          : outlineChapters?.length > 0
+      ) {
         router.push("/outline-manager");
       } else {
         router.push("/configure-cycle");

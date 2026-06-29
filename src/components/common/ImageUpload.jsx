@@ -954,6 +954,15 @@ export default function ImageUpload({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          // Unlink from backend before removing locally
+                          const aid = currentImageAsset?.asset_id || currentImageAsset?.id;
+                          if (aid && screenUid) {
+                            unlinkAsset({
+                              sessionId,
+                              assetId: aid,
+                              screenUid,
+                            }).catch(() => {});
+                          }
                           handleRemoveCurrentImage();
                         }}
                         className="w-full rounded-md border border-red-400 bg-white px-5 py-1.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:border-none hover:text-white cursor-pointer"

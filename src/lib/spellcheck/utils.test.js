@@ -3,6 +3,7 @@ import { SPELLCHECK_IMPERATIVE_SKIP_ATTR } from "./constants";
 import {
   applySpellcheckAttributes,
   collectSpellcheckElements,
+  excludeWordAtCaret,
   getWordAtIndex,
   getWordFromTextControl,
   isExplicitlyDisabled,
@@ -21,6 +22,17 @@ describe("isExplicitlyDisabled", () => {
     wrapper.setAttribute("data-spellcheck", "false");
     wrapper.appendChild(input);
     expect(isExplicitlyDisabled(input)).toBe(true);
+  });
+
+  it("allows react-managed fields inside a spellcheck opt-out zone", () => {
+    const wrapper = document.createElement("div");
+    wrapper.setAttribute("data-spellcheck", "false");
+    const textarea = document.createElement("textarea");
+    textarea.dataset.kyperSpellcheckManaged = "react";
+    wrapper.appendChild(textarea);
+
+    expect(isExplicitlyDisabled(textarea)).toBe(false);
+    expect(isSpellcheckEligible(textarea)).toBe(true);
   });
 
   it("returns false for eligible plain inputs", () => {
@@ -101,6 +113,24 @@ describe("getWordAtIndex", () => {
     expect(getWordAtIndex("   ", 1)).toBeNull();
     expect(getWordAtIndex("", 0)).toBeNull();
   });
+
+  it("returns the full hyphenated token when caret is on the hyphen", () => {
+    const text = "mindset to hands-on execution";
+    const hyphenIndex = text.indexOf("-");
+
+    expect(getWordAtIndex(text, hyphenIndex)).toEqual({
+      word: "hands-on",
+      start: text.indexOf("hands-on"),
+      end: text.indexOf("hands-on") + "hands-on".length,
+    });
+  });
+
+  it("returns the full hyphenated token when caret is before the hyphen", () => {
+    const text = "mindset to hands-on execution";
+    const beforeHyphen = text.indexOf("-") - 1;
+
+    expect(getWordAtIndex(text, beforeHyphen)?.word).toBe("hands-on");
+  });
 });
 
 describe("getWordFromTextControl", () => {
@@ -124,6 +154,58 @@ describe("getWordFromTextControl", () => {
       start: 0,
       end: 5,
     });
+  });
+});
+
+describe("excludeWordAtCaret", () => {
+  const makeFocusedField = (value, caret) => {
+    const textarea = document.createElement("textarea");
+    document.body.appendChild(textarea);
+    textarea.value = value;
+    textarea.focus();
+    textarea.setSelectionRange(caret, caret);
+    return textarea;
+  };
+
+  it("hides the word currently being typed", () => {
+    // "goo|" — caret at the end of the unfinished word.
+    const field = makeFocusedField("goo", 3);
+    const words = [{ word: "goo", start: 0, end: 3 }];
+
+    expect(excludeWordAtCaret(field, words)).toEqual([]);
+    field.remove();
+  });
+
+  it("keeps words the caret has moved past", () => {
+    // "teh |" — caret after the trailing space.
+    const field = makeFocusedField("teh ", 4);
+    const words = [{ word: "teh", start: 0, end: 3 }];
+
+    expect(excludeWordAtCaret(field, words)).toEqual(words);
+    field.remove();
+  });
+
+  it("keeps every word when the field is not focused", () => {
+    const field = makeFocusedField("teh", 3);
+    field.blur();
+    const words = [{ word: "teh", start: 0, end: 3 }];
+
+    expect(excludeWordAtCaret(field, words)).toEqual(words);
+    field.remove();
+  });
+
+  it("only hides the word containing the caret", () => {
+    // "teh wrold|" — caret inside the second word only.
+    const field = makeFocusedField("teh wrold", 9);
+    const words = [
+      { word: "teh", start: 0, end: 3 },
+      { word: "wrold", start: 4, end: 9 },
+    ];
+
+    expect(excludeWordAtCaret(field, words)).toEqual([
+      { word: "teh", start: 0, end: 3 },
+    ]);
+    field.remove();
   });
 });
 

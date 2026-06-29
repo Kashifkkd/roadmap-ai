@@ -74,6 +74,30 @@ const stripHtmlToPlainText = (value) => {
     .trim();
 };
 
+/** Plain text fields (e.g. assessment options) must keep interior/trailing spaces while typing. */
+const normalizePlainTextField = (value) => {
+  if (typeof value !== "string") return "";
+  return value;
+};
+
+/** Persisted habit rows: align with backend screen_schemas (id, level, …) */
+const normalizeHabitRowForSave = (habit, idx, existing) => {
+  const e = existing && typeof existing === "object" ? existing : {};
+  const rawId = habit?.id ?? e.id ?? idx + 1;
+  const id = Number.isFinite(Number(rawId)) ? Number(rawId) : idx + 1;
+  const rawLevel = habit?.level ?? e.level ?? id;
+  const level = Number.isFinite(Number(rawLevel)) ? Number(rawLevel) : id;
+  return {
+    id,
+    level,
+    title: habit?.title !== undefined ? habit.title : (e.title ?? ""),
+    text: habit?.text !== undefined ? habit.text : (e.text ?? ""),
+    reps:
+      habit?.reps !== undefined && habit?.reps !== ""
+        ? habit.reps
+        : (e.reps ?? ""),
+  };
+};
 
 // Helper to get form values directly from screen content (no local state)
 // Uses actual keys from the structure as defined in temp2.js
@@ -117,7 +141,7 @@ const getFormValuesFromScreen = (screen) => {
     values.question = content.question || "";
     values.highLabel = content.highLabel || "";
     values.lowLabel = content.lowLabel || "";
-    values.key_learning = content.key_learning || "";
+    values.keyLearning = content.keyLearning || content.key_learning || "";
     values.lowerScale = content.lowerScale;
     values.higherScale = content.higherScale;
     values.linearBenchmarkType =
@@ -127,7 +151,7 @@ const getFormValuesFromScreen = (screen) => {
   if (contentType === "reflection") {
     // Some reflection screens may still use heading/body from older schema
     values.title = content.title || content.heading || "";
-    values.prompt = content.prompt || content.body || "";
+    values.prompt = stripHtmlToPlainText(content.prompt || content.body || "");
   }
 
   if (contentType === "action" || contentType === "actions") {
@@ -157,13 +181,17 @@ const getFormValuesFromScreen = (screen) => {
   if (contentType === "habits") {
     values.title = content.title || "";
     values.habitDescription = content.habitDescription || "";
-    // habit_image is a string URL, not an object
-    values.habit_image =
+    const legacyUrl =
       typeof content.habit_image === "string"
         ? content.habit_image
         : content.habit_image?.url || content.habit_image?.ImageUrl || "";
-    values.description = content.habit_image?.description || "";
-    values.enabled = content.enabled ?? false;
+    values.habit_image =
+      (typeof content.habitImage === "string" ? content.habitImage : "") ||
+      legacyUrl;
+    values.description =
+      (typeof content.habit_image === "object" &&
+        content.habit_image?.description) ||
+      "";
     values.habits = content.habits || [];
   }
 
@@ -482,14 +510,24 @@ export default function DynamicForm({
                 currentScreen.screenContents.content.highLabel = value;
               else if (field === "lowLabel")
                 currentScreen.screenContents.content.lowLabel = value;
-              else if (field === "key_learning")
-                currentScreen.screenContents.content.key_learning = value;
+              else if (field === "keyLearning")
+                currentScreen.screenContents.content.keyLearning = value;
               else if (field === "lowerScale")
                 currentScreen.screenContents.content.lowerScale = value;
               else if (field === "higherScale")
                 currentScreen.screenContents.content.higherScale = value;
               else if (field === "linearBenchmarkType")
                 currentScreen.screenContents.content.benchmark_type = value;
+
+              // Migrate legacy snake_case payloads to camelCase, then drop the old key.
+              if (
+                currentScreen.screenContents.content.keyLearning === undefined &&
+                currentScreen.screenContents.content.key_learning !== undefined
+              ) {
+                currentScreen.screenContents.content.keyLearning =
+                  currentScreen.screenContents.content.key_learning;
+              }
+              delete currentScreen.screenContents.content.key_learning;
             } else if (contentType === "reflection") {
               if (field === "title") {
                 // Keep heading in sync with title (heading was previously only set on first
@@ -540,7 +578,7 @@ export default function DynamicForm({
                         optionId: Number.isFinite(rawOptionId)
                           ? rawOptionId
                           : oIdx + 1,
-                        text: stripHtmlToPlainText(option?.text || ""),
+                        text: normalizePlainTextField(option?.text || ""),
                       };
                     });
                     while (normalizedOptions.length < 4) {
@@ -569,74 +607,57 @@ export default function DynamicForm({
                   "Measure understanding through scenario-based questions.";
               }
             } else if (contentType === "habits") {
-              if (field === "title")
-                currentScreen.screenContents.content.title = value;
+              const c = currentScreen.screenContents.content;
+              if (field === "title") c.title = value;
               else if (field === "habitDescription") {
-                currentScreen.screenContents.content.habitDescription = value;
+                c.habitDescription = value;
               } else if (field === "description") {
                 if (
-                  !currentScreen.screenContents.content.habit_image ||
-                  typeof currentScreen.screenContents.content.habit_image ===
-                    "string"
+                  c.habit_image &&
+                  typeof c.habit_image === "object" &&
+                  !Array.isArray(c.habit_image)
                 ) {
-                  currentScreen.screenContents.content.habit_image = {
-                    url: currentScreen.screenContents.content.habit_image || "",
-                    description: "",
-                  };
+                  c.habit_image.description = value;
                 }
-                currentScreen.screenContents.content.habit_image.description =
-                  value;
               } else if (field === "habit_image") {
-                if (
-                  !currentScreen.screenContents.content.habit_image ||
-                  typeof currentScreen.screenContents.content.habit_image ===
-                    "string"
-                ) {
-                  currentScreen.screenContents.content.habit_image = {
-                    url: value,
-                    description: "",
-                  };
-                } else {
-                  currentScreen.screenContents.content.habit_image.url = value;
-                }
-              } else if (field === "enabled") {
-                currentScreen.screenContents.content.enabled = value;
+                const url =
+                  typeof value === "string"
+                    ? value
+                    : value?.url || value?.ImageUrl || "";
+                c.habitImage = url;
+                delete c.habit_image;
               } else if (field === "habits") {
-                // Extract plain text from delta for nested habit.text fields
                 if (Array.isArray(value)) {
-                  const existingHabits =
-                    currentScreen.screenContents.content.habits || [];
+                  const existingHabits = c.habits || [];
+                  c.habits = value.map((habit, idx) => {
+                    if (habit && typeof habit === "object") {
+                      const existing = existingHabits[idx] || {};
+                      const nextTitle =
+                        habit.title !== undefined && habit.title !== ""
+                          ? habit.title
+                          : (existing.title ?? "");
+                      const nextReps =
+                        habit.reps !== undefined && habit.reps !== ""
+                          ? habit.reps
+                          : (existing.reps ?? "");
+                      const nextText =
+                        habit.text !== undefined && habit.text !== ""
+                          ? habit.text
+                          : (existing.text ?? "");
 
-                  currentScreen.screenContents.content.habits = value.map(
-                    (habit, idx) => {
-                      if (habit && typeof habit === "object") {
-                        const existing = existingHabits[idx] || {};
-                        const nextTitle =
-                          habit.title !== undefined && habit.title !== ""
-                            ? habit.title
-                            : (existing.title ?? "");
-                        const nextReps =
-                          habit.reps !== undefined && habit.reps !== ""
-                            ? habit.reps
-                            : (existing.reps ?? "");
-                        const nextText =
-                          habit.text !== undefined && habit.text !== ""
-                            ? habit.text
-                            : (existing.text ?? "");
-
-                        return {
-                          ...existing,
-                          ...habit,
-                          title: nextTitle,
-                          reps: nextReps,
-                          text: nextText,
-                        };
-                      }
-                      return habit;
-                    },
-                  );
+                      const merged = {
+                        ...existing,
+                        ...habit,
+                        title: nextTitle,
+                        reps: nextReps,
+                        text: nextText,
+                      };
+                      return normalizeHabitRowForSave(merged, idx, existing);
+                    }
+                    return habit;
+                  });
                 } else {
-                  currentScreen.screenContents.content.habits = value;
+                  c.habits = value;
                 }
               }
             } else if (contentType === "notifications") {
@@ -675,24 +696,44 @@ export default function DynamicForm({
                 currentScreen.screenContents.content.body = value;
               }
             } else if (contentType === "miniapp" || contentType === "miniApp") {
-              // For miniApp: title → content.heading, htmlContent → content.html
+              // For miniApp: title → content.heading, htmlContent → content.html; always keep { heading, html } shape
               if (field === "title") {
-                currentScreen.title = value;
-                if (typeof currentScreen.screenContents.content !== "string") {
-                  if (!currentScreen.screenContents.content) {
-                    currentScreen.screenContents.content = {};
+                const c = currentScreen.screenContents.content;
+                if (typeof c === "string") {
+                  currentScreen.screenContents.content = {
+                    heading: value,
+                    html: c,
+                  };
+                } else {
+                  if (!c || typeof c !== "object") {
+                    currentScreen.screenContents.content = {
+                      heading: value,
+                      html: "",
+                    };
+                  } else {
+                    c.heading = value;
                   }
-                  currentScreen.screenContents.content.heading = value;
                 }
               } else if (field === "htmlContent") {
-                if (typeof currentScreen.screenContents.content === "string") {
-                  currentScreen.screenContents.content = { html: value };
+                const c = currentScreen.screenContents.content;
+                if (typeof c === "string") {
+                  currentScreen.screenContents.content = {
+                    heading: "",
+                    html: value,
+                  };
                 } else {
-                  if (!currentScreen.screenContents.content) {
-                    currentScreen.screenContents.content = {};
+                  if (!c || typeof c !== "object") {
+                    currentScreen.screenContents.content = {
+                      heading: "",
+                      html: value,
+                    };
+                  } else {
+                    if (typeof c.heading !== "string") {
+                      c.heading = "";
+                    }
+                    c.html = value;
+                    delete c.htmlContent;
                   }
-                  currentScreen.screenContents.content.html = value;
-                  currentScreen.screenContents.content.htmlContent = value; // backward compat
                 }
               }
             } else if (
@@ -1028,7 +1069,7 @@ export default function DynamicForm({
         linearHighLabel: "highLabel",
         linearLowLabel: "lowLabel",
         linearQuestion: "question",
-        linearKeyLearning: "key_learning",
+        linearKeyLearning: "keyLearning",
         linearLowerScale: "lowerScale",
         linearHigherScale: "higherScale",
         reflectionTitle: "title",
@@ -1144,6 +1185,9 @@ export default function DynamicForm({
     const getAssetImageUrl = (asset) =>
       asset?.ImageUrl || asset?.image_url || asset?.url || asset?.mediaUrl || asset?.s3_url || null;
 
+    const isMediaTypeUnset = (type) =>
+      type == null || (typeof type === "string" && type.trim() === "");
+
     const isOutlineScreenImageAsset = (asset) =>
       Boolean(
         (asset?.type === "image" || asset?.asset_type === "image") &&
@@ -1188,14 +1232,27 @@ export default function DynamicForm({
                 imageStatus: "ready",
               };
 
+              // Screen icon/hero images live in assets[]. For content screens,
+              // only set content.media.type when it is unset — never clobber link/file media.
               if (replacesScreenImages) {
                 const nextScreen = stepItem.screens[screenIndex];
-                if (!nextScreen.screenContents) nextScreen.screenContents = {};
-                if (!nextScreen.screenContents.content)
-                  nextScreen.screenContents.content = {};
-                if (!nextScreen.screenContents.content.media)
-                  nextScreen.screenContents.content.media = {};
-                nextScreen.screenContents.content.media.type = "image";
+                const contentType = nextScreen.screenContents?.contentType;
+                const mediaType =
+                  nextScreen.screenContents?.content?.media?.type;
+
+                const shouldSetMediaTypeToImage =
+                  contentType === "content"
+                    ? isMediaTypeUnset(mediaType)
+                    : mediaType !== "link";
+
+                if (shouldSetMediaTypeToImage) {
+                  if (!nextScreen.screenContents) nextScreen.screenContents = {};
+                  if (!nextScreen.screenContents.content)
+                    nextScreen.screenContents.content = {};
+                  if (!nextScreen.screenContents.content.media)
+                    nextScreen.screenContents.content.media = {};
+                  nextScreen.screenContents.content.media.type = "image";
+                }
               }
               return newOutline;
             }
@@ -1511,6 +1568,7 @@ export default function DynamicForm({
     // Path Personalization
     if (
       screenType === "path_personalization" ||
+      screenType === "pathpersonalization" ||
       contentType === "pathPersonalization" ||
       contentType === "pathpersonalization"
     ) {

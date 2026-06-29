@@ -14,10 +14,10 @@ export const TRIGGER_ARRAY_KEYS = [
 /** @typedef {'manager' | 'accountability'} PathEmailVariant */
 
 export const DEFAULT_MANAGER_TRIGGER_SUBHEADER =
-  "<p>An update for @user_name's manager from @path_name.</p>";
+  "";
 
 export const DEFAULT_ACCOUNTABILITY_TRIGGER_SUBHEADER =
-  "<p>An update regarding @user_name on @path_name.</p>";
+  "";
 
 export const createEmptyPathEmailConfig = () => ({
   enabled: false,

@@ -131,8 +131,8 @@ export default function EditableCycleTitle({ variant = "header", className }) {
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isSaving}
-          spellCheck={false}
-          className={cn("min-w-0 flex-1 bg-white", styles.input)}
+          wrapperClassName="min-w-0 flex-1 bg-white"
+          className={cn("min-w-0 flex-1", styles.input)}
           aria-label="Cycle title"
         />
         <Button

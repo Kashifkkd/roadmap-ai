@@ -10,9 +10,44 @@ import {
   registerCustomWords,
 } from "./customWords";
 import { tokenizeWords } from "./tokenize";
+import { isAcceptedWordForm } from "./wordFormFallback";
 
 let spellCheckerPromise = null;
 let spellCheckerInstance = null;
+
+export const SPELLCHECK_READY_EVENT = "kyper-spellcheck-ready";
+
+const spellCheckerReadyListeners = new Set();
+
+function notifySpellCheckerReady() {
+  spellCheckerReadyListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch {
+      /* ignore */
+    }
+  });
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(SPELLCHECK_READY_EVENT));
+  }
+}
+
+export function onSpellCheckerReady(listener) {
+  if (typeof listener !== "function") {
+    return () => {};
+  }
+
+  spellCheckerReadyListeners.add(listener);
+
+  if (spellCheckerInstance) {
+    listener();
+  }
+
+  return () => {
+    spellCheckerReadyListeners.delete(listener);
+  };
+}
 
 const decodeDictionary = (buffer) =>
   new TextDecoder("utf-8").decode(buffer);
@@ -52,6 +87,7 @@ export async function getSpellChecker() {
       .then((dictionary) => {
         spellCheckerInstance = nspell(dictionary);
         registerCustomWords(spellCheckerInstance);
+        notifySpellCheckerReady();
         return spellCheckerInstance;
       })
       .catch((error) => {
@@ -78,7 +114,7 @@ export async function isWordCorrect(word) {
 
   try {
     const checker = await getSpellChecker();
-    return checker.correct(word);
+    return isAcceptedWordForm(checker, word);
   } catch {
     return true;
   }
@@ -95,7 +131,7 @@ export async function getWordSuggestions(word, limit = 10) {
 
   try {
     const checker = await getSpellChecker();
-    if (checker.correct(word)) {
+    if (isAcceptedWordForm(checker, word)) {
       return [];
     }
 
@@ -127,9 +163,12 @@ export async function findMisspelledWords(text) {
 
   try {
     const checker = await getSpellChecker();
-    return words.filter(
-      ({ word }) => !isSessionIgnoredWord(word) && !checker.correct(word)
-    );
+    return words.filter(({ word }) => {
+      if (isSessionIgnoredWord(word)) {
+        return false;
+      }
+      return !isAcceptedWordForm(checker, word);
+    });
   } catch {
     return [];
   }

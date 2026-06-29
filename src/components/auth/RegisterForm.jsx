@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Card } from "@/components/ui/Card";
 import { registerUser } from "@/api/register";
+import { Eye, EyeOff } from "lucide-react";
 
 export function RegisterForm() {
   const [formData, setFormData] = useState({
@@ -20,6 +21,9 @@ export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [validationError, setValidationError] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
+    useState(false);
   const router = useRouter();
 
   const handleInputChange = (e) => {
@@ -186,17 +190,31 @@ export function RegisterForm() {
           <Label htmlFor="password" className="text-sm font-medium">
             Password *
           </Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="Enter your password"
-            value={formData.password}
-            onChange={handleInputChange}
-            required
-            className="w-full"
-            disabled={isLoading}
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={isPasswordVisible ? "text" : "password"}
+              spellCheck={false}
+              placeholder="Enter your password"
+              value={formData.password}
+              onChange={handleInputChange}
+              required
+              className="w-full pr-12"
+              disabled={isLoading}
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-3 flex items-center text-gray-400 transition hover:text-gray-700"
+              onClick={() => setIsPasswordVisible((current) => !current)}
+            >
+              {isPasswordVisible ? (
+                <EyeOff className="size-5" />
+              ) : (
+                <Eye className="size-5" />
+              )}
+            </button>
+          </div>
           <p className="text-xs text-muted-foreground">
             Must be at least 6 characters long
           </p>
@@ -206,17 +224,31 @@ export function RegisterForm() {
           <Label htmlFor="confirmPassword" className="text-sm font-medium">
             Confirm Password *
           </Label>
-          <Input
-            id="confirmPassword"
-            name="confirmPassword"
-            type="password"
-            placeholder="Confirm your password"
-            value={formData.confirmPassword}
-            onChange={handleInputChange}
-            required
-            className="w-full"
-            disabled={isLoading}
-          />
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              type={isConfirmPasswordVisible ? "text" : "password"}
+              spellCheck={false}
+              placeholder="Confirm your password"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              required
+              className="w-full pr-12"
+              disabled={isLoading}
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-3 flex items-center text-gray-400 transition hover:text-gray-700"
+              onClick={() => setIsConfirmPasswordVisible((current) => !current)}
+            >
+              {isConfirmPasswordVisible ? (
+                <EyeOff className="size-5" />
+              ) : (
+                <Eye className="size-5" />
+              )}
+            </button>
+          </div>
         </div>
 
         <div className="space-y-2">

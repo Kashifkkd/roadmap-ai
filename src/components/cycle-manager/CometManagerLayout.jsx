@@ -315,7 +315,7 @@ export default function CometManagerLayout() {
 
   return (
     <div className="flex h-full w-full bg-primary-50 overflow-hidden">
-      <div className="flex flex-1 flex-col lg:flex-row gap-2 p-1 sm:p-2 overflow-hidden">
+      <div className="flex flex-1 flex-col lg:flex-row gap-2 p-2 overflow-hidden">
         <div className="hidden lg:block w-full lg:w-[18em] xl:w-[20em] h-full shrink-0 overflow-hidden">
           <ChatWindow
             inputType="path_updation"

@@ -8,7 +8,10 @@ export const loginUser = async (userData) => {
     : null;
 
   const payload = {
-    email: userData.email,
+    email:
+      typeof userData.email === "string"
+        ? userData.email.trim().toLowerCase()
+        : userData.email,
     password: userData.password,
     session_id: sessionId || null,
   };

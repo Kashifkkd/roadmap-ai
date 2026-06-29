@@ -36,6 +36,11 @@ export default function ContentForm({
   // Get existing assets from screen
   const existingAssets = screen?.assets || [];
 
+  // Accepted file extensions for the media upload (no images — images use the
+  // separate "Upload Image/Icon" section handled by <ImageUpload />).
+  const MEDIA_ACCEPT =
+    ".pdf,.ppt,.pptx,.doc,.docx,.txt,.csv,.xlsx,.xls,.mp4,.mp3,.wav";
+
   // Helper function to determine asset type from file
   const getAssetType = (file) => {
     const fileType = file.type.toLowerCase();
@@ -69,6 +74,28 @@ export default function ContentForm({
     return "file";
   };
 
+  const getScreenImageAsset = () =>
+    (existingAssets || []).find(
+      (asset) =>
+        (asset?.type === "image" || asset?.asset_type === "image") &&
+        (asset?.ImageUrl ||
+          asset?.image_url ||
+          asset?.url ||
+          asset?.mediaUrl ||
+          asset?.s3_url)
+    );
+
+  const restoreMediaAfterLinkRemoved = () => {
+    const imageAsset = getScreenImageAsset();
+    updateField("mediaUrl", "");
+    updateField("mediaType", "image");
+    if (!imageAsset) {
+      updateField("mediaName", "");
+    }
+    updateField("contentMediaFile", null);
+    setUploadedMedia(null);
+  };
+
   const existingMediaAsset = useMemo(() => {
     const mediaUrl = formData.mediaUrl || formData.media?.url;
 
@@ -95,6 +122,45 @@ export default function ContentForm({
         asset.type === "file"
     );
   }, [existingAssets, formData.mediaUrl, formData.media]);
+
+  const getYouTubeEmbedUrl = (url) => {
+    if (typeof url !== "string" || !url.trim()) return null;
+    const raw = url.trim();
+    const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    try {
+      const parsed = new URL(normalized);
+      const host = parsed.hostname.replace(/^www\./i, "").toLowerCase();
+      let videoId = "";
+      if (host === "youtube.com" || host === "m.youtube.com") {
+        videoId = parsed.searchParams.get("v") || "";
+      } else if (host === "youtu.be") {
+        videoId = parsed.pathname.split("/").filter(Boolean)[0] || "";
+      }
+      if (!videoId) return null;
+      return `https://www.youtube.com/embed/${videoId}`;
+    } catch {
+      return null;
+    }
+  };
+
+  const getNormalizedPreviewUrl = (url) => {
+    if (typeof url !== "string" || !url.trim()) return "";
+    const raw = url.trim();
+    return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  };
+
+  const isExternalMediaLink = (url) => {
+    const raw = (url || "").trim();
+    if (!/^https?:\/\//i.test(raw)) return false;
+    return !/cdn\.kyper/i.test(raw);
+  };
+
+  const isLinkMediaPreview =
+    typeof formData.mediaUrl === "string" &&
+    formData.mediaUrl.trim() !== "" &&
+    (formData.mediaType === "link" || isExternalMediaLink(formData.mediaUrl));
+  const linkPreviewUrl =
+    getYouTubeEmbedUrl(formData.mediaUrl) || getNormalizedPreviewUrl(formData.mediaUrl);
 
   useEffect(() => {
     const mediaUrl = formData.mediaUrl;
@@ -159,8 +225,13 @@ export default function ContentForm({
   // (mediaUrl, mediaType, mediaName), NOT in screen.assets[].
   // Never touch screen.assets here.
   const handleRemoveMedia = () => {
+    if (isLinkMediaPreview || formData.mediaType === "link") {
+      restoreMediaAfterLinkRemoved();
+      return;
+    }
+
     updateField("mediaUrl", "");
-    updateField("mediaType", "");
+    updateField("mediaType", "image");
     updateField("mediaName", "");
     updateField("contentMediaFile", null);
     setUploadedMedia(null);
@@ -258,15 +329,25 @@ export default function ContentForm({
             </Label>
             <div className="relative p-2 bg-gray-100 rounded-lg hover:border-primary transition-colors mb-4">
               {/* Show preview or upload area */}
-              {existingMediaAsset || uploadedMedia ? (
+              {existingMediaAsset || uploadedMedia || isLinkMediaPreview ? (
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-0 mb-2 bg-white overflow-hidden">
                   <div className="relative w-full h-[120px] group/media">
                     {/* Media preview based on type */}
-                    {formData.mediaType === "link" ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 gap-2 px-4">
-                        <LinkIcon className="w-10 h-10 text-blue-400 shrink-0" />
-                        <span className="text-xs text-gray-500 truncate max-w-full">{formData.mediaUrl}</span>
-                      </div>
+                    {isLinkMediaPreview ? (
+                      linkPreviewUrl ? (
+                        <iframe
+                          src={linkPreviewUrl}
+                          title="Media preview"
+                          className="w-full h-full border-0 bg-black"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 gap-2 px-4">
+                          <LinkIcon className="w-10 h-10 text-blue-400 shrink-0" />
+                          <span className="text-xs text-gray-500 truncate max-w-full">{formData.mediaUrl}</span>
+                        </div>
+                      )
                     ) : formData.mediaType === "video" || existingMediaAsset?.type === "video" ? (
                       <div className="w-full h-full flex items-center justify-center bg-gray-50">
                         <video
@@ -311,9 +392,15 @@ export default function ContentForm({
                       <div className="relative inline-block">
                         <Input
                           type="file"
+                          accept={MEDIA_ACCEPT}
                           onChange={async (e) => {
                             const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
                             if (file) {
+                              if (file.type.startsWith("image/")) {
+                                setUploadErrorMedia("Image files are not supported here. Use the Upload Image/Icon section above.");
+                                e.target.value = "";
+                                return;
+                              }
                               handleRemoveMedia();
                               setIsUploadingMedia(true);
                               setUploadErrorMedia(null);
@@ -356,12 +443,18 @@ export default function ContentForm({
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 mb-2 bg-white">
                   <Input
                     type="file"
+                    accept={MEDIA_ACCEPT}
                     onChange={async (e) => {
                       const file =
                         e.target.files && e.target.files[0]
                           ? e.target.files[0]
                           : null;
                       if (file) {
+                        if (file.type.startsWith("image/")) {
+                          setUploadErrorMedia("Image files are not supported here. Use the Upload Image/Icon section above.");
+                          e.target.value = "";
+                          return;
+                        }
                         setIsUploadingMedia(true);
                         setUploadErrorMedia(null);
                         // Update form field
@@ -465,12 +558,13 @@ export default function ContentForm({
                   value={formData.mediaUrl || ""}
                   onChange={(e) => {
                     const url = e.target.value;
-                    updateField("mediaUrl", url);
                     if (url && url.trim() !== "") {
+                      updateField("mediaUrl", url);
                       updateField("mediaType", "link");
-                    } else {
-                      updateField("mediaType", "");
+                      return;
                     }
+
+                    restoreMediaAfterLinkRemoved();
                   }}
                   placeholder="Paste your link here"
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"

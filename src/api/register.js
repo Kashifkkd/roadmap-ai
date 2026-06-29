@@ -3,7 +3,10 @@ import { endpoints } from "./endpoint";
 
 export const registerUser = async (userData, { useAuthToken = false } = {}) => {
   const payload = {
-    email: userData.email,
+    email:
+      typeof userData.email === "string"
+        ? userData.email.trim().toLowerCase()
+        : userData.email,
     password: userData.password,
     first_name: userData.first_name,
     last_name: userData.last_name,

@@ -1,4 +1,4 @@
-const WORD_REGEX = /[a-zA-Z']+/g;
+const WORD_REGEX = /[a-zA-Z]+(?:'[a-zA-Z]+)*(?:-[a-zA-Z]+(?:'[a-zA-Z]+)*)*/g;
 
 export function tokenizeWords(text) {
   if (typeof text !== "string" || text.length === 0) {
@@ -51,4 +51,37 @@ export function buildMisspelledMarkup(text, misspelledRanges) {
   html += escapeHtml(text.slice(lastIndex));
 
   return html || "&nbsp;";
+}
+
+/**
+ * Quill stores each line as a <p> block; mirroring that layout keeps underline
+ * positions aligned with the visible editor text (flat pre-wrap drifts).
+ */
+export function buildQuillMisspelledMarkup(text, misspelledRanges) {
+  if (!text) {
+    return "<p><br></p>";
+  }
+
+  const lines = text.split("\n");
+  let offset = 0;
+
+  const html = lines
+    .map((line) => {
+      const lineRanges = misspelledRanges
+        .filter(({ start, end }) => end > offset && start < offset + line.length)
+        .map(({ start, end }) => ({
+          start: Math.max(0, start - offset),
+          end: Math.min(line.length, end - offset),
+        }))
+        .filter(({ start, end }) => end > start);
+
+      const inner = line.length
+        ? buildMisspelledMarkup(line, lineRanges)
+        : "<br>";
+      offset += line.length + 1;
+      return `<p>${inner}</p>`;
+    })
+    .join("");
+
+  return html || "<p><br></p>";
 }

@@ -1,15 +1,17 @@
-import { findMisspelledWords, getWordSuggestions } from "./spellcheckService";
+import { findMisspelledWords, getWordSuggestions, onSpellCheckerReady } from "./spellcheckService";
 import {
   cacheSuggestions,
   findClosestMisspelledWord,
   findMisspelledWordAtIndex,
   findMisspelledWordForWordInfo,
+  getCachedSuggestions,
   getFieldMisspelledWords,
   setFieldMisspelledWords,
 } from "./fieldMisspelledStore";
 import { buildMisspelledMarkup } from "./tokenize";
 import {
   applySpellcheckAttributes,
+  excludeWordAtCaret,
   getCaretIndexFromPoint,
   getWordFromTextControl,
   getWordFromTextControlAtPoint,
@@ -31,6 +33,10 @@ const MIRROR_STYLE_PROPS = [
   "borderBottomWidth",
   "borderLeftWidth",
   "borderStyle",
+  "borderTopLeftRadius",
+  "borderTopRightRadius",
+  "borderBottomRightRadius",
+  "borderBottomLeftRadius",
   "paddingTop",
   "paddingRight",
   "paddingBottom",
@@ -73,11 +79,12 @@ function resolveMisspelledWordAtClick(field, clientX, clientY) {
   const fromPoint = getWordFromTextControlAtPoint(field, clientX, clientY);
   const fromSelection = getWordFromTextControl(field);
 
+  // Only match a word at (or very near) the click point. Falling back to
+  // far-away words shows suggestions for a different word than clicked.
   return (
     findMisspelledWordForWordInfo(field, fromPoint ?? fromSelection) ??
     findMisspelledWordAtIndex(field, caretIndex) ??
-    findClosestMisspelledWord(field, caretIndex, Number.POSITIVE_INFINITY) ??
-    (misspelled.length === 1 ? misspelled[0] : null)
+    findClosestMisspelledWord(field, caretIndex)
   );
 }
 
@@ -121,6 +128,10 @@ export function attachSpellCheckField(field, { multiline = false } = {}) {
   }
 
   let debounceId = null;
+  // Whether the last interactive check hid the caret word (typing) or not
+  // (click/focus). Ambient re-checks (interval, resize) inherit this so they
+  // never flip the underline state under the user.
+  let lastHideCaretWord = false;
 
   const syncBackdropStyles = () => {
     if (!backdrop) return;
@@ -128,6 +139,10 @@ export function attachSpellCheckField(field, { multiline = false } = {}) {
     MIRROR_STYLE_PROPS.forEach((prop) => {
       backdrop.style[prop] = style[prop];
     });
+    backdrop.style.borderTopColor = "transparent";
+    backdrop.style.borderRightColor = "transparent";
+    backdrop.style.borderBottomColor = "transparent";
+    backdrop.style.borderLeftColor = "transparent";
     backdrop.style.position = "absolute";
     backdrop.style.top = "0";
     backdrop.style.left = "0";
@@ -136,7 +151,6 @@ export function attachSpellCheckField(field, { multiline = false } = {}) {
     backdrop.style.pointerEvents = "none";
     backdrop.style.overflow = "hidden";
     backdrop.style.color = "transparent";
-    backdrop.style.borderColor = "transparent";
     backdrop.style.whiteSpace = multiline ? "pre-wrap" : "pre";
     backdrop.style.wordBreak = multiline ? "break-word" : "normal";
     backdrop.style.zIndex = "0";
@@ -144,31 +158,54 @@ export function attachSpellCheckField(field, { multiline = false } = {}) {
     backdrop.scrollLeft = field.scrollLeft;
   };
 
-  const runSpellCheck = async () => {
+  const runSpellCheck = async (options) => {
+    const hideCaretWord = options?.hideCaretWord ?? lastHideCaretWord;
+    lastHideCaretWord = hideCaretWord;
+
     const text = field.value ?? "";
     const misspelled = await findMisspelledWords(text);
     setFieldMisspelledWords(field, misspelled);
     if (backdrop) {
-      backdrop.innerHTML = buildMisspelledMarkup(text, misspelled);
+      // While typing, don't underline the word still being typed (caret
+      // inside it). Click/focus-driven checks must NOT hide the caret word,
+      // otherwise clicking on a red word makes its underline disappear.
+      const visibleWords = hideCaretWord
+        ? excludeWordAtCaret(field, misspelled)
+        : misspelled;
+      backdrop.innerHTML = buildMisspelledMarkup(text, visibleWords);
     }
     syncBackdropStyles();
 
-    await Promise.all(
-      [...new Set(misspelled.map(({ word }) => word.toLowerCase()))].map(
-        async (wordKey) => {
+    // nspell's suggest() is heavy synchronous work; running it inline blocks
+    // the browser from painting the fresh underlines. Defer the prefetch to a
+    // macrotask and only compute suggestions once per word (cached).
+    const wordsToPrefetch = [
+      ...new Set(misspelled.map(({ word }) => word.toLowerCase())),
+    ].filter((wordKey) => !getCachedSuggestions(wordKey));
+
+    if (wordsToPrefetch.length) {
+      window.setTimeout(() => {
+        wordsToPrefetch.forEach((wordKey) => {
           const sourceWord =
             misspelled.find(({ word }) => word.toLowerCase() === wordKey)
               ?.word ?? wordKey;
-          cacheSuggestions(sourceWord, await getWordSuggestions(sourceWord));
-        }
-      )
-    );
+          void getWordSuggestions(sourceWord).then((suggestions) =>
+            cacheSuggestions(sourceWord, suggestions)
+          );
+        });
+      }, 50);
+    }
   };
 
-  const scheduleSpellCheck = () => {
+  const scheduleSpellCheck = (options) => {
     if (debounceId) window.clearTimeout(debounceId);
-    debounceId = window.setTimeout(() => void runSpellCheck(), 200);
+    debounceId = window.setTimeout(() => void runSpellCheck(options), 200);
   };
+
+  const handleTyping = () => scheduleSpellCheck({ hideCaretWord: true });
+  // Focus/blur are click-driven: show every underline, including the word
+  // the caret landed in.
+  const handleFocusBlur = () => scheduleSpellCheck({ hideCaretWord: false });
 
   const handleScroll = () => {
     if (backdrop) {
@@ -178,34 +215,33 @@ export function attachSpellCheckField(field, { multiline = false } = {}) {
   };
 
   const handleContextMenu = (event) => {
-    const existingMisspelled = getFieldMisspelledWords(field);
-    if (existingMisspelled.length > 0) {
-      event.preventDefault();
-      event.stopPropagation();
+    const wordInfo = resolveMisspelledWordAtClick(
+      field,
+      event.clientX,
+      event.clientY
+    );
+
+    if (!wordInfo?.word) {
+      // Not on a misspelled word: leave the native context menu alone.
+      return;
     }
 
-    void (async () => {
-      await runSpellCheck();
-      const wordInfo = resolveMisspelledWordAtClick(
-        field,
-        event.clientX,
-        event.clientY
-      );
-      if (!wordInfo?.word) return;
-      if (!existingMisspelled.length) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      dispatchSpellcheckMenu(field, wordInfo, event.clientX, event.clientY);
-    })();
+    event.preventDefault();
+    event.stopPropagation();
+    dispatchSpellcheckMenu(field, wordInfo, event.clientX, event.clientY);
   };
 
   syncBackdropStyles();
   void runSpellCheck();
 
-  field.addEventListener("input", scheduleSpellCheck);
-  field.addEventListener("change", scheduleSpellCheck);
-  field.addEventListener("focus", scheduleSpellCheck);
+  const unsubscribeReady = onSpellCheckerReady(() => {
+    void runSpellCheck({ hideCaretWord: false });
+  });
+
+  field.addEventListener("input", handleTyping);
+  field.addEventListener("change", handleTyping);
+  field.addEventListener("focus", handleFocusBlur);
+  field.addEventListener("blur", handleFocusBlur);
   field.addEventListener("scroll", handleScroll);
   field.addEventListener("contextmenu", handleContextMenu);
   window.addEventListener("resize", syncBackdropStyles);
@@ -220,13 +256,15 @@ export function attachSpellCheckField(field, { multiline = false } = {}) {
   window.setTimeout(() => window.clearInterval(preloadIntervalId), 5000);
 
   const cleanup = () => {
-    field.removeEventListener("input", scheduleSpellCheck);
-    field.removeEventListener("change", scheduleSpellCheck);
-    field.removeEventListener("focus", scheduleSpellCheck);
+    field.removeEventListener("input", handleTyping);
+    field.removeEventListener("change", handleTyping);
+    field.removeEventListener("focus", handleFocusBlur);
+    field.removeEventListener("blur", handleFocusBlur);
     field.removeEventListener("scroll", handleScroll);
     field.removeEventListener("contextmenu", handleContextMenu);
     window.removeEventListener("resize", syncBackdropStyles);
     resizeObserver.disconnect();
+    unsubscribeReady();
     window.clearInterval(preloadIntervalId);
     if (debounceId) window.clearTimeout(debounceId);
     delete field.dataset.kyperSpellcheckAttached;

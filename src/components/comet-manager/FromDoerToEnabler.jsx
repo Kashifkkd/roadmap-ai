@@ -1658,13 +1658,18 @@ export default function FromDoerToEnabler({
         addSection({
           id: "habits",
           sectionTitle: content.title || title,
-          description: content.description || "",
+          description:
+            content.habitDescription || content.description || "",
           list: content.habits,
           meta: [
-            typeof content.is_mandatory === "boolean"
+            typeof content.is_mandatory === "boolean" ||
+            typeof content.isMandatory === "boolean"
               ? {
                   label: "Mandatory",
-                  value: content.is_mandatory ? "Yes" : "No",
+                  value:
+                    (content.is_mandatory ?? content.isMandatory)
+                      ? "Yes"
+                      : "No",
                 }
               : null,
             content.votes_count !== undefined
@@ -1796,6 +1801,7 @@ export default function FromDoerToEnabler({
           />
         ) : contentType === "pathPersonalization" ||
           contentType === "pathpersonalization" ||
+          selectedScreen?.screenType === "pathPersonalization" ||
           selectedScreen?.screenType === "path_personalization" ? (
           <PathPersonalizationPreview
             deviceView={deviceView}

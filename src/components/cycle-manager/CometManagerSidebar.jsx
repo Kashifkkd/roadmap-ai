@@ -53,9 +53,11 @@ import { endpoints } from "@/api/endpoint";
 import { getSourceMaterials } from "@/api/getSourceMaterials";
 import { resolveSourceMaterialLinkUrl } from "@/lib/sourceMaterialLinkUrl";
 import CreatePhaseVariantModal from "@/components/cycle-manager/CreatePhaseVariantModal";
+import CreateRemixPhaseModal from "@/components/cycle-manager/CreateRemixPhaseModal";
+import CreateRemixStepModal from "@/components/cycle-manager/CreateRemixStepModal";
 import CreateStepVariantModal from "@/components/cycle-manager/CreateStepVariantModal";
 import { toast } from "@/components/ui/toast";
-import { RichTextArea } from "@/components/cycle-manager/forms/FormFields";
+import { Textarea } from "@/components/ui/Textarea";
 
 // Asset category buttons
 const ASSET_CATEGORIES = [
@@ -186,7 +188,7 @@ export default function CometManagerSidebar({
   const stepDescriptionEditInputRef = useRef(null);
   const menuRef = useRef(null);
 
-  // Create Phase / Step Variant modals — "phase" | "step"
+  // Create Phase / Step Variant modals — "phase" | "step" | "remix-phase" | "remix-step"
   const [createVariantDialogOpen, setCreateVariantDialogOpen] = useState(false);
   const [createVariantKind, setCreateVariantKind] = useState(null);
   const [createVariantSourceChapter, setCreateVariantSourceChapter] =
@@ -209,9 +211,10 @@ export default function CometManagerSidebar({
     createVariantSourceChapter?.name ||
     "Foundations of People Leadership";
   const sourceChapterUid =
-    (typeof createVariantSourceChapter?.id === "string" &&
-    createVariantSourceChapter.id.trim()
-      ? createVariantSourceChapter.id.trim()
+    createVariantSourceChapter?.chapterUuid ||
+    (typeof createVariantSourceChapter?.uuid === "string" &&
+    createVariantSourceChapter.uuid.trim()
+      ? createVariantSourceChapter.uuid.trim()
       : "") ||
     createVariantSourceChapter?.uid ||
     createVariantSourceChapter?.chapter_uid ||
@@ -348,8 +351,6 @@ export default function CometManagerSidebar({
     setCreateVariantDialogOpen(true);
   };
 
-<<<<<<< HEAD
-=======
   const handleCreateRemixPhaseClick = (e, chapter) => {
     e.stopPropagation();
     setOpenChapterMenuId(null);
@@ -367,7 +368,6 @@ export default function CometManagerSidebar({
     setCreateVariantDialogOpen(true);
   };
 
->>>>>>> 00dc986e4fd7cca1d20e93c7170dc79ce6382051
   const handleCreateStepVariantClick = (e, chapter, step) => {
     e.stopPropagation();
     setOpenStepHeaderMenuId(null);
@@ -381,8 +381,6 @@ export default function CometManagerSidebar({
     setCreateVariantDialogOpen(true);
   };
 
-<<<<<<< HEAD
-=======
   const handleCreateRemixStepClick = (e, chapter, step) => {
     e.stopPropagation();
     setOpenStepHeaderMenuId(null);
@@ -400,7 +398,6 @@ export default function CometManagerSidebar({
     setCreateVariantDialogOpen(true);
   };
 
->>>>>>> 00dc986e4fd7cca1d20e93c7170dc79ce6382051
   const handleEditStepNameClick = (e, step, stepId) => {
     e.stopPropagation();
     setOpenStepHeaderMenuId(null);
@@ -451,13 +448,25 @@ export default function CometManagerSidebar({
     }
   };
 
+  // Descriptions may be stored as HTML (legacy rich-text edits); the editor is
+  // now a plain textarea, so convert to plain text with line breaks preserved.
+  const htmlToPlainText = (html = "") => {
+    if (!html.includes("<")) return html;
+    const normalized = html
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(p|div|li|h[1-6])>/gi, "\n");
+    const container = document.createElement("div");
+    container.innerHTML = normalized;
+    return (container.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
+  };
+
   const handleEditStepDescriptionClick = (e, step, stepId) => {
     e.stopPropagation();
     setOpenStepDescriptionMenuId(null);
     setEditingStepNameId(null);
     setEditStepName("");
     setEditingStepDescriptionId(stepId);
-    setEditStepDescription(step.description || "");
+    setEditStepDescription(htmlToPlainText(step.description || ""));
   };
 
   const handleSaveStepDescriptionEdit = async (
@@ -1440,7 +1449,7 @@ export default function CometManagerSidebar({
                                   {/* <label className="text-xs font-medium text-gray-600 mb-1 block ">
                                     Chapter name
                                   </label> */}
-                                  <textarea
+                                  <Textarea
                                     ref={chapterEditInputRef}
                                     value={editChapterName}
                                     onChange={(e) =>
@@ -1449,8 +1458,8 @@ export default function CometManagerSidebar({
                                     onKeyDown={(e) =>
                                       handleChapterEditKeyDown(e, chapterId)
                                     }
-                                    spellCheck={false}
-                                    className="w-full px-2 py-1.5 text-xs focus:outline-none resize-none overflow-y-auto"
+                                    wrapperClassName="bg-transparent"
+                                    className="w-full min-h-0 px-2 py-1.5 text-xs border-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-none overflow-y-auto"
                                     placeholder="Phase name"
                                     rows={2}
                                   />
@@ -1521,7 +1530,7 @@ export default function CometManagerSidebar({
                                       <MoreHorizontal className="h-4 w-4 text-gray-500" />
                                     </button>
                                     {openChapterMenuId === chapterId && (
-                                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                                      <div className="absolute right-0 top-full mt-1 min-w-[8.5rem] w-max max-w-[11rem] bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
                                         <button
                                           onClick={(e) =>
                                             handleEditChapterClick(
@@ -1543,6 +1552,17 @@ export default function CometManagerSidebar({
                                         >
                                           {/* <Plus className="w-3.5 h-3.5" /> */}
                                           Copy Phase
+                                        </button>
+                                        <button
+                                          onClick={(e) =>
+                                            handleCreateRemixPhaseClick(
+                                              e,
+                                              chapter,
+                                            )
+                                          }
+                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-800 hover:bg-primary-50 transition-colors whitespace-nowrap"
+                                        >
+                                          Remix Phase
                                         </button>
                                         <button
                                           onClick={(e) =>
@@ -1744,7 +1764,7 @@ export default function CometManagerSidebar({
                                               }
                                             >
                                               <div className="border border-gray-300 rounded-md p-2 bg-white">
-                                                <textarea
+                                                <Textarea
                                                   ref={stepNameEditInputRef}
                                                   value={editStepName}
                                                   onChange={(e) =>
@@ -1760,8 +1780,8 @@ export default function CometManagerSidebar({
                                                       step.description,
                                                     )
                                                   }
-                                                  spellCheck={false}
-                                                  className="w-full px-2 py-1.5 text-xs focus:outline-none resize-none overflow-y-auto text-gray-900"
+                                                  wrapperClassName="bg-transparent"
+                                                  className="w-full min-h-0 px-2 py-1.5 text-xs border-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-none overflow-y-auto text-gray-900"
                                                   placeholder="Step name"
                                                   rows={2}
                                                 />
@@ -1888,8 +1908,6 @@ export default function CometManagerSidebar({
                                                     </button>
                                                     <button
                                                       onClick={(e) =>
-<<<<<<< HEAD
-=======
                                                         handleCreateRemixStepClick(
                                                           e,
                                                           chapter,
@@ -1903,7 +1921,6 @@ export default function CometManagerSidebar({
                                                     </button>
                                                     <button
                                                       onClick={(e) =>
->>>>>>> 00dc986e4fd7cca1d20e93c7170dc79ce6382051
                                                         handleDeleteStepClick(
                                                           e,
                                                           chapterId,
@@ -1952,11 +1969,26 @@ export default function CometManagerSidebar({
                                                       `Step ${stepIndex + 1}`}
                                                   </h4> */}
                                                   <div className="border border-gray-300 rounded-md p-2 bg-white">
-                                                    <RichTextArea
+                                                    <Textarea
                                                       value={editStepDescription}
-                                                      onChange={(value) => setEditStepDescription(value)}
-                                                      valueFormat="html"
-                                                      spellCheck={false}
+                                                      onChange={(e) =>
+                                                        setEditStepDescription(
+                                                          e.target.value,
+                                                        )
+                                                      }
+                                                      onKeyDown={(e) =>
+                                                        handleStepDescriptionEditKeyDown(
+                                                          e,
+                                                          chapterId,
+                                                          stepId,
+                                                          step.name,
+                                                        )
+                                                      }
+                                                      wrapperClassName="bg-transparent"
+                                                      className="w-full min-h-0 px-2 py-1.5 text-xs border-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-none overflow-y-auto"
+                                                      rows={4}
+                                                      placeholder="Step description"
+                                                      autoFocus
                                                     />
                                                     <div className="border-t border-gray-300 mb-2"></div>
 
@@ -2783,8 +2815,6 @@ export default function CometManagerSidebar({
           sourcePhaseName={sourcePhaseName}
         />
       )}
-<<<<<<< HEAD
-=======
       {createVariantKind === "remix-phase" && (
         <CreateRemixPhaseModal
           open={createVariantDialogOpen}
@@ -2823,7 +2853,6 @@ export default function CometManagerSidebar({
           sourceStepName={sourceStepName || ""}
         />
       )}
->>>>>>> 00dc986e4fd7cca1d20e93c7170dc79ce6382051
       {createVariantKind === "step" && (
         <CreateStepVariantModal
           open={createVariantDialogOpen}

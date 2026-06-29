@@ -316,17 +316,19 @@ export function useCometManager(sessionData = null) {
         });
       });
 
+      const chapterUuid =
+        (typeof chapter?.uuid === "string" && chapter.uuid.trim()) ||
+        (typeof chapter?.uid === "string" && chapter.uid.trim()) ||
+        "";
+
       return {
         id: chapterId,
         name: chapterName,
         order: chapter?.position ? chapter.position - 1 : chapterIndex,
         steps: transformedSteps,
         numericChapterId: pathChapterIdFromChapter(chapter),
-<<<<<<< HEAD
-=======
         strictNumericChapterId: strictPathChapterIdFromChapter(chapter),
         chapterUuid,
->>>>>>> 00dc986e4fd7cca1d20e93c7170dc79ce6382051
       };
     });
   }, [outline]);
@@ -374,6 +376,9 @@ export function useCometManager(sessionData = null) {
             formData.image ||
             // Keep disabled for now; uncomment if backend media URL should drive thumbnail again.
             // formData.media?.url ||
+            (typeof formData.habitImage === "string"
+              ? formData.habitImage
+              : formData.habitImage?.url || formData.habitImage?.ImageUrl) ||
             (typeof formData.habit_image === "string"
               ? formData.habit_image
               : formData.habit_image?.url || formData.habit_image?.ImageUrl) ||

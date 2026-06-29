@@ -1,5 +1,8 @@
 export const SPELLCHECK_LANG = "en-US";
 
+/** Bundled Hunspell en_US-large (SCOWL size 70) — official wordlist.aspell.net / en-wl release. */
+export const SPELLCHECK_DICTIONARY_ID = "en_US-large";
+
 export const SPELLCHECK_DICTIONARY_PATH = "/spellcheck/en-US";
 
 /** Input types that should not receive spell checking. */

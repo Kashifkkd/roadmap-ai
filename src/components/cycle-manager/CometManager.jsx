@@ -3,6 +3,7 @@
 import React, {
   useState,
   useEffect,
+  useLayoutEffect,
   useRef,
   useMemo,
   useCallback,
@@ -85,6 +86,7 @@ import CometSettingsDialog from "./CometSettingsDialog";
 import GenerateStepImageButton from "./GenerateStepImageButton";
 import UploadStepImageDialog from "./UploadStepImageDialog";
 import GradientLoader from "@/components/ui/GradientLoader";
+import CycleCreationBreadcrumb from "@/components/common/CycleCreationBreadcrumb";
 import { toast } from "@/components/ui/toast";
 import {
   Drawer,
@@ -105,8 +107,7 @@ import {
 /** Default `screenContents.content` when a Manager Email screen is added manually. */
 const DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT = {
   heading: "Bring your manager along",
-  body:
-    "You're embarking on an exciting journey of growth and development. To enhance this experience, involve your manager! Regular updates can help them support your progress.",
+  body: "You're embarking on an exciting journey of growth and development. To enhance this experience, involve your manager! Regular updates can help them support your progress.",
   email: "",
   media: { type: "image", url: "" },
 };
@@ -114,8 +115,7 @@ const DEFAULT_MANAGER_EMAIL_SCREEN_CONTENT = {
 /** Default `screenContents.content` when an Accountability Partner Email screen is added manually. */
 const DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT = {
   heading: "Accountability partners",
-  body:
-    "In addition to your manager, trusted friends and colleagues are key to a successful journey to build new habits. Add the email addresses here for anyone you want to act as an accountability partner as you progress along this path. Your accountability partner(s) will receive the same email updates as your manager.",
+  body: "In addition to your manager, trusted friends and colleagues are key to a successful journey to build new habits. Add the email addresses here for anyone you want to act as an accountability partner as you progress along this path. Your accountability partner(s) will receive the same email updates as your manager.",
   emails: [""],
   media: { type: "image", url: "" },
 };
@@ -123,8 +123,7 @@ const DEFAULT_ACCOUNTABILITY_PARTNER_EMAIL_SCREEN_CONTENT = {
 /** Default `screenContents.content` when a Notifications screen is added manually. */
 const DEFAULT_NOTIFICATIONS_SCREEN_CONTENT = {
   heading: "Set your intention",
-  body:
-    "Learning effective management skills is a gateway habit for the professional growth and team success you want to achieve. Building these capabilities will help you lead with confidence, earn your team's trust, and create the kind of work environment where everyone can thrive. When do you want to invest 5-10 minutes to learn each work day?",
+  body: "Learning effective management skills is a gateway habit for the professional growth and team success you want to achieve. Building these capabilities will help you lead with confidence, earn your team's trust, and create the kind of work environment where everyone can thrive. When do you want to invest 5-10 minutes to learn each work day?",
   media: { type: "image", url: "" },
 };
 
@@ -161,13 +160,13 @@ const SCREEN_TYPE_GROUPS = [
         color: "bg-cyan-100 border-cyan-300",
         description: "Let learners choose helpful reminder notifications.",
       },
-      // {
-      //   id: "mini_app",
-      //   name: "HTML Mini App",
-      //   icon: <AppWindow size={20} />,
-      //   color: "bg-emerald-100 border-emerald-300",
-      //   description: "Interactive HTML in an iframe; paste or upload a file.",
-      // },
+      {
+        id: "mini_app",
+        name: "HTML Mini App",
+        icon: <AppWindow size={20} />,
+        color: "bg-emerald-100 border-emerald-300",
+        description: "Interactive HTML in an iframe; paste or upload a file.",
+      },
     ],
   },
   {
@@ -261,7 +260,7 @@ const EASE_CATEGORIES = ["Engagement", "Aha", "Support", "Execution"];
 
 export default function CometManager({
   sessionData,
-  setSessionData = () => { },
+  setSessionData = () => {},
   setAllMessages,
   isPreviewMode,
   setIsPreviewMode,
@@ -270,7 +269,7 @@ export default function CometManager({
   onFlushSave,
   addPendingDeletion = () => {},
   isAskingKyper = false,
-  setIsAskingKyper = () => { },
+  setIsAskingKyper = () => {},
 }) {
   // Use comet manager hook to get actual data
   const {
@@ -294,7 +293,9 @@ export default function CometManager({
   console.log("screens >>>>>>>>>>>>>>>>>>>>>>>", screens);
 
   const outlineRef = useRef(outline);
-  useEffect(() => {
+  // Keep ref in sync before the next macrotask so requestAutoSaveAfterOutlineCommit
+  // (setTimeout(0) after updateField) reads the outline that just committed — e.g. HTML file upload.
+  useLayoutEffect(() => {
     outlineRef.current = outline;
   }, [outline]);
 
@@ -335,7 +336,9 @@ export default function CometManager({
   }, [outline, sessionData?.response_path?.remaining_chapters]);
 
   const allWebpageUrls = useMemo(() => {
-    const base = Array.isArray(sessionData?.webpage_url) ? sessionData.webpage_url : [];
+    const base = Array.isArray(sessionData?.webpage_url)
+      ? sessionData.webpage_url
+      : [];
     return [...base, ...richTextLinks];
   }, [sessionData?.webpage_url, richTextLinks]);
 
@@ -348,7 +351,10 @@ export default function CometManager({
       const clean = (url || "").trim();
       if (!clean || seen.has(clean)) return;
       seen.add(clean);
-      images.push({ url: clean, name: name || clean.split("/").pop() || "image" });
+      images.push({
+        url: clean,
+        name: name || clean.split("/").pop() || "image",
+      });
     };
 
     (sessionData?.response_path?.chapters || []).forEach((chapter) => {
@@ -367,7 +373,8 @@ export default function CometManager({
           if (media?.type === "image" && media?.url) add(media.url);
 
           const content = screen.screenContents?.content || {};
-          if (content.mediaType === "image" && content.mediaUrl) add(content.mediaUrl);
+          if (content.mediaType === "image" && content.mediaUrl)
+            add(content.mediaUrl);
         });
       });
     });
@@ -415,7 +422,11 @@ export default function CometManager({
     walkChapters(sessionData?.response_path?.remaining_chapters);
 
     return items;
-  }, [sessionData?.webpage_url, outline, sessionData?.response_path?.remaining_chapters]);
+  }, [
+    sessionData?.webpage_url,
+    outline,
+    sessionData?.response_path?.remaining_chapters,
+  ]);
 
   const requestAutoSaveAfterOutlineCommit = useCallback(async () => {
     if (!saveOutlineImmediately) return;
@@ -450,13 +461,13 @@ export default function CometManager({
   ) => {
     const normalizedUpdates =
       updatesOrName &&
-        typeof updatesOrName === "object" &&
-        !Array.isArray(updatesOrName)
+      typeof updatesOrName === "object" &&
+      !Array.isArray(updatesOrName)
         ? updatesOrName
         : {
-          name: updatesOrName,
-          description: newDescription,
-        };
+            name: updatesOrName,
+            description: newDescription,
+          };
 
     let updatedOutline = null;
     setOutline((prevOutline) => {
@@ -464,7 +475,11 @@ export default function CometManager({
       const newOutline = JSON.parse(JSON.stringify(prevOutline));
       const pathChapters = newOutline.chapters || [];
 
-      for (let chapterIndex = 0; chapterIndex < pathChapters.length; chapterIndex++) {
+      for (
+        let chapterIndex = 0;
+        chapterIndex < pathChapters.length;
+        chapterIndex++
+      ) {
         const chapter = pathChapters[chapterIndex];
         const cId = getChapterInteractionId(chapter, chapterIndex);
         if (cId !== chapterId) continue;
@@ -503,7 +518,11 @@ export default function CometManager({
       const newOutline = JSON.parse(JSON.stringify(prevOutline));
       const pathChapters = newOutline.chapters || [];
 
-      for (let chapterIndex = 0; chapterIndex < pathChapters.length; chapterIndex++) {
+      for (
+        let chapterIndex = 0;
+        chapterIndex < pathChapters.length;
+        chapterIndex++
+      ) {
         const chapter = pathChapters[chapterIndex];
         const cId = getChapterInteractionId(chapter, chapterIndex);
         if (cId !== chapterId) continue;
@@ -536,7 +555,11 @@ export default function CometManager({
     // Pre-compute which step to select after deletion (before state update)
     let nextStepId = null;
     if (nextOutline.chapters && selectedStepId === stepId) {
-      for (let chapterIndex = 0; chapterIndex < nextOutline.chapters.length; chapterIndex++) {
+      for (
+        let chapterIndex = 0;
+        chapterIndex < nextOutline.chapters.length;
+        chapterIndex++
+      ) {
         const chapter = nextOutline.chapters[chapterIndex];
         const cId = getChapterInteractionId(chapter, chapterIndex);
         if (cId !== chapterId) continue;
@@ -567,7 +590,11 @@ export default function CometManager({
     }
 
     let stepWasDeleted = false;
-    for (let chapterIndex = 0; chapterIndex < (nextOutline.chapters || []).length; chapterIndex++) {
+    for (
+      let chapterIndex = 0;
+      chapterIndex < (nextOutline.chapters || []).length;
+      chapterIndex++
+    ) {
       const chapter = nextOutline.chapters[chapterIndex];
       const cId = getChapterInteractionId(chapter, chapterIndex);
       if (cId !== chapterId) continue;
@@ -679,6 +706,7 @@ export default function CometManager({
   const [addAtIndex, setAddAtIndex] = useState(null);
   const [isAddingScreen, setIsAddingScreen] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
   const [isMaximized, setIsMaximized] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [selectedAssetCategory, setSelectedAssetCategory] = useState(null);
@@ -699,7 +727,6 @@ export default function CometManager({
   const [screenDeleteConfirmId, setScreenDeleteConfirmId] = useState(null);
   const [deletingScreenId, setDeletingScreenId] = useState(null);
 
-
   const GENERATING_UIDS_KEY = "generating-step-uids";
   const [generatingStepUids, setGeneratingStepUids] = useState(() => {
     if (typeof window === "undefined") return new Set();
@@ -718,7 +745,7 @@ export default function CometManager({
         GENERATING_UIDS_KEY,
         JSON.stringify([...generatingStepUids]),
       );
-    } catch { }
+    } catch {}
   }, [generatingStepUids]);
 
   useEffect(() => {
@@ -742,7 +769,7 @@ export default function CometManager({
       if (localStorage.getItem(key) === "true") {
         setHasClickedGenerateRemaining(true);
       }
-    } catch { }
+    } catch {}
   }, [sessionId]);
 
   useEffect(() => {
@@ -754,7 +781,7 @@ export default function CometManager({
         setIsCometSettingsOpen(true);
         localStorage.removeItem("openCometSettingsFromAllComets");
       }
-    } catch { }
+    } catch {}
   }, [setIsCometSettingsOpen]);
 
   // Subscribe to session updates - persistent subscription for comet-manager
@@ -765,13 +792,15 @@ export default function CometManager({
       try {
         localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
         setSessionData(updatedSessionData);
+        // Fragment remix (phase/step): meta.state is processing_variant while n8n
+        // runs, then ready with updated response_path.chapters (same channel as cycle remix).
         const hasPathUpdate = Boolean(
           updatedSessionData?.response_path?.chapters?.length,
         );
         if (isAskingKyperRef.current && hasPathUpdate) {
           setIsAskingKyper(false);
         }
-      } catch { }
+      } catch {}
     },
     (err) => {
       console.error("Subscription error:", err);
@@ -819,7 +848,7 @@ export default function CometManager({
               "sessionData",
               JSON.stringify(JSON.parse(cometJson)),
             );
-          } catch { }
+          } catch {}
         }
       }
 
@@ -831,7 +860,7 @@ export default function CometManager({
             "true",
           );
           setHasClickedGenerateRemaining(true);
-        } catch { }
+        } catch {}
       }
 
       // Get parsed session data
@@ -839,7 +868,7 @@ export default function CometManager({
       try {
         const raw = localStorage.getItem("sessionData");
         if (raw) parsedSessionData = JSON.parse(raw);
-      } catch { }
+      } catch {}
 
       const updatedResponsePath = {
         ...(parsedSessionData?.response_path || {}),
@@ -854,7 +883,7 @@ export default function CometManager({
       setSessionData(updatedSessionData);
       try {
         localStorage.setItem("sessionData", JSON.stringify(updatedSessionData));
-      } catch { }
+      } catch {}
 
       const cometJsonForMessage = JSON.stringify({
         session_id: currentSessionId,
@@ -1006,32 +1035,58 @@ export default function CometManager({
 
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
+    setDragOverIndex(null);
     e.dataTransfer.effectAllowed = "move";
   };
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e, index) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDragOverIndex(
+      e.clientX < rect.left + rect.width / 2 ? index : index + 1,
+    );
   };
 
-  const handleDrop = (e, dropIndex) => {
+  const handleDrop = (e) => {
     e.preventDefault();
-    if (draggedIndex === null) return;
-
-    const newScreens = [...screens];
-    const draggedScreen = newScreens[draggedIndex];
-    newScreens.splice(draggedIndex, 1);
-    newScreens.splice(dropIndex, 0, draggedScreen);
-
-    reorderScreensList(newScreens);
+    if (draggedIndex === null || dragOverIndex === null) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    const insertAt =
+      dragOverIndex > draggedIndex ? dragOverIndex - 1 : dragOverIndex;
+    if (insertAt !== draggedIndex) {
+      const newScreens = [...screens];
+      const draggedScreen = newScreens[draggedIndex];
+      newScreens.splice(draggedIndex, 1);
+      newScreens.splice(insertAt, 0, draggedScreen);
+      reorderScreensList(newScreens);
+      // setSelectedScreenId(draggedScreen?.id ?? draggedScreen?.uuid ?? null);
+      setTimeout(() => onFlushSave?.(), 0);
+    }
     setDraggedIndex(null);
-    // Flush save immediately so Redis reflects the reorder
-    setTimeout(() => onFlushSave?.(), 0);
+    setDragOverIndex(null);
   };
+
+  // Cancel drag on Escape
+  React.useEffect(() => {
+    if (draggedIndex === null) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setDraggedIndex(null);
+        setDragOverIndex(null);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [draggedIndex]);
 
   const currentChapter =
     chapters?.find((ch) =>
@@ -1077,8 +1132,7 @@ export default function CometManager({
     const clickedScreenId = screen?.id ?? screen?.uuid ?? null;
     setSelectedScreenId(clickedScreenId);
     const screenIndex = screens.findIndex(
-      (s) =>
-        String(s?.id ?? s?.uuid ?? "") === String(clickedScreenId ?? ""),
+      (s) => String(s?.id ?? s?.uuid ?? "") === String(clickedScreenId ?? ""),
     );
     setCurrentScreen(screenIndex);
   };
@@ -1116,8 +1170,8 @@ export default function CometManager({
         targetChapter?.order !== undefined
           ? targetChapter.order + 1
           : chapters.findIndex(
-            (ch) => String(ch.id) === String(targetChapterId),
-          ) + 1 || 1;
+              (ch) => String(ch.id) === String(targetChapterId),
+            ) + 1 || 1;
       console.log("chapterNum>>>>>>>>>>>>>>>>>>>>>>>>", chapterNum);
       const stepNum =
         targetChapter?.steps?.findIndex(
@@ -1135,7 +1189,9 @@ export default function CometManager({
       console.log("screenId>>>>>>>>>>>>>>>>>>>>>>>>", screenId);
       const screenContentId = `#screen_content_${chapterNum}_${stepNum}_${screenNum}`;
       console.log("screenContentId>>>>>>>>>>>>>>>>>>>>>>>>", screenContentId);
-      const screenUuid = globalThis.crypto.getRandomValues(new Uint8Array(16)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '');
+      const screenUuid = globalThis.crypto
+        .getRandomValues(new Uint8Array(16))
+        .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
       console.log("screenUuid>>>>>>>>>>>>>>>>>>>>>>>>", screenUuid);
       console.log(currentChapter, "currentChapter>>>>>>>>>>>>>>>>>>>>>>>>");
       // Get position: when inserting between screens use insert index + 1 (1-based);
@@ -1189,11 +1245,13 @@ export default function CometManager({
               text: actionText,
               canSchedule: true,
               canCompleteNow: true,
+              hasReflectionQuestion: true,
               replyCount: 0,
               votesCount: 0,
               toolLink: "",
               ImageUrl: "",
-              reflectionPrompt: "",
+              reflectionPrompt:
+                "What impact do you expect—or have you already seen—as a result of this micro-action?",
             },
           },
           assets: [],
@@ -1208,7 +1266,7 @@ export default function CometManager({
             actionDescription: actionText,
             actionCanSchedule: true,
             actionCanCompleteImmediately: true,
-            actionHasReflectionQuestion: false,
+            actionHasReflectionQuestion: true,
             actionToolLink: "",
             actionToolPrompt: "",
           },
@@ -1266,7 +1324,8 @@ export default function CometManager({
             content: {
               title: mcqTitle,
               question: "Select the best answer.",
-              keyLearning: "Choose the option that best reflects the key takeaway.",
+              keyLearning:
+                "Choose the option that best reflects the key takeaway.",
               options: [
                 { optionId: 1, text: "Option 1", isCorrect: true },
                 { optionId: 2, text: "Option 2", isCorrect: false },
@@ -1282,7 +1341,8 @@ export default function CometManager({
           formData: {
             mcqTitle: mcqTitle,
             question: "Select the best answer.",
-            mcqKeyLearning: "Choose the option that best reflects the key takeaway.",
+            mcqKeyLearning:
+              "Choose the option that best reflects the key takeaway.",
             mcqOptions: [
               { optionId: 1, text: "Option 1", isCorrect: true },
               { optionId: 2, text: "Option 2", isCorrect: false },
@@ -1358,7 +1418,7 @@ export default function CometManager({
               title: linearTitle,
               highLabel: "",
               lowLabel: "",
-              key_learning: "",
+              keyLearning: "",
               lowerScale: 1,
               higherScale: 10,
             },
@@ -1400,7 +1460,10 @@ export default function CometManager({
                   questionId: 1,
                   text: "What is the primary purpose of building consistent habits?",
                   options: [
-                    { optionId: 1, text: "To reduce effort on repeated decisions" },
+                    {
+                      optionId: 1,
+                      text: "To reduce effort on repeated decisions",
+                    },
                     { optionId: 2, text: "To avoid learning new skills" },
                     { optionId: 3, text: "To delay important work" },
                     { optionId: 4, text: "To remove all team collaboration" },
@@ -1423,7 +1486,10 @@ export default function CometManager({
                 questionId: 1,
                 text: "What is the primary purpose of building consistent habits?",
                 options: [
-                  { optionId: 1, text: "To reduce effort on repeated decisions" },
+                  {
+                    optionId: 1,
+                    text: "To reduce effort on repeated decisions",
+                  },
                   { optionId: 2, text: "To avoid learning new skills" },
                   { optionId: 3, text: "To delay important work" },
                   { optionId: 4, text: "To remove all team collaboration" },
@@ -1526,8 +1592,29 @@ export default function CometManager({
           order: allScreens.length,
         };
       } else if (screenType.id === "habits") {
-        // Habits screen structure
+        // Habits screen structure — align with backend screen_schemas (habitImage, etc.)
         const habitsTitle = "";
+        const defaultHabitsContent = {
+          title: habitsTitle,
+          habitDescription: "",
+          habitImage: "",
+          habits: [
+            {
+              id: 1,
+              level: 1,
+              title: "",
+              text: "",
+              reps: 3,
+            },
+            {
+              id: 2,
+              level: 2,
+              title: "",
+              text: "",
+              reps: 4,
+            },
+          ],
+        };
         newScreen = {
           id: screenId,
           uuid: screenUuid,
@@ -1536,15 +1623,7 @@ export default function CometManager({
           screenContents: {
             id: screenContentId,
             contentType: "habits",
-            content: {
-              title: habitsTitle,
-              habit_image: {
-                url: "",
-                description: "",
-              },
-              enabled: false,
-              habits: [],
-            },
+            content: { ...defaultHabitsContent },
           },
           assets: [],
           imageStatus: "pending",
@@ -1552,13 +1631,7 @@ export default function CometManager({
           stepId: targetStepId,
           thumbnail: "",
           title: habitsTitle,
-          formData: {
-            title: habitsTitle,
-            description: "",
-            url: "",
-            habitsIsMandatory: false,
-            habits: [],
-          },
+          formData: { ...defaultHabitsContent },
           assessment: null,
           order: allScreens.length,
         };
@@ -1596,7 +1669,7 @@ export default function CometManager({
         newScreen = {
           id: screenId,
           uuid: screenUuid,
-          screenType: "path_personalization",
+          screenType: "pathPersonalization",
           position: position,
           screenContents: {
             id: screenContentId,
@@ -1672,7 +1745,12 @@ export default function CometManager({
                 ...DEFAULT_NOTIFICATIONS_SCREEN_CONTENT.media,
               },
             },
-            uuid: globalThis.crypto.getRandomValues(new Uint8Array(16)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), ''),
+            uuid: globalThis.crypto
+              .getRandomValues(new Uint8Array(16))
+              .reduce(
+                (acc, byte) => acc + byte.toString(16).padStart(2, "0"),
+                "",
+              ),
           },
           assets: [],
           imageStatus: "pending",
@@ -1741,11 +1819,6 @@ export default function CometManager({
           chapterId: targetChapterId,
           stepId: targetStepId,
           thumbnail: "",
-          title: "",
-          formData: {
-            title: "",
-            htmlContent: "",
-          },
           assessment: null,
           order: allScreens.length,
         };
@@ -1782,7 +1855,10 @@ export default function CometManager({
       if (!newScreen.screenContents) {
         newScreen.screenContents = {};
       }
-      if (!newScreen.screenContents.uuid) {
+      if (
+        newScreen.screenType !== "miniApp" &&
+        !newScreen.screenContents.uuid
+      ) {
         newScreen.screenContents.uuid = globalThis.crypto
           .getRandomValues(new Uint8Array(16))
           .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
@@ -1845,7 +1921,8 @@ export default function CometManager({
   };
 
   const chapterNumber = (() => {
-    if (typeof currentChapter?.position === "number") return currentChapter.position;
+    if (typeof currentChapter?.position === "number")
+      return currentChapter.position;
     const idx = chapters.findIndex(
       (ch) => String(ch.id) === String(selectedScreen?.chapterId),
     );
@@ -1873,7 +1950,7 @@ export default function CometManager({
         </div>
       ) : (
         <>
-          <div className="flex flex-col md:flex-row overflow-hidden rounded-xl h-full gap-1 sm:gap-2 p-1 sm:p-2">
+          <div className="flex min-h-0 flex-1 flex-col md:flex-row overflow-hidden rounded-xl gap-2 p-2">
             <div className="bg-background rounded-xl w-full md:w-[280px] lg:w-1/3 xl:w-1/4 h-[280px] md:h-full overflow-hidden shrink-0">
               <CometManagerSidebar
                 selectedScreen={selectedScreen}
@@ -1885,7 +1962,9 @@ export default function CometManager({
                   reorderChapters(...args);
                   const autoSaveOk = await requestAutoSaveAfterOutlineCommit();
                   if (autoSaveOk === false) {
-                    console.error("Auto-save failed while reordering chapters.");
+                    console.error(
+                      "Auto-save failed while reordering chapters.",
+                    );
                   }
                 }}
                 onReorderSteps={async (...args) => {
@@ -1899,7 +1978,9 @@ export default function CometManager({
                   moveStepToChapter(...args);
                   const autoSaveOk = await requestAutoSaveAfterOutlineCommit();
                   if (autoSaveOk === false) {
-                    console.error("Auto-save failed while moving step to chapter.");
+                    console.error(
+                      "Auto-save failed while moving step to chapter.",
+                    );
                   }
                 }}
                 onDeleteChapter={handleDeleteChapter}
@@ -1949,7 +2030,7 @@ export default function CometManager({
                   setSelectedToolAsset(null);
                   setSelectedRemainingChapter(null);
                 }}
-                onStepClick={(stepId, step) => { }}
+                onStepClick={(stepId, step) => {}}
                 onChapterClick={(chapterId, chapter) => {
                   // Clear material and assets when chapter is clicked
                   setSelectedMaterial(null);
@@ -2028,6 +2109,14 @@ export default function CometManager({
 
             {/* Right section - main content */}
             <div className="flex flex-col w-full md:flex-1 h-full overflow-hidden min-w-0 bg-primary-50 rounded-xl">
+              {/* Breadcrumb container */}
+              <div className="shrink-0 bg-white border border-gray-100 rounded-xl mx-2 sm:mx-3 md:mx-2 mt-2 p-4 flex items-center">
+                <CycleCreationBreadcrumb
+                  activeStep="cycle"
+                  sessionData={sessionData}
+                />
+              </div>
+
               <div className="flex flex-col  flex-1 overflow-hidden">
                 {/* Show Image Preview if image is selected*/}
                 {selectedImageAsset ? (
@@ -2390,7 +2479,9 @@ export default function CometManager({
                       </div>
                       <div className="flex-1 min-h-[200px] overflow-hidden flex flex-col bg-gray-50">
                         <div className="shrink-0 px-3 py-2 text-xs text-amber-900 bg-amber-50 border-b border-amber-100">
-                          Preview only loads if the site allows embedding. Use <span className="font-semibold">Open link</span> if the panel is blank.
+                          Preview only loads if the site allows embedding. Use{" "}
+                          <span className="font-semibold">Open link</span> if
+                          the panel is blank.
                         </div>
                         {isDirectPdfUrl(selectedMaterial.source_name) ? (
                           <embed
@@ -2403,7 +2494,9 @@ export default function CometManager({
                           <iframe
                             key={selectedMaterial.source_name}
                             src={selectedMaterial.source_name || undefined}
-                            title={selectedMaterial.source_name || "Link preview"}
+                            title={
+                              selectedMaterial.source_name || "Link preview"
+                            }
                             className="flex-1 w-full min-h-[320px] border-0 bg-white"
                             referrerPolicy="strict-origin-when-cross-origin"
                           />
@@ -2450,7 +2543,7 @@ export default function CometManager({
                     >
                       <div className="space-y-4 bg-primary-50 px-2 py-4 rounded">
                         {selectedRemainingChapter.steps &&
-                          selectedRemainingChapter.steps.length > 0 ? (
+                        selectedRemainingChapter.steps.length > 0 ? (
                           selectedRemainingChapter.steps.map(
                             (step, stepIndex) => (
                               <div
@@ -2591,13 +2684,18 @@ export default function CometManager({
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-medium text-primary text-truncate">
                               {(() => {
-                                const raw = currentChapter?.steps?.find(
-                                  (step) =>
-                                    String(step.id) ===
-                                    String(selectedScreen?.stepId),
-                                )?.description || "Untitled Step";
-                                const plain = raw.replace(/<[^>]+>/g, "").trim() || "Untitled Step";
-                                return plain.length > 80 ? plain.slice(0, 80) + "..." : plain;
+                                const raw =
+                                  currentChapter?.steps?.find(
+                                    (step) =>
+                                      String(step.id) ===
+                                      String(selectedScreen?.stepId),
+                                  )?.description || "Untitled Step";
+                                const plain =
+                                  raw.replace(/<[^>]+>/g, "").trim() ||
+                                  "Untitled Step";
+                                return plain.length > 80
+                                  ? plain.slice(0, 80) + "..."
+                                  : plain;
                               })()}
                             </span>
                             {/* <span className="text-xs text-primary truncate">
@@ -2630,7 +2728,9 @@ export default function CometManager({
                             })()}
                             stepUid={selectedScreen?.stepUid}
                             onGeneratingStart={(uid) =>
-                              setGeneratingStepUids((prev) => new Set(prev).add(uid))
+                              setGeneratingStepUids((prev) =>
+                                new Set(prev).add(uid),
+                              )
                             }
                             onGeneratingComplete={(uid) =>
                               setGeneratingStepUids((prev) => {
@@ -2686,55 +2786,89 @@ export default function CometManager({
                       {/* Navigation - Screens */}
                       <div className="bg-background rounded-md p-2 sm:p-3 shrink-0 mb-2">
                         <div className="flex flex-col gap-3 w-full">
-                          <div className="flex items-start gap-2 w-full h-fit overflow-x-auto no-scrollbar -mx-2 px-2">
-                            <div className="flex items-start gap-2 sm:gap-2 px-1">
+                          <div
+                            className="flex items-start gap-2 w-full h-fit overflow-x-auto no-scrollbar -mx-2 px-2"
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={handleDrop}
+                          >
+                            <div className="flex items-start px-1">
+                              {/* always-rendered drop slot before first card */}
+                              <div
+                                className={`overflow-hidden transition-all duration-150 ease-out shrink-0 self-center flex items-center justify-center ${draggedIndex !== null && dragOverIndex === 0 ? "w-8" : "w-0"}`}
+                              >
+                                <div className="w-0.5 min-h-[180px] bg-primary-600 rounded-full" />
+                              </div>
                               {screens.map((screen, index) => (
-                                <div
+                                <React.Fragment
                                   key={screen.uuid || `${screen.id}-${index}`}
-                                  ref={
-                                    index === currentScreen
-                                      ? selectedScreenRef
-                                      : null
-                                  }
                                 >
-                                  <ScreenCard
-                                    screen={screen}
-                                    chapter={currentChapter}
-                                    selectedScreen={selectedScreen}
-                                    index={index}
-                                    isGeneratingImages={generatingStepUids.has(screen.stepUid)}
-                                    onDragStart={handleDragStart}
-                                    onDragEnd={handleDragEnd}
-                                    onDragOver={handleDragOver}
-                                    onDrop={handleDrop}
-                                    onClick={handleScreenClick}
-                                    onAddScreen={(insertIndex) =>
-                                      handleAddScreen(insertIndex)
+                                  <div
+                                    className="mx-1"
+                                    ref={
+                                      index === currentScreen
+                                        ? selectedScreenRef
+                                        : null
                                     }
-                                    onRequestDeleteScreen={
-                                      handleRequestDeleteScreen
-                                    }
-                                    isDeleting={
-                                      deletingScreenId != null &&
-                                      String(deletingScreenId) ===
-                                      String(screen.id)
-                                    }
-                                    sessionId={sessionId}
-                                    onAssetLinked={(screenId, asset) => {
-                                      // Replace old image assets, keep non-image assets
-                                      const existingAssets = screens.find(s => s.id === screenId)?.assets || [];
-                                      const isImageAsset = (a) => Boolean((a?.ImageUrl || a?.url || a?.image_url) && !a?.audioUrl && !a?.videoUrl);
-                                      updateScreenData(screenId, {
-                                        assets: [
-                                          ...existingAssets.filter(a => !isImageAsset(a)),
-                                          asset,
-                                        ],
-                                        imageStatus: "completed",
-                                      });
-                                      setTimeout(() => onFlushSave?.(), 0);
-                                    }}
-                                  />
-                                </div>
+                                  >
+                                    <ScreenCard
+                                      screen={screen}
+                                      chapter={currentChapter}
+                                      selectedScreen={selectedScreen}
+                                      index={index}
+                                      draggedIndex={draggedIndex}
+                                      isGeneratingImages={generatingStepUids.has(
+                                        screen.stepUid,
+                                      )}
+                                      onDragStart={handleDragStart}
+                                      onDragEnd={handleDragEnd}
+                                      onDragOver={handleDragOver}
+                                      onDrop={handleDrop}
+                                      onClick={handleScreenClick}
+                                      onAddScreen={(insertIndex) =>
+                                        handleAddScreen(insertIndex)
+                                      }
+                                      onRequestDeleteScreen={
+                                        handleRequestDeleteScreen
+                                      }
+                                      isDeleting={
+                                        deletingScreenId != null &&
+                                        String(deletingScreenId) ===
+                                          String(screen.id)
+                                      }
+                                      sessionId={sessionId}
+                                      onAssetLinked={(screenId, asset) => {
+                                        // Replace old image assets, keep non-image assets
+                                        const existingAssets =
+                                          screens.find((s) => s.id === screenId)
+                                            ?.assets || [];
+                                        const isImageAsset = (a) =>
+                                          Boolean(
+                                            (a?.ImageUrl ||
+                                              a?.url ||
+                                              a?.image_url) &&
+                                            !a?.audioUrl &&
+                                            !a?.videoUrl,
+                                          );
+                                        updateScreenData(screenId, {
+                                          assets: [
+                                            ...existingAssets.filter(
+                                              (a) => !isImageAsset(a),
+                                            ),
+                                            asset,
+                                          ],
+                                          imageStatus: "completed",
+                                        });
+                                        setTimeout(() => onFlushSave?.(), 0);
+                                      }}
+                                    />
+                                  </div>
+                                  {/* always-rendered drop slot after each card */}
+                                  <div
+                                    className={`overflow-hidden transition-all duration-150 ease-out shrink-0 self-center flex items-center justify-center ${draggedIndex !== null && dragOverIndex === index + 1 ? "w-8" : "w-0"}`}
+                                  >
+                                    <div className="w-0.5 min-h-[180px] bg-primary-600 rounded-full" />
+                                  </div>
+                                </React.Fragment>
                               ))}
                             </div>
                           </div>
@@ -2784,7 +2918,9 @@ export default function CometManager({
                             screenNumber={currentScreen}
                             isAskingKyper={isAskingKyper}
                             setIsAskingKyper={setIsAskingKyper}
-                            onRequestAutoSave={requestAutoSaveAfterOutlineCommit}
+                            onRequestAutoSave={
+                              requestAutoSaveAfterOutlineCommit
+                            }
                           />
                         </div>
                       )}
@@ -2840,7 +2976,13 @@ export default function CometManager({
                           disabled={
                             sessionData?.is_initial_chapter_created == false ||
                             isGeneratingNextChapter ||
-                            !(Array.isArray(sessionData?.response_path?.remaining_chapters) && sessionData.response_path.remaining_chapters.length > 0)
+                            !(
+                              Array.isArray(
+                                sessionData?.response_path?.remaining_chapters,
+                              ) &&
+                              sessionData.response_path.remaining_chapters
+                                .length > 0
+                            )
                           }
                         >
                           <span>Create Remaining Phases</span>
@@ -2965,23 +3107,27 @@ export default function CometManager({
           // the sessionData → outline sync path stalls (e.g. JSON-equality cache
           // or timing with auto-save).
           if (!stepUid || !newImageUrl) return;
-          setOutline?.((prev) => {
-            if (!prev?.chapters) return prev;
-            const next = JSON.parse(JSON.stringify(prev));
-            for (const ch of next.chapters || []) {
-              for (const stepItem of ch.steps || []) {
-                const step = stepItem.step;
-                if (
-                  step &&
-                  (String(step.uuid ?? "") === String(stepUid) ||
-                    String(step.id ?? "") === String(stepUid))
-                ) {
-                  step.image = newImageUrl;
-                }
+          const currentOutline = outlineRef.current || outline;
+          if (!currentOutline?.chapters) return;
+          const next = JSON.parse(JSON.stringify(currentOutline));
+          for (const ch of next.chapters || []) {
+            for (const stepItem of ch.steps || []) {
+              const step = stepItem.step;
+              if (
+                step &&
+                (String(step.uuid ?? "") === String(stepUid) ||
+                  String(step.id ?? "") === String(stepUid))
+              ) {
+                step.image = newImageUrl;
               }
             }
-            return next;
-          });
+          }
+          setOutline?.(next);
+          // Flush to parent immediately so CometManagerLayout's outlineRef
+          // is updated synchronously — prevents the 5s auto-save timer from
+          // reading the stale outline (with the old image) and sending it to
+          // the backend, which would revert the upload via session_merge.
+          onOutlineChange?.(next);
         }}
         onSuccess={(response) => {
           console.log("Step image uploaded:", response);
@@ -3002,10 +3148,11 @@ export default function CometManager({
         }}
       >
         <DrawerContent
-          className={`${isMaximized
-            ? "w-[95vw]! sm:w-[90vw]! md:w-[75vw]! lg:w-[55vw]! xl:max-w-4xl!"
-            : "w-[95vw]! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
-            } max-w-none! h-screen! bg-primary-50 p-0`}
+          className={`${
+            isMaximized
+              ? "w-[95vw]! sm:w-[90vw]! md:w-[75vw]! lg:w-[55vw]! xl:max-w-4xl!"
+              : "w-[95vw]! sm:w-[90vw]! md:w-[70vw]! lg:w-[50vw]! xl:max-w-4xl!"
+          } max-w-none! h-screen! bg-primary-50 p-0`}
         >
           {/* Preview Header */}
           <div className="bg-primary-50 border-b border-gray-200 py-2 px-3 sm:px-4 flex items-center justify-between">
@@ -3035,8 +3182,9 @@ export default function CometManager({
 
           {/* Preview Content */}
           <div
-            className={`flex-1 overflow-hidden border-lg bg-primary-50 ${isMaximized ? "p-0 sm:p-2 md:p-3" : "p-0 sm:p-2 md:p-3"
-              }`}
+            className={`flex-1 overflow-hidden border-lg bg-primary-50 ${
+              isMaximized ? "p-0 sm:p-2 md:p-3" : "p-0 sm:p-2 md:p-3"
+            }`}
           >
             <FromDoerToEnabler
               selectedScreen={selectedScreen}
@@ -3045,7 +3193,6 @@ export default function CometManager({
               hasNext={currentScreen < screens.length - 1}
               onPrev={() => navigateScreen("prev")}
               onNext={() => navigateScreen("next")}
-
               // step navigation
               hasPrevStep={currentStepIndex > 0}
               hasNextStep={currentStepIndex < allSteps.length - 1}
@@ -3084,7 +3231,8 @@ export default function CometManager({
                 </DialogTitle>
                 <DialogDescription className="text-sm leading-5 text-[#181D27]">
                   <span className="block">
-                    This action will permanently remove this screen from the cycle.
+                    This action will permanently remove this screen from the
+                    cycle.
                   </span>
                   <span className="mt-1.5 block">Do you want to proceed?</span>
                 </DialogDescription>

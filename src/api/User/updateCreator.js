@@ -7,9 +7,14 @@ export const updateCreator = async (creatorId, creatorData) => {
     throw new Error("Creator ID must be a valid integer");
   }
 
+  const payload = { ...creatorData };
+  if (typeof payload.email === "string") {
+    payload.email = payload.email.trim().toLowerCase();
+  }
+
   return await apiService({
     endpoint: endpoints.updateCreator(creatorIdInt),
     method: "PUT",
-    data: creatorData,
+    data: payload,
   });
 };

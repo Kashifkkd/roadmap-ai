@@ -44,10 +44,8 @@ export function findMisspelledWordForWordInfo(field, wordInfo) {
     return null;
   }
 
-  if (ranges.length === 1) {
-    return ranges[0];
-  }
-
+  // Note: never short-circuit to a single stored range here — clicking a
+  // correctly spelled word must not surface suggestions for a different one.
   return (
     ranges.find(
       ({ start, end, word }) =>
